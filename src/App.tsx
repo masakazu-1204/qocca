@@ -41,7 +41,7 @@ const REVIEWS = [
 // ── Logo (Qocca公式ロゴ風SVG) ─────────────────────────────────────────────
 const Logo = ({ size = 32 }) => (
   <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flexShrink:0 }}>
-    <img src="/logo.png" width={size} height={size} style={{ objectFit:"contain" }} alt="Qocca"/>
+    <img src="/logo.png" width={size*1.8} height={size*1.8} style={{ objectFit:"contain" }} alt="Qocca"/>
     <span style={{ fontSize:size*0.72, fontWeight:900, color:C.orange, letterSpacing:"-0.5px" }}>Qocca</span>
   </div>
 );
@@ -108,7 +108,7 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
       display:"flex", alignItems:"center", justifyContent:"space-between", gap:10,
       transition:"all 0.3s"
     }}>
-      <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={60}/></div>
+      <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={50}/></div>
 
       {/* Search bar */}
       <div style={{ flex:1, maxWidth:340, position:"relative" }}>
