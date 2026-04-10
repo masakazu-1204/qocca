@@ -108,7 +108,7 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
       display:"flex", alignItems:"center", justifyContent:"space-between", gap:10,
       transition:"all 0.3s"
     }}>
-      <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={35}/></div>
+      <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={28}/></div>
 
       {/* Search bar */}
       <div style={{ flex:1, maxWidth:340, position:"relative" }}>
