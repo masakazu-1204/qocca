@@ -41,19 +41,7 @@ const REVIEWS = [
 // ── Logo (Qocca公式ロゴ風SVG) ─────────────────────────────────────────────
 const Logo = ({ size = 32 }) => (
   <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flexShrink:0 }}>
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="48" fill={C.orange}/>
-      <path d="M50 8 C27 8 8 27 8 50 C8 73 27 92 50 92 C60 92 69 88 76 82 L85 91 L91 85 L82 76 C88 69 92 60 92 50 C92 27 73 8 50 8Z" fill={C.cream}/>
-      <circle cx="50" cy="47" r="28" fill={C.orange}/>
-      <ellipse cx="34" cy="28" rx="9" ry="13" fill={C.orange} transform="rotate(-15 34 28)"/>
-      <ellipse cx="66" cy="28" rx="9" ry="13" fill={C.orange} transform="rotate(15 66 28)"/>
-      <ellipse cx="50" cy="50" rx="22" ry="20" fill={C.cream}/>
-      <ellipse cx="50" cy="53" rx="15" ry="13" fill={C.orange}/>
-      <circle cx="43" cy="47" r="3" fill={C.cream}/>
-      <circle cx="57" cy="47" r="3" fill={C.cream}/>
-      <ellipse cx="50" cy="57" rx="4" ry="3" fill={C.cream}/>
-      <path d="M20 74 Q50 94 80 74" stroke={C.orange} strokeWidth="7" strokeLinecap="round" fill="none"/>
-    </svg>
+    <img src="/logo.png" width={size} height={size} style={{ objectFit:"contain" }} alt="Qocca"/>
     <span style={{ fontSize:size*0.72, fontWeight:900, color:C.orange, letterSpacing:"-0.5px" }}>Qocca</span>
   </div>
 );
