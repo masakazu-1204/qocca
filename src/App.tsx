@@ -625,7 +625,7 @@ const SignupPage = () => {
             <span style={{ fontSize:12, color:C.warmGray }}>または</span>
             <div style={{ flex:1, height:1, background:C.border }}/>
           </div>
-          {[["🐦 Twitterで続ける"],["📘 Googleで続ける"]].map(([l])=>(
+          {[["🐦 Xで続ける"],["📘 Googleで続ける"]].map(([l])=>(
             <button key={l} style={{ width:"100%", padding:"11px", marginBottom:8, border:`1.5px solid ${C.border}`, borderRadius:10, background:C.white, cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit", color:C.dark }}>{l}</button>
           ))}
         </div>
