@@ -61,7 +61,7 @@ const useIsPC = () => {
 
 // ── PC用サイドバー ─────────────────────────────────────────────────────────
 const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
-  <div style={{ width:220, flexShrink:0, paddingTop:24, paddingLeft:16 }}>
+  <div style={{ width:240, flexShrink:0, paddingTop:24, paddingLeft:48 }}>
     <div style={{ position:"sticky", top:92 }}>
       <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:12, padding:"0 8px" }}>カテゴリ</div>
       {CATS.map(c=>(
@@ -933,7 +933,7 @@ export default function QoccaApp() {
           )}
           <div style={{ display:"flex", maxWidth:1400, margin:"0 auto" }}>
           <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
-          <div style={{ flex:1, minWidth:0, padding:"24px 24px 24px 24px" }}>
+          <div style={{ flex:1, minWidth:0, padding:"24px 48px" }}>
             {page==="home" && (
               <>
                 <div style={{ marginTop:32 }}>
