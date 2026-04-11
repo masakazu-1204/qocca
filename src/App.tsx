@@ -93,7 +93,7 @@ const PCNavbar = ({ setPage, liked, search, setSearch }) => (
     position:"fixed", top:0, left:0, right:0, zIndex:200,
     background:"rgba(250,250,247,0.97)", backdropFilter:"blur(12px)",
     borderBottom:`1px solid ${C.border}`, height:68,
-    display:"flex", alignItems:"center", padding:"0 24px", gap:20
+    display:"flex", alignItems:"center", padding:"0 32px", gap:20, width:"100%", boxSizing:"border-box"
   }}>
     <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={32}/></div>
     <div style={{ flex:1, maxWidth:500, position:"relative" }}>
