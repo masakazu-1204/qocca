@@ -314,7 +314,7 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
           <div style={{ position:"absolute", right:-10, top:-10, fontSize:100, opacity:0.1 }}>🐾</div>
           <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", marginBottom:6 }}>CREATOR WANTED</div>
           <h3 style={{ fontSize:22, fontWeight:900, color:"#fff", marginBottom:10, lineHeight:1.3 }}>あなたのスキルを<br/>ペット好きに届けよう</h3>
-          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginBottom:18 }}>登録から3ヶ月間は手数料5%！（通常10%）</p>
+          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginBottom:18 }}>初回取引は手数料0%！決済手数料（3.6%）のみ</p>
           <button onClick={()=>setPage("sell")} style={{
             padding:"12px 24px", background:"#fff", border:"none",
             borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer"
@@ -1074,7 +1074,7 @@ const PCBanner = ({ setPage }) => (
     <div style={{ position:"relative", zIndex:1 }}>
       <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", marginBottom:4 }}>CREATOR WANTED</div>
       <h3 style={{ fontSize:22, fontWeight:900, color:"#fff", lineHeight:1.3 }}>あなたのスキルをペット好きに届けよう</h3>
-      <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginTop:6 }}>登録から3ヶ月間は手数料5%！（通常10%）</p>
+      <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginTop:6 }}>初回取引は手数料0%！決済手数料（3.6%）のみ</p>
     </div>
     <button onClick={()=>setPage("sell")} style={{
       padding:"12px 28px", background:"#fff", border:"none",
