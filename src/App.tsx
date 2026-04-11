@@ -61,7 +61,7 @@ const useIsPC = () => {
 
 // ── PC用サイドバー ─────────────────────────────────────────────────────────
 const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
-  <div style={{ width:240, flexShrink:0, paddingTop:24, paddingLeft:48 }}>
+  <div style={{ width:260, flexShrink:0, paddingTop:24, paddingLeft:60 }}>
     <div style={{ position:"sticky", top:92 }}>
       <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:12, padding:"0 8px" }}>カテゴリ</div>
       {CATS.map(c=>(
@@ -93,10 +93,10 @@ const PCNavbar = ({ setPage, liked, search, setSearch }) => (
     position:"fixed", top:0, left:0, right:0, zIndex:200,
     background:"rgba(250,250,247,0.97)", backdropFilter:"blur(12px)",
     borderBottom:`1px solid ${C.border}`, height:68,
-    display:"flex", alignItems:"center", padding:"0 32px", gap:20, width:"100%", boxSizing:"border-box"
+    display:"flex", alignItems:"center", padding:"0 60px", gap:24, width:"100%", boxSizing:"border-box"
   }}>
     <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={32}/></div>
-    <div style={{ flex:1, maxWidth:500, position:"relative" }}>
+    <div style={{ flex:1, maxWidth:600, position:"relative" }}>
       <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:16, color:C.warmGray }}>🔍</span>
       <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
         placeholder="ペット専門サービスを探す..."
@@ -933,20 +933,20 @@ export default function QoccaApp() {
           )}
           <div style={{ display:"flex", maxWidth:1400, margin:"0 auto" }}>
           <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
-          <div style={{ flex:1, minWidth:0, padding:"24px 48px" }}>
+          <div style={{ flex:1, minWidth:0, padding:"32px 60px 32px 40px" }}>
             {page==="home" && (
               <>
                 <div style={{ marginTop:32 }}>
                   <div style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
-                    {LISTINGS.filter(l=>l.tag==="人気").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,minmax(0,1fr))", gap:16 }}>
+                    {LISTINGS.filter(l=>l.tag==="人気").slice(0,4).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                   </div>
                   <div style={{ fontSize:22, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>🆕 新着サービス</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,minmax(0,1fr))", gap:16 }}>
                     {LISTINGS.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                   </div>
                   <div style={{ fontSize:22, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,minmax(0,1fr))", gap:16 }}>
                     {LISTINGS.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                   </div>
                 </div>
