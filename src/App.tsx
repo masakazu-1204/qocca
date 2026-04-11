@@ -892,7 +892,7 @@ export default function QoccaApp() {
   const showTabBar = !isPC && page !== "detail";
 
   return (
-    <div style={{ fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", background:C.cream, minHeight:"100vh", paddingBottom: showTabBar ? 70 : 0 }}>
+    <div style={{ fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", background:C.cream, minHeight:"100vh", paddingBottom: showTabBar ? 70 : 0, width:"100%", overflowX:"hidden", margin:0, padding:0 }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet"/>
 
       {isPC
@@ -973,6 +973,7 @@ export default function QoccaApp() {
       )}
 
       <style>{`
+        html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
         @keyframes float1{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
         *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
         ::-webkit-scrollbar{display:none}
