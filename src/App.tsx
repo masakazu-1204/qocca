@@ -61,8 +61,8 @@ const useIsPC = () => {
 
 // ── PC用サイドバー ─────────────────────────────────────────────────────────
 const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
-  <div style={{ width:220, flexShrink:0, paddingTop:80 }}>
-    <div style={{ position:"sticky", top:80 }}>
+  <div style={{ width:240, flexShrink:0, paddingTop:24 }}>
+    <div style={{ position:"sticky", top:92 }}>
       <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:12, padding:"0 8px" }}>カテゴリ</div>
       {CATS.map(c=>(
         <button key={c.id} onClick={()=>{ setActiveCat(c.id); setPage("search"); }} style={{
@@ -93,7 +93,7 @@ const PCNavbar = ({ setPage, liked, search, setSearch }) => (
     position:"fixed", top:0, left:0, right:0, zIndex:200,
     background:"rgba(250,250,247,0.97)", backdropFilter:"blur(12px)",
     borderBottom:`1px solid ${C.border}`, height:68,
-    display:"flex", alignItems:"center", padding:"0 32px", gap:24
+    display:"flex", alignItems:"center", padding:"0 40px", gap:24
   }}>
     <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={32}/></div>
     <div style={{ flex:1, maxWidth:500, position:"relative" }}>
@@ -933,7 +933,7 @@ export default function QoccaApp() {
           )}
           <div style={{ display:"flex", maxWidth:1400, margin:"0 auto" }}>
           <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
-          <div style={{ flex:1, minWidth:0, padding:"24px 32px" }}>
+          <div style={{ flex:1, minWidth:0, padding:"24px 0 24px 32px" }}>
             {page==="home" && (
               <>
                 <div style={{ marginTop:32 }}>
