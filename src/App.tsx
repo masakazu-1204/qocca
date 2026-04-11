@@ -805,49 +805,54 @@ const TabBar = ({ page, setPage }) => {
   );
 };
 
-// ── PC Hero（flexboxで左右バランス修正） ──────────────────────────────────
+// ── PC Hero（中央配置・テキスト広め・カード近接） ─────────────────────────
 const PCHeroSection = ({ setPage }) => (
   <section style={{
     background:`linear-gradient(145deg, ${C.dark} 0%, ${C.darkBrown} 55%, #3D2810 100%)`,
-    padding:"72px 48px", display:"flex", alignItems:"center", gap:48,
     position:"relative", overflow:"hidden"
   }}>
     {/* 背景装飾 */}
     <div style={{ position:"absolute", right:40, bottom:-20, fontSize:200, opacity:0.03, pointerEvents:"none" }}>🐾</div>
 
-    {/* 左：テキスト (flex: 1.2) */}
-    <div style={{ flex:"1.2", position:"relative", zIndex:1, minWidth:0 }}>
-      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 16px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:20 }}>
-        <span>🐨</span><span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
+    {/* 中央コンテナ */}
+    <div style={{
+      maxWidth:1280, margin:"0 auto", padding:"72px 48px",
+      display:"flex", alignItems:"center", justifyContent:"space-between", gap:40
+    }}>
+      {/* 左：テキスト（幅制限なし、伸びる） */}
+      <div style={{ flex:1, position:"relative", zIndex:1, minWidth:0 }}>
+        <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 16px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:20 }}>
+          <span>🐨</span><span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
+        </div>
+        <h1 style={{ fontSize:48, fontWeight:900, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-1px" }}>
+          うちの子のための<br/><span style={{ color:C.orange }}>特別なもの</span>を。
+        </h1>
+        <p style={{ fontSize:16, color:"rgba(255,255,255,0.6)", lineHeight:1.8, marginBottom:28 }}>
+          似顔絵・ハンドメイド服・フォト撮影・グッズ制作。<br/>ペット専門クリエイターが作る、世界にひとつだけの作品。
+        </p>
+        <div style={{ display:"flex", gap:12, marginBottom:32 }}>
+          <button onClick={()=>setPage("search")} style={{ padding:"14px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>🔍 サービスを探す</button>
+          <button onClick={()=>setPage("sell")} style={{ padding:"14px 24px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>出品者になる →</button>
+        </div>
+        <div style={{ display:"flex", gap:32 }}>
+          {[["1,200+","出品"],["8,400+","登録者"],["4.8","評価"],["¥0","初回手数料"]].map(([v,l])=>(
+            <div key={l}><div style={{ fontSize:22, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{l}</div></div>
+          ))}
+        </div>
       </div>
-      <h1 style={{ fontSize:48, fontWeight:900, color:"#fff", lineHeight:1.15, marginBottom:16, letterSpacing:"-1px" }}>
-        うちの子のための<br/><span style={{ color:C.orange }}>特別なもの</span>を。
-      </h1>
-      <p style={{ fontSize:16, color:"rgba(255,255,255,0.6)", lineHeight:1.8, marginBottom:28, maxWidth:480 }}>
-        似顔絵・ハンドメイド服・フォト撮影・グッズ制作。<br/>ペット専門クリエイターが作る、世界にひとつだけの作品。
-      </p>
-      <div style={{ display:"flex", gap:12, marginBottom:32 }}>
-        <button onClick={()=>setPage("search")} style={{ padding:"14px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>🔍 サービスを探す</button>
-        <button onClick={()=>setPage("sell")} style={{ padding:"14px 24px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>出品者になる →</button>
-      </div>
-      <div style={{ display:"flex", gap:32 }}>
-        {[["1,200+","出品"],["8,400+","登録者"],["4.8","評価"],["¥0","初回手数料"]].map(([v,l])=>(
-          <div key={l}><div style={{ fontSize:22, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{l}</div></div>
+
+      {/* 右：カード2x2（固定幅340px、左にくっつける） */}
+      <div style={{ width:340, flexShrink:0, display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+        {LISTINGS.slice(0,4).map(item=>(
+          <div key={item.id} style={{
+            aspectRatio:"1", background:item.bg, borderRadius:18,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:56, boxShadow:"0 8px 28px rgba(0,0,0,0.25)"
+          }}>
+            {item.emoji}
+          </div>
         ))}
       </div>
-    </div>
-
-    {/* 右：カード2x2 (flex: 0.8, 最大幅を制限) */}
-    <div style={{ flex:"0.8", maxWidth:380, display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-      {LISTINGS.slice(0,4).map(item=>(
-        <div key={item.id} style={{
-          aspectRatio:"1", background:item.bg, borderRadius:18,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:56, boxShadow:"0 8px 28px rgba(0,0,0,0.25)"
-        }}>
-          {item.emoji}
-        </div>
-      ))}
     </div>
   </section>
 );
