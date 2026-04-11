@@ -127,41 +127,43 @@ const PCNavbar = ({ setPage, liked, search, setSearch }) => (
 const PCHero = ({ setPage }) => (
   <section style={{
     background:`linear-gradient(145deg, ${C.dark} 0%, ${C.darkBrown} 55%, #3D2810 100%)`,
-    padding:"120px 64px 80px", display:"flex", alignItems:"center", gap:60, position:"relative", overflow:"hidden"
+    padding:"80px 60px", display:"flex", alignItems:"center", gap:60,
+    position:"relative", overflow:"hidden", borderRadius:24, marginBottom:32
   }}>
-    <div style={{ flex:1, position:"relative", zIndex:1 }}>
-      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 14px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:24 }}>
+    <div style={{ position:"absolute", right:0, top:0, bottom:0, width:"40%", opacity:0.05, fontSize:200, display:"flex", alignItems:"center", justifyContent:"center" }}>🐾</div>
+    <div style={{ flex:"0 0 55%", position:"relative", zIndex:1 }}>
+      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 16px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:20 }}>
         <span style={{ fontSize:13 }}>🐨</span>
-        <span style={{ fontSize:12, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
+        <span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
       </div>
-      <h1 style={{ fontSize:56, fontWeight:900, color:C.white, lineHeight:1.1, marginBottom:20, letterSpacing:"-2px" }}>
+      <h1 style={{ fontSize:52, fontWeight:900, color:C.white, lineHeight:1.15, marginBottom:16, letterSpacing:"-1px" }}>
         うちの子のための<br/><span style={{ color:C.orange }}>特別なもの</span>を。
       </h1>
-      <p style={{ fontSize:18, color:"rgba(255,255,255,0.65)", lineHeight:1.7, marginBottom:36, maxWidth:500 }}>
+      <p style={{ fontSize:16, color:"rgba(255,255,255,0.65)", lineHeight:1.8, marginBottom:28 }}>
         似顔絵・ハンドメイド服・フォト撮影・グッズ制作。<br/>ペット専門クリエイターが作る、世界にひとつだけの作品。
       </p>
-      <div style={{ display:"flex", gap:14 }}>
+      <div style={{ display:"flex", gap:12, marginBottom:32 }}>
         <button onClick={()=>setPage("search")} style={{
-          padding:"16px 36px", background:C.orange, border:"none", borderRadius:14,
-          color:"#fff", fontWeight:800, fontSize:18, cursor:"pointer"
+          padding:"14px 32px", background:C.orange, border:"none", borderRadius:12,
+          color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer"
         }}>🔍 サービスを探す</button>
         <button onClick={()=>setPage("sell")} style={{
-          padding:"16px 28px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)",
-          borderRadius:14, color:"#fff", fontWeight:700, fontSize:16, cursor:"pointer"
+          padding:"14px 24px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)",
+          borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer"
         }}>出品者になる →</button>
       </div>
-      <div style={{ display:"flex", gap:40, marginTop:36 }}>
-        {[["1,200+","出品サービス"],["8,400+","登録ユーザー"],["4.8","平均評価"],["¥0","出品手数料（初回）"]].map(([v,l])=>(
+      <div style={{ display:"flex", gap:32 }}>
+        {[["1,200+","出品"],["8,400+","登録者"],["4.8","評価"],["¥0","初回手数料"]].map(([v,l])=>(
           <div key={l}>
-            <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>{v}</div>
-            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>{l}</div>
+            <div style={{ fontSize:22, fontWeight:900, color:C.orange }}>{v}</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{l}</div>
           </div>
         ))}
       </div>
     </div>
-    <div style={{ flex:1, display:"flex", flexWrap:"wrap", gap:16, justifyContent:"center" }}>
+    <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
       {LISTINGS.slice(0,4).map(item=>(
-        <div key={item.id} style={{ width:180, height:180, background:item.bg, borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:80, boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+        <div key={item.id} style={{ aspectRatio:"1", background:item.bg, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:64, boxShadow:"0 8px 24px rgba(0,0,0,0.2)" }}>
           {item.emoji}
         </div>
       ))}
@@ -899,12 +901,41 @@ export default function QoccaApp() {
       }
 
       {isPC ? (
-        <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", paddingTop:68 }}>
+        <div style={{ paddingTop:68 }}>
+          {page==="home" && (
+            <div style={{ background:`linear-gradient(145deg, ${C.dark} 0%, ${C.darkBrown} 55%, #3D2810 100%)`, padding:"80px 48px", display:"flex", alignItems:"center", gap:60, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", right:60, top:"50%", transform:"translateY(-50%)", display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                {LISTINGS.slice(0,4).map(item=>(
+                  <div key={item.id} style={{ width:160, height:160, background:item.bg, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:64, boxShadow:"0 8px 24px rgba(0,0,0,0.3)" }}>{item.emoji}</div>
+                ))}
+              </div>
+              <div style={{ maxWidth:560, position:"relative", zIndex:1 }}>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 16px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:20 }}>
+                  <span>🐨</span><span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
+                </div>
+                <h1 style={{ fontSize:56, fontWeight:900, color:"#fff", lineHeight:1.1, marginBottom:16, letterSpacing:"-1px" }}>
+                  うちの子のための<br/><span style={{ color:C.orange }}>特別なもの</span>を。
+                </h1>
+                <p style={{ fontSize:17, color:"rgba(255,255,255,0.65)", lineHeight:1.8, marginBottom:28 }}>
+                  似顔絵・ハンドメイド服・フォト撮影・グッズ制作。ペット専門クリエイターが作る、世界にひとつだけの作品。
+                </p>
+                <div style={{ display:"flex", gap:12, marginBottom:32 }}>
+                  <button onClick={()=>setPage("search")} style={{ padding:"14px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>🔍 サービスを探す</button>
+                  <button onClick={()=>setPage("sell")} style={{ padding:"14px 24px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>出品者になる →</button>
+                </div>
+                <div style={{ display:"flex", gap:32 }}>
+                  {[["1,200+","出品"],["8,400+","登録者"],["4.8","評価"],["¥0","初回手数料"]].map(([v,l])=>(
+                    <div key={l}><div style={{ fontSize:22, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{l}</div></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div style={{ display:"flex", maxWidth:1400, margin:"0 auto" }}>
           <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
           <div style={{ flex:1, minWidth:0, padding:"24px 32px" }}>
             {page==="home" && (
               <>
-                <PCHero setPage={setPage}/>
                 <div style={{ marginTop:32 }}>
                   <div style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
@@ -926,6 +957,7 @@ export default function QoccaApp() {
             {page==="sell" && <SellPage/>}
             {page==="signup" && <SignupPage/>}
             {page==="liked" && <LikedPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
+          </div>
           </div>
         </div>
       ) : (
