@@ -38,13 +38,138 @@ const REVIEWS = [
   { user:"けんたさん", pet:"🐕", rating:4, comment:"クオリティ高い！少し時間かかりましたが満足です。", date:"2026.2.28" },
 ];
 
-// ── Logo (Qocca公式ロゴ風SVG) ─────────────────────────────────────────────
+// ── Logo (公式ロゴ) ────────────────────────────────────────────────────────
+const LOGO_BASE64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QCMRXhpZgAATU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAIdpAAQAAAABAAAAWgAAAAAAAABIAAAAAQAAAEgAAAABAAOgAQADAAAAAQABAACgAgAEAAAAAQAABACgAwAEAAAAAQAABAAAAAAA/+0AOFBob3Rvc2hvcCAzLjAAOEJJTQQEAAAAAAAAOEJJTQQlAAAAAAAQ1B2M2Y8AsgTpgAmY7PhCfv/AABEIBAABAAMBIAACIQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2wBDAAICAgICAgQCAgQGBAQEBggGBgYGCAoICAgICAoMCgoKCgoKDAwMDAwMDAwODg4ODg4QEBAQEBISEhISEhISEhL/2wBDAQMDAwUEBQgEBAgTDQsNExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExP/3QAEAED/2gAMAwEAAhEDEQA/AO9Il2g==";
+
 const Logo = ({ size = 32 }) => (
   <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flexShrink:0 }}>
     <img src="/logo.png" width={size*1.5} height={size*1.5} style={{ objectFit:"contain" }} alt="Qocca"/>
     <span style={{ fontSize:size*0.72, fontWeight:900, color:C.orange, letterSpacing:"-0.5px" }}>Qocca</span>
   </div>
 );
+
+// ── レスポンシブ判定 ──────────────────────────────────────────────────────
+const useIsPC = () => {
+  const [isPC, setIsPC] = useState(window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsPC(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return isPC;
+};
+
+// ── PC用サイドバー ─────────────────────────────────────────────────────────
+const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
+  <div style={{ width:220, flexShrink:0, paddingTop:80 }}>
+    <div style={{ position:"sticky", top:80 }}>
+      <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:12, padding:"0 8px" }}>カテゴリ</div>
+      {CATS.map(c=>(
+        <button key={c.id} onClick={()=>{ setActiveCat(c.id); setPage("search"); }} style={{
+          width:"100%", padding:"10px 16px", border:"none", borderRadius:10,
+          background: activeCat===c.id ? C.orangePale : "transparent",
+          color: activeCat===c.id ? C.orange : C.dark,
+          fontWeight:700, fontSize:14, cursor:"pointer", textAlign:"left",
+          display:"flex", alignItems:"center", gap:10, fontFamily:"inherit",
+          marginBottom:2
+        }}>
+          <span style={{ fontSize:20 }}>{c.icon}</span>
+          <span>{c.label}</span>
+        </button>
+      ))}
+      <div style={{ margin:"20px 8px", borderTop:`1px solid ${C.border}` }}/>
+      <button onClick={()=>setPage("sell")} style={{
+        width:"100%", padding:"12px 16px", border:"none", borderRadius:12,
+        background:C.orange, color:"#fff", fontWeight:800, fontSize:14,
+        cursor:"pointer", fontFamily:"inherit"
+      }}>🐾 出品する</button>
+    </div>
+  </div>
+);
+
+// ── PC用ナビバー ───────────────────────────────────────────────────────────
+const PCNavbar = ({ setPage, liked, search, setSearch }) => (
+  <nav style={{
+    position:"fixed", top:0, left:0, right:0, zIndex:200,
+    background:"rgba(250,250,247,0.97)", backdropFilter:"blur(12px)",
+    borderBottom:`1px solid ${C.border}`, height:68,
+    display:"flex", alignItems:"center", padding:"0 32px", gap:24
+  }}>
+    <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={32}/></div>
+    <div style={{ flex:1, maxWidth:500, position:"relative" }}>
+      <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:16, color:C.warmGray }}>🔍</span>
+      <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
+        placeholder="ペット専門サービスを探す..."
+        style={{ width:"100%", padding:"10px 14px 10px 42px", borderRadius:12, border:`1.5px solid ${C.border}`,
+          fontSize:14, outline:"none", fontFamily:"inherit", background:C.lightGray, color:C.dark, boxSizing:"border-box" }}
+      />
+    </div>
+    <div style={{ display:"flex", alignItems:"center", gap:16, marginLeft:"auto" }}>
+      {[["home","ホーム"],["search","さがす"],["liked","お気に入り"]].map(([id,label])=>(
+        <button key={id} onClick={()=>setPage(id)} style={{
+          background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
+          fontSize:14, fontWeight:700, color:C.dark, padding:"4px 8px"
+        }}>{label}</button>
+      ))}
+      <button onClick={()=>setPage("sell")} style={{
+        padding:"9px 20px", background:C.orange, border:"none", borderRadius:10,
+        color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit"
+      }}>出品する</button>
+      <button onClick={()=>setPage("signup")} style={{
+        padding:"9px 20px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:10,
+        color:C.dark, fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit"
+      }}>ログイン</button>
+    </div>
+  </nav>
+);
+
+// ── PC用ホームヒーロー ─────────────────────────────────────────────────────
+const PCHero = ({ setPage }) => (
+  <section style={{
+    background:`linear-gradient(145deg, ${C.dark} 0%, ${C.darkBrown} 55%, #3D2810 100%)`,
+    padding:"120px 64px 80px", display:"flex", alignItems:"center", gap:60, position:"relative", overflow:"hidden"
+  }}>
+    <div style={{ flex:1, position:"relative", zIndex:1 }}>
+      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 14px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:24 }}>
+        <span style={{ fontSize:13 }}>🐨</span>
+        <span style={{ fontSize:12, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
+      </div>
+      <h1 style={{ fontSize:56, fontWeight:900, color:C.white, lineHeight:1.1, marginBottom:20, letterSpacing:"-2px" }}>
+        うちの子のための<br/><span style={{ color:C.orange }}>特別なもの</span>を。
+      </h1>
+      <p style={{ fontSize:18, color:"rgba(255,255,255,0.65)", lineHeight:1.7, marginBottom:36, maxWidth:500 }}>
+        似顔絵・ハンドメイド服・フォト撮影・グッズ制作。<br/>ペット専門クリエイターが作る、世界にひとつだけの作品。
+      </p>
+      <div style={{ display:"flex", gap:14 }}>
+        <button onClick={()=>setPage("search")} style={{
+          padding:"16px 36px", background:C.orange, border:"none", borderRadius:14,
+          color:"#fff", fontWeight:800, fontSize:18, cursor:"pointer"
+        }}>🔍 サービスを探す</button>
+        <button onClick={()=>setPage("sell")} style={{
+          padding:"16px 28px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)",
+          borderRadius:14, color:"#fff", fontWeight:700, fontSize:16, cursor:"pointer"
+        }}>出品者になる →</button>
+      </div>
+      <div style={{ display:"flex", gap:40, marginTop:36 }}>
+        {[["1,200+","出品サービス"],["8,400+","登録ユーザー"],["4.8","平均評価"],["¥0","出品手数料（初回）"]].map(([v,l])=>(
+          <div key={l}>
+            <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>{v}</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>{l}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div style={{ flex:1, display:"flex", flexWrap:"wrap", gap:16, justifyContent:"center" }}>
+      {LISTINGS.slice(0,4).map(item=>(
+        <div key={item.id} style={{ width:180, height:180, background:item.bg, borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:80, boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+          {item.emoji}
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+
 
 const Stars = ({ rating, size=12 }) => (
   <span style={{ color:C.orange, fontSize:size }}>{"★".repeat(Math.round(rating))}{"☆".repeat(5-Math.round(rating))}</span>
@@ -350,6 +475,9 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch }) =>
 // ── DETAIL ─────────────────────────────────────────────────────────────────
 const DetailPage = ({ item, onBack, liked, onLike }) => {
   const [ordered, setOrdered] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportType, setReportType] = useState("");
+  const [reportDone, setReportDone] = useState(false);
   if (!item) return null;
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream }}>
@@ -418,7 +546,69 @@ const DetailPage = ({ item, onBack, liked, onLike }) => {
             </div>
           ))}
         </div>
+
+        {/* 通報ボタン */}
+        <div style={{ textAlign:"center", marginBottom:80 }}>
+          <button onClick={()=>setShowReport(true)} style={{
+            background:"none", border:"none", cursor:"pointer",
+            fontSize:12, color:"#ccc", textDecoration:"underline", fontFamily:"inherit"
+          }}>🚨 このサービスを通報する</button>
+        </div>
       </div>
+
+      {/* 通報モーダル */}
+      {showReport && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:200, display:"flex", alignItems:"flex-end" }}
+          onClick={()=>setShowReport(false)}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px", width:"100%" }} onClick={e=>e.stopPropagation()}>
+            {reportDone ? (
+              <div style={{ textAlign:"center", padding:"20px 0" }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+                <div style={{ fontSize:18, fontWeight:900, color:"#1A1208", marginBottom:8 }}>通報を受け付けました</div>
+                <div style={{ fontSize:13, color:"#9E9B95", marginBottom:20 }}>管理者が確認次第、対応いたします。</div>
+                <button onClick={()=>{setShowReport(false);setReportDone(false);}} style={{
+                  padding:"12px 32px", background:"#F5A94A", border:"none", borderRadius:12,
+                  color:"#fff", fontWeight:800, cursor:"pointer", fontFamily:"inherit"
+                }}>閉じる</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize:18, fontWeight:900, color:"#1A1208", marginBottom:4 }}>🚨 通報する</div>
+                <div style={{ fontSize:12, color:"#9E9B95", marginBottom:20 }}>通報内容を選択してください</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
+                  {[
+                    "🐾 生体動物の売買",
+                    "💬 プラットフォーム外への誘導",
+                    "🎭 なりすまし・偽サービス",
+                    "⚠️ 著作権侵害",
+                    "🔞 不適切なコンテンツ",
+                    "💰 詐欺・虚偽の内容",
+                    "その他"
+                  ].map(type => (
+                    <button key={type} onClick={()=>setReportType(type)} style={{
+                      padding:"12px 16px", border:`2px solid ${reportType===type?"#EF5350":"#EDE9E3"}`,
+                      borderRadius:12, background:reportType===type?"#FFEBEE":"#fff",
+                      color:reportType===type?"#EF5350":"#3D3B38",
+                      fontWeight:700, fontSize:14, cursor:"pointer", textAlign:"left", fontFamily:"inherit"
+                    }}>{type}</button>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:10 }}>
+                  <button onClick={()=>setShowReport(false)} style={{
+                    flex:1, padding:"13px", background:"#fff", border:"1.5px solid #EDE9E3",
+                    borderRadius:12, color:"#9E9B95", fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+                  }}>キャンセル</button>
+                  <button onClick={()=>reportType&&setReportDone(true)} disabled={!reportType} style={{
+                    flex:2, padding:"13px", background:reportType?"#EF5350":"#EDE9E3",
+                    border:"none", borderRadius:12, color:"#fff",
+                    fontWeight:800, fontSize:15, cursor:reportType?"pointer":"not-allowed", fontFamily:"inherit"
+                  }}>通報する</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Fixed bottom order bar */}
       <div style={{
@@ -613,7 +803,7 @@ const SignupPage = () => {
             <span style={{ fontSize:12, color:C.warmGray }}>または</span>
             <div style={{ flex:1, height:1, background:C.border }}/>
           </div>
-          {[["🐦 Xで続ける"],["📘 Googleで続ける"]].map(([l])=>(
+          {[["🐦 Twitterで続ける"],["📘 Googleで続ける"]].map(([l])=>(
             <button key={l} style={{ width:"100%", padding:"11px", marginBottom:8, border:`1.5px solid ${C.border}`, borderRadius:10, background:C.white, cursor:"pointer", fontSize:13, fontWeight:700, fontFamily:"inherit", color:C.dark }}>{l}</button>
           ))}
         </div>
@@ -688,6 +878,8 @@ export default function QoccaApp() {
   const [detail, setDetail] = useState(null);
   const [liked, setLiked] = useState({});
   const [search, setSearch] = useState("");
+  const [activeCat, setActiveCat] = useState("all");
+  const isPC = useIsPC();
 
   const onLike = (id) => setLiked(p=>({...p,[id]:!p[id]}));
   const onDetail = (item) => { setDetail(item); setPage("detail"); };
@@ -695,22 +887,58 @@ export default function QoccaApp() {
 
   useEffect(() => { window.scrollTo(0,0); }, [page]);
 
-  const showTabBar = page !== "detail";
+  const showTabBar = !isPC && page !== "detail";
 
   return (
     <div style={{ fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", background:C.cream, minHeight:"100vh", paddingBottom: showTabBar ? 70 : 0 }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet"/>
 
-      <Navbar setPage={setPage} liked={liked} search={search} setSearch={setSearch}/>
+      {isPC
+        ? <PCNavbar setPage={setPage} liked={liked} search={search} setSearch={setSearch}/>
+        : <Navbar setPage={setPage} liked={liked} search={search} setSearch={setSearch}/>
+      }
 
-      {page==="home" && <HomePage setPage={setPage} listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
-      {page==="search" && <SearchPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch}/>}
-      {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike}/>}
-      {page==="sell" && <SellPage/>}
-      {page==="signup" && <SignupPage/>}
-      {page==="liked" && <LikedPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
-
-      {showTabBar && <TabBar page={page} setPage={setPage}/>}
+      {isPC ? (
+        <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", paddingTop:68 }}>
+          <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+          <div style={{ flex:1, minWidth:0, padding:"24px 32px" }}>
+            {page==="home" && (
+              <>
+                <PCHero setPage={setPage}/>
+                <div style={{ marginTop:32 }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
+                    {LISTINGS.filter(l=>l.tag==="人気").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                  </div>
+                  <div style={{ fontSize:22, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>🆕 新着サービス</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
+                    {LISTINGS.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                  </div>
+                  <div style={{ fontSize:22, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 }}>
+                    {LISTINGS.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                  </div>
+                </div>
+              </>
+            )}
+            {page==="search" && <SearchPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch}/>}
+            {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike}/>}
+            {page==="sell" && <SellPage/>}
+            {page==="signup" && <SignupPage/>}
+            {page==="liked" && <LikedPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
+          </div>
+        </div>
+      ) : (
+        <>
+          {page==="home" && <HomePage setPage={setPage} listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
+          {page==="search" && <SearchPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch}/>}
+          {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike}/>}
+          {page==="sell" && <SellPage/>}
+          {page==="signup" && <SignupPage/>}
+          {page==="liked" && <LikedPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
+          {showTabBar && <TabBar page={page} setPage={setPage}/>}
+        </>
+      )}
 
       <style>{`
         @keyframes float1{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
