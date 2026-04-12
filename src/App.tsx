@@ -203,7 +203,7 @@ const DISPUTE_REASONS = [
 const Logo = ({ size = 32 }) => (
   <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flexShrink:0 }}>
     <img src="/logo.png" width={size*1.5} height={size*1.5} style={{ objectFit:"contain" }} alt="Qocca"/>
-    <span style={{ fontSize:size*0.72, fontWeight:900, color:C.orange, letterSpacing:"-0.5px" }}>Qocca</span>
+    <span style={{ fontSize:size*0.72, fontWeight:900, color:C.orange, letterSpacing:"-0.5px", fontFamily:"'Helvetica Neue',Arial,sans-serif" }}>Qocca</span>
   </div>
 );
 
