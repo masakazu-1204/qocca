@@ -92,32 +92,41 @@ const useListings = () => {
     setDbLoading(true);
     const { data, error } = await supabase
       .from("listings")
-      .select("*, profiles(display_name, avatar_url)")
+      .select("*")
       .eq("status", "approved")
       .order("created_at", { ascending: false });
-    if (!error && data) {
-      setListings(data.map(l => ({
-        id: l.id,
-        title: l.title,
-        seller: l.profiles?.display_name || "出品者",
-        sellerIcon: l.profiles?.avatar_url ? null : "🐾",
-        sellerAvatar: l.profiles?.avatar_url || "",
-        price: l.price,
-        rating: 0,
-        reviews: 0,
-        tag: "",
-        category: l.category,
-        emoji: CATS.find(c => c.id === l.category)?.icon || "🐾",
-        pet: l.pet_type,
-        desc: l.description,
-        delivery: l.delivery_days || "要相談",
-        bg: CAT_COLORS[l.category] || "#FFF3E0",
-        imageUrl: l.image_urls?.[0] || "",
-        imageUrls: l.image_urls || [],
-        seller_id: l.seller_id,
-        created_at: l.created_at,
-        favorite_count: l.favorite_count || 0,
-      })));
+    if (!error && data && data.length > 0) {
+      // 出品者名を取得
+      const sellerIds = [...new Set(data.map(l => l.seller_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", sellerIds);
+      const profileMap = {};
+      (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+      setListings(data.map(l => {
+        const prof = profileMap[l.seller_id] || {};
+        return {
+          id: l.id,
+          title: l.title,
+          seller: prof.display_name || "出品者",
+          sellerIcon: "🐾",
+          sellerAvatar: prof.avatar_url || "",
+          price: l.price,
+          rating: 0,
+          reviews: 0,
+          tag: "",
+          category: l.category,
+          emoji: CATS.find(c => c.id === l.category)?.icon || "🐾",
+          pet: l.pet_type,
+          desc: l.description,
+          delivery: l.delivery_days || "要相談",
+          bg: CAT_COLORS[l.category] || "#FFF3E0",
+          imageUrl: l.image_urls?.[0] || "",
+          imageUrls: l.image_urls || [],
+          seller_id: l.seller_id,
+          created_at: l.created_at,
+          favorite_count: l.favorite_count || 0,
+        };
+      }));
     }
     setDbLoading(false);
   };
@@ -2273,26 +2282,26 @@ function QoccaAppInner() {
                 <>
                   <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                    {LISTINGS.filter(l=>l.tag==="人気").slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    {listings.filter(l=>l.tag==="人気").slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                   </div>
                   <PCBanner setPage={setPage}/>
                   <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"24px 0 16px" }}>🆕 新着サービス</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                    {LISTINGS.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    {listings.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                   </div>
                   <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                    {LISTINGS.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    {listings.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                   </div>
                 </>
               )}
-              {page==="search" && <SearchPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={true}/>}
+              {page==="search" && <SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={true}/>}
               {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike} setPage={setPage}/>}
               {page==="events" && <EventsPage isPC={true}/>}
               {page==="sell" && <SellPage setPage={setPage}/>}
               {page==="signup" && <SignupPage setPage={setPage}/>}
               {page==="mypage" && <MyPage setPage={setPage}/>}
-              {page==="liked" && <LikedPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} isPC={true}/>}
+              {page==="liked" && <LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={true}/>}
               {["terms","privacy","tokusho","contact"].includes(page) && <LegalPage type={page} setPage={setPage}/>}
             </div>
           </div>
@@ -2300,14 +2309,14 @@ function QoccaAppInner() {
         </div>
       ) : (
         <>
-          {page==="home" && <HomePage setPage={setPage} listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail}/>}
-          {page==="search" && <SearchPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}
+          {page==="home" && <HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}
+          {page==="search" && <SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}
           {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike} setPage={setPage}/>}
           {page==="events" && <EventsPage isPC={false}/>}
           {page==="sell" && <SellPage setPage={setPage}/>}
           {page==="signup" && <SignupPage setPage={setPage}/>}
           {page==="mypage" && <MyPage setPage={setPage}/>}
-          {page==="liked" && <LikedPage listings={LISTINGS} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}
+          {page==="liked" && <LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}
           {["terms","privacy","tokusho","contact"].includes(page) && <LegalPage type={page} setPage={setPage}/>}
           {showTabBar && <TabBar page={page} setPage={setPage}/>}
         </>
