@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 
 // ── Supabase Client ───────────────────────────────────────────────────────
 const supabase = createClient(
@@ -2227,13 +2228,61 @@ const PCBanner = ({ setPage }) => (
 );
 
 // ── APP ────────────────────────────────────────────────────────────────────
+// ── Navigation Helper ─────────────────────────────────────────────────────
+const useNav = () => {
+  const navigate = useNavigate();
+  const setPage = (page, data) => {
+    if (page === "detail" && data) {
+      navigate(`/listing/${data.id}`, { state: { item: data } });
+    } else if (page === "home") navigate("/");
+    else if (page === "search") navigate("/search");
+    else if (page === "sell") navigate("/sell");
+    else if (page === "signup") navigate("/login");
+    else if (page === "mypage") navigate("/mypage");
+    else if (page === "liked") navigate("/favorites");
+    else if (page === "events") navigate("/events");
+    else if (page === "terms") navigate("/terms");
+    else if (page === "privacy") navigate("/privacy");
+    else if (page === "tokusho") navigate("/tokusho");
+    else if (page === "contact") navigate("/contact");
+    else navigate("/" + page);
+  };
+  return { setPage, navigate };
+};
+
+// ── Detail Page Wrapper (gets item from state or fetches from DB) ────────
+const DetailPageWrapper = ({ listings, liked, onLike }) => {
+  const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { setPage } = useNav();
+  const [item, setItem] = useState(location.state?.item || null);
+
+  useEffect(() => {
+    if (!item && id) {
+      const found = listings.find(l => l.id === id);
+      if (found) setItem(found);
+    }
+  }, [id, listings]);
+
+  if (!item) return (
+    <div style={{ paddingTop:80, textAlign:"center", color:C.warmGray }}>
+      <div style={{ fontSize:40, marginBottom:8 }}>🔍</div>
+      <div>読み込み中...</div>
+    </div>
+  );
+
+  return <DetailPage item={item} onBack={() => navigate(-1)} liked={liked[item?.id]} onLike={onLike} setPage={setPage}/>;
+};
+
+// ── APP ────────────────────────────────────────────────────────────────────
 function QoccaAppInner() {
-  const [page, setPage] = useState("home");
-  const [detail, setDetail] = useState(null);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("all");
   const isPC = useIsPC();
   const { user, loading } = useAuth();
+  const { setPage } = useNav();
+  const location = useLocation();
 
   // Supabase data hooks
   const { listings: dbListings, dbLoading, refetch } = useListings();
@@ -2244,13 +2293,25 @@ function QoccaAppInner() {
 
   const onLike = (id) => {
     if (user) { toggleLike(id); }
-    // 未ログイン時はローカルstate（モック用）で処理
   };
-  const onDetail = (item) => { setDetail(item); setPage("detail"); };
-  const goBack = () => { setDetail(null); setPage("search"); };
+  const onDetail = (item) => { setPage("detail", item); };
 
-  useEffect(() => { window.scrollTo(0,0); }, [page]);
+  useEffect(() => { window.scrollTo(0,0); }, [location.pathname]);
 
+  // ページ名を取得（TabBar用）
+  const getPageName = () => {
+    const p = location.pathname;
+    if (p === "/") return "home";
+    if (p === "/search") return "search";
+    if (p === "/sell") return "sell";
+    if (p === "/events") return "events";
+    if (p === "/favorites") return "liked";
+    if (p === "/mypage") return "mypage";
+    if (p === "/login") return "signup";
+    if (p.startsWith("/listing/")) return "detail";
+    return "home";
+  };
+  const page = getPageName();
   const showTabBar = !isPC && page !== "detail";
 
   // ローディング中の表示
@@ -2274,50 +2335,131 @@ function QoccaAppInner() {
 
       {isPC ? (
         <div style={{ paddingTop:68 }}>
-          {page==="home" && <PCHeroSection setPage={setPage}/>}
-          <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
-            <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
-            <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
-              {page==="home" && (
-                <>
-                  <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                    {listings.filter(l=>l.tag==="人気").slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+          <Routes>
+            <Route path="/" element={
+              <>
+                <PCHeroSection setPage={setPage}/>
+                <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                  <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                  <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                    <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+                      {listings.filter(l=>l.tag==="人気").slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    </div>
+                    <PCBanner setPage={setPage}/>
+                    <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"24px 0 16px" }}>🆕 新着サービス</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+                      {listings.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    </div>
+                    <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+                      {listings.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    </div>
                   </div>
-                  <PCBanner setPage={setPage}/>
-                  <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"24px 0 16px" }}>🆕 新着サービス</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                    {listings.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                </div>
+              </>
+            }/>
+            <Route path="/search" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={true}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/listing/:id" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/events" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <EventsPage isPC={true}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/sell" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <SellPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/login" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <SignupPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/mypage" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <MyPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/favorites" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={true}/>
+                </div>
+              </div>
+            }/>
+            {["terms","privacy","tokusho","contact"].map(t => (
+              <Route key={t} path={`/${t}`} element={
+                <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                  <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                  <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                    <LegalPage type={t} setPage={setPage}/>
                   </div>
-                  <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                    {listings.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
-                  </div>
-                </>
-              )}
-              {page==="search" && <SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={true}/>}
-              {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike} setPage={setPage}/>}
-              {page==="events" && <EventsPage isPC={true}/>}
-              {page==="sell" && <SellPage setPage={setPage}/>}
-              {page==="signup" && <SignupPage setPage={setPage}/>}
-              {page==="mypage" && <MyPage setPage={setPage}/>}
-              {page==="liked" && <LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={true}/>}
-              {["terms","privacy","tokusho","contact"].includes(page) && <LegalPage type={page} setPage={setPage}/>}
-            </div>
-          </div>
+                </div>
+              }/>
+            ))}
+            <Route path="*" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40, textAlign:"center" }}>
+                  <div style={{ fontSize:48, marginBottom:12 }}>🐾</div>
+                  <div style={{ fontSize:20, fontWeight:900, color:C.dark }}>ページが見つかりません</div>
+                  <button onClick={()=>setPage("home")} style={{ marginTop:16, padding:"10px 24px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, cursor:"pointer" }}>ホームに戻る</button>
+                </div>
+              </div>
+            }/>
+          </Routes>
           <SharedFooter setPage={setPage}/>
         </div>
       ) : (
         <>
-          {page==="home" && <HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}
-          {page==="search" && <SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}
-          {page==="detail" && <DetailPage item={detail} onBack={goBack} liked={liked[detail?.id]} onLike={onLike} setPage={setPage}/>}
-          {page==="events" && <EventsPage isPC={false}/>}
-          {page==="sell" && <SellPage setPage={setPage}/>}
-          {page==="signup" && <SignupPage setPage={setPage}/>}
-          {page==="mypage" && <MyPage setPage={setPage}/>}
-          {page==="liked" && <LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}
-          {["terms","privacy","tokusho","contact"].includes(page) && <LegalPage type={page} setPage={setPage}/>}
+          <Routes>
+            <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
+            <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
+            <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
+            <Route path="/events" element={<EventsPage isPC={false}/>}/>
+            <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
+            <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
+            <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
+            <Route path="/favorites" element={<LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}/>
+            {["terms","privacy","tokusho","contact"].map(t => (
+              <Route key={t} path={`/${t}`} element={<LegalPage type={t} setPage={setPage}/>}/>
+            ))}
+            <Route path="*" element={
+              <div style={{ paddingTop:80, textAlign:"center" }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>🐾</div>
+                <div style={{ fontSize:20, fontWeight:900, color:C.dark }}>ページが見つかりません</div>
+                <button onClick={()=>setPage("home")} style={{ marginTop:16, padding:"10px 24px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, cursor:"pointer" }}>ホームに戻る</button>
+              </div>
+            }/>
+          </Routes>
           {showTabBar && <TabBar page={page} setPage={setPage}/>}
         </>
       )}
@@ -2334,11 +2476,13 @@ function QoccaAppInner() {
   );
 }
 
-// ── Root Export with AuthProvider ──────────────────────────────────────────
+// ── Root Export with AuthProvider + Router ────────────────────────────────
 export default function QoccaApp() {
   return (
-    <AuthProvider>
-      <QoccaAppInner/>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <QoccaAppInner/>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
