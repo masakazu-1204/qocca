@@ -1,1 +1,12 @@
-
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://qocca.pet/</loc><priority>1.0</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://qocca.pet/search</loc><priority>0.9</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://qocca.pet/sell</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://qocca.pet/events</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://qocca.pet/login</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://qocca.pet/terms</loc><priority>0.3</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://qocca.pet/privacy</loc><priority>0.3</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://qocca.pet/tokusho</loc><priority>0.3</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://qocca.pet/contact</loc><priority>0.4</priority><changefreq>monthly</changefreq></url>
+</urlset>
