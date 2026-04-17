@@ -2433,7 +2433,7 @@ function QoccaAppInner() {
         <div style={{ paddingTop:68 }}>
           <Routes>
             <Route path="/" element={
-              <>
+              <div>
                 <PCHeroSection setPage={setPage}/>
                 <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                   <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -2539,7 +2539,7 @@ function QoccaAppInner() {
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             }/>
             <Route path="/search" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
