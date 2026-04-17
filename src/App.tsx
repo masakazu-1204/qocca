@@ -594,8 +594,13 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
 // ── HOME (Mobile) ─────────────────────────────────────────────────────────
 const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
   const [activeCat, setActiveCat] = useState("all");
-  const popular = listings.filter(l => l.tag === "人気").slice(0,4);
-  const newItems = listings.filter(l => l.tag === "新着").slice(0,4);
+  // 人気 = お気に入り数順（fallback: レビュー数順）
+  const popular = [...listings].sort((a,b) => (b.favorite_count||b.reviews||0) - (a.favorite_count||a.reviews||0)).slice(0,4);
+  // 新着 = 作成日順（DBデータはcreated_at、モックデータはid逆順）
+  const newItems = [...listings].sort((a,b) => {
+    if (a.created_at && b.created_at) return new Date(b.created_at) - new Date(a.created_at);
+    return (b.id > a.id) ? 1 : -1;
+  }).slice(0,4);
 
   return (
     <div>
@@ -672,8 +677,99 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
         </div>
       </section>
 
+      {/* ── ランキングセクション ── */}
+      <section style={{ padding:"24px 16px", background:C.white, borderTop:`1px solid ${C.border}` }}>
+        <h2 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>🏆 人気サービスランキング</h2>
+        <p style={{ fontSize:12, color:C.warmGray, marginBottom:16 }}>お気に入り数が多い順</p>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {[...listings].sort((a,b) => (b.favorite_count||0) - (a.favorite_count||0)).slice(0,5).map((item, i) => (
+            <div key={item.id} onClick={()=>onDetail(item)} style={{
+              display:"flex", alignItems:"center", gap:12, padding:"12px", background:i===0?C.orangePale:C.lightGray,
+              borderRadius:14, cursor:"pointer", border:i===0?`2px solid ${C.orange}`:`1px solid ${C.border}`
+            }}>
+              <div style={{
+                width:32, height:32, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                fontWeight:900, fontSize:14, color:i<3?"#fff":C.warmGray,
+                background:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":C.border
+              }}>{i+1}</div>
+              <div style={{ width:48, height:48, borderRadius:10, overflow:"hidden", flexShrink:0, background:item.bg||C.lightGray, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {item.imageUrl ? <img src={item.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:24 }}>{item.emoji}</span>}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
+                <div style={{ fontSize:11, color:C.warmGray }}>{item.seller}</div>
+              </div>
+              <div style={{ textAlign:"right", flexShrink:0 }}>
+                <div style={{ fontSize:14, fontWeight:900, color:C.orange }}>¥{item.price?.toLocaleString()}</div>
+                <div style={{ fontSize:10, color:C.warmGray }}>❤️ {item.favorite_count||0}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ padding:"24px 16px", background:C.cream }}>
+        <h2 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>⭐ クリエイターランキング</h2>
+        <p style={{ fontSize:12, color:C.warmGray, marginBottom:16 }}>出品数が多い順</p>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {(() => {
+            const creators = {};
+            listings.forEach(l => {
+              if (!creators[l.seller]) creators[l.seller] = { name:l.seller, avatar:l.sellerAvatar, icon:l.sellerIcon, count:0, totalPrice:0 };
+              creators[l.seller].count++;
+              creators[l.seller].totalPrice += (l.price||0);
+            });
+            return Object.values(creators).sort((a,b) => b.count - a.count).slice(0,5);
+          })().map((cr, i) => (
+            <div key={cr.name} style={{
+              display:"flex", alignItems:"center", gap:12, padding:"12px", background:i===0?C.orangePale:C.lightGray,
+              borderRadius:14, border:i===0?`2px solid ${C.orange}`:`1px solid ${C.border}`
+            }}>
+              <div style={{
+                width:32, height:32, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                fontWeight:900, fontSize:14, color:i<3?"#fff":C.warmGray,
+                background:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":C.border
+              }}>{i+1}</div>
+              <div style={{ width:44, height:44, borderRadius:"50%", overflow:"hidden", flexShrink:0, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {cr.avatar ? <img src={cr.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:20 }}>{cr.icon||"🐾"}</span>}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{cr.name}</div>
+                <div style={{ fontSize:11, color:C.warmGray }}>{cr.count}件の出品</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── イベント情報セクション ── */}
+      <section style={{ padding:"24px 16px", background:C.white, borderTop:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📅 イベント情報</h2>
+          <button onClick={()=>setPage("events")} style={{ padding:"6px 12px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, color:C.warmGray, cursor:"pointer" }}>すべて →</button>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {EVENTS.slice(0,3).map(ev => (
+            <div key={ev.id} onClick={()=>setPage("events")} style={{
+              display:"flex", gap:12, padding:"14px", background:C.lightGray, borderRadius:14, cursor:"pointer", border:`1px solid ${C.border}`
+            }}>
+              <div style={{ width:50, height:50, borderRadius:12, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{ev.image}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title}</div>
+                <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.date}　📍 {ev.pref}</div>
+                <div style={{ display:"flex", gap:6, marginTop:4 }}>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:ev.pet==="dog"?C.orangePale:ev.pet==="cat"?"#F3E5F5":C.greenPale, color:ev.pet==="dog"?C.orange:ev.pet==="cat"?"#9C27B0":C.green, fontWeight:700 }}>
+                    {ev.pet==="dog"?"🐕 犬":ev.pet==="cat"?"🐈 猫":"🐾 両方"}
+                  </span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.bluePale, color:C.blue, fontWeight:700 }}>{ev.fee}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section style={{ padding:"32px 16px", background:C.dark }}>
-        <h2 style={{ fontSize:22, fontWeight:900, color:C.white, marginBottom:6, textAlign:"center" }}>使い方はかんたん</h2>
         <p style={{ color:"rgba(255,255,255,0.5)", marginBottom:28, fontSize:14, textAlign:"center" }}>3ステップでうちの子のための特別な作品を</p>
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           {[
@@ -2344,16 +2440,102 @@ function QoccaAppInner() {
                   <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                      {listings.filter(l=>l.tag==="人気").slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                      {[...listings].sort((a,b) => (b.favorite_count||b.reviews||0) - (a.favorite_count||a.reviews||0)).slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                     </div>
                     <PCBanner setPage={setPage}/>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"24px 0 16px" }}>🆕 新着サービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                      {listings.filter(l=>l.tag==="新着").map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                      {[...listings].sort((a,b) => { if (a.created_at && b.created_at) return new Date(b.created_at) - new Date(a.created_at); return (b.id > a.id) ? 1 : -1; }).slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    </div>
+
+                    {/* ── PC イベント情報 ── */}
+                    <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📅 イベント情報</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+                      {EVENTS.slice(0,3).map(ev => (
+                        <div key={ev.id} onClick={()=>setPage("events")} style={{
+                          background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`, cursor:"pointer",
+                          boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
+                        }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                            <div style={{ width:44, height:44, borderRadius:10, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{ev.image}</div>
+                            <div>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{ev.title}</div>
+                              <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.date}</div>
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", gap:6 }}>
+                            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.bluePale, color:C.blue, fontWeight:700 }}>{ev.fee}</span>
+                            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>📍 {ev.pref}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                     </div>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
                       {listings.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                    </div>
+
+                    {/* ── PC ランキングセクション ── */}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24, marginTop:32 }}>
+                      <div style={{ background:C.white, borderRadius:16, padding:"20px", border:`1px solid ${C.border}` }}>
+                        <h3 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>🏆 人気サービスランキング</h3>
+                        <p style={{ fontSize:12, color:C.warmGray, marginBottom:16 }}>お気に入り数が多い順</p>
+                        {[...listings].sort((a,b) => (b.favorite_count||0) - (a.favorite_count||0)).slice(0,5).map((item, i) => (
+                          <div key={item.id} onClick={()=>onDetail(item)} style={{
+                            display:"flex", alignItems:"center", gap:10, padding:"10px", marginBottom:6,
+                            background:i===0?C.orangePale:"transparent", borderRadius:10, cursor:"pointer",
+                            border:i===0?`1.5px solid ${C.orange}`:"1px solid transparent"
+                          }}>
+                            <div style={{
+                              width:28, height:28, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                              fontWeight:900, fontSize:13, color:i<3?"#fff":C.warmGray,
+                              background:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":C.border
+                            }}>{i+1}</div>
+                            <div style={{ width:40, height:40, borderRadius:8, overflow:"hidden", flexShrink:0, background:item.bg||C.lightGray, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                              {item.imageUrl ? <img src={item.imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:20 }}>{item.emoji}</span>}
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
+                              <div style={{ fontSize:11, color:C.warmGray }}>{item.seller}</div>
+                            </div>
+                            <div style={{ textAlign:"right", flexShrink:0 }}>
+                              <div style={{ fontSize:13, fontWeight:900, color:C.orange }}>¥{item.price?.toLocaleString()}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ background:C.white, borderRadius:16, padding:"20px", border:`1px solid ${C.border}` }}>
+                        <h3 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>⭐ クリエイターランキング</h3>
+                        <p style={{ fontSize:12, color:C.warmGray, marginBottom:16 }}>出品数が多い順</p>
+                        {(() => {
+                          const creators = {};
+                          listings.forEach(l => {
+                            if (!creators[l.seller]) creators[l.seller] = { name:l.seller, avatar:l.sellerAvatar, icon:l.sellerIcon, count:0 };
+                            creators[l.seller].count++;
+                          });
+                          return Object.values(creators).sort((a,b) => b.count - a.count).slice(0,5);
+                        })().map((cr, i) => (
+                          <div key={cr.name} style={{
+                            display:"flex", alignItems:"center", gap:10, padding:"10px", marginBottom:6,
+                            background:i===0?C.orangePale:"transparent", borderRadius:10,
+                            border:i===0?`1.5px solid ${C.orange}`:"1px solid transparent"
+                          }}>
+                            <div style={{
+                              width:28, height:28, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                              fontWeight:900, fontSize:13, color:i<3?"#fff":C.warmGray,
+                              background:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":C.border
+                            }}>{i+1}</div>
+                            <div style={{ width:40, height:40, borderRadius:"50%", overflow:"hidden", flexShrink:0, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                              {cr.avatar ? <img src={cr.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:18 }}>{cr.icon||"🐾"}</span>}
+                            </div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{cr.name}</div>
+                              <div style={{ fontSize:11, color:C.warmGray }}>{cr.count}件の出品</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
