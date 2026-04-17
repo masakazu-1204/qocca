@@ -1,1 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
 
+Sitemap: https://qocca.pet/sitemap.xml
