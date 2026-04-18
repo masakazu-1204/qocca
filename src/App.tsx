@@ -383,6 +383,16 @@ const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
       <span style={{ fontSize:22 }}>🐕</span>
       <span>施設マップ</span>
     </button>
+    <button onClick={()=>setPage("blog")} style={{
+      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
+      background: "transparent", color:C.dark,
+      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
+      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
+      marginBottom:2
+    }}>
+      <span style={{ fontSize:22 }}>📝</span>
+      <span>ブログ</span>
+    </button>
     <div style={{ margin:"12px 8px", borderTop:`1px solid ${C.border}` }}/>
     <button onClick={()=>setPage("sell")} style={{
       width:"100%", padding:"14px 18px", border:"none", borderRadius:12,
@@ -2057,6 +2067,287 @@ const SupportTab = () => {
   );
 };
 
+// ── Blog (ペットブログ) ────────────────────────────────────────────────────
+const BLOG_CATS = [
+  { id:"all", icon:"📝", label:"すべて" },
+  { id:"tips", icon:"💡", label:"豆知識" },
+  { id:"health", icon:"🏥", label:"健康" },
+  { id:"food", icon:"🍖", label:"ごはん" },
+  { id:"training", icon:"🎓", label:"しつけ" },
+  { id:"goods", icon:"🛍", label:"グッズ" },
+  { id:"story", icon:"📖", label:"うちの子物語" },
+  { id:"creator", icon:"🎨", label:"クリエイター" },
+];
+
+const BlogPage = ({ setPage, isPC }) => {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cat, setCat] = useState("all");
+  const [showWrite, setShowWrite] = useState(false);
+  const [viewPost, setViewPost] = useState(null);
+  const [likedPosts, setLikedPosts] = useState({});
+  const [form, setForm] = useState({ title:"", content:"", category:"general", tags:"" });
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const coverRef = useRef(null);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      const authorIds = [...new Set(data.map(p => p.author_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", authorIds);
+      const profMap = {};
+      (profiles || []).forEach(p => { profMap[p.id] = p; });
+      setPosts(data.map(p => ({
+        ...p,
+        authorName: profMap[p.author_id]?.display_name || "ユーザー",
+        authorAvatar: profMap[p.author_id]?.avatar_url || "",
+      })));
+    }
+    if (user) {
+      const { data: likes } = await supabase.from("blog_likes").select("post_id").eq("user_id", user.id);
+      const likeMap = {};
+      (likes || []).forEach(l => { likeMap[l.post_id] = true; });
+      setLikedPosts(likeMap);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchPosts(); }, []);
+
+  const handleCoverSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) { setCoverFile(file); setCoverPreview(URL.createObjectURL(file)); }
+  };
+
+  const handlePublish = async () => {
+    if (!user || !form.title || !form.content) return;
+    setSubmitting(true);
+    let coverUrl = "";
+    if (coverFile) {
+      const ext = coverFile.name.split(".").pop();
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("blog-images").upload(path, coverFile);
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("blog-images").getPublicUrl(path);
+        coverUrl = urlData.publicUrl;
+      }
+    }
+    await supabase.from("blog_posts").insert({
+      author_id: user.id,
+      title: form.title,
+      content: form.content,
+      category: form.category,
+      cover_image_url: coverUrl,
+      tags: form.tags ? form.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
+      published: true,
+    });
+    setShowWrite(false);
+    setForm({ title:"", content:"", category:"general", tags:"" });
+    setCoverFile(null);
+    setCoverPreview("");
+    setSubmitting(false);
+    fetchPosts();
+  };
+
+  const toggleLike = async (postId) => {
+    if (!user) { setPage("signup"); return; }
+    if (likedPosts[postId]) {
+      await supabase.from("blog_likes").delete().eq("user_id", user.id).eq("post_id", postId);
+      setLikedPosts(prev => { const n = {...prev}; delete n[postId]; return n; });
+      setPosts(prev => prev.map(p => p.id === postId ? {...p, likes_count: Math.max(0,(p.likes_count||0)-1)} : p));
+    } else {
+      await supabase.from("blog_likes").insert({ user_id: user.id, post_id: postId });
+      setLikedPosts(prev => ({...prev, [postId]: true}));
+      setPosts(prev => prev.map(p => p.id === postId ? {...p, likes_count: (p.likes_count||0)+1} : p));
+    }
+  };
+
+  const openPost = async (post) => {
+    setViewPost(post);
+    await supabase.from("blog_posts").update({ views_count: (post.views_count||0)+1 }).eq("id", post.id);
+  };
+
+  const filtered = posts.filter(p => cat === "all" || p.category === cat);
+  const blogCatLabel = (c) => BLOG_CATS.find(bc => bc.id === c)?.label || c;
+  const blogCatIcon = (c) => BLOG_CATS.find(bc => bc.id === c)?.icon || "📝";
+
+  // 記事詳細ビュー
+  if (viewPost) return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      <div style={{ padding:"12px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={()=>setViewPost(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange, fontWeight:700 }}>←</button>
+        <span style={{ fontSize:14, fontWeight:700, color:C.dark }}>ブログ</span>
+      </div>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"24px 16px 80px" }}>
+        {viewPost.cover_image_url && (
+          <div style={{ borderRadius:16, overflow:"hidden", marginBottom:20, maxHeight:300 }}>
+            <img src={viewPost.cover_image_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+          </div>
+        )}
+        <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+          <span style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:C.orangePale, color:C.orange, fontWeight:700 }}>{blogCatIcon(viewPost.category)} {blogCatLabel(viewPost.category)}</span>
+        </div>
+        <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, lineHeight:1.4, marginBottom:12 }}>{viewPost.title}</h1>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20 }}>
+          <div style={{ width:32, height:32, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:14 }}>
+            {viewPost.authorAvatar ? <img src={viewPost.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+          </div>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{viewPost.authorName}</div>
+            <div style={{ fontSize:11, color:C.warmGray }}>{new Date(viewPost.created_at).toLocaleDateString("ja-JP")} · 👁 {viewPost.views_count||0}</div>
+          </div>
+        </div>
+        <div style={{ fontSize:15, color:"#333", lineHeight:2, whiteSpace:"pre-wrap" }}>{viewPost.content}</div>
+        {viewPost.tags?.length > 0 && (
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:20 }}>
+            {viewPost.tags.map(t => <span key={t} style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:C.lightGray, color:C.warmGray }}>#{t}</span>)}
+          </div>
+        )}
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, paddingTop:16, borderTop:`1px solid ${C.border}` }}>
+          <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20 }}>{likedPosts[viewPost.id]?"❤️":"🤍"}</button>
+          <span style={{ fontSize:13, color:C.warmGray }}>{viewPost.likes_count||0} いいね</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      {/* ヘッダー */}
+      <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>📝 ペットブログ</h1>
+            <p style={{ fontSize:12, color:C.warmGray }}>ペットの豆知識やクリエイターの裏側をチェック</p>
+          </div>
+          {user && (
+            <button onClick={()=>setShowWrite(true)} style={{
+              padding:"10px 14px", background:C.orange, border:"none", borderRadius:12,
+              color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer"
+            }}>✍️ 書く</button>
+          )}
+        </div>
+      </div>
+
+      {/* カテゴリフィルター */}
+      <div style={{ padding:"10px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", gap:8, overflowX:"auto" }}>
+        {BLOG_CATS.map(c => (
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{
+            flexShrink:0, padding:"6px 12px", display:"flex", alignItems:"center", gap:4,
+            background:cat===c.id?C.orange:C.white, color:cat===c.id?"#fff":C.warmGray,
+            border:`1.5px solid ${cat===c.id?C.orange:C.border}`, borderRadius:20,
+            fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+          }}><span>{c.icon}</span><span style={{ whiteSpace:"nowrap" }}>{c.label}</span></button>
+        ))}
+      </div>
+
+      {/* 執筆モーダル */}
+      {showWrite && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:520, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>✍️ ブログを書く</h2>
+              <button onClick={()=>setShowWrite(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+            </div>
+            <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverSelect} style={{ display:"none" }}/>
+            {coverPreview ? (
+              <div style={{ marginBottom:14 }}>
+                <img src={coverPreview} alt="" style={{ width:"100%", borderRadius:12, maxHeight:200, objectFit:"cover" }}/>
+                <button onClick={()=>{setCoverFile(null);setCoverPreview("");}} style={{ marginTop:6, fontSize:11, color:C.red, background:"none", border:"none", cursor:"pointer" }}>画像を変更</button>
+              </div>
+            ) : (
+              <button onClick={()=>coverRef.current?.click()} style={{
+                width:"100%", padding:"24px", border:`2px dashed ${C.border}`, borderRadius:12,
+                background:C.lightGray, cursor:"pointer", marginBottom:14, textAlign:"center"
+              }}>
+                <div style={{ fontSize:28, marginBottom:4 }}>🖼</div>
+                <div style={{ fontSize:12, color:C.warmGray }}>カバー画像を追加（任意）</div>
+              </button>
+            )}
+            <div style={{ marginBottom:12 }}>
+              <input value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="タイトル"
+                style={{ width:"100%", padding:"12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:16, fontWeight:700, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+              <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}
+                style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white }}>
+                {BLOG_CATS.filter(c=>c.id!=="all").map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+              <input value={form.tags} onChange={e=>setForm(p=>({...p,tags:e.target.value}))} placeholder="タグ（カンマ区切り）"
+                style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+            </div>
+            <div style={{ marginBottom:16 }}>
+              <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} rows={10} placeholder="記事の内容を書いてください..."
+                style={{ width:"100%", padding:"12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.8 }}/>
+            </div>
+            <button disabled={!form.title||!form.content||submitting} onClick={handlePublish} style={{
+              width:"100%", padding:"14px", background:(!form.title||!form.content||submitting)?C.warmGray:C.orange,
+              border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(!form.title||!form.content||submitting)?"not-allowed":"pointer"
+            }}>{submitting ? "投稿中..." : "📝 公開する"}</button>
+          </div>
+        </div>
+      )}
+
+      {/* 記事リスト */}
+      <div style={{ padding:"16px" }}>
+        {loading ? (
+          <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign:"center", padding:60 }}>
+            <div style={{ fontSize:64, marginBottom:12 }}>📝</div>
+            <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>まだ記事がありません</div>
+            <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>最初のブロガーになりませんか？</p>
+            {user && <button onClick={()=>setShowWrite(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}>✍️ 記事を書く</button>}
+          </div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:16 }}>
+            {filtered.map(post => (
+              <div key={post.id} onClick={()=>openPost(post)} style={{
+                background:C.white, borderRadius:16, overflow:"hidden", border:`1px solid ${C.border}`,
+                cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
+              }}>
+                {post.cover_image_url && (
+                  <div style={{ width:"100%", height:160, overflow:"hidden" }}>
+                    <img src={post.cover_image_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  </div>
+                )}
+                <div style={{ padding:"14px 16px" }}>
+                  <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+                    <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{blogCatIcon(post.category)} {blogCatLabel(post.category)}</span>
+                  </div>
+                  <h3 style={{ fontSize:16, fontWeight:800, color:C.dark, lineHeight:1.4, marginBottom:8, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.title}</h3>
+                  <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginBottom:10, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.content}</div>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <div style={{ width:22, height:22, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:10 }}>
+                        {post.authorAvatar ? <img src={post.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+                      </div>
+                      <span style={{ fontSize:11, fontWeight:600, color:C.dark }}>{post.authorName}</span>
+                      <span style={{ fontSize:10, color:C.warmGray }}>{new Date(post.created_at).toLocaleDateString("ja-JP")}</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:11, color:C.warmGray }}>
+                      <span>❤️ {post.likes_count||0}</span>
+                      <span>👁 {post.views_count||0}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Pet Facilities (ドッグラン・ペット施設マップ) ──────────────────────────
 const FACILITY_CATS = [
   { id:"all", icon:"🐾", label:"すべて" },
@@ -2828,6 +3119,7 @@ const useNav = () => {
     else if (page === "events") navigate("/events");
     else if (page === "gallery") navigate("/gallery");
     else if (page === "facilities") navigate("/facilities");
+    else if (page === "blog") navigate("/blog");
     else if (page === "terms") navigate("/terms");
     else if (page === "privacy") navigate("/privacy");
     else if (page === "tokusho") navigate("/tokusho");
@@ -3071,6 +3363,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/blog" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <BlogPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/sell" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -3135,6 +3435,7 @@ function QoccaAppInner() {
             <Route path="/events" element={<EventsPage isPC={false}/>}/>
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
