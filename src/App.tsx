@@ -126,6 +126,7 @@ const useListings = () => {
           seller_id: l.seller_id,
           created_at: l.created_at,
           favorite_count: l.favorite_count || 0,
+          options: l.options || [],
         };
       }));
     }
@@ -170,7 +171,7 @@ const useFavorites = (userId) => {
 };
 
 // 出品をSupabaseに保存
-const submitListing = async (userId, form, imageFiles) => {
+const submitListing = async (userId, form, imageFiles, options = []) => {
   const imageUrls = [];
   for (const file of imageFiles) {
     const ext = file.name.split(".").pop();
@@ -191,6 +192,7 @@ const submitListing = async (userId, form, imageFiles) => {
     pet_type: form.pet,
     delivery_days: form.delivery,
     image_urls: imageUrls,
+    options: options.filter(o => o.name && o.price > 0),
     status: "pending",
   }).select().single();
 
@@ -871,7 +873,14 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState("");
   const [reportDone, setReportDone] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState({});
   if (!item) return null;
+
+  const itemOptions = item.options || [];
+  const optionsTotal = itemOptions.reduce((sum, o, i) => sum + (selectedOptions[i] ? (o.price||0) : 0), 0);
+  const totalPrice = (item.price || 0) + optionsTotal;
+
+  const toggleOption = (idx) => setSelectedOptions(prev => ({...prev, [idx]: !prev[idx]}));
 
   const handleOrder = () => {
     if (!user) { setPage("signup"); return; }
@@ -913,6 +922,32 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:8 }}>サービス詳細</div>
           <div style={{ fontSize:14, color:"#555", lineHeight:1.8 }}>{item.desc}</div>
         </div>
+
+        {/* 有料オプション */}
+        {itemOptions.length > 0 && (
+          <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:10 }}>🔧 有料オプション</div>
+            {itemOptions.map((opt, i) => (
+              <div key={i} onClick={()=>toggleOption(i)} style={{
+                display:"flex", alignItems:"center", gap:10, padding:"10px", marginBottom:6,
+                background:selectedOptions[i]?C.orangePale:C.lightGray, borderRadius:10, cursor:"pointer",
+                border:`1.5px solid ${selectedOptions[i]?C.orange:C.border}`
+              }}>
+                <div style={{
+                  width:22, height:22, borderRadius:6, border:`2px solid ${selectedOptions[i]?C.orange:C.border}`,
+                  background:selectedOptions[i]?C.orange:"transparent", display:"flex", alignItems:"center", justifyContent:"center",
+                  flexShrink:0
+                }}>
+                  {selectedOptions[i] && <span style={{ color:"#fff", fontSize:14, fontWeight:900 }}>✓</span>}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{opt.name}</div>
+                </div>
+                <div style={{ fontSize:14, fontWeight:900, color:C.orange, flexShrink:0 }}>+¥{opt.price?.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
           {[["⏱️ 納期", item.delivery],["🐾 対象", item.pet==="dog"?"🐕 犬向け":item.pet==="cat"?"🐈 猫向け":"🐾 両対応"],["🔒 保証","エスクロー決済"]].map(([k,v])=>(
             <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
@@ -1044,8 +1079,9 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         boxShadow:"0 -4px 20px rgba(0,0,0,0.08)"
       }}>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:11, color:C.warmGray }}>お支払い金額</div>
-          <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>¥{item.price.toLocaleString()}</div>
+          <div style={{ fontSize:11, color:C.warmGray }}>お支払い金額{optionsTotal > 0 ? "（オプション込）" : ""}</div>
+          <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>¥{totalPrice.toLocaleString()}</div>
+          {optionsTotal > 0 && <div style={{ fontSize:10, color:C.warmGray }}>基本 ¥{item.price.toLocaleString()} + オプション ¥{optionsTotal.toLocaleString()}</div>}
         </div>
         {ordered ? (
           <div style={{ flex:2, textAlign:"center", padding:"12px", background:C.green, borderRadius:12, color:"#fff", fontWeight:800 }}>🎉 注文完了！</div>
@@ -1068,8 +1104,12 @@ const SellPage = ({ setPage }) => {
   const [error, setError] = useState("");
   const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"" });
   const [images, setImages] = useState([]);
+  const [options, setOptions] = useState([]);
   const up = (k,v) => setForm(p=>({...p,[k]:v}));
   const fileRef = useRef(null);
+  const addOption = () => setOptions(prev => [...prev, { name:"", price:"" }]);
+  const updateOption = (idx, key, val) => setOptions(prev => prev.map((o,i) => i===idx ? {...o, [key]:val} : o));
+  const removeOption = (idx) => setOptions(prev => prev.filter((_,i) => i!==idx));
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []);
@@ -1082,7 +1122,7 @@ const SellPage = ({ setPage }) => {
   const handleSubmit = async () => {
     setSubmitting(true);
     setError("");
-    const { error: err } = await submitListing(user.id, form, images);
+    const { error: err } = await submitListing(user.id, form, images, options.map(o => ({ name:o.name, price:parseInt(o.price)||0 })));
     setSubmitting(false);
     if (err) { setError("出品に失敗しました: " + err.message); return; }
     setDone(true);
@@ -1105,7 +1145,7 @@ const SellPage = ({ setPage }) => {
         <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
         <h2 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:10 }}>出品完了！</h2>
         <p style={{ color:C.warmGray, fontSize:14, lineHeight:1.7, marginBottom:24 }}>審査後（最大24時間）に公開されます🐾</p>
-        <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:""});setImages([]);}} style={{ padding:"12px 28px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer" }}>続けて出品する</button>
+        <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:""});setImages([]);setOptions([]);}} style={{ padding:"12px 28px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer" }}>続けて出品する</button>
       </div>
     </div>
   );
@@ -1189,6 +1229,26 @@ const SellPage = ({ setPage }) => {
                 )}
               </div>
             </div>
+            {/* 有料オプション */}
+            <div style={{ marginTop:16 }}>
+              <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>有料オプション（任意）</label>
+              <p style={{ fontSize:11, color:C.warmGray, marginBottom:10 }}>購入者が注文時に追加できるオプションを設定できます</p>
+              {options.map((opt, i) => (
+                <div key={i} style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
+                  <input value={opt.name} onChange={e=>updateOption(i,"name",e.target.value)} placeholder="例：急ぎ対応（3日以内）"
+                    style={{ flex:2, padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                  <div style={{ position:"relative", flex:1 }}>
+                    <input type="number" value={opt.price} onChange={e=>updateOption(i,"price",e.target.value)} placeholder="500"
+                      style={{ width:"100%", padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                    <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:11, color:C.warmGray }}>円</span>
+                  </div>
+                  <button onClick={()=>removeOption(i)} style={{ width:28, height:28, borderRadius:"50%", border:`1px solid ${C.border}`, background:C.lightGray, cursor:"pointer", fontSize:14, color:C.warmGray, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>×</button>
+                </div>
+              ))}
+              {options.length < 5 && (
+                <button onClick={addOption} style={{ padding:"8px 14px", background:C.orangePale, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit" }}>＋ オプションを追加</button>
+              )}
+            </div>
           </>}
           {step===3&&<>
             <h2 style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:20 }}>確認して出品</h2>
@@ -1205,6 +1265,17 @@ const SellPage = ({ setPage }) => {
                   <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{v}</span>
                 </div>
               ))}
+              {options.filter(o=>o.name&&o.price).length > 0 && (
+                <div style={{ marginTop:8 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.warmGray, marginBottom:6 }}>有料オプション</div>
+                  {options.filter(o=>o.name&&o.price).map((o,i) => (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}` }}>
+                      <span style={{ fontSize:12, color:C.dark }}>🔧 {o.name}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>+¥{Number(o.price).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             {images.length > 0 && (
               <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
