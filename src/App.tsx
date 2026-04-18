@@ -363,6 +363,26 @@ const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
       <span style={{ fontSize:22 }}>📅</span>
       <span>イベント</span>
     </button>
+    <button onClick={()=>setPage("gallery")} style={{
+      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
+      background: "transparent", color:C.dark,
+      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
+      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
+      marginBottom:2
+    }}>
+      <span style={{ fontSize:22 }}>🐾</span>
+      <span>ギャラリー</span>
+    </button>
+    <button onClick={()=>setPage("facilities")} style={{
+      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
+      background: "transparent", color:C.dark,
+      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
+      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
+      marginBottom:2
+    }}>
+      <span style={{ fontSize:22 }}>🐕</span>
+      <span>施設マップ</span>
+    </button>
     <div style={{ margin:"12px 8px", borderTop:`1px solid ${C.border}` }}/>
     <button onClick={()=>setPage("sell")} style={{
       width:"100%", padding:"14px 18px", border:"none", borderRadius:12,
@@ -2037,6 +2057,211 @@ const SupportTab = () => {
   );
 };
 
+// ── Pet Facilities (ドッグラン・ペット施設マップ) ──────────────────────────
+const FACILITY_CATS = [
+  { id:"all", icon:"🐾", label:"すべて" },
+  { id:"dogrun", icon:"🐕", label:"ドッグラン" },
+  { id:"cafe", icon:"☕", label:"ペットカフェ" },
+  { id:"hospital", icon:"🏥", label:"動物病院" },
+  { id:"salon", icon:"✂️", label:"トリミング" },
+  { id:"hotel", icon:"🏨", label:"ペットホテル" },
+  { id:"park", icon:"🌳", label:"公園" },
+  { id:"shop", icon:"🛍", label:"ペットショップ" },
+];
+
+const PREFS = ["北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川","新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良","和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分","宮崎","鹿児島","沖縄"];
+
+const FacilitiesPage = ({ setPage, isPC }) => {
+  const { user } = useAuth();
+  const [facilities, setFacilities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cat, setCat] = useState("all");
+  const [pref, setPref] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const fetchFacilities = async () => {
+    setLoading(true);
+    let query = supabase.from("pet_facilities").select("*").eq("approved", true).order("avg_rating", { ascending: false });
+    const { data, error } = await query;
+    if (!error) setFacilities(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchFacilities(); }, []);
+
+  const filtered = facilities.filter(f => {
+    if (cat !== "all" && f.category !== cat) return false;
+    if (pref && f.prefecture !== pref) return false;
+    return true;
+  });
+
+  const handleSubmitFacility = async () => {
+    if (!user || !addForm.name || !addForm.address) return;
+    setSubmitting(true);
+    await supabase.from("pet_facilities").insert({
+      ...addForm,
+      submitted_by: user.id,
+      approved: false,
+    });
+    setSubmitting(false);
+    setSubmitted(true);
+    setShowAdd(false);
+    setAddForm({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
+  };
+
+  const catIcon = (c) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
+  const catLabel = (c) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      {/* ヘッダー */}
+      <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>🐕 ペット施設マップ</h1>
+            <p style={{ fontSize:12, color:C.warmGray }}>ドッグラン・ペットカフェ・動物病院を探そう</p>
+          </div>
+          {user && (
+            <button onClick={()=>setShowAdd(true)} style={{
+              padding:"10px 14px", background:C.orange, border:"none", borderRadius:12,
+              color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer"
+            }}>＋ 施設を追加</button>
+          )}
+        </div>
+      </div>
+
+      {/* フィルター */}
+      <div style={{ padding:"10px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", gap:8, overflowX:"auto" }}>
+        {FACILITY_CATS.map(c => (
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{
+            flexShrink:0, padding:"6px 12px", display:"flex", alignItems:"center", gap:4,
+            background:cat===c.id?C.orange:C.white, color:cat===c.id?"#fff":C.warmGray,
+            border:`1.5px solid ${cat===c.id?C.orange:C.border}`, borderRadius:20,
+            fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+          }}><span>{c.icon}</span><span style={{ whiteSpace:"nowrap" }}>{c.label}</span></button>
+        ))}
+      </div>
+      <div style={{ padding:"8px 16px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
+        <select value={pref} onChange={e=>setPref(e.target.value)} style={{
+          padding:"8px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13,
+          fontFamily:"inherit", outline:"none", background:C.white, color:C.dark
+        }}>
+          <option value="">📍 全国</option>
+          {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <span style={{ marginLeft:12, fontSize:12, color:C.warmGray }}>{filtered.length}件の施設</span>
+      </div>
+
+      {/* 施設追加モーダル */}
+      {showAdd && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:440, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>🐕 施設を追加</h2>
+              <button onClick={()=>setShowAdd(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+            </div>
+            <p style={{ fontSize:11, color:C.warmGray, marginBottom:16 }}>投稿後、運営の審査を経て公開されます</p>
+            {[
+              ["施設名", "name", "text", "例：わんわんパーク大阪"],
+              ["住所", "address", "text", "例：大阪府大阪市中央区1-1-1"],
+              ["電話番号", "phone", "text", "例：06-1234-5678"],
+              ["ウェブサイト", "website", "text", "例：https://..."],
+              ["営業時間", "hours", "text", "例：9:00〜18:00（定休日：水曜）"],
+            ].map(([label, key, type, ph]) => (
+              <div key={key} style={{ marginBottom:12 }}>
+                <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>{label}</label>
+                <input value={addForm[key]} onChange={e=>setAddForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+              </div>
+            ))}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+              <div>
+                <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>カテゴリ</label>
+                <select value={addForm.category} onChange={e=>setAddForm(p=>({...p,category:e.target.value}))}
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box" }}>
+                  {FACILITY_CATS.filter(c=>c.id!=="all").map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>都道府県</label>
+                <select value={addForm.prefecture} onChange={e=>setAddForm(p=>({...p,prefecture:e.target.value}))}
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box" }}>
+                  {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom:16 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>説明（任意）</label>
+              <textarea value={addForm.description} onChange={e=>setAddForm(p=>({...p,description:e.target.value}))} rows={3} placeholder="施設の特徴やおすすめポイント..."
+                style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
+            </div>
+            <button disabled={!addForm.name||!addForm.address||submitting} onClick={handleSubmitFacility} style={{
+              width:"100%", padding:"13px", background:(!addForm.name||!addForm.address||submitting)?C.warmGray:C.orange,
+              border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:(!addForm.name||!addForm.address||submitting)?"not-allowed":"pointer"
+            }}>{submitting ? "送信中..." : "🐕 施設を投稿する"}</button>
+          </div>
+        </div>
+      )}
+
+      {/* 投稿完了メッセージ */}
+      {submitted && (
+        <div style={{ padding:"12px 16px", background:C.greenPale, borderBottom:`1px solid ${C.green}` }}>
+          <div style={{ fontSize:13, fontWeight:700, color:C.green }}>✅ 施設を投稿しました！審査後に公開されます。</div>
+        </div>
+      )}
+
+      {/* 施設リスト */}
+      <div style={{ padding:"16px" }}>
+        {loading ? (
+          <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign:"center", padding:60 }}>
+            <div style={{ fontSize:64, marginBottom:12 }}>🐕</div>
+            <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>
+              {facilities.length === 0 ? "まだ施設が登録されていません" : "該当する施設がありません"}
+            </div>
+            <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>
+              {facilities.length === 0 ? "最初の投稿者になりませんか？" : "フィルターを変更してみてください"}
+            </p>
+            {user && facilities.length === 0 && <button onClick={()=>setShowAdd(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}>＋ 施設を追加</button>}
+          </div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:12 }}>
+            {filtered.map(f => (
+              <div key={f.id} style={{
+                background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`,
+                boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
+              }}>
+                <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
+                  <div style={{ width:48, height:48, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
+                    {catIcon(f.category)}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:15, fontWeight:800, color:C.dark, marginBottom:4 }}>{f.name}</div>
+                    <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📍 {f.address}</div>
+                    {f.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {f.hours}</div>}
+                    {f.phone && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📞 {f.phone}</div>}
+                    <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(f.category)}</span>
+                      <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{f.prefecture}</span>
+                      {f.avg_rating > 0 && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFF8E1", color:"#F9A825", fontWeight:700 }}>⭐ {f.avg_rating}</span>}
+                    </div>
+                  </div>
+                </div>
+                {f.description && <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>{f.description}</div>}
+                {f.website && <a href={f.website} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:11, color:C.blue, fontWeight:700 }}>🔗 ウェブサイトを見る</a>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Gallery (うちの子ギャラリー) ──────────────────────────────────────────
 const GalleryPage = ({ setPage, isPC }) => {
   const { user } = useAuth();
@@ -2602,6 +2827,7 @@ const useNav = () => {
     else if (page === "liked") navigate("/favorites");
     else if (page === "events") navigate("/events");
     else if (page === "gallery") navigate("/gallery");
+    else if (page === "facilities") navigate("/facilities");
     else if (page === "terms") navigate("/terms");
     else if (page === "privacy") navigate("/privacy");
     else if (page === "tokusho") navigate("/tokusho");
@@ -2837,6 +3063,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/facilities" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <FacilitiesPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/sell" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -2900,6 +3134,7 @@ function QoccaAppInner() {
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
             <Route path="/events" element={<EventsPage isPC={false}/>}/>
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
