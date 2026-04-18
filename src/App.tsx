@@ -900,6 +900,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const { user } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const [ordered, setOrdered] = useState(false);
+  const [ordering, setOrdering] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState("");
   const [reportDone, setReportDone] = useState(false);
@@ -915,6 +916,34 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const handleOrder = () => {
     if (!user) { setPage("signup"); return; }
     setShowConfirm(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    setOrdering(true);
+    try {
+      const selectedOpts = itemOptions.filter((_, i) => selectedOptions[i]).map(o => ({ name: o.name, price: o.price }));
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          listing_id: item.id,
+          listing_title: item.title,
+          price: item.price,
+          options: selectedOpts,
+          buyer_id: user?.id || "",
+          seller_id: item.seller_id || "",
+        }
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        alert("決済ページの作成に失敗しました");
+      }
+    } catch (e) {
+      console.error("Checkout error:", e);
+      alert("エラーが発生しました。もう一度お試しください。");
+    }
+    setOrdering(false);
   };
 
   return (
@@ -1064,39 +1093,41 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
 
       {/* 購入確認モーダル */}
       {showConfirm && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:200, display:"flex", alignItems:"flex-end" }} onClick={()=>setShowConfirm(false)}>
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:200, display:"flex", alignItems:"flex-end" }} onClick={()=>!ordering&&setShowConfirm(false)}>
           <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px", width:"100%" }} onClick={e=>e.stopPropagation()}>
-            {ordered ? (
-              <div style={{ textAlign:"center", padding:"20px 0" }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>🎉</div>
-                <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>注文が確定しました！</div>
-                <div style={{ fontSize:13, color:C.warmGray, lineHeight:1.7, marginBottom:4 }}>出品者が作業を開始します。メッセージで詳細をご相談ください。</div>
-                <div style={{ background:C.orangePale, borderRadius:10, padding:"10px", margin:"12px 0", fontSize:12, color:C.orange }}>🔒 お支払いはエスクローで安全に保護されています</div>
-                <button onClick={()=>setShowConfirm(false)} style={{ padding:"12px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>OK</button>
-              </div>
-            ) : (
-              <>
-                <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:16 }}>🛒 注文内容の確認</div>
-                <div style={{ background:C.lightGray, borderRadius:14, padding:"14px", marginBottom:16 }}>
-                  <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:8 }}>{item.title}</div>
-                  <div style={{ fontSize:12, color:C.warmGray, marginBottom:12 }}>{item.seller} · 納期 {item.delivery}</div>
-                  <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", borderTop:`1px solid ${C.border}` }}>
-                    <span style={{ fontSize:14, fontWeight:800, color:C.dark }}>お支払い金額</span>
-                    <span style={{ fontSize:20, fontWeight:900, color:C.orange }}>¥{item.price.toLocaleString()}</span>
+            <>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:16 }}>🛒 注文内容の確認</div>
+              <div style={{ background:C.lightGray, borderRadius:14, padding:"14px", marginBottom:16 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:4 }}>{item.title}</div>
+                <div style={{ fontSize:12, color:C.warmGray, marginBottom:8 }}>{item.seller} · 納期 {item.delivery}</div>
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:13, color:C.warmGray }}>基本料金</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>¥{item.price.toLocaleString()}</span>
+                </div>
+                {itemOptions.filter((_, i) => selectedOptions[i]).map((o, i) => (
+                  <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
+                    <span style={{ fontSize:12, color:C.warmGray }}>🔧 {o.name}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>+¥{o.price.toLocaleString()}</span>
                   </div>
+                ))}
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", borderTop:`2px solid ${C.dark}`, marginTop:4 }}>
+                  <span style={{ fontSize:14, fontWeight:800, color:C.dark }}>お支払い合計</span>
+                  <span style={{ fontSize:20, fontWeight:900, color:C.orange }}>¥{totalPrice.toLocaleString()}</span>
                 </div>
-                <div style={{ background:"#E3F2FD", borderRadius:10, padding:"10px", marginBottom:12, fontSize:11, color:C.blue, lineHeight:1.6 }}>
-                  🔒 エスクロー決済：お支払いはQoccaが安全にお預かりし、取引完了後に出品者へ支払われます。
-                </div>
-                <div style={{ fontSize:10, color:C.warmGray, lineHeight:1.6, marginBottom:16 }}>
-                  「注文を確定する」をクリックすると、<span style={{ color:C.orange, fontWeight:700 }}>利用規約</span>・<span style={{ color:C.orange, fontWeight:700 }}>キャンセルポリシー</span>に同意したものとみなされます。
-                </div>
-                <div style={{ display:"flex", gap:10 }}>
-                  <button onClick={()=>setShowConfirm(false)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
-                  <button onClick={()=>setOrdered(true)} style={{ flex:2, padding:"13px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>🐾 注文を確定する</button>
-                </div>
-              </>
-            )}
+              </div>
+              <div style={{ background:"#E3F2FD", borderRadius:10, padding:"10px", marginBottom:12, fontSize:11, color:C.blue, lineHeight:1.6 }}>
+                🔒 Stripe安全決済：クレジットカード情報はStripeが安全に処理します。Qoccaにカード情報は保存されません。
+              </div>
+              <div style={{ fontSize:10, color:C.warmGray, lineHeight:1.6, marginBottom:16 }}>
+                「決済に進む」をクリックすると、Stripeの決済ページに移動します。<span style={{ color:C.orange, fontWeight:700 }}>利用規約</span>・<span style={{ color:C.orange, fontWeight:700 }}>キャンセルポリシー</span>に同意したものとみなされます。
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <button disabled={ordering} onClick={()=>setShowConfirm(false)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
+                <button disabled={ordering} onClick={handleConfirmOrder} style={{ flex:2, padding:"13px", background:ordering?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:ordering?"not-allowed":"pointer", fontFamily:"inherit" }}>
+                  {ordering ? "処理中..." : "💳 決済に進む"}
+                </button>
+              </div>
+            </>
           </div>
         </div>
       )}
