@@ -458,7 +458,7 @@ const PCNavbar = ({ setPage, liked, search, setSearch }) => {
         />
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:16, marginLeft:"auto" }}>
-        {[["home","ホーム"],["search","さがす"],["events","イベント"],["liked","お気に入り"]].map(([id,label])=>(
+        {[["home","ホーム"],["search","さがす"],["events","イベント"],["gallery","ギャラリー"],["liked","お気に入り"]].map(([id,label])=>(
           <button key={id} onClick={()=>setPage(id)} style={{
             background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
             fontSize:14, fontWeight:700, color:C.dark, padding:"4px 8px"
@@ -2037,6 +2037,199 @@ const SupportTab = () => {
   );
 };
 
+// ── Gallery (うちの子ギャラリー) ──────────────────────────────────────────
+const GalleryPage = ({ setPage, isPC }) => {
+  const { user } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [preview, setPreview] = useState("");
+  const [likedPosts, setLikedPosts] = useState({});
+  const fileRef = useRef(null);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("gallery_posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!error && data) {
+      const userIds = [...new Set(data.map(p => p.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds);
+      const profMap = {};
+      (profiles || []).forEach(p => { profMap[p.id] = p; });
+
+      const petIds = [...new Set(data.filter(p => p.pet_id).map(p => p.pet_id))];
+      let petMap = {};
+      if (petIds.length > 0) {
+        const { data: pets } = await supabase.from("pets").select("id, name, species").in("id", petIds);
+        (pets || []).forEach(p => { petMap[p.id] = p; });
+      }
+
+      setPosts(data.map(p => ({
+        ...p,
+        userName: profMap[p.user_id]?.display_name || "ユーザー",
+        userAvatar: profMap[p.user_id]?.avatar_url || "",
+        petName: petMap[p.pet_id]?.name || "",
+        petSpecies: petMap[p.pet_id]?.species || "",
+      })));
+    }
+    // いいね状態を取得
+    if (user) {
+      const { data: likes } = await supabase.from("gallery_likes").select("post_id").eq("user_id", user.id);
+      const likeMap = {};
+      (likes || []).forEach(l => { likeMap[l.post_id] = true; });
+      setLikedPosts(likeMap);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchPosts(); }, []);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !user) return;
+    setUploading(true);
+    const ext = selectedFile.name.split(".").pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("gallery-images").upload(path, selectedFile);
+    if (upErr) { alert("アップロードに失敗しました"); setUploading(false); return; }
+    const { data: urlData } = supabase.storage.from("gallery-images").getPublicUrl(path);
+
+    await supabase.from("gallery_posts").insert({
+      user_id: user.id,
+      image_url: urlData.publicUrl,
+      caption: caption,
+    });
+
+    setShowUpload(false);
+    setSelectedFile(null);
+    setPreview("");
+    setCaption("");
+    setUploading(false);
+    fetchPosts();
+  };
+
+  const toggleLike = async (postId) => {
+    if (!user) { setPage("signup"); return; }
+    if (likedPosts[postId]) {
+      await supabase.from("gallery_likes").delete().eq("user_id", user.id).eq("post_id", postId);
+      setLikedPosts(prev => { const n = {...prev}; delete n[postId]; return n; });
+      setPosts(prev => prev.map(p => p.id === postId ? {...p, likes_count: Math.max(0, (p.likes_count||0)-1)} : p));
+    } else {
+      await supabase.from("gallery_likes").insert({ user_id: user.id, post_id: postId });
+      setLikedPosts(prev => ({...prev, [postId]: true}));
+      setPosts(prev => prev.map(p => p.id === postId ? {...p, likes_count: (p.likes_count||0)+1} : p));
+    }
+  };
+
+  const gridCols = isPC ? "repeat(3, 1fr)" : "repeat(2, 1fr)";
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      {/* ヘッダー */}
+      <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>🐾 うちの子ギャラリー</h1>
+            <p style={{ fontSize:12, color:C.warmGray }}>みんなの「うちの子」自慢を見てみよう</p>
+          </div>
+          {user && (
+            <button onClick={()=>setShowUpload(true)} style={{
+              padding:"10px 18px", background:C.orange, border:"none", borderRadius:12,
+              color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer"
+            }}>📸 投稿する</button>
+          )}
+        </div>
+      </div>
+
+      {/* 投稿モーダル */}
+      {showUpload && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📸 写真を投稿</h2>
+              <button onClick={()=>{setShowUpload(false);setSelectedFile(null);setPreview("");setCaption("");}} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display:"none" }}/>
+            {preview ? (
+              <div style={{ marginBottom:16 }}>
+                <img src={preview} alt="" style={{ width:"100%", borderRadius:14, maxHeight:300, objectFit:"cover" }}/>
+                <button onClick={()=>{setSelectedFile(null);setPreview("");}} style={{ marginTop:8, fontSize:12, color:C.red, background:"none", border:"none", cursor:"pointer" }}>写真を変更</button>
+              </div>
+            ) : (
+              <button onClick={()=>fileRef.current?.click()} style={{
+                width:"100%", padding:"40px 20px", border:`2px dashed ${C.border}`, borderRadius:14,
+                background:C.lightGray, cursor:"pointer", marginBottom:16, textAlign:"center"
+              }}>
+                <div style={{ fontSize:40, marginBottom:8 }}>📷</div>
+                <div style={{ fontSize:13, color:C.warmGray }}>タップして写真を選ぶ</div>
+              </button>
+            )}
+            <textarea value={caption} onChange={e=>setCaption(e.target.value)} placeholder="うちの子の紹介やエピソードを書いてね🐾" rows={3}
+              style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:16 }}/>
+            <button disabled={!selectedFile||uploading} onClick={handleUpload} style={{
+              width:"100%", padding:"14px", background:(!selectedFile||uploading)?C.warmGray:C.orange,
+              border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(!selectedFile||uploading)?"not-allowed":"pointer"
+            }}>{uploading ? "投稿中..." : "🐾 投稿する"}</button>
+          </div>
+        </div>
+      )}
+
+      {/* 投稿グリッド */}
+      <div style={{ padding:"16px" }}>
+        {loading ? (
+          <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
+        ) : posts.length === 0 ? (
+          <div style={{ textAlign:"center", padding:60 }}>
+            <div style={{ fontSize:64, marginBottom:12 }}>🐾</div>
+            <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>まだ投稿がありません</div>
+            <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>最初の投稿者になりませんか？</p>
+            {user && <button onClick={()=>setShowUpload(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}>📸 投稿する</button>}
+          </div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns:gridCols, gap:12 }}>
+            {posts.map(post => (
+              <div key={post.id} style={{ background:C.white, borderRadius:16, overflow:"hidden", border:`1px solid ${C.border}`, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ width:"100%", aspectRatio:"1", overflow:"hidden" }}>
+                  <img src={post.image_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                </div>
+                <div style={{ padding:"10px 12px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                    <div style={{ width:24, height:24, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, overflow:"hidden", flexShrink:0 }}>
+                      {post.userAvatar ? <img src={post.userAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{post.userName}</span>
+                    {post.petName && <span style={{ fontSize:10, color:C.warmGray }}>· {post.petName}</span>}
+                  </div>
+                  {post.caption && <div style={{ fontSize:12, color:"#555", lineHeight:1.5, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.caption}</div>}
+                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                    <button onClick={()=>toggleLike(post.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0 }}>
+                      {likedPosts[post.id] ? "❤️" : "🤍"}
+                    </button>
+                    <span style={{ fontSize:11, color:C.warmGray }}>{post.likes_count || 0}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -2408,6 +2601,7 @@ const useNav = () => {
     else if (page === "mypage") navigate("/mypage");
     else if (page === "liked") navigate("/favorites");
     else if (page === "events") navigate("/events");
+    else if (page === "gallery") navigate("/gallery");
     else if (page === "terms") navigate("/terms");
     else if (page === "privacy") navigate("/privacy");
     else if (page === "tokusho") navigate("/tokusho");
@@ -2635,6 +2829,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/gallery" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <GalleryPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/sell" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -2697,6 +2899,7 @@ function QoccaAppInner() {
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
             <Route path="/events" element={<EventsPage isPC={false}/>}/>
+            <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
