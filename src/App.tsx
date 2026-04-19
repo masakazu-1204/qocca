@@ -566,60 +566,94 @@ const Card = ({ item, onClick, liked, onLike }) => (
 const Navbar = ({ setPage, liked, search, setSearch }) => {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", h);
     return () => window.removeEventListener("scroll", h);
   }, []);
 
+  const menuItems = [
+    { icon:"🏠", label:"ホーム", page:"home" },
+    { icon:"🔍", label:"さがす", page:"search" },
+    { icon:"🐾", label:"ギャラリー", page:"gallery" },
+    { icon:"🐕", label:"施設マップ", page:"facilities" },
+    { icon:"📝", label:"ブログ", page:"blog" },
+    { icon:"📅", label:"イベント", page:"events" },
+    { icon:"❤️", label:"お気に入り", page:"liked" },
+    { icon:"🐾", label:"出品する", page:"sell" },
+  ];
+
   return (
-    <nav style={{
-      position:"fixed", top:0, left:0, right:0, zIndex:200,
-      background: scrolled ? "rgba(250,250,247,0.97)" : C.white,
-      backdropFilter:"blur(12px)",
-      borderBottom:`1px solid ${scrolled ? C.border : "transparent"}`,
-      padding:"0 16px", height:60,
-      display:"flex", alignItems:"center", justifyContent:"space-between", gap:10,
-      transition:"all 0.3s"
-    }}>
-      <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={30}/></div>
-      <div style={{ flex:1, maxWidth:340, position:"relative" }}>
-        <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14, color:C.warmGray }}>🔍</span>
-        <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
-          placeholder="サービスを探す..."
-          style={{ width:"100%", padding:"8px 10px 8px 30px", borderRadius:10, border:`1.5px solid ${C.border}`,
-            fontSize:13, outline:"none", fontFamily:"inherit", background:C.lightGray, color:C.dark, boxSizing:"border-box" }}
-        />
-      </div>
-      <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-        <span onClick={()=>setPage("liked")} style={{ cursor:"pointer", fontSize:20, position:"relative" }}>
-          🤍
-          {Object.values(liked).filter(Boolean).length > 0 && (
-            <span style={{ position:"absolute", top:-4, right:-4, width:14, height:14, background:C.orange, borderRadius:"50%", fontSize:9, color:"#fff", fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {Object.values(liked).filter(Boolean).length}
-            </span>
+    <>
+      <nav style={{
+        position:"fixed", top:0, left:0, right:0, zIndex:200,
+        background: scrolled ? "rgba(250,250,247,0.97)" : C.white,
+        backdropFilter:"blur(12px)",
+        borderBottom:`1px solid ${scrolled ? C.border : "transparent"}`,
+        padding:"0 16px", height:60,
+        display:"flex", alignItems:"center", justifyContent:"space-between", gap:10,
+        transition:"all 0.3s"
+      }}>
+        <div onClick={()=>setMenuOpen(!menuOpen)} style={{ cursor:"pointer", fontSize:22, flexShrink:0, width:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {menuOpen ? "✕" : "☰"}
+        </div>
+        <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={30}/></div>
+        <div style={{ flex:1, maxWidth:280, position:"relative" }}>
+          <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14, color:C.warmGray }}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
+            placeholder="サービスを探す..."
+            style={{ width:"100%", padding:"8px 10px 8px 30px", borderRadius:10, border:`1.5px solid ${C.border}`,
+              fontSize:13, outline:"none", fontFamily:"inherit", background:C.lightGray, color:C.dark, boxSizing:"border-box" }}
+          />
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+          {user ? (
+            <UserMenu setPage={setPage}/>
+          ) : (
+            <button onClick={()=>setPage("signup")} style={{
+              padding:"7px 14px", background:C.orange, border:"none", borderRadius:10,
+              color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer", whiteSpace:"nowrap"
+            }}>ログイン</button>
           )}
-        </span>
-        {user && (
-          <span onClick={()=>setPage("mypage")} style={{ cursor:"pointer", fontSize:20, position:"relative" }}>
-            🔔
-            {MOCK_NOTIFICATIONS.filter(n=>!n.isRead).length > 0 && (
-              <span style={{ position:"absolute", top:-4, right:-4, width:14, height:14, background:C.red, borderRadius:"50%", fontSize:9, color:"#fff", fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                {MOCK_NOTIFICATIONS.filter(n=>!n.isRead).length}
-              </span>
+        </div>
+      </nav>
+
+      {/* ハンバーガーメニュー */}
+      {menuOpen && (
+        <div style={{ position:"fixed", inset:0, zIndex:199 }} onClick={()=>setMenuOpen(false)}>
+          <div style={{
+            position:"fixed", top:60, left:0, right:0, background:C.white,
+            borderBottom:`1px solid ${C.border}`, boxShadow:"0 8px 24px rgba(0,0,0,0.12)",
+            padding:"8px 0", maxHeight:"70vh", overflow:"auto"
+          }} onClick={e=>e.stopPropagation()}>
+            {menuItems.map(item => (
+              <button key={item.page} onClick={()=>{setPage(item.page);setMenuOpen(false);}} style={{
+                width:"100%", padding:"14px 20px", border:"none", background:"transparent",
+                display:"flex", alignItems:"center", gap:14, cursor:"pointer", fontFamily:"inherit",
+                fontSize:15, fontWeight:700, color:C.dark, textAlign:"left"
+              }}>
+                <span style={{ fontSize:22 }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+            {user && (
+              <>
+                <div style={{ margin:"4px 16px", borderTop:`1px solid ${C.border}` }}/>
+                <button onClick={()=>{setPage("mypage");setMenuOpen(false);}} style={{
+                  width:"100%", padding:"14px 20px", border:"none", background:"transparent",
+                  display:"flex", alignItems:"center", gap:14, cursor:"pointer", fontFamily:"inherit",
+                  fontSize:15, fontWeight:700, color:C.dark, textAlign:"left"
+                }}>
+                  <span style={{ fontSize:22 }}>👤</span>
+                  <span>マイページ</span>
+                </button>
+              </>
             )}
-          </span>
-        )}
-        {user ? (
-          <UserMenu setPage={setPage}/>
-        ) : (
-          <button onClick={()=>setPage("signup")} style={{
-            padding:"7px 14px", background:C.orange, border:"none", borderRadius:10,
-            color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer", whiteSpace:"nowrap"
-          }}>ログイン</button>
-        )}
-      </div>
-    </nav>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
