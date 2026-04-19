@@ -952,30 +952,44 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
     setShowConfirm(true);
   };
 
-  const handleConfirmOrder = async () => {
+ const handleConfirmOrder = async () => {
+    if (!user?.id) { alert("ログインしてください"); setPage("signup"); return; }
+    if (!item.seller_id) { alert("商品情報に問題があります"); return; }
+
     setOrdering(true);
     try {
       const selectedOpts = itemOptions.filter((_, i) => selectedOptions[i]).map(o => ({ name: o.name, price: o.price }));
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
+
+      const res = await fetch("https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           listing_id: item.id,
           listing_title: item.title,
           price: item.price,
           options: selectedOpts,
-          buyer_id: user?.id || "",
-          seller_id: item.seller_id || "",
-        }
+          buyer_id: user.id,
+          seller_id: item.seller_id,
+        })
       });
-      if (error) throw error;
-      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      const result = await res.json();
+      console.log("Checkout result:", result);
+
+      if (!res.ok) {
+        alert("エラー: " + (result.error || result.insertError_message || "不明なエラー"));
+        setOrdering(false);
+        return;
+      }
+
       if (result.url) {
         window.location.href = result.url;
       } else {
-        alert("決済ページの作成に失敗しました");
+        alert("決済URLが取得できませんでした");
       }
     } catch (e) {
       console.error("Checkout error:", e);
-      alert("エラーが発生しました。もう一度お試しください。");
+      alert("エラーが発生しました: " + e.message);
     }
     setOrdering(false);
   };
