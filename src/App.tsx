@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
-
+import AboutPage from "./pages/AboutPage";
+import AboutSection from "./components/AboutSection";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const supabase = createClient(
   "https://qufrqkuipzuqeqkvuhkx.supabase.co",
@@ -3294,6 +3295,7 @@ function QoccaAppInner() {
       {isPC ? (
         <div style={{ paddingTop:68 }}>
           <Routes>
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/" element={
               <div>
                 <PCHeroSection setPage={setPage}/>
