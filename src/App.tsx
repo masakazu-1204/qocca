@@ -698,7 +698,7 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
           </div>
         </div>
       </section>
-
+<AboutSection />
       <section style={{ padding:"24px 16px 0", background:C.cream }}>
         <h2 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:14 }}>カテゴリから探す</h2>
         <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
