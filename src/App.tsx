@@ -3044,7 +3044,8 @@ const PCHeroSection = ({ setPage }) => (
 );
 
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
-const EventsPage = ({ isPC }) => {
+const EventsPage = ({ isPC, setPage }) => {
+  const { user } = useAuth();
   const [pref, setPref] = useState("すべて");
   const [cat, setCat] = useState("すべて");
   const [pet, setPet] = useState("すべて");
@@ -3053,6 +3054,8 @@ const EventsPage = ({ isPC }) => {
   const [selected, setSelected] = useState(null);
   const [showPost, setShowPost] = useState(false);
   const [form, setForm] = useState({ title:"", date:"", time:"", place:"", pref:"東京都", pet:"both", fee:"", organizer:"", url:"", desc:"", category:"フェスタ" });
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
 
   const filtered = EVENTS.filter(e => {
     if (pref !== "すべて" && e.pref !== pref) return false;
@@ -3107,7 +3110,7 @@ const EventsPage = ({ isPC }) => {
               <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:10 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>📅</span><span>{ev.date} {ev.time}</span></div>
                 <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>📍</span><span>{ev.pref} {ev.place}</span></div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>💰</span><span>参加費：{ev.fee}</span></div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>💰</span><span>参加費:{ev.fee}</span></div>
               </div>
               <div style={{ fontSize:12, color:"#555", lineHeight:1.6, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{ev.desc}</div>
               <div style={{ display:"flex", gap:8, borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
@@ -3142,8 +3145,8 @@ const EventsPage = ({ isPC }) => {
               <div style={{ margin:"14px 0", fontSize:14, color:"#555", lineHeight:1.8 }}>{selected.desc}</div>
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {selected.likes+(evLiked[selected.id]?1:0)}</button>
-                <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?"✅ 参加予定！":"🐾 参加する"}</button>
-                <button onClick={()=>{ setCommentTarget({ type:"event", id: selected.id, ownerId: selected.user_id || "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>💬 コメント</button>
+                <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?"✅ 参加予定!":"🐾 参加する"}</button>
+                <button onClick={()=>{ setCommentTarget({ type:"event", id: String(selected.id), ownerId: "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>💬 コメント</button>
               </div>
             </div>
           </div>
@@ -3157,7 +3160,7 @@ const EventsPage = ({ isPC }) => {
               <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>✏️ イベントを投稿</div>
               <button onClick={()=>setShowPost(false)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
-            {[["イベント名","title","例：わんわんフェスタ in 東京"],["日付","date","例：2026.05.01"],["時間","time","例：10:00〜17:00"],["会場名","place","例：代々木公園"],["主催者名","organizer","例：東京ペット愛好会"],["参加費","fee","例：無料 / 500円"]].map(([label,key,ph])=>(
+            {[["イベント名","title","例:わんわんフェスタ in 東京"],["日付","date","例:2026.05.01"],["時間","time","例:10:00〜17:00"],["会場名","place","例:代々木公園"],["主催者名","organizer","例:東京ペット愛好会"],["参加費","fee","例:無料 / 500円"]].map(([label,key,ph])=>(
               <div key={key} style={{ marginBottom:12 }}>
                 <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>{label}</label>
                 <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
@@ -3177,12 +3180,13 @@ const EventsPage = ({ isPC }) => {
               <textarea value={form.desc} onChange={e=>setForm(p=>({...p,desc:e.target.value}))} rows={4} placeholder="イベントの詳細・見どころ..."
                 style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
             </div>
-            <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}>🐾 投稿後、管理者が審査（最大24時間）してから公開されます。</div>
+            <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}>🐾 投稿後、管理者が審査(最大24時間)してから公開されます。</div>
             <button onClick={()=>setShowPost(false)} style={{ width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>🐾 投稿する</button>
           </div>
         </div>
       )}
-{commentTarget && (
+
+      {commentTarget && (
         <CommentModal
           open={commentOpen}
           onClose={()=>setCommentOpen(false)}
@@ -3190,13 +3194,14 @@ const EventsPage = ({ isPC }) => {
           targetId={commentTarget.id}
           postOwnerId={commentTarget.ownerId}
           currentUserId={user?.id}
-          onRequireLogin={()=>{ setCommentOpen(false); setPage("login"); }}
+          onRequireLogin={()=>{ setCommentOpen(false); setPage && setPage("login"); }}
           title="コメント"
         />
       )}
     </div>
   );
 };
+
 
 // ── PC用バナー ────────────────────────────────────────────────────────────
 const PCBanner = ({ setPage }) => (
@@ -3458,7 +3463,7 @@ function QoccaAppInner() {
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
                 <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
-                  <EventsPage isPC={true}/>
+                  <EventsPage isPC={true} setPage={setPage}/>
                 </div>
               </div>
             }/>
@@ -3548,7 +3553,7 @@ function QoccaAppInner() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
-            <Route path="/events" element={<EventsPage isPC={false}/>}/>
+            <Route path="/events" element={<EventsPage isPC={false} setPage={setPage}/>}/>
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
