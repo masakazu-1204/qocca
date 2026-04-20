@@ -2818,8 +2818,6 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                       {likedPosts[post.id] ? "❤️" : "🤍"}
                     </button>
                     <span style={{ fontSize:11, color:C.warmGray }}>{post.likes_count || 0}</span>
-                    <button onClick={()=>{ setCommentTarget({ type:"gallery", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>💬</button>
-<span style={{ fontSize:11, color:C.warmGray }}>コメント</span>
                     <button onClick={()=>{ setCommentTarget({ type:"gallery", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
             💬
           </button>
@@ -2830,6 +2828,18 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             ))}
           </div>
         )}
+        {commentTarget && (
+  <CommentModal
+    open={commentOpen}
+    onClose={()=>setCommentOpen(false)}
+    targetType={commentTarget.type}
+    targetId={commentTarget.id}
+    postOwnerId={commentTarget.ownerId}
+    currentUserId={user?.id}
+    onRequireLogin={()=>{ setCommentOpen(false); setPage("login"); }}
+    title="コメント"
+  />
+)}
       </div>
     </div>
   );
