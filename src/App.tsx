@@ -3512,6 +3512,7 @@ function QoccaAppInner() {
         <>
           <Routes>
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
             <Route path="/events" element={<EventsPage isPC={false}/>}/>
