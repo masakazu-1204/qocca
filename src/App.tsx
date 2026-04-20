@@ -3046,6 +3046,8 @@ const PCHeroSection = ({ setPage }) => (
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
 const EventsPage = ({ isPC, setPage }) => {
   const { user } = useAuth();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [pref, setPref] = useState("すべて");
   const [cat, setCat] = useState("すべて");
   const [pet, setPet] = useState("すべて");
@@ -3053,11 +3055,77 @@ const EventsPage = ({ isPC, setPage }) => {
   const [joined, setJoined] = useState({});
   const [selected, setSelected] = useState(null);
   const [showPost, setShowPost] = useState(false);
-  const [form, setForm] = useState({ title:"", date:"", time:"", place:"", pref:"東京都", pet:"both", fee:"", organizer:"", url:"", desc:"", category:"フェスタ" });
+  const [form, setForm] = useState({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"" });
+  const [submitting, setSubmitting] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
 
-  const filtered = EVENTS.filter(e => {
+  // DB からイベントを取得
+  const fetchEvents = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .eq("status", "approved")
+      .order("event_date", { ascending: true });
+    if (!error && data) {
+      // モックデータの形式に合わせて変換
+      const converted = data.map(e => ({
+        id: e.id,
+        title: e.title,
+        date: e.event_date,
+        time: e.event_time || "",
+        place: e.place,
+        pref: e.prefecture,
+        pet: e.pet_type,
+        fee: e.fee || "無料",
+        image: e.image_url || "🐾",
+        organizer: "",
+        url: "",
+        desc: e.description,
+        likes: e.like_count || 0,
+        joins: 0,
+        comments: 0,
+        category: e.category || "フェスタ",
+        bg: e.pet_type === "dog" ? "#FFF3E0" : e.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9",
+        organizer_id: e.organizer_id,
+      }));
+      setEvents(converted);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchEvents(); }, []);
+
+  // イベント投稿
+  const handleSubmitEvent = async () => {
+    if (!user || !form.title || !form.event_date) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("events").insert({
+      organizer_id: user.id,
+      title: form.title,
+      description: form.description,
+      event_date: form.event_date,
+      event_time: form.event_time,
+      place: form.place,
+      prefecture: form.prefecture,
+      pet_type: form.pet_type,
+      fee: form.fee,
+      category: form.category,
+      image_url: "🐾",
+      status: "pending",
+    });
+    setSubmitting(false);
+    if (!error) {
+      setShowPost(false);
+      setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"" });
+      alert("投稿ありがとうございます！審査後に公開されます🐾");
+    } else {
+      alert("投稿に失敗しました: " + error.message);
+    }
+  };
+
+  const filtered = events.filter(e => {
     if (pref !== "すべて" && e.pref !== pref) return false;
     if (cat !== "すべて" && e.category !== cat) return false;
     if (pet !== "すべて" && e.pet !== pet) return false;
@@ -3073,7 +3141,7 @@ const EventsPage = ({ isPC, setPage }) => {
         </div>
         <div style={{ display:"flex", gap:4 }}>
           <button style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:C.cream, color:C.orange, fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>📋 一覧</button>
-          <button onClick={()=>setShowPost(true)} style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.7)", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>✏️ 投稿する</button>
+          <button onClick={()=>{ if(!user){ setPage&&setPage("login"); return; } setShowPost(true); }} style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.7)", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>✏️ 投稿する</button>
         </div>
       </div>
       <div style={{ marginBottom:16, padding: isPC ? 0 : "0 16px" }}>
@@ -3096,7 +3164,9 @@ const EventsPage = ({ isPC, setPage }) => {
           ))}
         </div>
       </div>
-      <div style={{ fontSize:13, color:C.warmGray, marginBottom:12, padding: isPC ? 0 : "0 16px" }}>{filtered.length}件のイベント</div>
+      <div style={{ fontSize:13, color:C.warmGray, marginBottom:12, padding: isPC ? 0 : "0 16px" }}>
+        {loading ? "読み込み中..." : `${filtered.length}件のイベント`}
+      </div>
       <div style={{ display:"flex", flexDirection:"column", gap:14, padding: isPC ? "0 0 24px" : "0 16px 24px" }}>
         {filtered.map(ev=>(
           <div key={ev.id} onClick={()=>setSelected(ev)} style={{ background:C.white, borderRadius:18, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.05)", display: isPC ? "flex" : "block" }}>
@@ -3115,8 +3185,8 @@ const EventsPage = ({ isPC, setPage }) => {
               <div style={{ fontSize:12, color:"#555", lineHeight:1.6, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{ev.desc}</div>
               <div style={{ display:"flex", gap:8, borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
                 <button onClick={e2=>{e2.stopPropagation();setEvLiked(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:1, padding:"8px", border:`1.5px solid ${evLiked[ev.id]?C.orange:C.border}`, borderRadius:10, background:evLiked[ev.id]?C.orangePale:C.white, color:evLiked[ev.id]?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {ev.likes+(evLiked[ev.id]?1:0)}</button>
-                <button onClick={e2=>{e2.stopPropagation();setJoined(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:2, padding:"8px", border:"none", borderRadius:10, background:joined[ev.id]?C.green:C.orange, color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>{joined[ev.id]?"✅ 参加予定":"🐾 参加する"} {ev.joins+(joined[ev.id]?1:0)}人</button>
-                <button onClick={e2=>e2.stopPropagation()} style={{ padding:"8px 12px", border:`1.5px solid ${C.border}`, borderRadius:10, background:C.white, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.warmGray }}>💬 {ev.comments}</button>
+                <button onClick={e2=>{e2.stopPropagation();setJoined(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:2, padding:"8px", border:"none", borderRadius:10, background:joined[ev.id]?C.green:C.orange, color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>{joined[ev.id]?"✅ 参加予定":"🐾 参加する"}</button>
+                <button onClick={e2=>{ e2.stopPropagation(); setCommentTarget({ type:"event", id: ev.id, ownerId: ev.organizer_id || "" }); setCommentOpen(true); }} style={{ padding:"8px 12px", border:`1.5px solid ${C.border}`, borderRadius:10, background:C.white, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.warmGray }}>💬</button>
               </div>
             </div>
           </div>
@@ -3136,7 +3206,7 @@ const EventsPage = ({ isPC, setPage }) => {
                 <span style={{ background:evPetBg(selected.pet), color:evPetColor(selected.pet), fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:10 }}>{evPetLabel(selected.pet)}</span>
               </div>
               <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:14, lineHeight:1.4 }}>{selected.title}</div>
-              {[["📅 日時",`${selected.date} ${selected.time}`],["📍 場所",`${selected.pref} ${selected.place}`],["💰 参加費",selected.fee],["👤 主催者",selected.organizer]].map(([k,v])=>(
+              {[["📅 日時",`${selected.date} ${selected.time}`],["📍 場所",`${selected.pref} ${selected.place}`],["💰 参加費",selected.fee]].map(([k,v])=>(
                 <div key={k} style={{ display:"flex", gap:10, padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
                   <span style={{ fontSize:13, color:C.warmGray, minWidth:80 }}>{k}</span>
                   <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{v}</span>
@@ -3146,7 +3216,7 @@ const EventsPage = ({ isPC, setPage }) => {
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {selected.likes+(evLiked[selected.id]?1:0)}</button>
                 <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?"✅ 参加予定!":"🐾 参加する"}</button>
-                <button onClick={()=>{ setCommentTarget({ type:"event", id: String(selected.id), ownerId: "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>💬 コメント</button>
+                <button onClick={()=>{ setCommentTarget({ type:"event", id: selected.id, ownerId: selected.organizer_id || "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>💬 コメント</button>
               </div>
             </div>
           </div>
@@ -3160,7 +3230,7 @@ const EventsPage = ({ isPC, setPage }) => {
               <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>✏️ イベントを投稿</div>
               <button onClick={()=>setShowPost(false)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
-            {[["イベント名","title","例:わんわんフェスタ in 東京"],["日付","date","例:2026.05.01"],["時間","time","例:10:00〜17:00"],["会場名","place","例:代々木公園"],["主催者名","organizer","例:東京ペット愛好会"],["参加費","fee","例:無料 / 500円"]].map(([label,key,ph])=>(
+            {[["イベント名","title","例:わんわんフェスタ in 東京"],["日付","event_date","例:2026-05-01"],["時間","event_time","例:10:00〜17:00"],["会場名","place","例:代々木公園"],["都道府県","prefecture","例:東京都"],["参加費","fee","例:無料 / 500円"]].map(([label,key,ph])=>(
               <div key={key} style={{ marginBottom:12 }}>
                 <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>{label}</label>
                 <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
@@ -3171,17 +3241,26 @@ const EventsPage = ({ isPC, setPage }) => {
               <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>対象ペット</label>
               <div style={{ display:"flex", gap:8 }}>
                 {[["dog","🐕 犬"],["cat","🐈 猫"],["both","🐾 両方"]].map(([v,l])=>(
-                  <button key={v} onClick={()=>setForm(p=>({...p,pet:v}))} style={{ flex:1, padding:"10px", border:`2px solid ${form.pet===v?C.orange:C.border}`, borderRadius:10, background:form.pet===v?C.orangePale:C.white, color:form.pet===v?C.orange:C.warmGray, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
+                  <button key={v} onClick={()=>setForm(p=>({...p,pet_type:v}))} style={{ flex:1, padding:"10px", border:`2px solid ${form.pet_type===v?C.orange:C.border}`, borderRadius:10, background:form.pet_type===v?C.orangePale:C.white, color:form.pet_type===v?C.orange:C.warmGray, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
                 ))}
               </div>
             </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>カテゴリ</label>
+              <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box" }}>
+                {EVENT_CATS.filter(c=>c!=="すべて").map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
             <div style={{ marginBottom:20 }}>
               <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>イベント詳細</label>
-              <textarea value={form.desc} onChange={e=>setForm(p=>({...p,desc:e.target.value}))} rows={4} placeholder="イベントの詳細・見どころ..."
+              <textarea value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} rows={4} placeholder="イベントの詳細・見どころ..."
                 style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
             </div>
             <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}>🐾 投稿後、管理者が審査(最大24時間)してから公開されます。</div>
-            <button onClick={()=>setShowPost(false)} style={{ width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>🐾 投稿する</button>
+            <button disabled={submitting||!form.title||!form.event_date} onClick={handleSubmitEvent} style={{ width:"100%", padding:"14px", background:(submitting||!form.title||!form.event_date)?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(submitting||!form.title||!form.event_date)?"not-allowed":"pointer", fontFamily:"inherit" }}>
+              {submitting ? "送信中..." : "🐾 投稿する"}
+            </button>
           </div>
         </div>
       )}
