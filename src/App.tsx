@@ -3182,7 +3182,6 @@ const EventsPage = ({ isPC }) => {
           </div>
         </div>
       )}
-    </div>
 {commentTarget && (
         <CommentModal
           open={commentOpen}
