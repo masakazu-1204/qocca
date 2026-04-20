@@ -3143,6 +3143,7 @@ const EventsPage = ({ isPC }) => {
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {selected.likes+(evLiked[selected.id]?1:0)}</button>
                 <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?"✅ 参加予定！":"🐾 参加する"}</button>
+                <button onClick={()=>{ setCommentTarget({ type:"event", id: selected.id, ownerId: selected.user_id || "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>💬 コメント</button>
               </div>
             </div>
           </div>
@@ -3180,6 +3181,19 @@ const EventsPage = ({ isPC }) => {
             <button onClick={()=>setShowPost(false)} style={{ width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>🐾 投稿する</button>
           </div>
         </div>
+      )}
+    </div>
+{commentTarget && (
+        <CommentModal
+          open={commentOpen}
+          onClose={()=>setCommentOpen(false)}
+          targetType={commentTarget.type}
+          targetId={commentTarget.id}
+          postOwnerId={commentTarget.ownerId}
+          currentUserId={user?.id}
+          onRequireLogin={()=>{ setCommentOpen(false); setPage("login"); }}
+          title="コメント"
+        />
       )}
     </div>
   );
