@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
+import CommentModal, { CommentTargetType } from "./components/CommentModal";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const supabase = createClient(
   "https://qufrqkuipzuqeqkvuhkx.supabase.co",
