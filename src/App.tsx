@@ -2815,6 +2815,10 @@ const GalleryPage = ({ setPage, isPC }) => {
                       {likedPosts[post.id] ? "❤️" : "🤍"}
                     </button>
                     <span style={{ fontSize:11, color:C.warmGray }}>{post.likes_count || 0}</span>
+                    <button onClick={()=>{ setCommentTarget({ type:"gallery", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
+            💬
+          </button>
+          <span style={{ fontSize:11, color:C.warmGray }}>コメント</span>
                   </div>
                 </div>
               </div>
