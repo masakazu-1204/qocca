@@ -3,23 +3,65 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { PawPrint, ShieldCheck, Tag } from "lucide-react";
 
-const BRAND_ORANGE = "#F5A94A";
-const BRAND_ORANGE_DEEP = "#B27820";
+const BRAND = "#F5A94A";
+const BRAND_DEEP = "#B27820";
+const CREAM = "#FFF9F0";
+const CREAM_DARK = "#FFF2DF";
+const TEXT_DARK = "#2C2C2A";
+const TEXT_MUTED = "#888780";
+const BORDER = "#F1EFE8";
+const BORDER_WARM = "#F5E6D0";
 
 export default function AboutSection() {
   return (
-    <section className="bg-white px-4 py-12 md:py-16">
-      <div className="mx-auto max-w-[880px]">
-        {/* ヘッダー（頭文字 + キャッチ） */}
-        <div className="mx-auto mb-10 rounded-3xl bg-gradient-to-b from-[#FFF9F0] to-white px-6 py-12 text-center">
-          <div className="mb-2 text-xs tracking-[0.2em] text-[color:var(--brand)]">
+    <section
+      style={{
+        background: "#FFFFFF",
+        padding: "64px 16px",
+        color: TEXT_DARK,
+        fontFamily: "system-ui, -apple-system, sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        {/* ヘッダー：頭文字とキャッチ */}
+        <div
+          style={{
+            background: `linear-gradient(180deg, ${CREAM} 0%, #FFFFFF 100%)`,
+            borderRadius: 24,
+            padding: "48px 24px",
+            textAlign: "center",
+            marginBottom: 40,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              letterSpacing: "0.2em",
+              color: BRAND,
+              marginBottom: 8,
+            }}
+          >
             ABOUT QOCCA
           </div>
-          <h2 className="mb-6 text-xl font-medium text-neutral-800">
+          <h2
+            style={{
+              fontSize: 22,
+              fontWeight: 500,
+              margin: 0,
+              marginBottom: 24,
+              color: TEXT_DARK,
+            }}
+          >
             Qoccaって、どんな場所?
           </h2>
 
-          <div className="mx-auto inline-block text-left">
+          <div
+            style={{
+              display: "inline-block",
+              textAlign: "left",
+              margin: "0 auto",
+            }}
+          >
             <AcronymRow letter="Q" word="uokka" desc="クオッカの笑顔とともに" />
             <AcronymRow letter="O" word="ffer" desc="想いを差し出し" />
             <AcronymRow letter="C" word="raft" desc="手で形にして" />
@@ -32,19 +74,48 @@ export default function AboutSection() {
             />
           </div>
 
-          <div className="mt-8 border-t border-[#F5E6D0] pt-6">
-            <p className="font-serif text-lg italic text-neutral-800">
+          <div
+            style={{
+              marginTop: 32,
+              paddingTop: 24,
+              borderTop: `1px solid ${BORDER_WARM}`,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: 18,
+                fontStyle: "italic",
+                color: TEXT_DARK,
+                margin: 0,
+              }}
+            >
               「想いを形にして、ふたりをつなぐ。」
             </p>
           </div>
         </div>
 
         {/* 3つの特徴 */}
-        <div className="mb-10">
-          <h3 className="mb-6 text-center text-base font-medium text-neutral-800">
+        <div style={{ marginBottom: 40 }}>
+          <h3
+            style={{
+              fontSize: 16,
+              fontWeight: 500,
+              textAlign: "center",
+              color: TEXT_DARK,
+              margin: 0,
+              marginBottom: 24,
+            }}
+          >
             Qoccaの3つの特徴
           </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 12,
+            }}
+          >
             <FeatureMini
               Icon={PawPrint}
               title="ペット専門"
@@ -82,36 +153,86 @@ export default function AboutSection() {
         </div>
 
         {/* 使い方 3ステップ */}
-        <div className="mb-10">
-          <h3 className="mb-6 text-center text-base font-medium text-neutral-800">
+        <div style={{ marginBottom: 40 }}>
+          <h3
+            style={{
+              fontSize: 16,
+              fontWeight: 500,
+              textAlign: "center",
+              color: TEXT_DARK,
+              margin: 0,
+              marginBottom: 24,
+            }}
+          >
             使い方
           </h3>
-          <div className="mx-auto flex max-w-[560px] items-start justify-center gap-2">
-            <Step num={1} title="探す" body={<>作品や出品者を<br />カテゴリから探す</>} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto 1fr auto 1fr",
+              gap: 8,
+              alignItems: "start",
+              maxWidth: 560,
+              margin: "0 auto",
+            }}
+          >
+            <Step
+              num={1}
+              title="探す"
+              body={
+                <>
+                  作品や出品者を
+                  <br />
+                  カテゴリから探す
+                </>
+              }
+            />
             <StepArrow />
-            <Step num={2} title="依頼する" body={<>想いを伝えて<br />注文する</>} />
+            <Step
+              num={2}
+              title="依頼する"
+              body={
+                <>
+                  想いを伝えて
+                  <br />
+                  注文する
+                </>
+              }
+            />
             <StepArrow />
-            <Step num={3} title="受け取る" body={<>完成した作品を<br />受け取る</>} />
+            <Step
+              num={3}
+              title="受け取る"
+              body={
+                <>
+                  完成した作品を
+                  <br />
+                  受け取る
+                </>
+              }
+            />
           </div>
         </div>
 
         {/* CTA */}
-        <div className="text-center">
+        <div style={{ textAlign: "center" }}>
           <Link
             to="/about"
-            className="inline-block rounded-full bg-[color:var(--brand)] px-8 py-3 text-sm font-medium text-white transition hover:opacity-90"
+            style={{
+              display: "inline-block",
+              padding: "12px 32px",
+              background: BRAND,
+              color: "white",
+              borderRadius: 999,
+              fontSize: 14,
+              fontWeight: 500,
+              textDecoration: "none",
+            }}
           >
             もっと詳しく知る →
           </Link>
         </div>
       </div>
-
-      <style>{`
-        :root {
-          --brand: ${BRAND_ORANGE};
-          --brand-deep: ${BRAND_ORANGE_DEEP};
-        }
-      `}</style>
     </section>
   );
 }
@@ -130,16 +251,28 @@ function AcronymRow({
   isLast?: boolean;
 }) {
   return (
-    <div className={`flex items-baseline gap-4 ${isLast ? "" : "mb-2"}`}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: 16,
+        marginBottom: isLast ? 0 : 8,
+      }}
+    >
       <span
-        className="min-w-[32px] font-serif text-[28px] font-medium"
-        style={{ color: "var(--brand)" }}
+        style={{
+          fontFamily: "Georgia, serif",
+          fontSize: 28,
+          fontWeight: 500,
+          color: BRAND,
+          minWidth: 32,
+        }}
       >
         {letter}
       </span>
-      <span className="text-[15px] text-neutral-800">
-        <span className="font-medium">{word}</span>{" "}
-        <span className="text-neutral-500">— {desc}</span>
+      <span style={{ fontSize: 15, color: TEXT_DARK }}>
+        <span style={{ fontWeight: 500 }}>{word}</span>{" "}
+        <span style={{ color: TEXT_MUTED }}>— {desc}</span>
       </span>
     </div>
   );
@@ -150,24 +283,47 @@ function FeatureMini({
   title,
   body,
 }: {
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
   title: string;
   body: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-[#F1EFE8] bg-white p-6 text-center">
+    <div
+      style={{
+        background: "#FFFFFF",
+        border: `1px solid ${BORDER}`,
+        borderRadius: 16,
+        padding: "24px 16px",
+        textAlign: "center",
+      }}
+    >
       <div
-        className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full"
-        style={{ background: "#FFF2DF" }}
+        style={{
+          width: 48,
+          height: 48,
+          background: CREAM_DARK,
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 12px",
+        }}
       >
-        <Icon
-          className="h-[22px] w-[22px]"
-          strokeWidth={1.8}
-          style={{ color: "var(--brand)" } as React.CSSProperties}
-        />
+        <Icon size={22} strokeWidth={1.8} color={BRAND} />
       </div>
-      <div className="mb-1 text-sm font-medium text-neutral-800">{title}</div>
-      <div className="text-xs leading-[1.6] text-neutral-500">{body}</div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 500,
+          color: TEXT_DARK,
+          marginBottom: 4,
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ fontSize: 12, color: TEXT_MUTED, lineHeight: 1.6 }}>
+        {body}
+      </div>
     </div>
   );
 }
@@ -182,15 +338,37 @@ function Step({
   body: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 text-center">
+    <div style={{ textAlign: "center" }}>
       <div
-        className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full text-xl font-medium text-white"
-        style={{ background: "var(--brand)" }}
+        style={{
+          width: 56,
+          height: 56,
+          background: BRAND,
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 12px",
+          color: "white",
+          fontSize: 22,
+          fontWeight: 500,
+        }}
       >
         {num}
       </div>
-      <div className="mb-1 text-sm font-medium text-neutral-800">{title}</div>
-      <div className="text-[11px] leading-[1.5] text-neutral-500">{body}</div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 500,
+          color: TEXT_DARK,
+          marginBottom: 4,
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ fontSize: 12, color: TEXT_MUTED, lineHeight: 1.5 }}>
+        {body}
+      </div>
     </div>
   );
 }
@@ -198,8 +376,12 @@ function Step({
 function StepArrow() {
   return (
     <div
-      className="mt-5 flex-shrink-0 text-xl"
-      style={{ color: "var(--brand)" }}
+      style={{
+        marginTop: 20,
+        color: BRAND,
+        fontSize: 20,
+        flexShrink: 0,
+      }}
     >
       →
     </div>
