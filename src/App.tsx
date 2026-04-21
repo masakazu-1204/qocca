@@ -1732,13 +1732,13 @@ const MyPage = ({ setPage }) => {
         {/* Support Tab */}
         {tab==="support" && <SupportTab/>}
       </div>
-    </div>
-    <ProfileEditModal
+          <ProfileEditModal
         open={editOpen}
         onClose={()=>setEditOpen(false)}
         userId={user?.id}
         onSaved={()=>setRefreshKey(k=>k+1)}
       />
+    </div>
   );
 };
 
