@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  orangePale: "#FFF3E0",
-  dark: "#333",
+  "https://qufrqkuipzuqeqkvuhkx.supabase.co",
+  "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou"
 );
 
 const C = {
