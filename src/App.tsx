@@ -1648,10 +1648,23 @@ const MyPage = ({ setPage }) => {
   const [tab, setTab] = useState("profile");
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string } | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url, bio")
+        .eq("id", user.id)
+        .single();
+      if (data) setProfile(data);
+    })();
+  }, [user?.id, refreshKey]);
 
   if (!user) return null;
 
-  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
+  const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
   const initial = displayName.charAt(0).toUpperCase();
   const provider = user?.app_metadata?.provider;
   const providerLabel = provider === "google" ? "Google" : provider === "twitter" ? "X" : "メール";
