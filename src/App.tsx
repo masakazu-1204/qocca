@@ -2298,6 +2298,7 @@ const BlogPage = ({ setPage, isPC }) => {
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, paddingTop:16, borderTop:`1px solid ${C.border}` }}>
           <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20 }}>{likedPosts[viewPost.id]?"❤️":"🤍"}</button>
           <span style={{ fontSize:13, color:C.warmGray }}>{viewPost.likes_count||0} いいね</span>
+          <button onClick={()=>{ setCommentTarget({ type:"blog", id: viewPost.id, ownerId: viewPost.author_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:C.warmGray, marginLeft:8, fontFamily:"inherit" }}>💬 コメント</button>
         </div>
       </div>
     </div>
