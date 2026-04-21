@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "../lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  "https://qufrqkuipzuqeqkvuhkx.supabase.co",
+  "sb_publishable_TWEGFx7kfggQffOSzs3lJg_J3yYZqou"
+);
 
 const C = {
   orange: "#F5A94A",
