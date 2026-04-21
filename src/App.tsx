@@ -2302,6 +2302,18 @@ const BlogPage = ({ setPage, isPC }) => {
         </div>
       </div>
     </div>
+    {commentTarget && (
+        <CommentModal
+          open={commentOpen}
+          onClose={()=>setCommentOpen(false)}
+          targetType={commentTarget.type}
+          targetId={commentTarget.id}
+          postOwnerId={commentTarget.ownerId}
+          currentUserId={user?.id}
+          onRequireLogin={()=>{ setCommentOpen(false); setPage("login"); }}
+          title="コメント"
+        />
+      )}
   );
 
   return (
