@@ -2429,7 +2429,6 @@ const BlogPage = ({ setPage, isPC }) => {
           </div>
         )}
       </div>
-    </div>
     {commentTarget && (
         <CommentModal
           open={commentOpen}
@@ -2442,6 +2441,7 @@ const BlogPage = ({ setPage, isPC }) => {
           title="コメント"
         />
       )}
+      </div>
   );
 };
 
