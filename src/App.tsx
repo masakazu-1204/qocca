@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } fro
 import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
 import CommentModal from "./components/CommentModal";
+import ProfileEditModal from "./components/ProfileEditModal";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const supabase = createClient(
@@ -1645,6 +1646,8 @@ const SignupPage = ({ setPage }) => {
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState("profile");
+  const [editOpen, setEditOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   if (!user) return null;
 
@@ -1692,6 +1695,7 @@ const MyPage = ({ setPage }) => {
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>
             </div>
+            <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
                 { icon:"📦", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
@@ -1729,6 +1733,12 @@ const MyPage = ({ setPage }) => {
         {tab==="support" && <SupportTab/>}
       </div>
     </div>
+    <ProfileEditModal
+        open={editOpen}
+        onClose={()=>setEditOpen(false)}
+        userId={user?.id}
+        onSaved={()=>setRefreshKey(k=>k+1)}
+      />
   );
 };
 
