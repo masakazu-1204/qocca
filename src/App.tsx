@@ -2169,6 +2169,8 @@ const BlogPage = ({ setPage, isPC }) => {
   const [showWrite, setShowWrite] = useState(false);
   const [viewPost, setViewPost] = useState(null);
   const [likedPosts, setLikedPosts] = useState({});
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
   const [form, setForm] = useState({ title:"", content:"", category:"general", tags:"" });
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState("");
@@ -2819,7 +2821,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                       {likedPosts[post.id] ? "❤️" : "🤍"}
                     </button>
                     <span style={{ fontSize:11, color:C.warmGray }}>{post.likes_count || 0}</span>
-                    <button onClick={()=>{ setCommentTarget({ type:"gallery", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
+                    <button onClick={()=>{ setCommentTarget({ type:"blog", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
             💬
           </button>
           <span style={{ fontSize:11, color:C.warmGray }}>コメント</span>
