@@ -2420,6 +2420,7 @@ const BlogPage = ({ setPage, isPC }) => {
                     <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:11, color:C.warmGray }}>
                       <span>❤️ {post.likes_count||0}</span>
                       <span>👁 {post.views_count||0}</span>
+                      <button onClick={(e)=>{ e.stopPropagation(); setCommentTarget({ type:"blog", id: post.id, ownerId: post.author_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0, color:C.warmGray }}>💬 コメント</button>
                     </div>
                   </div>
                 </div>
@@ -2429,6 +2430,18 @@ const BlogPage = ({ setPage, isPC }) => {
         )}
       </div>
     </div>
+    {commentTarget && (
+        <CommentModal
+          open={commentOpen}
+          onClose={()=>setCommentOpen(false)}
+          targetType={commentTarget.type}
+          targetId={commentTarget.id}
+          postOwnerId={commentTarget.ownerId}
+          currentUserId={user?.id}
+          onRequireLogin={()=>{ setCommentOpen(false); setPage("login"); }}
+          title="コメント"
+        />
+      )}
   );
 };
 
@@ -2821,7 +2834,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                       {likedPosts[post.id] ? "❤️" : "🤍"}
                     </button>
                     <span style={{ fontSize:11, color:C.warmGray }}>{post.likes_count || 0}</span>
-                    <button onClick={()=>{ setCommentTarget({ type:"blog", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
+                    <button onClick={()=>{ setCommentTarget({ type:"gallery", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
             💬
           </button>
           <span style={{ fontSize:11, color:C.warmGray }}>コメント</span>
