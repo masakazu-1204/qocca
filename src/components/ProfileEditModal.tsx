@@ -119,8 +119,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
       setError("保存に失敗しました: " + updateError.message);
       return;
     }
-    onSaved?.();
-    onClose();
+    window.location.reload();
   };
 
   if (!open) return null;
