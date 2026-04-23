@@ -443,10 +443,10 @@ const UserMenu = ({ setPage }) => {
   return (
     <div ref={ref} style={{ position:"relative" }}>
       <button onClick={()=>setOpen(!open)} style={{
-        width:36, height:36, borderRadius:"50%", background: profile?.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange
+        width:36, height:36, borderRadius:"50%", background: profile?.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange,
         border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
         fontSize:15, fontWeight:800, color:"#fff"
-      }}>{initial}</{!profile?.avatar_url && initial}>
+      }}>{!profile?.avatar_url && initial}</button>
       {open && (
         <div style={{
           position:"absolute", top:44, right:0, background:C.white,
