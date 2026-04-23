@@ -412,8 +412,7 @@ const UserMenu = ({ setPage }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
-  const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
-
+ 
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
@@ -425,23 +424,7 @@ const UserMenu = ({ setPage }) => {
       if (data) setProfile(data);
     })();
   }, [user?.id]);
-useEffect(()=>{
-    if (!user?.id) return;
-    (async ()=>{
-      const [listingsRes, ordersRes, reviewsRes] = await Promise.all([
-        supabase.from("listings").select("id", { count:"exact", head:true }).eq("seller_id", user.id),
-        supabase.from("orders").select("id", { count:"exact", head:true }).eq("seller_id", user.id).eq("status", "completed"),
-        supabase.from("reviews").select("rating").eq("seller_id", user.id),
-      ]);
-      const ratings = (reviewsRes.data || []).map((r:{rating:number})=>r.rating);
-      const avg = ratings.length ? ratings.reduce((a,b)=>a+b,0)/ratings.length : null;
-      setStats({
-        listings: listingsRes.count || 0,
-        completed: ordersRes.count || 0,
-        avgRating: avg,
-      });
-    })();
-  }, [user?.id]);
+
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h);
@@ -1741,20 +1724,7 @@ const MyPage = ({ setPage }) => {
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
               )}
-            <div style={{ display:"flex", gap:0, marginTop:16, background:"#FFF9F0", borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
-                <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.listings}</div>
-                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>出品</div>
-                </div>
-                <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.completed}</div>
-                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>取引完了</div>
-                </div>
-                <div style={{ flex:1, textAlign:"center" }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
-                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
-                </div>
-              </div>
+       
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
