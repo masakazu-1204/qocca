@@ -411,6 +411,19 @@ const UserMenu = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string } | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      if (data) setProfile(data);
+    })();
+  }, [user?.id]);
 
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -418,7 +431,7 @@ const UserMenu = ({ setPage }) => {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
+  const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
   const initial = displayName.charAt(0).toUpperCase();
 
   const handleSignOut = async () => {
@@ -430,10 +443,10 @@ const UserMenu = ({ setPage }) => {
   return (
     <div ref={ref} style={{ position:"relative" }}>
       <button onClick={()=>setOpen(!open)} style={{
-        width:36, height:36, borderRadius:"50%", background:C.orange,
+        width:36, height:36, borderRadius:"50%", background: profile?.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange
         border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
         fontSize:15, fontWeight:800, color:"#fff"
-      }}>{initial}</button>
+      }}>{initial}</{!profile?.avatar_url && initial}>
       {open && (
         <div style={{
           position:"absolute", top:44, right:0, background:C.white,
