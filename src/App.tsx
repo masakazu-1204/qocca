@@ -1721,6 +1721,9 @@ const MyPage = ({ setPage }) => {
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>
             </div>
+            {profile?.bio && (
+                <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
+              )}
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
