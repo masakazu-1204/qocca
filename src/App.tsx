@@ -1042,6 +1042,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
             <div style={{ fontSize:12, color:C.warmGray }}>評価 {item.rating} · {item.reviews}件</div>
           </div>
         </div>
+        {item.seller_id && (
+          <button onClick={()=>setPage(`user/${item.seller_id}`)} style={{ width:"100%", padding:"12px", marginBottom:14, background:C.white, color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+            👤 出品者のプロフィールを見る
+          </button>
+        )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
           <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:8 }}>サービス詳細</div>
           <div style={{ fontSize:14, color:"#555", lineHeight:1.8 }}>{item.desc}</div>
