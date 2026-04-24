@@ -1662,8 +1662,8 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
   const [loading, setLoading] = useState(true);
-  const [userListings, setUserListings] = useState<Array<{ id:string; title:string; price:number; images?:string[]; category?:string }>>([]);
-
+  const [userListings, setUserListings] = useState<Array<{ id:string; title:string; price:number; image_urls?:string[] }>>([]);
+  
   useEffect(()=>{
     if (!userId) return;
     (async ()=>{
@@ -1696,7 +1696,7 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
     (async ()=>{
       const { data } = await supabase
         .from("listings")
-        .select("id, title, price, images, category")
+        .select("id, title, price, image_urls")
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
       setUserListings(data || []);
@@ -1738,7 +1738,7 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:12 }}>
             {userListings.map((item)=>(
               <div key={item.id} onClick={()=>setPage(`detail:${item.id}`)} style={{ background:C.white, borderRadius:12, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", transition:"transform 0.2s" }}>
-                <div style={{ width:"100%", aspectRatio:"1", background: item.images && item.images[0] ? `url(${item.images[0]}) center/cover` : C.orangePale }}/>
+                <div style={{ width:"100%", aspectRatio:"1", background: item.image_urls && item.image_urls[0] ? `url(${item.image_urls[0]}) center/cover` : C.orangePale }}/>
                 <div style={{ padding:"8px 10px" }}>
                   <div style={{ fontSize:12, color:C.dark, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:4 }}>{item.title}</div>
                   <div style={{ fontSize:14, color:C.orange, fontWeight:800 }}>¥{item.price.toLocaleString()}</div>
