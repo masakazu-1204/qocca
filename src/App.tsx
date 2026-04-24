@@ -1742,7 +1742,7 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:12 }}>
             {userListings.map((item)=>(
-              <div key={item.id} onClick={()=>setPage(`detail:${item.id}`)} style={{ background:C.white, borderRadius:12, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", transition:"transform 0.2s" }}>
+              <div key={item.id} onClick={()=>setPage("detail", item)} style={{ background:C.white, borderRadius:12, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", transition:"transform 0.2s" }}>
                 <div style={{ width:"100%", aspectRatio:"1", background: item.image_urls && item.image_urls[0] ? `url(${item.image_urls[0]}) center/cover` : C.orangePale }}/>
                 <div style={{ padding:"8px 10px" }}>
                   <div style={{ fontSize:12, color:C.dark, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:4 }}>{item.title}</div>
