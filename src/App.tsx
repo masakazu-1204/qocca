@@ -1656,6 +1656,73 @@ const SignupPage = ({ setPage }) => {
 };
 
 // ── MY PAGE ───────────────────────────────────────────────────────────────
+// ── USER PROFILE PAGE（他ユーザーのプロフィール閲覧） ──
+const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
+  const { userId } = useParams();
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
+  const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    if (!userId) return;
+    (async ()=>{
+      setLoading(true);
+      const { data } = await supabase.from("profiles").select("display_name, avatar_url, bio, created_at").eq("id", userId).single();
+      if (data) setProfile(data);
+      setLoading(false);
+    })();
+  }, [userId]);
+
+  useEffect(()=>{
+    if (!userId) return;
+    (async ()=>{
+      const [listingsRes, ordersRes, reviewsRes] = await Promise.all([
+        supabase.from("listings").select("id", { count:"exact", head:true }).eq("seller_id", userId),
+        supabase.from("orders").select("id", { count:"exact", head:true }).eq("seller_id", userId).eq("status", "completed"),
+        supabase.from("reviews").select("rating").eq("seller_id", userId),
+      ]);
+      const ratings = (reviewsRes.data || []).map((r:{rating:number})=>r.rating);
+      const avg = ratings.length ? ratings.reduce((a,b)=>a+b,0)/ratings.length : null;
+      setStats({
+        listings: listingsRes.count || 0,
+        completed: ordersRes.count || 0,
+        avgRating: avg,
+      });
+    })();
+  }, [userId]);
+
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
+  if (!profile) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>ユーザーが見つかりません</div>;
+
+  const displayName = profile.display_name || "ユーザー";
+  const initial = displayName.charAt(0).toUpperCase();
+
+  return (
+    <div style={{ maxWidth:600, margin:"0 auto" }}>
+      <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:16 }}>
+        <div style={{ width:72, height:72, borderRadius:"50%", background: profile.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:800, color:"#fff" }}>{!profile.avatar_url && initial}</div>
+        <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4 }}>{displayName}</div>
+        {profile.bio && (
+          <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
+        )}
+        <div style={{ display:"flex", gap:0, marginTop:16, background:"#FFF9F0", borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
+          <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.listings}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>出品</div>
+          </div>
+          <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.completed}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>取引完了</div>
+          </div>
+          <div style={{ flex:1, textAlign:"center" }}>
+            <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState("profile");
@@ -3694,6 +3761,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/user/:userId" element={
+            <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+              <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+              <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                <UserProfilePage setPage={setPage}/>
+              </div>
+            </div>
+          }/>
             <Route path="/favorites" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
