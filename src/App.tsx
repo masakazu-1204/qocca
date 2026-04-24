@@ -3796,6 +3796,11 @@ function QoccaAppInner() {
               </div>
             }/>
             <Route path="/user/:userId" element={
+              <div>
+                <UserProfilePage setPage={setPage}/>
+              </div>
+            }/>
+            <Route path="/user/:userId" element={
             <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
               <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
               <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
