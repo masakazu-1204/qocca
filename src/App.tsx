@@ -1661,17 +1661,35 @@ const MyPage = ({ setPage }) => {
   const [tab, setTab] = useState("profile");
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
+  const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
 
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio")
+        .select("display_name, avatar_url, bio, created_at")
         .eq("id", user.id)
         .single();
       if (data) setProfile(data);
+    })();
+  }, [user?.id, refreshKey]);
+  useEffect(()=>{
+    if (!user?.id) return;
+    (async ()=>{
+      const [listingsRes, ordersRes, reviewsRes] = await Promise.all([
+        supabase.from("listings").select("id", { count:"exact", head:true }).eq("seller_id", user.id),
+        supabase.from("orders").select("id", { count:"exact", head:true }).eq("seller_id", user.id).eq("status", "completed"),
+        supabase.from("reviews").select("rating").eq("seller_id", user.id),
+      ]);
+      const ratings = (reviewsRes.data || []).map((r:{rating:number})=>r.rating);
+      const avg = ratings.length ? ratings.reduce((a,b)=>a+b,0)/ratings.length : null;
+      setStats({
+        listings: listingsRes.count || 0,
+        completed: ordersRes.count || 0,
+        avgRating: avg,
+      });
     })();
   }, [user?.id, refreshKey]);
 
