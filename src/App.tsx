@@ -1742,6 +1742,20 @@ const MyPage = ({ setPage }) => {
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
               )}
+            <div style={{ display:"flex", gap:0, marginTop:16, background:"#FFF9F0", borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
+                <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.listings}</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>出品</div>
+                </div>
+                <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.completed}</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>取引完了</div>
+                </div>
+                <div style={{ flex:1, textAlign:"center" }}>
+                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
+                </div>
+              </div>
        
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
