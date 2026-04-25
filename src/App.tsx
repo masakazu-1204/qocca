@@ -3320,7 +3320,7 @@ const EventsPage = ({ isPC, setPage }) => {
         fee: e.fee || "無料",
         image: e.image_url || "🐾",
         organizer: "",
-        url: "",
+        url: e.url || "",
         desc: e.description,
         likes: e.like_count || 0,
         joins: 0,
