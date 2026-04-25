@@ -3356,7 +3356,7 @@ const EventsPage = ({ isPC, setPage }) => {
     setSubmitting(false);
     if (!error) {
       setShowPost(false);
-      setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"", image_url:""
+      setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"", image_url:"" });
       alert("投稿ありがとうございます！審査後に公開されます🐾");
     } else {
       alert("投稿に失敗しました: " + error.message);
