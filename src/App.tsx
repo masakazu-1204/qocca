@@ -2048,8 +2048,8 @@ const OrdersTab = () => {
         setOrders(prev=>prev.map(o=>o.id===orderId?{...o,status:"disputed",disputeReason:desc,disputeStatus:"new"}:o));
         setShowDispute(null);
       }}/>}
+      {showReview && <ReviewModal order={showReview} onClose={()=>setShowReview(null)} onSubmit={()=>setShowReview(null)} />}
     </div>
-    {showReview && <ReviewModal order={showReview} onClose={()=>setShowReview(null)} onSubmit={()=>setShowReview(null)} />}
   );
 };
 
