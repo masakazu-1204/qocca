@@ -3508,6 +3508,23 @@ const EventsPage = ({ isPC, setPage }) => {
       setForm(p=>({...p, image_url: data.publicUrl}));
     }
   }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", cursor:"pointer" }}/>
+  {form.image_url && (
+    <img src={form.image_url} style={{ width:"100%", height:120, objectFit:"cover", borderRadius:10, marginTop:8 }}/>
+  )}
+</div>
+            <div style={{ marginBottom:12 }}>
+  <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>イベント画像</label>
+  <input type="file" accept="image/*" onChange={async(e)=>{
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop();
+    const path = `events/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("event-images").upload(path, file, { upsert:true });
+    if (!error) {
+      const { data } = supabase.storage.from("event-images").getPublicUrl(path);
+      setForm(p=>({...p, image_url: data.publicUrl}));
+    }
+  }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", cursor:"pointer" }}/>
   {form.image_url && form.image_url !== "🐾" && (
     <img src={form.image_url} style={{ width:"100%", height:120, objectFit:"cover", borderRadius:10, marginTop:8 }}/>
   )}
