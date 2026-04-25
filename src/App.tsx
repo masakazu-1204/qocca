@@ -3410,7 +3410,9 @@ const EventsPage = ({ isPC, setPage }) => {
         {filtered.map(ev=>(
           <div key={ev.id} onClick={()=>setSelected(ev)} style={{ background:C.white, borderRadius:18, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.05)", display: isPC ? "flex" : "block" }}>
             <div style={{ height: isPC ? "auto" : 120, width: isPC ? 200 : "auto", flexShrink:0, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize: isPC ? 48 : 60, position:"relative", minHeight: isPC ? 160 : "auto" }}>
-              {ev.image}
+              {ev.image && ev.image.startsWith("http") 
+  ? <img src={ev.image} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> 
+  : ev.image}
               <div style={{ position:"absolute", top:10, left:10 }}><span style={{ background:C.orange, color:"#fff", fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:10 }}>{ev.category}</span></div>
               <div style={{ position:"absolute", top:10, right:10 }}><span style={{ background:evPetBg(ev.pet), color:evPetColor(ev.pet), fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:10 }}>{evPetLabel(ev.pet)}</span></div>
             </div>
