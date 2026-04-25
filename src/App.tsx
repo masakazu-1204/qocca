@@ -1670,7 +1670,35 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
   const [loading, setLoading] = useState(true);
   const [userListings, setUserListings] = useState<Array<{ id:string; title:string; price:number; image_urls?:string[] }>>([]);
-  
+  const [isFollowing, setIsFollowing] = useState(false);
+const [followCount, setFollowCount] = useState(0);
+
+  useEffect(()=>{
+  if (!userId) return;
+  (async ()=>{
+    const { data: { user } } = await supabase.auth.getUser();
+    const [{ count: fc }, { data: fol }] = await Promise.all([
+      supabase.from("follows").select("*", { count:"exact", head:true }).eq("following_id", userId),
+      user ? supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", userId).single() : Promise.resolve({ data: null }),
+    ]);
+    setFollowCount(fc || 0);
+    setIsFollowing(!!fol);
+  })();
+}, [userId]);
+
+const handleFollow = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  if (isFollowing) {
+    await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", userId);
+    setIsFollowing(false);
+    setFollowCount(c => c - 1);
+  } else {
+    await supabase.from("follows").insert({ follower_id: user.id, following_id: userId });
+    setIsFollowing(true);
+    setFollowCount(c => c + 1);
+  }
+};
   useEffect(()=>{
     if (!userId) return;
     (async ()=>{
@@ -1739,6 +1767,12 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
           </div>
         </div>
       </div>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:16, justifyContent:"center" }}>
+          <div style={{ fontSize:13, color:C.warmGray }}><span style={{ fontWeight:800, color:C.dark }}>{followCount}</span> フォロワー</div>
+          <button onClick={handleFollow} style={{ padding:"8px 20px", background: isFollowing ? C.white : C.orange, border: isFollowing ? `1.5px solid ${C.orange}` : "none", borderRadius:20, color: isFollowing ? C.orange : C.white, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+            {isFollowing ? "フォロー中" : "フォローする"}
+          </button>
+        </div>
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
