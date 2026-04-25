@@ -3438,7 +3438,9 @@ const EventsPage = ({ isPC, setPage }) => {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, overflowY:"auto" }} onClick={()=>setSelected(null)}>
           <div style={{ background:C.white, margin: isPC ? "60px auto" : "40px 16px", maxWidth:600, borderRadius:24, overflow:"hidden" }} onClick={e=>e.stopPropagation()}>
             <div style={{ height:180, background:selected.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:80, position:"relative" }}>
-              {selected.image}
+              {selected.image && selected.image.startsWith("http")
+  ? <img src={selected.image} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+  : selected.image}
               <button onClick={()=>setSelected(null)} style={{ position:"absolute", top:12, right:12, width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.9)", border:"none", cursor:"pointer", fontSize:18 }}>✕</button>
             </div>
             <div style={{ padding:"20px 16px" }}>
@@ -3454,6 +3456,9 @@ const EventsPage = ({ isPC, setPage }) => {
                 </div>
               ))}
               <div style={{ margin:"14px 0", fontSize:14, color:"#555", lineHeight:1.8 }}>{selected.desc}</div>
+              {selected.url && (
+  <a href={selected.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:12, padding:"10px 16px", background:"#F5A94A", borderRadius:10, color:"#fff", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none" }}>🔗 公式サイトで詳細を見る</a>
+)}
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {selected.likes+(evLiked[selected.id]?1:0)}</button>
                 <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?"✅ 参加予定!":"🐾 参加する"}</button>
