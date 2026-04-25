@@ -5,6 +5,7 @@ import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
 import CommentModal from "./components/CommentModal";
 import ProfileEditModal from "./components/ProfileEditModal";
+import { ReviewModal } from "./components/ReviewModal";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const supabase = createClient(
