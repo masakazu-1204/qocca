@@ -392,6 +392,92 @@ const ReportsPage = () => {
   );
 };
 
+// ── 売上管理 ──────────────────────────────────────────────────────────────
+const SalesPage = () => {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, revenue: 0, fee: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("orders")
+        .select("id, status, created_at, listing_id, listings(title, price)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const rows = data || [];
+      setOrders(rows);
+      const completed = rows.filter((o: any) => o.status === "completed");
+      const revenue = completed.reduce((s: number, o: any) => s + (o.listings?.price || 0), 0);
+      setStats({ total: rows.length, revenue, fee: Math.round(revenue * 0.1) });
+      setLoading(false);
+    })();
+  }, []);
+
+  const statusMap: Record<string, { label: string; color: string; bg: string }> = {
+    completed: { label: "完了", color: C.green, bg: C.greenPale },
+    working: { label: "作業中", color: C.blue, bg: C.bluePale },
+    pending: { label: "保留中", color: "#F57C00", bg: "#FFF3E0" },
+    cancelled: { label: "キャンセル", color: C.red, bg: C.redPale },
+    disputed: { label: "異議申立", color: C.red, bg: C.redPale },
+    delivered: { label: "納品済", color: C.blue, bg: C.bluePale },
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 20 }}>💰 売上管理</h2>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 24 }}>
+        <div style={{ background: C.white, borderRadius: 16, padding: "20px", border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 6 }}>総取引数</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: C.blue }}>{stats.total}件</div>
+        </div>
+        <div style={{ background: C.white, borderRadius: 16, padding: "20px", border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 6 }}>完了取引の総売上</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: C.green }}>¥{stats.revenue.toLocaleString()}</div>
+        </div>
+        <div style={{ background: C.white, borderRadius: 16, padding: "20px", border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 6 }}>プラットフォーム手数料（10%）</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: C.orange }}>¥{stats.fee.toLocaleString()}</div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>読み込み中...</div>
+      ) : (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: C.cream, borderBottom: `2px solid ${C.border}` }}>
+                {["日付", "商品名", "金額", "手数料", "ステータス"].map(h => (
+                  <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: C.warmGray }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o: any) => {
+                const s = statusMap[o.status] || { label: o.status, color: C.warmGray, bg: C.cream };
+                const price = o.listings?.price || 0;
+                return (
+                  <tr key={o.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: "12px 14px", fontSize: 12, color: C.warmGray }}>{o.created_at?.slice(0, 10)}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 700, color: C.dark }}>{o.listings?.title || "-"}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 700, color: C.orange }}>¥{price.toLocaleString()}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, color: C.warmGray }}>¥{Math.round(price * 0.1).toLocaleString()}</td>
+                    <td style={{ padding: "12px 14px" }}><Badge text={s.label} color={s.color} bg={s.bg} /></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {orders.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>取引がありません</div>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── メインアプリ ────────────────────────────────────────────────────────────
 const MENU = [
   { id: "dashboard", icon: "📊", label: "ダッシュボード" },
@@ -399,6 +485,7 @@ const MENU = [
   { id: "listings", icon: "📦", label: "出品管理" },
   { id: "members", icon: "👥", label: "会員管理" },
   { id: "reports", icon: "🚨", label: "通報管理" },
+  { id: "sales", icon: "💰", label: "売上管理" },
 ];
 
 export default function AdminDashboard() {
@@ -469,6 +556,7 @@ export default function AdminDashboard() {
         {page === "listings" && <ListingsPage />}
         {page === "members" && <MembersPage />}
         {page === "reports" && <ReportsPage />}
+        {page === "sales" && <SalesPage />}
       </div>
 
       <style>{`
