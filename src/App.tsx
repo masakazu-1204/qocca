@@ -1946,6 +1946,7 @@ const OrdersTab = () => {
   const [orders, setOrders] = useState(MOCK_ORDERS);
   const [selected, setSelected] = useState(null);
   const [showDispute, setShowDispute] = useState(null);
+  const [showReview, setShowReview] = useState<any>(null);
   const [filter, setFilter] = useState("all");
 
   const filtered = orders.filter(o => filter==="all" || o.status===filter);
@@ -2028,10 +2029,10 @@ const OrdersTab = () => {
                         </>
                       )}
                       {order.status==="completed" && (
-                        <button style={{
-                          flex:1, padding:"11px", background:C.orange, border:"none", borderRadius:10,
-                          color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
-                        }}>⭐ レビューを書く</button>
+                        <button onClick={(e)=>{e.stopPropagation();setShowReview(order);}} style={{
+                flex:1, padding:"11px", background:C.orange, border:"none", borderRadius:10,
+                color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
+              }}>⭐ レビューを書く</button>
                       )}
                     </div>
                   </div>
@@ -2048,6 +2049,7 @@ const OrdersTab = () => {
         setShowDispute(null);
       }}/>}
     </div>
+    {showReview && <ReviewModal order={showReview} onClose={()=>setShowReview(null)} onSubmit={()=>setShowReview(null)} />}
   );
 };
 
