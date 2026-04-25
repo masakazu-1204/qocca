@@ -3920,6 +3920,7 @@ function QoccaAppInner() {
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
+            <Route path="/admin" element={<AdminDashboard/>}/>
             <Route path="/user/:userId" element={<UserProfilePage setPage={setPage}/>}/>
             <Route path="/favorites" element={<LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}/>
             {["terms","privacy","tokusho","contact"].map(t => (
