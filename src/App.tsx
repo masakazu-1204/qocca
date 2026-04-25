@@ -3903,6 +3903,7 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/admin" element={<AdminDashboard/>}/>
           </Routes>
           <SharedFooter setPage={setPage}/>
         </div>
