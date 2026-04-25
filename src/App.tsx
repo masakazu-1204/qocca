@@ -3350,13 +3350,13 @@ const EventsPage = ({ isPC, setPage }) => {
       pet_type: form.pet_type,
       fee: form.fee,
       category: form.category,
-      image_url: "🐾",
+      image_url: form.image_url || "",
       status: "pending",
     });
     setSubmitting(false);
     if (!error) {
       setShowPost(false);
-      setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"" });
+      setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"", image_url:""
       alert("投稿ありがとうございます！審査後に公開されます🐾");
     } else {
       alert("投稿に失敗しました: " + error.message);
@@ -3495,6 +3495,23 @@ const EventsPage = ({ isPC, setPage }) => {
               <textarea value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} rows={4} placeholder="イベントの詳細・見どころ..."
                 style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
             </div>
+            <div style={{ marginBottom:12 }}>
+  <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>イベント画像</label>
+  <input type="file" accept="image/*" onChange={async(e)=>{
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop();
+    const path = `events/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("event-images").upload(path, file, { upsert:true });
+    if (!error) {
+      const { data } = supabase.storage.from("event-images").getPublicUrl(path);
+      setForm(p=>({...p, image_url: data.publicUrl}));
+    }
+  }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", cursor:"pointer" }}/>
+  {form.image_url && form.image_url !== "🐾" && (
+    <img src={form.image_url} style={{ width:"100%", height:120, objectFit:"cover", borderRadius:10, marginTop:8 }}/>
+  )}
+</div>
             <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}>🐾 投稿後、管理者が審査(最大24時間)してから公開されます。</div>
             <button disabled={submitting||!form.title||!form.event_date} onClick={handleSubmitEvent} style={{ width:"100%", padding:"14px", background:(submitting||!form.title||!form.event_date)?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(submitting||!form.title||!form.event_date)?"not-allowed":"pointer", fontFamily:"inherit" }}>
               {submitting ? "送信中..." : "🐾 投稿する"}
