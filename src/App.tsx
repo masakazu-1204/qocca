@@ -3825,7 +3825,6 @@ function QoccaAppInner() {
                     </div>
                   </div>
                 </div>
-              </div>
             }/>
             <Route path="/search" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
