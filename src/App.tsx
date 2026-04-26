@@ -847,7 +847,7 @@ useEffect(() => {
           <button onClick={()=>setPage("events")} style={{ padding:"6px 12px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, color:C.warmGray, cursor:"pointer" }}>すべて →</button>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {EVENTS.slice(0,3).map(ev => (
+          {homeEvents.map(ev => (
             <div key={ev.id} onClick={()=>setPage("events")} style={{
               display:"flex", gap:12, padding:"14px", background:C.lightGray, borderRadius:14, cursor:"pointer", border:`1px solid ${C.border}`
             }}>
@@ -3726,7 +3726,7 @@ function QoccaAppInner() {
                     {/* ── PC イベント情報 ── */}
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📅 イベント情報</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                      {EVENTS.slice(0,3).map(ev => (
+                      {homeEvents.map(ev => (
                         <div key={ev.id} onClick={()=>setPage("events")} style={{
                           background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`, cursor:"pointer",
                           boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
