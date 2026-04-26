@@ -840,23 +840,23 @@ useEffect(() => {
           <button onClick={()=>setPage("events")} style={{ padding:"6px 12px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, color:C.warmGray, cursor:"pointer" }}>すべて →</button>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {homeEvents.map(ev => (
-            <div key={ev.id} onClick={()=>setPage("events")} style={{
-              display:"flex", gap:12, padding:"14px", background:C.lightGray, borderRadius:14, cursor:"pointer", border:`1px solid ${C.border}`
-            }}>
-              <div style={{ width:50, height:50, borderRadius:12, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{ev.image}</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title}</div>
-                <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.date}　📍 {ev.pref}</div>
-                <div style={{ display:"flex", gap:6, marginTop:4 }}>
-                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:ev.pet==="dog"?C.orangePale:ev.pet==="cat"?"#F3E5F5":C.greenPale, color:ev.pet==="dog"?C.orange:ev.pet==="cat"?"#9C27B0":C.green, fontWeight:700 }}>
-                    {ev.pet==="dog"?"🐕 犬":ev.pet==="cat"?"🐈 猫":"🐾 両方"}
-                  </span>
-                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.bluePale, color:C.blue, fontWeight:700 }}>{ev.fee}</span>
+{homeEvents.map(ev => (
+                <div key={ev.id} onClick={()=>setPage("events")} style={{
+                  display:"flex", gap:12, padding:"14px", background:C.lightGray, borderRadius:14, cursor:"pointer", border:`1px solid ${C.border}`
+                }}>
+                  <div style={{ width:50, height:50, borderRadius:12, background: ev.pet_type === "dog" ? "#FFF3E0" : ev.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{ev.image_url || "🐾"}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title}</div>
+                    <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.event_date} 📍 {ev.prefecture}</div>
+                    <div style={{ display:"flex", gap:6, marginTop:4 }}>
+                      <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background: ev.pet_type === "dog" ? C.orangePale : ev.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9", color: ev.pet_type === "dog" ? C.orange : ev.pet_type === "cat" ? "#9C27B0" : "#4CAF50", fontWeight:700 }}>
+                        {ev.pet_type === "dog" ? "🐕 犬" : ev.pet_type === "cat" ? "🐈 猫" : "🐾 両方"}
+                      </span>
+                      <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.bluePale, color:C.blue, fontWeight:700 }}>{ev.fee || "無料"}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              ))}
         </div>
       </section>
 
