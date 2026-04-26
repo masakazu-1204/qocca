@@ -2280,6 +2280,39 @@ const detectContacts = (text:string): { found: boolean; types: string[]; masked:
   return { found: types.length > 0, types, masked };
 };
 
+// ── NGワードフィルター（喧嘩・誹謗中傷防止） ──────────────────────────────
+const NG_WORDS = [
+  // 暴言・侮辱
+  "死ね","しね","シネ","ｼﾈ","殺す","ころす","コロス","ｺﾛｽ","殺して","しんで","死んで",
+  "ばか","バカ","馬鹿","ｱﾎ","あほ","アホ","阿呆","間抜け","まぬけ","低能","低脳","無能",
+  "クソ","くそ","糞","クズ","くず","屑","ゴミ","ごみ","カス","かす","滓",
+  "ブス","ぶす","醜い","キモい","きもい","気持ち悪い","うざい","ウザい","ウザ","邪魔",
+  "雑魚","ザコ","ざこ","負け犬","負け組","役立たず","やくたたず",
+  // 差別・ヘイト
+  "ガイジ","がいじ","池沼","ちしょう","知障","精神病","キチガイ","きちがい","気違い","発達障害者",
+  "在日","ザイニチ","チョン","支那","シナ人","土人","部落",
+  // 性的・下品
+  "セックス","ｾｯｸｽ","ヤリマン","やりまん","ビッチ","びっち","売女","淫売",
+  "ち〇ぽ","ま〇こ","おまんこ","チンコ","ﾁﾝｺ","マンコ","ﾏﾝｺ",
+  // 脅迫
+  "潰す","ぶっ殺","ぶっころ","殴る","なぐる","刺す","さす","ぶん殴","ボコる","ぼこる",
+  "晒す","さらす","特定する","個人情報","住所教えろ","住所さらす",
+  "訴える","訴訟","裁判","慰謝料","賠償",
+  // ペット関連の悪質ワード（Qocca特有）
+  "虐待","ぎゃくたい","ギャクタイ","殺処分","保健所送り","捨てろ","捨てる",
+];
+
+const detectNGWords = (text:string): { found: boolean; words: string[] } => {
+  const found: string[] = [];
+  const lower = text.toLowerCase();
+  for (const ng of NG_WORDS) {
+    if (lower.includes(ng.toLowerCase()) && !found.includes(ng)) {
+      found.push(ng);
+    }
+  }
+  return { found: found.length > 0, words: found };
+};
+
 // ── 取引メッセージタブ（OrderMessagesTab） ────────────────────────────────
 const OrderMessagesTab = () => {
   const { user } = useAuth();
@@ -4223,6 +4256,9 @@ const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:str
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [warning, setWarning] = useState<{ types: string[]; original: string; masked: string } | null>(null);
+  const [ngError, setNgError] = useState<string[] | null>(null);
+  const [reportTarget, setReportTarget] = useState<any>(null);
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchCommunity = async () => {
@@ -4268,8 +4304,34 @@ const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:str
     setMessages([]);
   };
 
+  const handleReport = async (reason:string, detail:string) => {
+    if (!user || !reportTarget) return;
+    const { error } = await supabase.from("community_message_reports").insert({
+      message_id: reportTarget.id, reporter_id: user.id, reason, detail,
+    });
+    if (error) {
+      if (error.code === "23505") {
+        alert("このメッセージは既に通報済みです");
+      } else {
+        alert("通報に失敗しました: " + error.message);
+      }
+    } else {
+      alert("通報を受け付けました。運営が確認します。");
+      setReportedIds(prev => new Set(prev).add(reportTarget.id));
+    }
+    setReportTarget(null);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !user || !communityId || sending) return;
+
+    // NGワード検出（暴言・誹謗中傷など）
+    const ng = detectNGWords(input);
+    if (ng.found) {
+      setNgError(ng.words);
+      return;
+    }
+
     const detection = detectContacts(input);
     if (detection.found) {
       if (warning && warning.original === input) {
@@ -4349,15 +4411,34 @@ const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:str
                     border: m.sender_id !== user?.id ? `1px solid ${C.border}` : "none",
                     borderBottomRightRadius: m.sender_id === user?.id ? 4 : 14,
                     borderBottomLeftRadius: m.sender_id === user?.id ? 14 : 4,
+                    position:"relative",
                   }}>
                     <div style={{ fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{m.content}</div>
                     <div style={{ fontSize:9, marginTop:4, opacity:0.5, textAlign:"right" }}>{new Date(m.created_at).toLocaleString("ja-JP", { hour:"2-digit", minute:"2-digit", month:"numeric", day:"numeric" })}</div>
                   </div>
+                  {m.sender_id !== user?.id && (
+                    <div style={{ marginTop:2, marginLeft:2 }}>
+                      {reportedIds.has(m.id) ? (
+                        <span style={{ fontSize:10, color:C.warmGray }}>✓ 通報済み</span>
+                      ) : (
+                        <button onClick={()=>setReportTarget(m)} style={{ background:"none", border:"none", color:C.warmGray, fontSize:10, cursor:"pointer", padding:"2px 0", fontFamily:"inherit", textDecoration:"underline" }}>⚠️ 通報</button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             <div ref={messagesEndRef}/>
           </div>
+
+          {/* NGワード警告（送信ブロック） */}
+          {ngError && (
+            <div style={{ padding:"12px 16px", background:"#FFCDD2", borderTop:`1px solid #E57373` }}>
+              <div style={{ fontSize:12, fontWeight:800, color:"#B71C1C", marginBottom:6 }}>🚫 不適切な表現が含まれています</div>
+              <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>暴言・誹謗中傷・差別的な発言はコミュニティガイドラインに違反します。表現を変更してください。</div>
+              <button onClick={()=>setNgError(null)} style={{ width:"100%", padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
+            </div>
+          )}
 
           {/* 警告 */}
           {warning && (
@@ -4375,7 +4456,7 @@ const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:str
           <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.border}`, display:"flex", gap:8, background:C.white }}>
             <input
               value={input}
-              onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
+              onChange={e=>{setInput(e.target.value); if (warning) setWarning(null); if (ngError) setNgError(null);}}
               onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
               placeholder="メッセージを入力..."
               disabled={sending}
@@ -4384,6 +4465,53 @@ const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:str
           </div>
         </>
       )}
+      {reportTarget && <ReportMessageModal target={reportTarget} onClose={()=>setReportTarget(null)} onReport={handleReport}/>}
+    </div>
+  );
+};
+
+// ── 通報モーダル ──────────────────────────────────────────────────────────
+const ReportMessageModal = ({ target, onClose, onReport }: { target:any; onClose:()=>void; onReport:(reason:string, detail:string)=>void }) => {
+  const [reason, setReason] = useState("");
+  const [detail, setDetail] = useState("");
+  const REASONS = [
+    { id: "harassment", label: "暴言・誹謗中傷" },
+    { id: "spam", label: "スパム・宣伝" },
+    { id: "external", label: "外部誘導・連絡先交換" },
+    { id: "inappropriate", label: "不適切な内容" },
+    { id: "fraud", label: "詐欺・なりすまし" },
+    { id: "other", label: "その他" },
+  ];
+  const handleSubmit = () => {
+    if (!reason) return;
+    onReport(reason, detail);
+  };
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.white, borderRadius:20, padding:"24px 20px", width:"100%", maxWidth:440, maxHeight:"85vh", overflowY:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ fontSize:17, fontWeight:900, color:C.dark }}>⚠️ メッセージを通報</div>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>×</button>
+        </div>
+        <div style={{ background:C.lightGray, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:12, color:"#555", lineHeight:1.5, maxHeight:120, overflowY:"auto" }}>
+          {target.content}
+        </div>
+        <div style={{ fontSize:12, color:C.warmGray, marginBottom:8 }}>通報の理由 <span style={{ color:C.orange }}>*</span></div>
+        <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:14 }}>
+          {REASONS.map(r => (
+            <button key={r.id} onClick={()=>setReason(r.id)} style={{ padding:"10px 12px", background: reason === r.id ? C.orangePale : C.white, border: reason === r.id ? `1.5px solid ${C.orange}` : `1.5px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:700, color: reason === r.id ? C.orange : C.dark, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>{r.label}</button>
+          ))}
+        </div>
+        <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>詳細（任意）</div>
+        <textarea value={detail} onChange={e=>setDetail(e.target.value)} maxLength={300} placeholder="状況を詳しく教えてください" style={{ width:"100%", minHeight:70, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
+        <div style={{ fontSize:11, color:C.gray, textAlign:"right", marginBottom:14 }}>{detail.length}/300</div>
+        <div style={{ background:"#FFF8E1", borderRadius:8, padding:"10px 12px", marginBottom:14, fontSize:11, color:"#996200", lineHeight:1.5 }}>
+          📌 通報内容は運営が確認します。同じメッセージが3人以上から通報されると自動的に非表示になります。虚偽の通報は禁止です。
+        </div>
+        <button onClick={handleSubmit} disabled={!reason} style={{ width:"100%", padding:"14px", background: !reason ? "#ccc" : "#E57373", border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor: !reason ? "not-allowed" : "pointer", fontFamily:"inherit" }}>
+          通報する
+        </button>
+      </div>
     </div>
   );
 };
