@@ -1796,6 +1796,25 @@ const handleFollow = async () => {
             {isFollowing ? "フォロー中" : "フォローする"}
           </button>
         </div>
+      {reviews.length > 0 && (
+        <div style={{ marginTop:24, marginBottom:24 }}>
+          <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>⭐ レビュー ({reviews.length})</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {reviews.map(r => (
+              <div key={r.id} style={{ background:C.white, borderRadius:12, padding:"14px 16px", border:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", background: r.reviewer_avatar ? `url(${r.reviewer_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange }}>{!r.reviewer_avatar && (r.reviewer_name||"?").charAt(0).toUpperCase()}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{r.reviewer_name}</div>
+                    <div style={{ fontSize:11, color:C.warmGray }}>{"⭐".repeat(r.rating)} ・ {new Date(r.created_at).toLocaleDateString("ja-JP")}</div>
+                  </div>
+                </div>
+                {r.comment && <div style={{ fontSize:13, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{r.comment}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
