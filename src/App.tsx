@@ -3657,6 +3657,13 @@ function QoccaAppInner() {
     if (user) { toggleLike(id); }
   };
   const onDetail = (item) => { setPage("detail", item); };
+  const [homeEvents, setHomeEvents] = useState<any[]>([]);
+  useEffect(()=>{
+    (async()=>{
+      const { data } = await supabase.from("events").select("*").eq("status","approved").gte("event_date", new Date().toISOString().slice(0,10)).order("event_date",{ascending:true}).limit(3);
+      setHomeEvents(data || []);
+    })();
+  }, []);
 
   useEffect(() => { window.scrollTo(0,0); }, [location.pathname]);
 
@@ -3719,7 +3726,7 @@ function QoccaAppInner() {
                     {/* ── PC イベント情報 ── */}
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📅 イベント情報</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                      {([] as any[]).map(ev => (
+                      {homeEvents.map(ev => (
                         <div key={ev.id} onClick={()=>setPage("events")} style={{
                           background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`, cursor:"pointer",
                           boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
