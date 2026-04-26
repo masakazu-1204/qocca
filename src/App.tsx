@@ -3744,19 +3744,6 @@ function QoccaAppInner() {
                           </div>
                         </div>
                       ))}
-                          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                            <div style={{ width:44, height:44, borderRadius:10, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{ev.image}</div>
-                            <div>
-                              <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{ev.title}</div>
-                              <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.date}</div>
-                            </div>
-                          </div>
-                          <div style={{ display:"flex", gap:6 }}>
-                            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.bluePale, color:C.blue, fontWeight:700 }}>{ev.fee}</span>
-                            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>📍 {ev.pref}</span>
-                          </div>
-                        </div>
-                    </div>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
                       {listings.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
