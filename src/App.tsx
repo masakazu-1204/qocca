@@ -246,7 +246,7 @@ const REVIEWS = [
   { user:"けんたさん", pet:"🐕", rating:4, comment:"クオリティ高い！少し時間かかりましたが満足です。", date:"2026.2.28" },
 ];
 
-const EVENTS = [
+const EVENTS: any[] = [];
   { id:1, title:"第15回 わんわんフェスタ in 東京", date:"2026.04.20", time:"10:00〜17:00", place:"代々木公園イベント広場", pref:"東京都", pet:"dog", fee:"無料", image:"🐕", organizer:"東京ペット愛好会", url:"https://example.com", desc:"都内最大級のわんちゃんイベント！ドッグランや写真撮影、グルメブースなど盛りだくさん。", likes:128, joins:89, comments:23, category:"フェスタ", bg:"#FFF3E0" },
   { id:2, title:"猫カフェオーナーズミート", date:"2026.04.25", time:"13:00〜16:00", place:"渋谷区文化センター", pref:"東京都", pet:"cat", fee:"500円", image:"🐈", organizer:"ねこ部", url:"https://example.com", desc:"猫オーナー同士の交流会。猫の健康管理や最新グッズの情報交換をしましょう！", likes:64, joins:42, comments:15, category:"交流会", bg:"#F3E5F5" },
   { id:3, title:"ペット写真撮影会 春の部", date:"2026.05.03", time:"11:00〜15:00", place:"大阪城公園", pref:"大阪府", pet:"both", fee:"1,000円", image:"📸", organizer:"ぽちフォト", url:"https://example.com", desc:"プロカメラマンによるペット撮影会。春の花をバックに最高の一枚を残しましょう！", likes:95, joins:67, comments:31, category:"撮影会", bg:"#E3F2FD" },
@@ -679,6 +679,19 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
 // ── HOME (Mobile) ─────────────────────────────────────────────────────────
 const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
   const [activeCat, setActiveCat] = useState("all");
+  const [homeEvents, setHomeEvents] = useState<any[]>([]);
+useEffect(() => {
+  (async () => {
+    const { data } = await supabase
+      .from("events")
+      .select("*")
+      .eq("status", "approved")
+      .gte("event_date", new Date().toISOString().slice(0, 10))
+      .order("event_date", { ascending: true })
+      .limit(3);
+    setHomeEvents(data || []);
+  })();
+}, []);
   // 人気 = お気に入り数順（fallback: レビュー数順）
   const popular = [...listings].sort((a,b) => (b.favorite_count||b.reviews||0) - (a.favorite_count||a.reviews||0)).slice(0,4);
   // 新着 = 作成日順（DBデータはcreated_at、モックデータはid逆順）
