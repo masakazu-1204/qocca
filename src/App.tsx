@@ -3719,7 +3719,7 @@ function QoccaAppInner() {
                     {/* ── PC イベント情報 ── */}
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📅 イベント情報</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                      {homeEvents.map(ev => (
+                      {([] as any[]).map(ev => (
                         <div key={ev.id} onClick={()=>setPage("events")} style={{
                           background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`, cursor:"pointer",
                           boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
