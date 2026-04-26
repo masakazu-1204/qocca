@@ -1677,6 +1677,7 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
   const [loading, setLoading] = useState(true);
   const [userListings, setUserListings] = useState<Array<{ id:string; title:string; price:number; image_urls?:string[] }>>([]);
+  const [reviews, setReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
   const [isFollowing, setIsFollowing] = useState(false);
 const [followCount, setFollowCount] = useState(0);
 
@@ -1742,6 +1743,21 @@ const handleFollow = async () => {
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
       setUserListings(data || []);
+    })();
+  }, [userId]);
+  useEffect(()=>{
+    if (!userId) return;
+    (async ()=>{
+      const { data: revs } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, reviewer_id")
+        .eq("seller_id", userId)
+        .order("created_at", { ascending: false });
+      if (!revs) return setReviews([]);
+      const ids = [...new Set(revs.map(r=>r.reviewer_id))];
+      const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const profMap = Object.fromEntries((profs||[]).map(p=>[p.id, p]));
+      setReviews(revs.map(r=>({ ...r, reviewer_name: profMap[r.reviewer_id]?.display_name || "ユーザー", reviewer_avatar: profMap[r.reviewer_id]?.avatar_url })));
     })();
   }, [userId]);
 
