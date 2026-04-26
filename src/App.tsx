@@ -964,6 +964,25 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [reportType, setReportType] = useState("");
   const [reportDone, setReportDone] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState({});
+  const [sellerReviews, setSellerReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
+
+  useEffect(()=>{
+    if (!item?.seller_id) return;
+    (async ()=>{
+      const { data: revs } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, reviewer_id")
+        .eq("seller_id", item.seller_id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (!revs) return setSellerReviews([]);
+      const ids = [...new Set(revs.map(r=>r.reviewer_id))];
+      const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const profMap = Object.fromEntries((profs||[]).map(p=>[p.id, p]));
+      setSellerReviews(revs.map(r=>({ ...r, reviewer_name: profMap[r.reviewer_id]?.display_name || "ユーザー", reviewer_avatar: profMap[r.reviewer_id]?.avatar_url })));
+    })();
+  }, [item?.seller_id]);
+
   if (!item) return null;
 
   const itemOptions = item.options || [];
@@ -1054,6 +1073,25 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           <button onClick={()=>setPage(`user/${item.seller_id}`)} style={{ width:"100%", padding:"12px", marginBottom:14, background:C.white, color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
             👤 出品者のプロフィールを見る
           </button>
+        )}
+        {sellerReviews.length > 0 && (
+          <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:10 }}>⭐ 出品者のレビュー ({sellerReviews.length})</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {sellerReviews.map(r => (
+                <div key={r.id} style={{ background:C.lightGray, borderRadius:10, padding:"10px 12px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                    <div style={{ width:28, height:28, borderRadius:"50%", background: r.reviewer_avatar ? `url(${r.reviewer_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:C.orange, flexShrink:0 }}>{!r.reviewer_avatar && (r.reviewer_name||"?").charAt(0).toUpperCase()}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{r.reviewer_name}</div>
+                      <div style={{ fontSize:10, color:C.warmGray }}>{"⭐".repeat(r.rating)} ・ {new Date(r.created_at).toLocaleDateString("ja-JP")}</div>
+                    </div>
+                  </div>
+                  {r.comment && <div style={{ fontSize:12, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{r.comment}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
           <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:8 }}>サービス詳細</div>
