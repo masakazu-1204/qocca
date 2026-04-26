@@ -247,13 +247,6 @@ const REVIEWS = [
 ];
 
 const EVENTS: any[] = [];
-  { id:1, title:"第15回 わんわんフェスタ in 東京", date:"2026.04.20", time:"10:00〜17:00", place:"代々木公園イベント広場", pref:"東京都", pet:"dog", fee:"無料", image:"🐕", organizer:"東京ペット愛好会", url:"https://example.com", desc:"都内最大級のわんちゃんイベント！ドッグランや写真撮影、グルメブースなど盛りだくさん。", likes:128, joins:89, comments:23, category:"フェスタ", bg:"#FFF3E0" },
-  { id:2, title:"猫カフェオーナーズミート", date:"2026.04.25", time:"13:00〜16:00", place:"渋谷区文化センター", pref:"東京都", pet:"cat", fee:"500円", image:"🐈", organizer:"ねこ部", url:"https://example.com", desc:"猫オーナー同士の交流会。猫の健康管理や最新グッズの情報交換をしましょう！", likes:64, joins:42, comments:15, category:"交流会", bg:"#F3E5F5" },
-  { id:3, title:"ペット写真撮影会 春の部", date:"2026.05.03", time:"11:00〜15:00", place:"大阪城公園", pref:"大阪府", pet:"both", fee:"1,000円", image:"📸", organizer:"ぽちフォト", url:"https://example.com", desc:"プロカメラマンによるペット撮影会。春の花をバックに最高の一枚を残しましょう！", likes:95, joins:67, comments:31, category:"撮影会", bg:"#E3F2FD" },
-  { id:4, title:"ハンドメイドペットグッズマーケット", date:"2026.05.10", time:"10:00〜16:00", place:"名古屋市中区栄", pref:"愛知県", pet:"both", fee:"無料", image:"🎨", organizer:"てづくり屋", url:"https://example.com", desc:"全国のハンドメイド作家が集まるペット用品マーケット。世界に一つだけのグッズに出会えます。", likes:77, joins:55, comments:18, category:"マーケット", bg:"#E8F5E9" },
-  { id:5, title:"ドッグトレーニング体験会", date:"2026.05.15", time:"09:00〜12:00", place:"福岡市西区室見川河川敷", pref:"福岡県", pet:"dog", fee:"2,000円", image:"🎓", organizer:"ドッグトレーナー山本", url:"https://example.com", desc:"プロトレーナーによるしつけ体験会。吠え・引っ張り・トイレトラブルなど何でも相談可！", likes:43, joins:28, comments:9, category:"体験会", bg:"#E0F7FA" },
-  { id:6, title:"わんにゃん健康フェア", date:"2026.05.22", time:"10:00〜17:00", place:"札幌市中島公園", pref:"北海道", pet:"both", fee:"無料", image:"🏥", organizer:"北海道獣医師会", url:"https://example.com", desc:"獣医師による無料健康相談、ワクチン割引、フードサンプル配布など盛りだくさん！", likes:112, joins:93, comments:27, category:"健康", bg:"#FCE4EC" },
-];
 const EVENT_PREFS = ["すべて","北海道","東京都","大阪府","愛知県","福岡県"];
 const EVENT_CATS = ["すべて","フェスタ","交流会","撮影会","マーケット","体験会","健康"];
 const evPetLabel = (p) => p==="dog"?"🐕 犬":p==="cat"?"🐈 猫":"🐾 両方";
