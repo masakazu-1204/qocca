@@ -1884,6 +1884,32 @@ const MyPage = ({ setPage }) => {
     })();
   }, [user?.id, refreshKey]);
 
+  // マイ活動カウント
+  const [activity, setActivity] = useState<{ communities:number; events:number; gallery:number; blog:number; following:number; followers:number }>({ communities:0, events:0, gallery:0, blog:0, following:0, followers:0 });
+  useEffect(()=>{
+    if (!user?.id) return;
+    (async ()=>{
+      const [comm, ev, gal, bl, fwing, fwer] = await Promise.all([
+        supabase.from("community_members").select("community_id", { count:"exact", head:true }).eq("user_id", user.id),
+        supabase.from("events").select("id", { count:"exact", head:true }).eq("organizer_id", user.id),
+        supabase.from("gallery_posts").select("id", { count:"exact", head:true }).eq("user_id", user.id),
+        supabase.from("blog_posts").select("id", { count:"exact", head:true }).eq("author_id", user.id),
+        supabase.from("follows").select("following_id", { count:"exact", head:true }).eq("follower_id", user.id),
+        supabase.from("follows").select("follower_id", { count:"exact", head:true }).eq("following_id", user.id),
+      ]);
+      setActivity({
+        communities: comm.count || 0,
+        events: ev.count || 0,
+        gallery: gal.count || 0,
+        blog: bl.count || 0,
+        following: fwing.count || 0,
+        followers: fwer.count || 0,
+      });
+    })();
+  }, [user?.id, refreshKey]);
+
+  const [activityModal, setActivityModal] = useState<string | null>(null);
+
   if (!user) return null;
 
   const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
@@ -1934,19 +1960,56 @@ const MyPage = ({ setPage }) => {
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
               )}
             <div style={{ display:"flex", gap:0, marginTop:16, background:"#FFF9F0", borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
-                <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+                <button onClick={()=>setActivityModal("listings")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.listings}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>出品</div>
-                </div>
-                <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+                </button>
+                <button onClick={()=>setActivityModal("completed")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.completed}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>取引完了</div>
-                </div>
-                <div style={{ flex:1, textAlign:"center" }}>
+                </button>
+                <button onClick={()=>setActivityModal("reviews")} style={{ flex:1, textAlign:"center", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
-                </div>
+                </button>
               </div>
+
+            {/* フォロー・フォロワー */}
+            <div style={{ display:"flex", gap:8, marginTop:10 }}>
+              <button onClick={()=>setActivityModal("following")} style={{ flex:1, padding:"10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontFamily:"inherit" }}>
+                <span style={{ fontSize:15, fontWeight:800, color:C.dark }}>{activity.following}</span>
+                <span style={{ fontSize:11, color:C.warmGray, marginLeft:6 }}>フォロー中</span>
+              </button>
+              <button onClick={()=>setActivityModal("followers")} style={{ flex:1, padding:"10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontFamily:"inherit" }}>
+                <span style={{ fontSize:15, fontWeight:800, color:C.dark }}>{activity.followers}</span>
+                <span style={{ fontSize:11, color:C.warmGray, marginLeft:6 }}>フォロワー</span>
+              </button>
+            </div>
+
+            {/* マイ活動セクション */}
+            <div style={{ marginTop:20 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:8, paddingLeft:4 }}>🎯 マイ活動</div>
+              <div style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+                {[
+                  { id:"communities", icon:"💬", label:"参加中のコミュニティ", count:activity.communities, color:"#9C27B0" },
+                  { id:"events", icon:"📅", label:"投稿したイベント", count:activity.events, color:"#2196F3" },
+                  { id:"gallery", icon:"🐾", label:"投稿したギャラリー", count:activity.gallery, color:"#4CAF50" },
+                  { id:"blog", icon:"📝", label:"投稿したブログ", count:activity.blog, color:"#FF9800" },
+                ].map((item, i) => (
+                  <button key={item.id} onClick={()=>setActivityModal(item.id)} style={{
+                    width:"100%", padding:"14px 16px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
+                    background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:12, fontFamily:"inherit", textAlign:"left"
+                  }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:`${item.color}15`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{item.label}</div>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:800, color:item.color, marginRight:6 }}>{item.count}</div>
+                    <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
+                  </button>
+                ))}
+              </div>
+            </div>
        
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
@@ -1991,6 +2054,203 @@ const MyPage = ({ setPage }) => {
         userId={user?.id}
         onSaved={()=>setRefreshKey(k=>k+1)}
       />
+      {activityModal && <ActivityDetailModal type={activityModal} userId={user?.id} onClose={()=>setActivityModal(null)} setPage={setPage}/>}
+    </div>
+  );
+};
+
+// ── マイ活動詳細モーダル ──────────────────────────────────────────────────
+const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; userId:string; onClose:()=>void; setPage:(p:string,d?:any)=>void }) => {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    if (!userId) return;
+    (async ()=>{
+      setLoading(true);
+      let data:any[] = [];
+      if (type === "listings") {
+        const { data: d } = await supabase.from("listings").select("id, title, price, image_urls, created_at").eq("seller_id", userId).order("created_at", { ascending: false });
+        data = d || [];
+      } else if (type === "completed") {
+        const { data: d } = await supabase.from("orders").select("id, listing_id, created_at, status, buyer_id").eq("seller_id", userId).eq("status", "completed").order("created_at", { ascending: false });
+        if (d && d.length > 0) {
+          const listingIds = [...new Set(d.map((o:any)=>o.listing_id).filter(Boolean))];
+          const { data: lists } = listingIds.length ? await supabase.from("listings").select("id, title, image_urls").in("id", listingIds) : { data: [] };
+          const listMap = Object.fromEntries((lists||[]).map((l:any)=>[l.id, l]));
+          data = d.map((o:any) => ({ ...o, listing: listMap[o.listing_id] }));
+        }
+      } else if (type === "reviews") {
+        const { data: d } = await supabase.from("reviews").select("id, rating, comment, created_at, reviewer_id").eq("seller_id", userId).order("created_at", { ascending: false });
+        if (d && d.length > 0) {
+          const ids = [...new Set(d.map((r:any)=>r.reviewer_id))];
+          const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+          const profMap = Object.fromEntries((profs||[]).map((p:any)=>[p.id, p]));
+          data = d.map((r:any) => ({ ...r, reviewer_name: profMap[r.reviewer_id]?.display_name || "ユーザー", reviewer_avatar: profMap[r.reviewer_id]?.avatar_url }));
+        }
+      } else if (type === "communities") {
+        const { data: mems } = await supabase.from("community_members").select("community_id").eq("user_id", userId);
+        const ids = (mems||[]).map((m:any)=>m.community_id);
+        if (ids.length) {
+          const { data: comms } = await supabase.from("communities").select("id, name, icon, category, member_count").in("id", ids);
+          data = comms || [];
+        }
+      } else if (type === "events") {
+        const { data: d } = await supabase.from("events").select("id, title, event_date, prefecture, status, image_url").eq("organizer_id", userId).order("event_date", { ascending: false });
+        data = d || [];
+      } else if (type === "gallery") {
+        const { data: d } = await supabase.from("gallery_posts").select("id, image_url, caption, created_at").eq("user_id", userId).order("created_at", { ascending: false });
+        data = d || [];
+      } else if (type === "blog") {
+        const { data: d } = await supabase.from("blog_posts").select("id, title, category, cover_image_url, created_at").eq("author_id", userId).order("created_at", { ascending: false });
+        data = d || [];
+      } else if (type === "following") {
+        const { data: f } = await supabase.from("follows").select("following_id").eq("follower_id", userId);
+        const ids = (f||[]).map((x:any)=>x.following_id);
+        if (ids.length) {
+          const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url, bio").in("id", ids);
+          data = profs || [];
+        }
+      } else if (type === "followers") {
+        const { data: f } = await supabase.from("follows").select("follower_id").eq("following_id", userId);
+        const ids = (f||[]).map((x:any)=>x.follower_id);
+        if (ids.length) {
+          const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url, bio").in("id", ids);
+          data = profs || [];
+        }
+      }
+      setItems(data);
+      setLoading(false);
+    })();
+  }, [type, userId]);
+
+  const titles: Record<string, string> = {
+    listings: "📦 出品中の商品", completed: "✅ 取引完了履歴", reviews: "⭐ もらったレビュー",
+    communities: "💬 参加中のコミュニティ", events: "📅 投稿したイベント",
+    gallery: "🐾 投稿したギャラリー", blog: "📝 投稿したブログ",
+    following: "👥 フォロー中", followers: "👥 フォロワー",
+  };
+
+  const handleNavigate = (path:string) => { onClose(); setPage(path); };
+
+  const renderItem = (item:any) => {
+    if (type === "listings") {
+      return (
+        <button key={item.id} onClick={()=>handleNavigate(`listing/${item.id}`)} style={{ width:"100%", display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", textAlign:"left", fontFamily:"inherit", alignItems:"center" }}>
+          <div style={{ width:50, height:50, borderRadius:8, background: item.image_urls?.[0] ? `url(${item.image_urls[0]}) center/cover` : C.orangePale, flexShrink:0 }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
+            <div style={{ fontSize:14, fontWeight:800, color:C.orange, marginTop:2 }}>¥{item.price?.toLocaleString()}</div>
+          </div>
+        </button>
+      );
+    }
+    if (type === "completed") {
+      return (
+        <div key={item.id} style={{ display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, alignItems:"center" }}>
+          <div style={{ width:50, height:50, borderRadius:8, background: item.listing?.image_urls?.[0] ? `url(${item.listing.image_urls[0]}) center/cover` : C.orangePale, flexShrink:0 }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.listing?.title || "商品"}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>✅ {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
+          </div>
+        </div>
+      );
+    }
+    if (type === "reviews") {
+      return (
+        <div key={item.id} style={{ padding:"12px 14px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+            <div style={{ width:28, height:28, borderRadius:"50%", background: item.reviewer_avatar ? `url(${item.reviewer_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:C.orange }}>{!item.reviewer_avatar && (item.reviewer_name||"?").charAt(0).toUpperCase()}</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{item.reviewer_name}</div>
+              <div style={{ fontSize:10, color:C.warmGray }}>{"⭐".repeat(item.rating)} ・ {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
+            </div>
+          </div>
+          {item.comment && <div style={{ fontSize:12, color:C.dark, lineHeight:1.5 }}>{item.comment}</div>}
+        </div>
+      );
+    }
+    if (type === "communities") {
+      return (
+        <button key={item.id} onClick={()=>handleNavigate(`community/${item.id}`)} style={{ width:"100%", display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", textAlign:"left", fontFamily:"inherit", alignItems:"center" }}>
+          <div style={{ width:44, height:44, borderRadius:10, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{item.icon || "🐾"}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>{item.category} · 👥 {item.member_count || 0}人</div>
+          </div>
+        </button>
+      );
+    }
+    if (type === "events") {
+      const statusBadge: Record<string, {bg:string;color:string;label:string}> = {
+        approved: { bg:"#E8F5E9", color:"#4CAF50", label:"公開中" },
+        pending: { bg:"#FFF8E1", color:"#996200", label:"審査中" },
+        rejected: { bg:"#FFEBEE", color:"#C62828", label:"却下" },
+      };
+      const sb = statusBadge[item.status] || statusBadge.pending;
+      return (
+        <div key={item.id} style={{ display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, alignItems:"center" }}>
+          <div style={{ width:50, height:50, borderRadius:8, background: item.image_url?.startsWith("http") ? `url(${item.image_url}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{!item.image_url?.startsWith("http") && (item.image_url || "🐾")}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>📅 {item.event_date} · 📍 {item.prefecture}</div>
+          </div>
+          <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:sb.bg, color:sb.color, fontWeight:700, flexShrink:0 }}>{sb.label}</span>
+        </div>
+      );
+    }
+    if (type === "gallery") {
+      return (
+        <div key={item.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+          <div style={{ width:"100%", aspectRatio:"1", background: `url(${item.image_url}) center/cover` }}/>
+          {item.caption && <div style={{ padding:"8px 12px", fontSize:11, color:C.dark, lineHeight:1.5, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{item.caption}</div>}
+        </div>
+      );
+    }
+    if (type === "blog") {
+      return (
+        <div key={item.id} style={{ display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, alignItems:"center" }}>
+          <div style={{ width:50, height:50, borderRadius:8, background: item.cover_image_url ? `url(${item.cover_image_url}) center/cover` : C.orangePale, flexShrink:0 }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>{item.category} · {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
+          </div>
+        </div>
+      );
+    }
+    if (type === "following" || type === "followers") {
+      return (
+        <button key={item.id} onClick={()=>handleNavigate(`user/${item.id}`)} style={{ width:"100%", display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", textAlign:"left", fontFamily:"inherit", alignItems:"center" }}>
+          <div style={{ width:40, height:40, borderRadius:"50%", background: item.avatar_url ? `url(${item.avatar_url}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange, flexShrink:0 }}>{!item.avatar_url && (item.display_name||"?").charAt(0).toUpperCase()}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{item.display_name || "ユーザー"}</div>
+            {item.bio && <div style={{ fontSize:11, color:C.warmGray, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.bio}</div>}
+          </div>
+        </button>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.white, borderRadius:20, padding:"20px", width:"100%", maxWidth:480, maxHeight:"85vh", display:"flex", flexDirection:"column" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ fontSize:16, fontWeight:900, color:C.dark }}>{titles[type] || "詳細"}</div>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>×</button>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:8 }}>
+          {loading ? (
+            <div style={{ padding:30, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>
+          ) : items.length === 0 ? (
+            <div style={{ padding:30, textAlign:"center", color:C.warmGray, fontSize:13 }}>まだありません</div>
+          ) : type === "gallery" ? (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:8 }}>{items.map(renderItem)}</div>
+          ) : (
+            items.map(renderItem)
+          )}
+        </div>
+      </div>
     </div>
   );
 };
