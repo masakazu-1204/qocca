@@ -392,6 +392,16 @@ const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
       <span style={{ fontSize:22 }}>📝</span>
       <span>ブログ</span>
     </button>
+    <button onClick={()=>setPage("communities")} style={{
+      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
+      background: "transparent", color:C.dark,
+      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
+      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
+      marginBottom:2
+    }}>
+      <span style={{ fontSize:22 }}>💬</span>
+      <span>コミュニティ</span>
+    </button>
     <div style={{ margin:"12px 8px", borderTop:`1px solid ${C.border}` }}/>
     <button onClick={()=>setPage("sell")} style={{
       width:"100%", padding:"14px 18px", border:"none", borderRadius:12,
@@ -857,6 +867,17 @@ useEffect(() => {
                   </div>
                 </div>
               ))}
+        </div>
+      </section>
+
+      {/* ── コミュニティCTA ── */}
+      <section style={{ padding:"20px 16px", background:C.cream }}>
+        <div onClick={()=>setPage("communities")} style={{ padding:"18px 20px", background:`linear-gradient(135deg, ${C.orangePale}, #FFE5B4)`, borderRadius:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:`1px solid ${C.border}` }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:14, fontWeight:900, color:C.dark, marginBottom:3 }}>💬 コミュニティに参加しよう</div>
+            <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.4 }}>同じ犬種・猫種・趣味のなかまとつながれる</div>
+          </div>
+          <div style={{ padding:"8px 14px", background:C.orange, borderRadius:8, color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>見にいく →</div>
         </div>
       </section>
 
@@ -4036,6 +4057,338 @@ const EventsPage = ({ isPC, setPage }) => {
 };
 
 
+// ── コミュニティカテゴリ ──────────────────────────────────────────────────
+const COMMUNITY_CATEGORIES = ["すべて","犬種別","猫種別","エリア別","しつけ・お悩み","お散歩仲間","多頭飼い","シニアペット","保護犬・保護猫","その他"];
+
+// ── コミュニティ作成モーダル ──────────────────────────────────────────────
+const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onCreated: (id:string) => void }) => {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("犬種別");
+  const [icon, setIcon] = useState("🐶");
+  const [submitting, setSubmitting] = useState(false);
+  const ICON_CHOICES = ["🐶","🐕","🐩","🐕‍🦺","🐈","🐈‍⬛","🐾","🦴","🏠","🌸","💕","✨","🎀","🎂","🎉","📷","🎨","🍖","🐦","🐰","🦜","🐢"];
+
+  const handleCreate = async () => {
+    if (!name.trim() || submitting) return;
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { alert("ログインが必要です"); setSubmitting(false); return; }
+    const { data, error } = await supabase.from("communities").insert({
+      name: name.trim(), description: description.trim(), category, icon, creator_id: user.id,
+    }).select().single();
+    setSubmitting(false);
+    if (error) { alert("作成に失敗しました: " + error.message); return; }
+    if (data) onCreated(data.id);
+  };
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.white, borderRadius:20, padding:"24px 20px", width:"100%", maxWidth:480, maxHeight:"85vh", overflowY:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ fontSize:17, fontWeight:900, color:C.dark }}>💬 コミュニティを作成</div>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>×</button>
+        </div>
+        <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>アイコン</div>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
+          {ICON_CHOICES.map(ic => (
+            <button key={ic} onClick={()=>setIcon(ic)} style={{ width:36, height:36, borderRadius:8, background: icon === ic ? C.orangePale : C.lightGray, border: icon === ic ? `2px solid ${C.orange}` : "2px solid transparent", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{ic}</button>
+          ))}
+        </div>
+        <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>コミュニティ名 <span style={{ color:C.orange }}>*</span></div>
+        <input value={name} onChange={e=>setName(e.target.value)} maxLength={40} placeholder="例: シーズー大好き集まれ！" style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", marginBottom:14, outline:"none" }}/>
+        <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>カテゴリ</div>
+        <select value={category} onChange={e=>setCategory(e.target.value)} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", marginBottom:14, outline:"none", background:C.white }}>
+          {COMMUNITY_CATEGORIES.filter(c=>c!=="すべて").map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>説明（任意）</div>
+        <textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={200} placeholder="どんなコミュニティか紹介してください" style={{ width:"100%", minHeight:80, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
+        <div style={{ fontSize:11, color:C.gray, textAlign:"right", marginBottom:16 }}>{description.length}/200</div>
+        <div style={{ background:C.orangePale, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:11, color:C.dark, lineHeight:1.5 }}>
+          📌 ルール: Qocca内の商品紹介はOK。外部サイト誘導や個人連絡先交換は禁止です。
+        </div>
+        <button onClick={handleCreate} disabled={!name.trim() || submitting} style={{ width:"100%", padding:"14px", background: !name.trim() || submitting ? "#ccc" : C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor: !name.trim() || submitting ? "not-allowed" : "pointer", fontFamily:"inherit" }}>
+          {submitting ? "作成中..." : "コミュニティを作成"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── コミュニティ一覧ページ ──────────────────────────────────────────────
+const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:string,d?:any)=>void }) => {
+  const { user } = useAuth();
+  const [communities, setCommunities] = useState<any[]>([]);
+  const [myCommunityIds, setMyCommunityIds] = useState<Set<string>>(new Set());
+  const [activeCategory, setActiveCategory] = useState("すべて");
+  const [showCreate, setShowCreate] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCommunities = async () => {
+    setLoading(true);
+    const { data: comms } = await supabase
+      .from("communities")
+      .select("*")
+      .eq("is_archived", false)
+      .order("member_count", { ascending: false });
+    setCommunities(comms || []);
+    if (user) {
+      const { data: mems } = await supabase.from("community_members").select("community_id").eq("user_id", user.id);
+      setMyCommunityIds(new Set((mems||[]).map((m:any)=>m.community_id)));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchCommunities(); }, [user?.id]);
+
+  const filtered = activeCategory === "すべて" ? communities : communities.filter(c => c.category === activeCategory);
+
+  const handleJoin = async (e:React.MouseEvent, communityId:string) => {
+    e.stopPropagation();
+    if (!user) { setPage("signup"); return; }
+    if (myCommunityIds.has(communityId)) {
+      // 退出
+      await supabase.from("community_members").delete().eq("community_id", communityId).eq("user_id", user.id);
+      setMyCommunityIds(prev => { const next = new Set(prev); next.delete(communityId); return next; });
+      setCommunities(prev => prev.map(c => c.id === communityId ? {...c, member_count: Math.max((c.member_count||1)-1, 0)} : c));
+    } else {
+      // 参加
+      await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
+      setMyCommunityIds(prev => new Set(prev).add(communityId));
+      setCommunities(prev => prev.map(c => c.id === communityId ? {...c, member_count: (c.member_count||0)+1} : c));
+    }
+  };
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, padding: isPC ? 0 : "60px 16px 80px", maxWidth: 800, margin:"0 auto" }}>
+      <div style={{ background:`linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, padding: isPC ? "24px 28px" : "20px 16px", borderRadius: isPC ? 16 : 14, marginBottom:16, color:C.white }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:10 }}>
+          <div>
+            <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>💬 コミュニティ</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)" }}>同じペット・趣味のなかまとつながろう</div>
+          </div>
+          <button onClick={()=>{ if(!user){setPage("signup"); return;} setShowCreate(true); }} style={{ padding:"10px 18px", background:C.orange, border:"none", borderRadius:10, color:C.white, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>+ 作成</button>
+        </div>
+      </div>
+      <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:6, marginBottom:16 }}>
+        {COMMUNITY_CATEGORIES.map(cat => (
+          <button key={cat} onClick={()=>setActiveCategory(cat)} style={{ flexShrink:0, padding:"6px 14px", border:`1.5px solid ${activeCategory===cat?C.orange:C.border}`, borderRadius:20, background:activeCategory===cat?C.orangePale:C.white, color:activeCategory===cat?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{cat}</button>
+        ))}
+      </div>
+      {loading ? (
+        <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>
+          <div style={{ fontSize:36, marginBottom:12 }}>💬</div>
+          <div>このカテゴリのコミュニティはまだありません</div>
+          <div style={{ fontSize:11, marginTop:6 }}>最初のコミュニティを作成してみましょう！</div>
+        </div>
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:12 }}>
+          {filtered.map(c => {
+            const isMember = myCommunityIds.has(c.id);
+            return (
+              <div key={c.id} onClick={()=>setPage(`community/${c.id}`)} style={{ background:C.white, borderRadius:14, padding:"14px", border:`1px solid ${C.border}`, cursor:"pointer", display:"flex", gap:12, alignItems:"flex-start" }}>
+                <div style={{ width:48, height:48, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{c.icon || "🐾"}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
+                    {c.is_official && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:C.orange, color:"#fff", fontWeight:800 }}>公式</span>}
+                  </div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginBottom:6 }}>{c.category} · 👥 {c.member_count || 0}人</div>
+                  {c.description && <div style={{ fontSize:12, color:"#555", marginBottom:8, lineHeight:1.5, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{c.description}</div>}
+                  <button onClick={(e)=>handleJoin(e, c.id)} style={{ padding:"6px 14px", background: isMember ? C.white : C.orange, border: isMember ? `1.5px solid ${C.orange}` : "none", borderRadius:16, color: isMember ? C.orange : "#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    {isMember ? "参加中" : "+ 参加する"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {showCreate && <CreateCommunityModal onClose={()=>setShowCreate(false)} onCreated={(id)=>{ setShowCreate(false); fetchCommunities(); setPage(`community/${id}`); }} />}
+    </div>
+  );
+};
+
+// ── コミュニティ詳細・チャットページ ─────────────────────────────────────
+const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:string,d?:any)=>void }) => {
+  const { communityId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [community, setCommunity] = useState<any>(null);
+  const [isMember, setIsMember] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [warning, setWarning] = useState<{ types: string[]; original: string; masked: string } | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchCommunity = async () => {
+    if (!communityId) return;
+    setLoading(true);
+    const { data: comm } = await supabase.from("communities").select("*").eq("id", communityId).single();
+    setCommunity(comm);
+    if (user) {
+      const { data: mem } = await supabase.from("community_members").select("id").eq("community_id", communityId).eq("user_id", user.id).maybeSingle();
+      setIsMember(!!mem);
+      if (mem) {
+        const { data: msgs } = await supabase
+          .from("community_messages")
+          .select("*")
+          .eq("community_id", communityId)
+          .order("created_at", { ascending: true })
+          .limit(100);
+        // 送信者プロフィール
+        const senderIds = [...new Set((msgs||[]).map((m:any)=>m.sender_id))];
+        const { data: profs } = senderIds.length ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", senderIds) : { data: [] };
+        const profMap = Object.fromEntries((profs||[]).map((p:any)=>[p.id, p]));
+        setMessages((msgs||[]).map((m:any) => ({ ...m, sender_name: profMap[m.sender_id]?.display_name || "ユーザー", sender_avatar: profMap[m.sender_id]?.avatar_url })));
+      }
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchCommunity(); }, [communityId, user?.id]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleJoin = async () => {
+    if (!user || !communityId) { setPage("signup"); return; }
+    await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
+    setIsMember(true);
+    fetchCommunity();
+  };
+
+  const handleLeave = async () => {
+    if (!user || !communityId) return;
+    if (!confirm("このコミュニティから退出しますか？")) return;
+    await supabase.from("community_members").delete().eq("community_id", communityId).eq("user_id", user.id);
+    setIsMember(false);
+    setMessages([]);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || !communityId || sending) return;
+    const detection = detectContacts(input);
+    if (detection.found) {
+      if (warning && warning.original === input) {
+        setSending(true);
+        await supabase.from("community_messages").insert({
+          community_id: communityId, sender_id: user.id, content: warning.masked, has_warning: true,
+        });
+        setInput(""); setWarning(null);
+        await fetchCommunity();
+        setSending(false);
+        return;
+      }
+      setWarning({ types: detection.types, original: input, masked: detection.masked });
+      return;
+    }
+    setSending(true);
+    await supabase.from("community_messages").insert({
+      community_id: communityId, sender_id: user.id, content: input, has_warning: false,
+    });
+    setInput(""); setWarning(null);
+    await fetchCommunity();
+    setSending(false);
+  };
+
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
+  if (!community) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>コミュニティが見つかりません</div>;
+
+  const pinnedMsg = `📌 ようこそ「${community.name}」へ！\nイベント開催の方は「イベント」ページから投稿をお願いします。\nQocca内の商品紹介はOK！外部サイト誘導・個人連絡先交換は禁止です。`;
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, padding: isPC ? 0 : "60px 0 80px", maxWidth: 800, margin:"0 auto" }}>
+      {/* ヘッダー */}
+      <div style={{ background:`linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, padding: isPC ? "24px 28px" : "16px", borderRadius: isPC ? 16 : 0, marginBottom:0, color:C.white, display:"flex", alignItems:"center", gap:14 }}>
+        <button onClick={()=>navigate("/communities")} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, width:32, height:32, color:"#fff", fontSize:16, cursor:"pointer", flexShrink:0 }}>←</button>
+        <div style={{ width:48, height:48, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>{community.icon || "🐾"}</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <div style={{ fontSize:16, fontWeight:900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{community.name}</div>
+            {community.is_official && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:C.orange, color:"#fff", fontWeight:800 }}>公式</span>}
+          </div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{community.category} · 👥 {community.member_count || 0}人</div>
+        </div>
+        {isMember && (
+          <button onClick={handleLeave} style={{ padding:"6px 12px", background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>退出</button>
+        )}
+      </div>
+
+      {community.description && (
+        <div style={{ background:C.white, padding:"12px 16px", borderBottom:`1px solid ${C.border}`, fontSize:12, color:"#555", lineHeight:1.6 }}>{community.description}</div>
+      )}
+
+      {!isMember ? (
+        <div style={{ padding:"40px 20px", textAlign:"center", background:C.white, borderRadius: isPC ? 16 : 0, marginTop: isPC ? 12 : 0 }}>
+          <div style={{ fontSize:14, color:C.warmGray, marginBottom:14 }}>このコミュニティに参加するとチャットに参加できます</div>
+          <button onClick={handleJoin} style={{ padding:"12px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>+ 参加する</button>
+        </div>
+      ) : (
+        <>
+          {/* ピン留め固定メッセージ */}
+          <div style={{ background:"#FFF8E1", padding:"12px 16px", borderBottom:`1px solid ${C.border}`, fontSize:11, color:"#996200", lineHeight:1.6, whiteSpace:"pre-wrap" }}>{pinnedMsg}</div>
+
+          {/* メッセージ一覧 */}
+          <div style={{ padding:"16px", minHeight:300, maxHeight: isPC ? 500 : "60vh", overflowY:"auto", display:"flex", flexDirection:"column", gap:12, background:"#FAFAF8" }}>
+            {messages.length === 0 ? (
+              <div style={{ textAlign:"center", color:C.warmGray, fontSize:12, padding:"30px 0" }}>まだメッセージがありません<br/>最初のメッセージを送ってみましょう</div>
+            ) : messages.map(m => (
+              <div key={m.id} style={{ display:"flex", justifyContent: m.sender_id === user?.id ? "flex-end" : "flex-start", gap:8 }}>
+                {m.sender_id !== user?.id && (
+                  <div onClick={()=>setPage(`user/${m.sender_id}`)} style={{ width:32, height:32, borderRadius:"50%", background: m.sender_avatar ? `url(${m.sender_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange, flexShrink:0, cursor:"pointer" }}>{!m.sender_avatar && (m.sender_name||"?").charAt(0).toUpperCase()}</div>
+                )}
+                <div style={{ maxWidth:"75%" }}>
+                  {m.sender_id !== user?.id && <div style={{ fontSize:10, color:C.warmGray, marginBottom:2, marginLeft:2 }}>{m.sender_name}</div>}
+                  <div style={{
+                    padding:"10px 14px", borderRadius:14,
+                    background: m.sender_id === user?.id ? C.orange : C.white,
+                    color: m.sender_id === user?.id ? "#fff" : C.dark,
+                    border: m.sender_id !== user?.id ? `1px solid ${C.border}` : "none",
+                    borderBottomRightRadius: m.sender_id === user?.id ? 4 : 14,
+                    borderBottomLeftRadius: m.sender_id === user?.id ? 14 : 4,
+                  }}>
+                    <div style={{ fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{m.content}</div>
+                    <div style={{ fontSize:9, marginTop:4, opacity:0.5, textAlign:"right" }}>{new Date(m.created_at).toLocaleString("ja-JP", { hour:"2-digit", minute:"2-digit", month:"numeric", day:"numeric" })}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef}/>
+          </div>
+
+          {/* 警告 */}
+          {warning && (
+            <div style={{ padding:"12px 16px", background:"#FFE5E5", borderTop:`1px solid #FFB3B3` }}>
+              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}>⚠️ 連絡先・外部誘導が含まれています ({warning.types.join(", ")})</div>
+              <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>コミュニティでの個人連絡先交換は禁止です。<br/>取引はQocca内で完結してください。</div>
+              <div style={{ display:"flex", gap:6 }}>
+                <button onClick={()=>setWarning(null)} style={{ flex:1, padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
+                <button onClick={handleSend} style={{ flex:1, padding:"8px", background:"#FFB3B3", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:"#fff" }}>***でマスク送信</button>
+              </div>
+            </div>
+          )}
+
+          {/* 入力欄 */}
+          <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.border}`, display:"flex", gap:8, background:C.white }}>
+            <input
+              value={input}
+              onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
+              onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+              placeholder="メッセージを入力..."
+              disabled={sending}
+              style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+            <button onClick={handleSend} disabled={!input.trim() || sending} style={{ padding:"10px 16px", background: !input.trim() || sending ? "#ccc" : C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, fontSize:13, cursor: !input.trim() || sending ? "not-allowed" : "pointer", fontFamily:"inherit" }}>{sending ? "..." : "送信"}</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+
 // ── PC用バナー ────────────────────────────────────────────────────────────
 const PCBanner = ({ setPage }) => (
   <div style={{
@@ -4071,6 +4424,8 @@ const useNav = () => {
     else if (page === "gallery") navigate("/gallery");
     else if (page === "facilities") navigate("/facilities");
     else if (page === "blog") navigate("/blog");
+    else if (page === "communities") navigate("/communities");
+    else if (typeof page === "string" && page.startsWith("community/")) navigate("/" + page);
     else if (page === "terms") navigate("/terms");
     else if (page === "privacy") navigate("/privacy");
     else if (page === "tokusho") navigate("/tokusho");
@@ -4213,6 +4568,16 @@ function QoccaAppInner() {
                         </div>
                       ))}
                       </div>
+
+                    {/* ── PC コミュニティCTA ── */}
+                    <div onClick={()=>setPage("communities")} style={{ marginTop:32, padding:"24px", background:`linear-gradient(135deg, ${C.orangePale}, #FFE5B4)`, borderRadius:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", border:`1px solid ${C.border}` }}>
+                      <div>
+                        <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>💬 コミュニティに参加しよう</div>
+                        <div style={{ fontSize:13, color:C.warmGray }}>同じ犬種・猫種・趣味のなかまとつながれる</div>
+                      </div>
+                      <div style={{ padding:"10px 20px", background:C.orange, borderRadius:10, color:"#fff", fontSize:13, fontWeight:800 }}>見にいく →</div>
+                    </div>
+
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
                       {listings.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
@@ -4331,6 +4696,22 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/communities" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <CommunitiesPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/community/:communityId" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <CommunityDetailPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/sell" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -4406,6 +4787,8 @@ function QoccaAppInner() {
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/communities" element={<CommunitiesPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/community/:communityId" element={<CommunityDetailPage setPage={setPage} isPC={false}/>}/>
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
