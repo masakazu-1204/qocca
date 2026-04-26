@@ -679,8 +679,43 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
   );
 };
 
+// ── ヒーローセクション統計データ取得 ──────────────────────────────────────
+// リアル値を取得し、100超えたら「+」表記
+const formatStat = (n:number, threshold:number = 100) => {
+  if (n >= threshold) {
+    // 100以上は切り下げて「+」表記（例: 234 → "200+"）
+    if (n >= 1000) {
+      const k = Math.floor(n / 1000);
+      return `${k},000+`;
+    }
+    const rounded = Math.floor(n / 100) * 100;
+    return `${rounded.toLocaleString()}+`;
+  }
+  return n.toLocaleString();
+};
+
+const useHeroStats = () => {
+  const [stats, setStats] = useState<{ listings:string; users:string; communities:string }>({ listings: "0", users: "0", communities: "0" });
+  useEffect(()=>{
+    (async ()=>{
+      const [listingsRes, usersRes, commsRes] = await Promise.all([
+        supabase.from("listings").select("id", { count:"exact", head:true }),
+        supabase.from("profiles").select("id", { count:"exact", head:true }),
+        supabase.from("communities").select("id", { count:"exact", head:true }).eq("is_archived", false),
+      ]);
+      setStats({
+        listings: formatStat(listingsRes.count || 0),
+        users: formatStat(usersRes.count || 0),
+        communities: formatStat(commsRes.count || 0, 50),
+      });
+    })();
+  }, []);
+  return stats;
+};
+
 // ── HOME (Mobile) ─────────────────────────────────────────────────────────
 const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
+  const heroStats = useHeroStats();
   const [activeCat, setActiveCat] = useState("all");
   const [homeEvents, setHomeEvents] = useState<any[]>([]);
 useEffect(() => {
@@ -726,7 +761,7 @@ useEffect(() => {
             <button onClick={()=>setPage("sell")} style={{ padding:"13px 20px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>出品者になる →</button>
           </div>
           <div style={{ display:"flex", gap:24, marginTop:24 }}>
-            {[["1,200+","出品"],["8,400+","登録者"],["4.8","評価"]].map(([v,l])=>(
+            {[[heroStats.listings,"出品"],[heroStats.users,"登録者"],[heroStats.communities,"💬 コミュニティ"]].map(([v,l])=>(
               <div key={l}><div style={{ fontSize:20, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{l}</div></div>
             ))}
           </div>
@@ -4040,7 +4075,9 @@ const TabBar = ({ page, setPage }) => {
 };
 
 // ── PC Hero ──────────────────────────────────────────────────────────────
-const PCHeroSection = ({ setPage }) => (
+const PCHeroSection = ({ setPage }) => {
+  const heroStats = useHeroStats();
+  return (
   <section style={{
     background:`linear-gradient(145deg, ${C.dark} 0%, ${C.darkBrown} 55%, #3D2810 100%)`,
     position:"relative", overflow:"hidden"
@@ -4062,13 +4099,14 @@ const PCHeroSection = ({ setPage }) => (
         <button onClick={()=>setPage("sell")} style={{ padding:"14px 28px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>出品者になる →</button>
       </div>
       <div style={{ display:"flex", gap:40 }}>
-        {[["1,200+","出品"],["8,400+","登録者"],["4.8","評価"],["¥0","初回手数料"]].map(([v,l])=>(
+        {[[heroStats.listings,"出品"],[heroStats.users,"登録者"],[heroStats.communities,"💬 コミュニティ"],["¥0","初回手数料"]].map(([v,l])=>(
           <div key={l}><div style={{ fontSize:24, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:4 }}>{l}</div></div>
         ))}
       </div>
     </div>
   </section>
-);
+  );
+};
 
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
 const EventsPage = ({ isPC, setPage }) => {
