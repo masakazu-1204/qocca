@@ -3732,9 +3732,7 @@ function QoccaAppInner() {
                           boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
                         }}>
                           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                            <div style={{ width:44, height:44, borderRadius:10, background: ev.pet_type === "dog" ? "#FFF3E0" : ev.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, overflow:"hidden" }}>
-                              {ev.image_url && ev.image_url.startsWith("http") ? <img src={ev.image_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (ev.image_url || "🐾")}
-                            </div>
+                            <div style={{ width:44, height:44, borderRadius:10, background: ev.pet_type === "dog" ? "#FFF3E0" : ev.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{ev.image_url || "🐾"}</div>
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title}</div>
                               <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.event_date}</div>
@@ -3746,7 +3744,6 @@ function QoccaAppInner() {
                           </div>
                         </div>
                       ))}
-                    </div>
                       </div>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
@@ -3816,6 +3813,7 @@ function QoccaAppInner() {
                     </div>
                   </div>
                 </div>
+              </div>
             }/>
             <Route path="/search" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
