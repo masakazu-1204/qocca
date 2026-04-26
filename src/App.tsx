@@ -964,25 +964,6 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [reportType, setReportType] = useState("");
   const [reportDone, setReportDone] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState({});
-  const [sellerReviews, setSellerReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
-
-  useEffect(()=>{
-    if (!item?.seller_id) return;
-    (async ()=>{
-      const { data: revs } = await supabase
-        .from("reviews")
-        .select("id, rating, comment, created_at, reviewer_id")
-        .eq("seller_id", item.seller_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      if (!revs) return setSellerReviews([]);
-      const ids = [...new Set(revs.map(r=>r.reviewer_id))];
-      const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
-      const profMap = Object.fromEntries((profs||[]).map(p=>[p.id, p]));
-      setSellerReviews(revs.map(r=>({ ...r, reviewer_name: profMap[r.reviewer_id]?.display_name || "ユーザー", reviewer_avatar: profMap[r.reviewer_id]?.avatar_url })));
-    })();
-  }, [item?.seller_id]);
-
   if (!item) return null;
 
   const itemOptions = item.options || [];
@@ -1073,25 +1054,6 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           <button onClick={()=>setPage(`user/${item.seller_id}`)} style={{ width:"100%", padding:"12px", marginBottom:14, background:C.white, color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
             👤 出品者のプロフィールを見る
           </button>
-        )}
-        {sellerReviews.length > 0 && (
-          <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:10 }}>⭐ 出品者のレビュー ({sellerReviews.length})</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              {sellerReviews.map(r => (
-                <div key={r.id} style={{ background:C.lightGray, borderRadius:10, padding:"10px 12px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                    <div style={{ width:28, height:28, borderRadius:"50%", background: r.reviewer_avatar ? `url(${r.reviewer_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:C.orange, flexShrink:0 }}>{!r.reviewer_avatar && (r.reviewer_name||"?").charAt(0).toUpperCase()}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{r.reviewer_name}</div>
-                      <div style={{ fontSize:10, color:C.warmGray }}>{"⭐".repeat(r.rating)} ・ {new Date(r.created_at).toLocaleDateString("ja-JP")}</div>
-                    </div>
-                  </div>
-                  {r.comment && <div style={{ fontSize:12, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{r.comment}</div>}
-                </div>
-              ))}
-            </div>
-          </div>
         )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
           <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:8 }}>サービス詳細</div>
@@ -1828,31 +1790,17 @@ const handleFollow = async () => {
           </div>
         </div>
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:16, justifyContent:"center" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:16, justifyContent:"center", flexWrap:"wrap" }}>
           <div style={{ fontSize:13, color:C.warmGray }}><span style={{ fontWeight:800, color:C.dark }}>{followCount}</span> フォロワー</div>
           <button onClick={handleFollow} style={{ padding:"8px 20px", background: isFollowing ? C.white : C.orange, border: isFollowing ? `1.5px solid ${C.orange}` : "none", borderRadius:20, color: isFollowing ? C.orange : C.white, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
             {isFollowing ? "フォロー中" : "フォローする"}
           </button>
+          {isFollowing && (
+            <button onClick={()=>{ navigate("/mypage"); setTimeout(()=>{ const evt = new CustomEvent("openDM", { detail: { partnerId: userId } }); window.dispatchEvent(evt); }, 100); }} style={{ padding:"8px 20px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:20, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+              💬 メッセージ
+            </button>
+          )}
         </div>
-      {reviews.length > 0 && (
-        <div style={{ marginTop:24, marginBottom:24 }}>
-          <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>⭐ レビュー ({reviews.length})</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {reviews.map(r => (
-              <div key={r.id} style={{ background:C.white, borderRadius:12, padding:"14px 16px", border:`1px solid ${C.border}` }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                  <div style={{ width:32, height:32, borderRadius:"50%", background: r.reviewer_avatar ? `url(${r.reviewer_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange }}>{!r.reviewer_avatar && (r.reviewer_name||"?").charAt(0).toUpperCase()}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{r.reviewer_name}</div>
-                    <div style={{ fontSize:11, color:C.warmGray }}>{"⭐".repeat(r.rating)} ・ {new Date(r.created_at).toLocaleDateString("ja-JP")}</div>
-                  </div>
-                </div>
-                {r.comment && <div style={{ fontSize:13, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{r.comment}</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
@@ -1875,6 +1823,12 @@ const handleFollow = async () => {
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState("profile");
+
+  useEffect(() => {
+    const handleOpenDM = () => setTab("messages");
+    window.addEventListener("openDM", handleOpenDM);
+    return () => window.removeEventListener("openDM", handleOpenDM);
+  }, []);
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
@@ -2247,70 +2201,511 @@ const DisputeModal = ({ order, onClose, onSubmit }) => {
 };
 
 // ── Messages Tab ──────────────────────────────────────────────────────────
-const MessagesTab = () => {
-  const [convos] = useState(MOCK_CONVERSATIONS);
-  const [selected, setSelected] = useState(null);
+// ── 連絡先検出フィルター ──────────────────────────────────────────────────
+// 取引前のメッセージで連絡先交換を防ぐ
+const CONTACT_PATTERNS = [
+  // 電話番号
+  { regex: /0\d{1,4}[-－‐ーｰ\s]?\d{1,4}[-－‐ーｰ\s]?\d{3,4}/g, label: "電話番号" },
+  { regex: /0\d{9,10}/g, label: "電話番号" },
+  // メールアドレス
+  { regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, label: "メールアドレス" },
+  { regex: /[a-zA-Z0-9._%+-]+\s*[＠@]\s*[a-zA-Z0-9.-]+\s*[\.。]\s*[a-zA-Z]{2,}/g, label: "メールアドレス" },
+  // URL
+  { regex: /https?:\/\/[^\s]+/gi, label: "URL" },
+  { regex: /[a-zA-Z0-9-]+\.(com|jp|net|org|io|co|me|app|shop|store|tv|ne)\b/gi, label: "URL" },
+  // LINE
+  { regex: /(LINE|line|Line|ライン|らいん|ﾗｲﾝ|raɪn)/gi, label: "LINE" },
+  // Twitter/X
+  { regex: /(Twitter|twitter|ツイッター|ついったー|ﾂｲｯﾀｰ|つぶやき)/gi, label: "Twitter/X" },
+  { regex: /(\bX\b|エックス)\s*(id|ID|アカウント|あかうんと)/gi, label: "Twitter/X" },
+  // Instagram
+  { regex: /(Instagram|instagram|insta|Insta|インスタ|いんすた|ｲﾝｽﾀ|インスタグラム|いんすたぐらむ|ｲﾝｽﾀｸﾞﾗﾑ|IG)/gi, label: "Instagram" },
+  // Facebook
+  { regex: /(Facebook|facebook|フェイスブック|ふぇいすぶっく|ﾌｪｲｽﾌﾞｯｸ|フェースブック|FB|ｴﾌﾋﾞｰ)/gi, label: "Facebook" },
+  // TikTok
+  { regex: /(TikTok|tiktok|ティックトック|てぃっくとっく|ﾃｨｯｸﾄｯｸ|tt)/gi, label: "TikTok" },
+  // WhatsApp
+  { regex: /(WhatsApp|whatsapp|ワッツアップ|わっつあっぷ|ﾜｯﾂｱｯﾌﾟ)/gi, label: "WhatsApp" },
+  // Telegram
+  { regex: /(Telegram|telegram|テレグラム|てれぐらむ|ﾃﾚｸﾞﾗﾑ)/gi, label: "Telegram" },
+  // Discord
+  { regex: /(Discord|discord|ディスコード|でぃすこーど|ﾃﾞｨｽｺｰﾄﾞ|ディスコ|でぃすこ|ﾃﾞｨｽｺ)/gi, label: "Discord" },
+  // YouTube
+  { regex: /(YouTube|youtube|ユーチューブ|ゆーちゅーぶ|ﾕｰﾁｭｰﾌﾞ|ようつべ|ﾖｳﾂﾍﾞ)/gi, label: "YouTube" },
+  // Skype
+  { regex: /(Skype|skype|スカイプ|すかいぷ|ｽｶｲﾌﾟ)/gi, label: "Skype" },
+  // Kakao Talk
+  { regex: /(KakaoTalk|kakao|カカオトーク|かかおとーく|ｶｶｵﾄｰｸ|カカオ|かかお|ｶｶｵ)/gi, label: "KakaoTalk" },
+  // Signal
+  { regex: /(Signal|signal|シグナル|しぐなる|ｼｸﾞﾅﾙ)/gi, label: "Signal" },
+  // 一般的な連絡関連キーワード
+  { regex: /(連絡先|れんらくさき|ﾚﾝﾗｸｻｷ)\s*[:：はを]?\s*[\w@＠\-_.]+/gi, label: "連絡先" },
+  { regex: /(直接|ちょくせつ|ﾁｮｸｾﾂ)(連絡|連絡先|やりとり|取引|送金|振込)/gi, label: "サイト外取引" },
+  { regex: /(サイト外|外部|別|他|ほか)で\s*(連絡|やりとり|取引|送金|振込|決済)/gi, label: "サイト外取引" },
+  { regex: /(振込|ふりこみ|銀行|ぎんこう|口座|こうざ)/gi, label: "銀行振込" },
+];
+
+const detectContacts = (text:string): { found: boolean; types: string[]; masked: string } => {
+  const types: string[] = [];
+  let masked = text;
+  for (const { regex, label } of CONTACT_PATTERNS) {
+    const newRegex = new RegExp(regex.source, regex.flags);
+    if (newRegex.test(text)) {
+      if (!types.includes(label)) types.push(label);
+      const replaceRegex = new RegExp(regex.source, regex.flags);
+      masked = masked.replace(replaceRegex, "***");
+    }
+  }
+  return { found: types.length > 0, types, masked };
+};
+
+// ── 取引メッセージタブ（OrderMessagesTab） ────────────────────────────────
+const OrderMessagesTab = () => {
+  const { user } = useAuth();
+  const [convos, setConvos] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [warning, setWarning] = useState<{ types: string[]; original: string; masked: string } | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchConvos = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data: orders } = await supabase
+      .from("orders")
+      .select("id, status, buyer_id, seller_id, listing_id, created_at")
+      .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+    if (!orders) { setLoading(false); return; }
+    const partnerIds = [...new Set(orders.map(o => o.buyer_id === user.id ? o.seller_id : o.buyer_id))];
+    const listingIds = [...new Set(orders.map(o => o.listing_id).filter(Boolean))];
+    const [{ data: profs }, { data: lists }, { data: lastMsgs }] = await Promise.all([
+      supabase.from("profiles").select("id, display_name, avatar_url").in("id", partnerIds),
+      listingIds.length ? supabase.from("listings").select("id, title").in("id", listingIds) : Promise.resolve({ data: [] }),
+      supabase.from("order_messages").select("order_id, content, created_at, recipient_id, is_read").in("order_id", orders.map(o=>o.id)).order("created_at", { ascending: false }),
+    ]);
+    const profMap = Object.fromEntries((profs||[]).map(p=>[p.id, p]));
+    const listMap = Object.fromEntries((lists||[]).map(l=>[l.id, l]));
+    const lastMsgMap: Record<string, any> = {};
+    const unreadMap: Record<string, number> = {};
+    (lastMsgs || []).forEach((m:any) => {
+      if (!lastMsgMap[m.order_id]) lastMsgMap[m.order_id] = m;
+      if (m.recipient_id === user.id && !m.is_read) {
+        unreadMap[m.order_id] = (unreadMap[m.order_id] || 0) + 1;
+      }
+    });
+    const list = orders.map(o => {
+      const partnerId = o.buyer_id === user.id ? o.seller_id : o.buyer_id;
+      const partner = profMap[partnerId];
+      const listing = listMap[o.listing_id];
+      const lastMsg = lastMsgMap[o.id];
+      return {
+        order_id: o.id,
+        status: o.status,
+        partner_id: partnerId,
+        partner_name: partner?.display_name || "ユーザー",
+        partner_avatar: partner?.avatar_url,
+        listing_title: listing?.title || "(商品名なし)",
+        last_msg: lastMsg?.content || "まだメッセージがありません",
+        last_msg_date: lastMsg?.created_at,
+        unread: unreadMap[o.id] || 0,
+      };
+    });
+    setConvos(list);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchConvos(); }, [user?.id]);
+
+  const fetchMessages = async (orderId:string) => {
+    const { data } = await supabase.from("order_messages").select("*").eq("order_id", orderId).order("created_at", { ascending: true });
+    setMessages(data || []);
+    if (user) {
+      await supabase.from("order_messages").update({ is_read: true }).eq("order_id", orderId).eq("recipient_id", user.id).eq("is_read", false);
+    }
+  };
+
+  useEffect(() => { if (selected) fetchMessages(selected.order_id); }, [selected?.order_id]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || !selected || sending) return;
+    const detection = detectContacts(input);
+    const isCompleted = selected.status === "completed";
+    if (detection.found && !isCompleted) {
+      if (warning && warning.original === input) {
+        setSending(true);
+        await supabase.from("order_messages").insert({
+          order_id: selected.order_id, sender_id: user.id, recipient_id: selected.partner_id,
+          content: warning.masked, has_warning: true,
+        });
+        setInput(""); setWarning(null);
+        await fetchMessages(selected.order_id);
+        setSending(false);
+        return;
+      }
+      setWarning({ types: detection.types, original: input, masked: detection.masked });
+      return;
+    }
+    setSending(true);
+    await supabase.from("order_messages").insert({
+      order_id: selected.order_id, sender_id: user.id, recipient_id: selected.partner_id,
+      content: input, has_warning: false,
+    });
+    setInput(""); setWarning(null);
+    await fetchMessages(selected.order_id);
+    setSending(false);
+  };
+
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>;
 
   return (
     <div>
       {!selected ? (
+        convos.length === 0 ? (
+          <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>
+            <div style={{ fontSize:36, marginBottom:12 }}>💬</div>
+            <div>取引メッセージはまだありません</div>
+            <div style={{ fontSize:11, marginTop:6 }}>商品を購入すると、ここに取引相手とのメッセージが表示されます</div>
+          </div>
+        ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {convos.map(c=>(
-            <button key={c.id} onClick={()=>setSelected(c)} style={{
+            <button key={c.order_id} onClick={()=>setSelected(c)} style={{
               background:C.white, borderRadius:14, padding:"14px", border:`1px solid ${C.border}`,
               cursor:"pointer", textAlign:"left", fontFamily:"inherit", display:"flex", alignItems:"center", gap:12, width:"100%"
             }}>
-              <div style={{ width:44, height:44, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>{c.partnerIcon}</div>
+              <div style={{ width:44, height:44, borderRadius:"50%", background: c.partner_avatar ? `url(${c.partner_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:C.orange, flexShrink:0 }}>{!c.partner_avatar && (c.partner_name||"?").charAt(0).toUpperCase()}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                  <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{c.partner}</span>
-                  <span style={{ fontSize:10, color:C.warmGray }}>{c.date}</span>
+                  <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{c.partner_name}</span>
+                  <span style={{ fontSize:10, color:C.warmGray }}>{c.last_msg_date ? new Date(c.last_msg_date).toLocaleDateString("ja-JP") : ""}</span>
                 </div>
-                <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>{c.orderId}</div>
-                <div style={{ fontSize:12, color:"#555", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.lastMsg}</div>
+                <div style={{ fontSize:11, color:C.warmGray, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.listing_title} · {c.status === "completed" ? "✅ 取引完了" : c.status === "working" ? "🔧 作業中" : c.status === "delivered" ? "📦 納品済み" : "🛒 取引中"}</div>
+                <div style={{ fontSize:12, color:"#555", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.last_msg}</div>
               </div>
               {c.unread>0 && <div style={{ width:20, height:20, borderRadius:"50%", background:C.orange, color:"#fff", fontSize:10, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.unread}</div>}
             </button>
           ))}
         </div>
+        )
       ) : (
         <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden" }}>
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
-            <button onClick={()=>setSelected(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:C.orange }}>←</button>
-            <span style={{ fontSize:20 }}>{selected.partnerIcon}</span>
-            <div>
-              <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{selected.partner}</div>
-              <div style={{ fontSize:10, color:C.warmGray }}>{selected.orderId}</div>
+            <button onClick={()=>{setSelected(null); setWarning(null); setInput("");}} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:C.orange }}>←</button>
+            <div style={{ width:32, height:32, borderRadius:"50%", background: selected.partner_avatar ? `url(${selected.partner_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange, flexShrink:0 }}>{!selected.partner_avatar && (selected.partner_name||"?").charAt(0).toUpperCase()}</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{selected.partner_name}</div>
+              <div style={{ fontSize:10, color:C.warmGray }}>{selected.listing_title}</div>
             </div>
           </div>
-          <div style={{ padding:"16px", minHeight:250, display:"flex", flexDirection:"column", gap:10 }}>
-            {selected.messages.map((m,i)=>(
-              <div key={i} style={{ display:"flex", justifyContent:m.from==="me"?"flex-end":"flex-start" }}>
+
+          {selected.status !== "completed" && (
+            <div style={{ padding:"8px 16px", background:"#FFF8E1", borderBottom:`1px solid ${C.border}`, fontSize:11, color:"#996200", display:"flex", alignItems:"center", gap:6 }}>
+              ⚠️ 取引完了前は外部連絡先（電話・メール・SNS等）の交換は禁止されています
+            </div>
+          )}
+
+          <div style={{ padding:"16px", minHeight:250, maxHeight:400, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, background:"#FAFAF8" }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign:"center", color:C.warmGray, fontSize:12, padding:"20px 0" }}>まだメッセージがありません<br/>最初のメッセージを送ってみましょう</div>
+            )}
+            {messages.map((m)=>(
+              <div key={m.id} style={{ display:"flex", justifyContent:m.sender_id===user?.id?"flex-end":"flex-start" }}>
                 <div style={{
                   maxWidth:"75%", padding:"10px 14px", borderRadius:14,
-                  background:m.from==="me"?C.orange:"#F0EFEC",
-                  color:m.from==="me"?"#fff":C.dark,
-                  borderBottomRightRadius:m.from==="me"?4:14,
-                  borderBottomLeftRadius:m.from==="me"?14:4,
+                  background:m.sender_id===user?.id?C.orange:"#F0EFEC",
+                  color:m.sender_id===user?.id?"#fff":C.dark,
+                  borderBottomRightRadius:m.sender_id===user?.id?4:14,
+                  borderBottomLeftRadius:m.sender_id===user?.id?14:4,
                 }}>
-                  <div style={{ fontSize:13, lineHeight:1.6 }}>{m.text}</div>
-                  <div style={{ fontSize:9, marginTop:4, opacity:0.5, textAlign:"right" }}>{m.time}</div>
+                  <div style={{ fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{m.content}</div>
+                  <div style={{ fontSize:9, marginTop:4, opacity:0.5, textAlign:"right" }}>{new Date(m.created_at).toLocaleString("ja-JP", { hour:"2-digit", minute:"2-digit", month:"numeric", day:"numeric" })}</div>
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef}/>
           </div>
+
+          {warning && (
+            <div style={{ padding:"12px 16px", background:"#FFE5E5", borderTop:`1px solid #FFB3B3` }}>
+              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}>⚠️ 連絡先が含まれています ({warning.types.join(", ")})</div>
+              <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>取引完了前のサイト外連絡は規約違反です。<br/>取引完了後はそのまま送信できます。</div>
+              <div style={{ display:"flex", gap:6 }}>
+                <button onClick={()=>setWarning(null)} style={{ flex:1, padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
+                <button onClick={handleSend} style={{ flex:1, padding:"8px", background:"#FFB3B3", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:"#fff" }}>***でマスク送信</button>
+              </div>
+            </div>
+          )}
+
           <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.border}`, display:"flex", gap:8 }}>
-            <input value={input} onChange={e=>setInput(e.target.value)} placeholder="メッセージを入力..."
+            <input
+              value={input}
+              onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
+              onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+              placeholder="メッセージを入力..."
+              disabled={sending}
               style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
-            <button style={{ padding:"10px 16px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>送信</button>
+            <button onClick={handleSend} disabled={!input.trim() || sending} style={{ padding:"10px 16px", background: !input.trim() || sending ? "#ccc" : C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, fontSize:13, cursor: !input.trim() || sending ? "not-allowed" : "pointer", fontFamily:"inherit" }}>{sending ? "..." : "送信"}</button>
           </div>
-          <div style={{ padding:"4px 16px 12px", fontSize:10, color:C.warmGray }}>⚠️ プラットフォーム外での連絡先交換は禁止されています</div>
         </div>
       )}
     </div>
   );
 };
+
+// ── DMタブ（DirectMessagesTab） ─────────────────────────────────────────
+const DirectMessagesTab = () => {
+  const { user } = useAuth();
+  const [convos, setConvos] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [warning, setWarning] = useState<{ types: string[]; original: string; masked: string } | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // DM会話一覧を取得（自分が関わるDM）
+  const fetchConvos = async () => {
+    if (!user) return;
+    setLoading(true);
+    // 自分が関わるDMをすべて取得
+    const { data: dms } = await supabase
+      .from("direct_messages")
+      .select("*")
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+    if (!dms) { setLoading(false); return; }
+
+    // 会話相手ごとにグループ化（最新のメッセージだけ残す）
+    const convoMap: Record<string, any> = {};
+    for (const m of dms) {
+      const partnerId = m.sender_id === user.id ? m.recipient_id : m.sender_id;
+      if (!convoMap[partnerId]) {
+        convoMap[partnerId] = { partner_id: partnerId, last_msg: m.content, last_msg_date: m.created_at, unread: 0 };
+      }
+      if (m.recipient_id === user.id && !m.is_read) convoMap[partnerId].unread++;
+    }
+    const partnerIds = Object.keys(convoMap);
+    if (partnerIds.length === 0) { setConvos([]); setLoading(false); return; }
+
+    const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", partnerIds);
+    const profMap = Object.fromEntries((profs||[]).map(p=>[p.id, p]));
+
+    // 自分が誰をフォローしているか
+    const { data: myFollowing } = await supabase.from("follows").select("following_id").eq("follower_id", user.id);
+    const followingSet = new Set((myFollowing||[]).map((f:any)=>f.following_id));
+
+    const list = partnerIds.map(pid => ({
+      ...convoMap[pid],
+      partner_name: profMap[pid]?.display_name || "ユーザー",
+      partner_avatar: profMap[pid]?.avatar_url,
+      is_following: followingSet.has(pid),
+    })).sort((a,b) => new Date(b.last_msg_date).getTime() - new Date(a.last_msg_date).getTime());
+
+    setConvos(list);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchConvos(); }, [user?.id]);
+
+  // プロフィールページからの「💬 メッセージ」イベントを受信
+  useEffect(() => {
+    const handleOpenDM = async (e: any) => {
+      const partnerId = e.detail?.partnerId;
+      if (!partnerId || !user) return;
+      // プロフィール取得
+      const { data: prof } = await supabase.from("profiles").select("id, display_name, avatar_url").eq("id", partnerId).single();
+      // フォロー状況確認
+      const { data: fol } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", partnerId).maybeSingle();
+      setSelected({
+        partner_id: partnerId,
+        partner_name: prof?.display_name || "ユーザー",
+        partner_avatar: prof?.avatar_url,
+        is_following: !!fol,
+        last_msg: "",
+        last_msg_date: new Date().toISOString(),
+        unread: 0,
+      });
+    };
+    window.addEventListener("openDM", handleOpenDM);
+    return () => window.removeEventListener("openDM", handleOpenDM);
+  }, [user?.id]);
+
+  const fetchMessages = async (partnerId:string) => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("direct_messages")
+      .select("*")
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${partnerId}),and(sender_id.eq.${partnerId},recipient_id.eq.${user.id})`)
+      .order("created_at", { ascending: true });
+    setMessages(data || []);
+    await supabase.from("direct_messages").update({ is_read: true }).eq("sender_id", partnerId).eq("recipient_id", user.id).eq("is_read", false);
+  };
+
+  useEffect(() => { if (selected) fetchMessages(selected.partner_id); }, [selected?.partner_id]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || !selected || sending) return;
+    if (!selected.is_following) {
+      alert("メッセージを送るには、まず相手をフォローしてください");
+      return;
+    }
+    // 相互フォローか確認
+    const { data: mutual } = await supabase.from("follows").select("id").eq("follower_id", selected.partner_id).eq("following_id", user.id).maybeSingle();
+    const isMutual = !!mutual;
+
+    const detection = detectContacts(input);
+    // 一方フォローのみで連絡先検出 → 警告
+    if (detection.found && !isMutual) {
+      if (warning && warning.original === input) {
+        setSending(true);
+        const { error } = await supabase.from("direct_messages").insert({
+          sender_id: user.id, recipient_id: selected.partner_id,
+          content: warning.masked, has_warning: true, is_mutual: false,
+        });
+        if (error) alert("送信に失敗しました: " + error.message);
+        setInput(""); setWarning(null);
+        await fetchMessages(selected.partner_id);
+        setSending(false);
+        return;
+      }
+      setWarning({ types: detection.types, original: input, masked: detection.masked });
+      return;
+    }
+
+    // 通常送信（相互フォローなら連絡先OK）
+    setSending(true);
+    const { error } = await supabase.from("direct_messages").insert({
+      sender_id: user.id, recipient_id: selected.partner_id,
+      content: input, has_warning: false, is_mutual: isMutual,
+    });
+    if (error) alert("送信に失敗しました: " + error.message);
+    setInput(""); setWarning(null);
+    await fetchMessages(selected.partner_id);
+    setSending(false);
+  };
+
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>;
+
+  return (
+    <div>
+      {!selected ? (
+        convos.length === 0 ? (
+          <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>
+            <div style={{ fontSize:36, marginBottom:12 }}>✉️</div>
+            <div>DMはまだありません</div>
+            <div style={{ fontSize:11, marginTop:6 }}>気になる出品者のプロフィールから<br/>「💬 メッセージ」でDMを送れます</div>
+          </div>
+        ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {convos.map(c=>(
+            <button key={c.partner_id} onClick={()=>setSelected(c)} style={{
+              background:C.white, borderRadius:14, padding:"14px", border:`1px solid ${C.border}`,
+              cursor:"pointer", textAlign:"left", fontFamily:"inherit", display:"flex", alignItems:"center", gap:12, width:"100%"
+            }}>
+              <div style={{ width:44, height:44, borderRadius:"50%", background: c.partner_avatar ? `url(${c.partner_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:C.orange, flexShrink:0 }}>{!c.partner_avatar && (c.partner_name||"?").charAt(0).toUpperCase()}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                  <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{c.partner_name}</span>
+                  <span style={{ fontSize:10, color:C.warmGray }}>{new Date(c.last_msg_date).toLocaleDateString("ja-JP")}</span>
+                </div>
+                <div style={{ fontSize:12, color:"#555", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.last_msg}</div>
+              </div>
+              {c.unread>0 && <div style={{ width:20, height:20, borderRadius:"50%", background:C.orange, color:"#fff", fontSize:10, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.unread}</div>}
+            </button>
+          ))}
+        </div>
+        )
+      ) : (
+        <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+          <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
+            <button onClick={()=>{setSelected(null); setWarning(null); setInput("");}} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:C.orange }}>←</button>
+            <div style={{ width:32, height:32, borderRadius:"50%", background: selected.partner_avatar ? `url(${selected.partner_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange, flexShrink:0 }}>{!selected.partner_avatar && (selected.partner_name||"?").charAt(0).toUpperCase()}</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{selected.partner_name}</div>
+              <div style={{ fontSize:10, color:C.warmGray }}>{selected.is_following ? "フォロー中" : "未フォロー"}</div>
+            </div>
+          </div>
+
+          <div style={{ padding:"16px", minHeight:250, maxHeight:400, overflowY:"auto", display:"flex", flexDirection:"column", gap:10, background:"#FAFAF8" }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign:"center", color:C.warmGray, fontSize:12, padding:"20px 0" }}>まだメッセージがありません</div>
+            )}
+            {messages.map((m)=>(
+              <div key={m.id} style={{ display:"flex", justifyContent:m.sender_id===user?.id?"flex-end":"flex-start" }}>
+                <div style={{
+                  maxWidth:"75%", padding:"10px 14px", borderRadius:14,
+                  background:m.sender_id===user?.id?C.orange:"#F0EFEC",
+                  color:m.sender_id===user?.id?"#fff":C.dark,
+                  borderBottomRightRadius:m.sender_id===user?.id?4:14,
+                  borderBottomLeftRadius:m.sender_id===user?.id?14:4,
+                }}>
+                  <div style={{ fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{m.content}</div>
+                  <div style={{ fontSize:9, marginTop:4, opacity:0.5, textAlign:"right" }}>{new Date(m.created_at).toLocaleString("ja-JP", { hour:"2-digit", minute:"2-digit", month:"numeric", day:"numeric" })}</div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef}/>
+          </div>
+
+          {warning && (
+            <div style={{ padding:"12px 16px", background:"#FFE5E5", borderTop:`1px solid #FFB3B3` }}>
+              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}>⚠️ 連絡先が含まれています ({warning.types.join(", ")})</div>
+              <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>相互フォロー（お互いをフォロー）すれば連絡先交換できます。<br/>今は一方フォローなのでマスク送信になります。</div>
+              <div style={{ display:"flex", gap:6 }}>
+                <button onClick={()=>setWarning(null)} style={{ flex:1, padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
+                <button onClick={handleSend} style={{ flex:1, padding:"8px", background:"#FFB3B3", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:"#fff" }}>***でマスク送信</button>
+              </div>
+            </div>
+          )}
+
+          {!selected.is_following ? (
+            <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.border}`, background:"#FFF8E1", textAlign:"center" }}>
+              <div style={{ fontSize:12, color:"#996200" }}>このユーザーをフォローするとメッセージを送信できます</div>
+            </div>
+          ) : (
+            <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.border}`, display:"flex", gap:8 }}>
+              <input
+                value={input}
+                onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
+                onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+                placeholder="メッセージを入力..."
+                disabled={sending}
+                style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+              <button onClick={handleSend} disabled={!input.trim() || sending} style={{ padding:"10px 16px", background: !input.trim() || sending ? "#ccc" : C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, fontSize:13, cursor: !input.trim() || sending ? "not-allowed" : "pointer", fontFamily:"inherit" }}>{sending ? "..." : "送信"}</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── メッセージタブ（取引メッセージ + DMの切り替え） ──────────────────────
+const MessagesTab = () => {
+  const [subTab, setSubTab] = useState<"order" | "dm">("order");
+  useEffect(() => {
+    const handleOpenDM = () => setSubTab("dm");
+    window.addEventListener("openDM", handleOpenDM);
+    return () => window.removeEventListener("openDM", handleOpenDM);
+  }, []);
+  return (
+    <div>
+      <div style={{ display:"flex", gap:8, marginBottom:14, background:C.lightGray, borderRadius:12, padding:4 }}>
+        <button onClick={()=>setSubTab("order")} style={{ flex:1, padding:"8px", background: subTab === "order" ? C.white : "transparent", border:"none", borderRadius:8, fontSize:12, fontWeight:800, color: subTab === "order" ? C.orange : C.warmGray, cursor:"pointer", fontFamily:"inherit", boxShadow: subTab === "order" ? "0 2px 4px rgba(0,0,0,0.05)" : "none" }}>📦 取引</button>
+        <button onClick={()=>setSubTab("dm")} style={{ flex:1, padding:"8px", background: subTab === "dm" ? C.white : "transparent", border:"none", borderRadius:8, fontSize:12, fontWeight:800, color: subTab === "dm" ? C.orange : C.warmGray, cursor:"pointer", fontFamily:"inherit", boxShadow: subTab === "dm" ? "0 2px 4px rgba(0,0,0,0.05)" : "none" }}>✉️ DM</button>
+      </div>
+      {subTab === "order" ? <OrderMessagesTab/> : <DirectMessagesTab/>}
+    </div>
+  );
+};
+
 
 // ── Notifications Tab ─────────────────────────────────────────────────────
 const NotificationsTab = () => {
