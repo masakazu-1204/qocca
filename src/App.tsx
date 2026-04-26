@@ -3756,7 +3756,6 @@ function QoccaAppInner() {
                             <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>📍 {ev.pref}</span>
                           </div>
                         </div>
-                      ))}
                     </div>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"32px 0 16px" }}>📦 すべてのサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
