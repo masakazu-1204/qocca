@@ -3732,6 +3732,19 @@ function QoccaAppInner() {
                           boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
                         }}>
                           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                            <div style={{ width:44, height:44, borderRadius:10, background: ev.pet_type === "dog" ? "#FFF3E0" : ev.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{ev.image_url || "🐾"}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title}</div>
+                              <div style={{ fontSize:11, color:C.warmGray }}>📅 {ev.event_date}</div>
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.bluePale, color:C.blue, fontWeight:700 }}>{ev.fee || "無料"}</span>
+                            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>📍 {ev.prefecture}</span>
+                          </div>
+                        </div>
+                      ))}
+                          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                             <div style={{ width:44, height:44, borderRadius:10, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{ev.image}</div>
                             <div>
                               <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{ev.title}</div>
