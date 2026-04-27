@@ -4039,7 +4039,7 @@ const TabBar = ({ page, setPage }) => {
   const { user } = useAuth();
   const tabs = [
     { id:"home", icon:"🏠", label:"ホーム" },
-    { id:"search", icon:"🔍", label:"さがす" },
+    { id:"communities", icon:"💬", label:"コミュニティ" },
     { id:"sell", icon:"➕", label:"" },
     { id:"events", icon:"📅", label:"イベント" },
     { id: user ? "mypage" : "signup", icon:"👤", label: user ? "マイページ" : "ログイン" },
