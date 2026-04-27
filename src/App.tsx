@@ -598,11 +598,11 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
   const menuItems = [
     { icon:"🏠", label:"ホーム", page:"home" },
     { icon:"🔍", label:"さがす", page:"search" },
+    { icon:"💬", label:"コミュニティ", page:"communities" },
     { icon:"🐾", label:"ギャラリー", page:"gallery" },
     { icon:"🐕", label:"施設マップ", page:"facilities" },
     { icon:"📝", label:"ブログ", page:"blog" },
     { icon:"📅", label:"イベント", page:"events" },
-    { icon:"❤️", label:"お気に入り", page:"liked" },
     { icon:"🐾", label:"出品する", page:"sell" },
   ];
 
@@ -2049,13 +2049,14 @@ const MyPage = ({ setPage }) => {
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
+                { icon:"❤️", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
                 { icon:"📦", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
                 { icon:"💬", label:"メッセージ", desc:"取引メッセージ", action:()=>setTab("messages") },
                 { icon:"🔔", label:"通知", desc:`${unreadNotifs}件の未読`, action:()=>setTab("notifications") },
                 { icon:"🎧", label:"サポート", desc:"お問い合わせ", action:()=>setTab("support") },
               ].map((item, i) => (
                 <button key={item.label} onClick={item.action} style={{
-                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
+                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 4 ? `1px solid ${C.border}` : "none",
                   background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit", textAlign:"left"
                 }}>
                   <div style={{ width:40, height:40, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
