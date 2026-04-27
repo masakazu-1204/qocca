@@ -6,8 +6,6 @@ const supabase = createClient(
   "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou"
 );
 
-const ADMIN_PASSWORD = "qocca2026";
-
 const C = {
   orange: "#F5A94A", orangeLight: "#FAC97A", orangePale: "#FFF3E0",
   dark: "#1A1208", darkBrown: "#2D1F0A", warmGray: "#9E9B95",
@@ -30,10 +28,11 @@ const statusBadge = (status: string) => {
     working: { color: C.blue, bg: C.bluePale },
     cancelled: { color: C.red, bg: C.redPale },
     disputed: { color: C.red, bg: C.redPale },
+    refunded: { color: C.warmGray, bg: C.cream },
   };
   const label: Record<string, string> = {
     approved: "公開中", pending: "審査中", rejected: "却下",
-    completed: "完了", working: "作業中", cancelled: "キャンセル", disputed: "異議申立",
+    completed: "完了", working: "作業中", cancelled: "キャンセル", disputed: "異議申立", refunded: "返金済",
   };
   const s = map[status] || { color: C.warmGray, bg: C.cream };
   return <Badge text={label[status] || status} color={s.color} bg={s.bg} />;
@@ -41,7 +40,7 @@ const statusBadge = (status: string) => {
 
 // ── ダッシュボード ──────────────────────────────────────────────────────────
 const DashboardPage = () => {
-  const [stats, setStats] = useState({ users: 0, listings: 0, orders: 0, events_pending: 0, reports: 0 });
+  const [stats, setStats] = useState({ users: 0, listings: 0, orders: 0, events_pending: 0, listings_pending: 0, reports: 0 });
 
   useEffect(() => {
     (async () => {
@@ -50,15 +49,24 @@ const DashboardPage = () => {
         { count: listings },
         { count: orders },
         { count: events_pending },
+        { count: listings_pending },
         { count: reports },
       ] = await Promise.all([
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("listings").select("*", { count: "exact", head: true }),
         supabase.from("orders").select("*", { count: "exact", head: true }),
         supabase.from("events").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("reports").select("*", { count: "exact", head: true }),
+        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("community_message_reports").select("*", { count: "exact", head: true }),
       ]);
-      setStats({ users: users || 0, listings: listings || 0, orders: orders || 0, events_pending: events_pending || 0, reports: reports || 0 });
+      setStats({
+        users: users || 0,
+        listings: listings || 0,
+        orders: orders || 0,
+        events_pending: events_pending || 0,
+        listings_pending: listings_pending || 0,
+        reports: reports || 0,
+      });
     })();
   }, []);
 
@@ -77,10 +85,13 @@ const DashboardPage = () => {
   return (
     <div>
       <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 20 }}>📊 ダッシュボード</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 14 }}>
         <StatCard icon="👥" label="総ユーザー数" value={stats.users} color={C.blue} />
         <StatCard icon="📦" label="出品サービス" value={stats.listings} color={C.orange} />
         <StatCard icon="🛒" label="総取引数" value={stats.orders} color={C.green} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 24 }}>
+        <StatCard icon="📦" label="出品審査待ち" value={stats.listings_pending} color="#F57C00" />
         <StatCard icon="🎪" label="イベント審査待ち" value={stats.events_pending} color="#F57C00" />
         <StatCard icon="🚨" label="通報件数" value={stats.reports} color={C.red} />
       </div>
@@ -185,26 +196,40 @@ const EventsPage = () => {
   );
 };
 
-// ── 出品管理 ──────────────────────────────────────────────────────────────
+// ── 出品管理（強化版：承認/却下/再公開） ──────────────────────────────────
 const ListingsPage = () => {
   const [listings, setListings] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   const fetch = async () => {
     setLoading(true);
-    const { data } = await supabase
+    let q = supabase
       .from("listings")
-      .select("id, title, price, category, created_at, seller_id, image_urls")
+      .select("id, title, price, category, created_at, seller_id, image_urls, status")
       .order("created_at", { ascending: false });
+    if (filter !== "all") q = q.eq("status", filter);
+    const { data } = await q;
     setListings(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetch(); }, [filter]);
+
+  const approve = async (id: string) => {
+    await supabase.from("listings").update({ status: "approved" }).eq("id", id);
+    fetch();
+  };
+
+  const reject = async (id: string) => {
+    if (!confirm("この出品を却下しますか？\n※サイトに表示されなくなります")) return;
+    await supabase.from("listings").update({ status: "rejected" }).eq("id", id);
+    fetch();
+  };
 
   const remove = async (id: string) => {
-    if (!confirm("この出品を削除しますか？")) return;
+    if (!confirm("この出品を完全に削除しますか？\n※この操作は取り消せません")) return;
     await supabase.from("listings").delete().eq("id", id);
     fetch();
   };
@@ -217,6 +242,17 @@ const ListingsPage = () => {
     <div>
       <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 20 }}>📦 出品管理</h2>
 
+      {/* ステータスフィルタ */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {[["all", "すべて"], ["pending", "審査待ち"], ["approved", "公開中"], ["rejected", "却下"]].map(([v, l]) => (
+          <button key={v} onClick={() => setFilter(v)} style={{
+            padding: "8px 16px", border: `1.5px solid ${filter === v ? C.orange : C.border}`,
+            borderRadius: 10, background: filter === v ? C.orangePale : C.white,
+            color: filter === v ? C.orange : C.warmGray, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+          }}>{l}</button>
+        ))}
+      </div>
+
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder="サービス名・カテゴリで検索..."
         style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 13, outline: "none", fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }} />
 
@@ -227,14 +263,14 @@ const ListingsPage = () => {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: C.cream, borderBottom: `2px solid ${C.border}` }}>
-                {["画像", "サービス名", "カテゴリ", "価格", "登録日", "操作"].map(h => (
+                {["画像", "サービス名", "カテゴリ", "価格", "状態", "登録日", "操作"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: C.warmGray }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map(l => (
-                <tr key={l.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                <tr key={l.id} style={{ borderBottom: `1px solid ${C.border}`, background: l.status === "pending" ? "#FFFBF5" : l.status === "rejected" ? "#FFF8F8" : "transparent" }}>
                   <td style={{ padding: "10px 14px" }}>
                     {l.image_urls?.[0] ? (
                       <img src={l.image_urls[0]} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
@@ -245,9 +281,24 @@ const ListingsPage = () => {
                   <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.dark }}>{l.title}</td>
                   <td style={{ padding: "10px 14px", fontSize: 12, color: C.warmGray }}>{l.category}</td>
                   <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.orange }}>¥{l.price?.toLocaleString()}</td>
+                  <td style={{ padding: "10px 14px" }}>{statusBadge(l.status || "approved")}</td>
                   <td style={{ padding: "10px 14px", fontSize: 12, color: C.warmGray }}>{l.created_at?.slice(0, 10)}</td>
                   <td style={{ padding: "10px 14px" }}>
-                    <button onClick={() => remove(l.id)} style={{ padding: "5px 12px", background: C.redPale, border: `1px solid ${C.red}40`, borderRadius: 6, color: C.red, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>🗑 削除</button>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {l.status === "pending" && (
+                        <>
+                          <button onClick={() => approve(l.id)} style={{ padding: "5px 12px", background: C.greenPale, border: `1px solid ${C.green}40`, borderRadius: 6, color: C.green, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>✅ 承認</button>
+                          <button onClick={() => reject(l.id)} style={{ padding: "5px 12px", background: "#FFF3E0", border: "1px solid #F57C0040", borderRadius: 6, color: "#F57C00", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>⏸ 却下</button>
+                        </>
+                      )}
+                      {l.status === "approved" && (
+                        <button onClick={() => reject(l.id)} style={{ padding: "5px 12px", background: "#FFF3E0", border: "1px solid #F57C0040", borderRadius: 6, color: "#F57C00", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>⏸ 非公開</button>
+                      )}
+                      {l.status === "rejected" && (
+                        <button onClick={() => approve(l.id)} style={{ padding: "5px 12px", background: C.greenPale, border: `1px solid ${C.green}40`, borderRadius: 6, color: C.green, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>✅ 再公開</button>
+                      )}
+                      <button onClick={() => remove(l.id)} style={{ padding: "5px 12px", background: C.redPale, border: `1px solid ${C.red}40`, borderRadius: 6, color: C.red, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>🗑 削除</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -271,7 +322,7 @@ const MembersPage = () => {
       setLoading(true);
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, created_at, is_suspended")
+        .select("id, display_name, avatar_url, bio, created_at, is_suspended, warning_count")
         .order("created_at", { ascending: false });
       setMembers(data || []);
       setLoading(false);
@@ -301,7 +352,7 @@ const MembersPage = () => {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: C.cream, borderBottom: `2px solid ${C.border}` }}>
-                {["アバター", "名前", "登録日", "ステータス", "操作"].map(h => (
+                {["アバター", "名前", "登録日", "警告", "ステータス", "操作"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: C.warmGray }}>{h}</th>
                 ))}
               </tr>
@@ -316,6 +367,9 @@ const MembersPage = () => {
                   </td>
                   <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: C.dark }}>{m.display_name || "未設定"}</td>
                   <td style={{ padding: "10px 14px", fontSize: 12, color: C.warmGray }}>{m.created_at?.slice(0, 10)}</td>
+                  <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: (m.warning_count || 0) > 0 ? C.red : C.warmGray }}>
+                    {m.warning_count || 0}
+                  </td>
                   <td style={{ padding: "10px 14px" }}>
                     <Badge text={m.is_suspended ? "停止中" : "正常"} color={m.is_suspended ? C.red : C.green} bg={m.is_suspended ? C.redPale : C.greenPale} />
                   </td>
@@ -345,7 +399,7 @@ const ReportsPage = () => {
   const fetch = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from("reports")
+      .from("community_message_reports")
       .select("*")
       .order("created_at", { ascending: false });
     setReports(data || []);
@@ -370,7 +424,7 @@ const ReportsPage = () => {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: C.cream, borderBottom: `2px solid ${C.border}` }}>
-                {["対象", "通報者", "理由", "日付"].map(h => (
+                {["対象メッセージID", "通報者", "理由", "日付"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: C.warmGray }}>{h}</th>
                 ))}
               </tr>
@@ -378,8 +432,8 @@ const ReportsPage = () => {
             <tbody>
               {reports.map(r => (
                 <tr key={r.id} style={{ borderBottom: `1px solid ${C.border}`, background: "#FFF8F8" }}>
-                  <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 700, color: C.dark }}>{r.reported_id || "-"}</td>
-                  <td style={{ padding: "12px 14px", fontSize: 12, color: C.warmGray }}>{r.reporter_id || "-"}</td>
+                  <td style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: C.dark, fontFamily: "monospace" }}>{r.message_id?.slice(0, 8) || "-"}...</td>
+                  <td style={{ padding: "12px 14px", fontSize: 12, color: C.warmGray, fontFamily: "monospace" }}>{r.reporter_id?.slice(0, 8) || "-"}...</td>
                   <td style={{ padding: "12px 14px", fontSize: 13, color: C.dark }}>{r.reason || "-"}</td>
                   <td style={{ padding: "12px 14px", fontSize: 12, color: C.warmGray }}>{r.created_at?.slice(0, 10)}</td>
                 </tr>
@@ -422,6 +476,7 @@ const SalesPage = () => {
     cancelled: { label: "キャンセル", color: C.red, bg: C.redPale },
     disputed: { label: "異議申立", color: C.red, bg: C.redPale },
     delivered: { label: "納品済", color: C.blue, bg: C.bluePale },
+    refunded: { label: "返金済", color: C.warmGray, bg: C.cream },
   };
 
   return (
@@ -490,37 +545,100 @@ const MENU = [
 
 export default function AdminDashboard() {
   const [page, setPage] = useState("dashboard");
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [authState, setAuthState] = useState<"loading" | "no_login" | "no_admin" | "ok">("loading");
+  const [adminInfo, setAdminInfo] = useState<{ display_name: string; role: string } | null>(null);
 
-  const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      setLoggedIn(true);
-      setError("");
-    } else {
-      setError("パスワードが違います");
-    }
+  useEffect(() => {
+    (async () => {
+      // 1. 現在のセッションを取得
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        setAuthState("no_login");
+        return;
+      }
+
+      // 2. adminsテーブルで管理者かチェック
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("role, user_id")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (!admin) {
+        setAuthState("no_admin");
+        return;
+      }
+
+      // 3. プロフィール取得して名前を表示
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", session.user.id)
+        .single();
+
+      setAdminInfo({
+        display_name: profile?.display_name || "管理者",
+        role: admin.role,
+      });
+      setAuthState("ok");
+    })();
+  }, []);
+
+  const handleLogout = async () => {
+    if (!confirm("ログアウトしますか？")) return;
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   };
 
-  if (!loggedIn) return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans JP',sans-serif" }}>
-      <div style={{ background: C.white, borderRadius: 24, padding: "40px 32px", width: 360, textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 4 }}>Qocca 管理者画面</div>
-        <div style={{ fontSize: 13, color: C.warmGray, marginBottom: 28 }}>管理者のみアクセス可能</div>
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleLogin()}
-          placeholder="パスワードを入力"
-          style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${error ? C.red : C.border}`, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 14 }} />
-        {error && <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{error}</div>}
-        <button onClick={handleLogin} style={{ width: "100%", padding: "13px", background: C.orange, border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
-          ログイン
-        </button>
+  // ロード中
+  if (authState === "loading") {
+    return (
+      <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans JP',sans-serif" }}>
+        <div style={{ color: "#fff", fontSize: 14 }}>認証中...</div>
       </div>
-    </div>
-  );
+    );
+  }
 
+  // 未ログイン
+  if (authState === "no_login") {
+    return (
+      <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans JP',sans-serif" }}>
+        <div style={{ background: C.white, borderRadius: 24, padding: "40px 32px", width: 360, textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 4 }}>Qocca 管理者画面</div>
+          <div style={{ fontSize: 13, color: C.warmGray, marginBottom: 28 }}>ログインが必要です</div>
+          <button onClick={() => window.location.href = "/login"} style={{ width: "100%", padding: "13px", background: C.orange, border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
+            ログインページへ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 管理者権限なし
+  if (authState === "no_admin") {
+    return (
+      <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans JP',sans-serif" }}>
+        <div style={{ background: C.white, borderRadius: 24, padding: "40px 32px", width: 400, textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🚫</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 8 }}>アクセス権限がありません</div>
+          <div style={{ fontSize: 13, color: C.warmGray, marginBottom: 28, lineHeight: 1.6 }}>
+            このページは管理者専用です。<br />
+            管理者にお問い合わせください。
+          </div>
+          <button onClick={() => window.location.href = "/"} style={{ width: "100%", padding: "13px", background: C.orange, border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
+            ホームに戻る
+          </button>
+          <button onClick={handleLogout} style={{ width: "100%", padding: "13px", background: "transparent", border: `1.5px solid ${C.border}`, borderRadius: 12, color: C.warmGray, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+            ログアウト
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 管理者として認証OK → ダッシュボード表示
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Noto Sans JP',sans-serif", background: C.cream }}>
       {/* Sidebar */}
@@ -529,6 +647,18 @@ export default function AdminDashboard() {
           <div style={{ fontSize: 20, fontWeight: 900, color: C.orange }}>🐾 Qocca</div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>管理者パネル</div>
         </div>
+
+        {/* 管理者情報 */}
+        {adminInfo && (
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>ログイン中</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 2 }}>{adminInfo.display_name}</div>
+            <div style={{ fontSize: 10, color: C.orange, fontWeight: 700 }}>
+              {adminInfo.role === "super_admin" ? "👑 SUPER ADMIN" : adminInfo.role === "admin" ? "🛡 ADMIN" : "👁 MODERATOR"}
+            </div>
+          </div>
+        )}
+
         <div style={{ flex: 1, padding: "16px 0" }}>
           {MENU.map(m => (
             <button key={m.id} onClick={() => setPage(m.id)} style={{
@@ -543,7 +673,7 @@ export default function AdminDashboard() {
           ))}
         </div>
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-          <button onClick={() => setLoggedIn(false)} style={{ width: "100%", padding: "10px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+          <button onClick={handleLogout} style={{ width: "100%", padding: "10px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
             ログアウト
           </button>
         </div>
