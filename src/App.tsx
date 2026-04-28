@@ -1587,31 +1587,6 @@ const SellPage = ({ setPage }) => {
                 ))}
               </div>
             </div>
-            {/* 配送タイプ選択 */}
-            <div style={{ marginBottom:14 }}>
-              <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>受け渡し方法</label>
-              <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>サービスの提供方法を選択してください（プライバシー保護のため正確に選んでください）</p>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {[
-                  { v:"data_only", icon:"💻", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要）" },
-                  { v:"shipping", icon:"📦", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送" },
-                  { v:"visit", icon:"📍", label:"訪問あり", desc:"しつけ・撮影など、対面で提供（場所はDMで調整）" },
-                ].map(opt => (
-                  <button key={opt.v} type="button" onClick={()=>up("delivery_type", opt.v)} style={{
-                    padding:"12px 14px", border:`2px solid ${form.delivery_type===opt.v ? C.orange : C.border}`,
-                    borderRadius:10, background:form.delivery_type===opt.v ? C.orangePale : C.white,
-                    cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:12, alignItems:"center"
-                  }}>
-                    <span style={{ fontSize:24, flexShrink:0 }}>{opt.icon}</span>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:2 }}>{opt.label}</div>
-                      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.4 }}>{opt.desc}</div>
-                    </div>
-                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18 }}>✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
             {/* 画像アップロード */}
             <div>
               <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>画像（最大5枚）</label>
@@ -2164,6 +2139,7 @@ const MyPage = ({ setPage }) => {
   const tabs = [
     { id:"profile", icon:"👤", label:"プロフィール" },
     { id:"orders", icon:"📦", label:"注文履歴", badge:MOCK_ORDERS.filter(o=>o.status==="delivered").length },
+    { id:"addresses", icon:"🏠", label:"配送先" },
     { id:"messages", icon:"💬", label:"メッセージ", badge:unreadMsgs },
     { id:"notifications", icon:"🔔", label:"通知", badge:unreadNotifs },
     { id:"support", icon:"🎧", label:"サポート" },
@@ -3018,6 +2994,7 @@ const OrderMessagesTab = () => {
   const { user } = useAuth();
   const [convos, setConvos] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
+  const [shippingAddr, setShippingAddr] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -3059,6 +3036,8 @@ const OrderMessagesTab = () => {
       return {
         order_id: o.id,
         status: o.status,
+        seller_id: o.seller_id,
+        buyer_id: o.buyer_id,
         partner_id: partnerId,
         partner_name: partner?.display_name || "ユーザー",
         partner_avatar: partner?.avatar_url,
@@ -3077,6 +3056,25 @@ const OrderMessagesTab = () => {
   const fetchMessages = async (orderId:string) => {
     const { data } = await supabase.from("order_messages").select("*").eq("order_id", orderId).order("created_at", { ascending: true });
     setMessages(data || []);
+    // 配送先住所を取得（出品者向けに表示するため）
+    const { data: addr } = await supabase
+      .from("shipping_addresses")
+      .select("*")
+      .eq("order_id", orderId)
+      .is("delete_at", null)
+      .maybeSingle();
+    if (!addr) {
+      // 削除予定があるかも確認（30日以内なら表示）
+      const { data: addrWithDelete } = await supabase
+        .from("shipping_addresses")
+        .select("*")
+        .eq("order_id", orderId)
+        .gt("delete_at", new Date().toISOString())
+        .maybeSingle();
+      setShippingAddr(addrWithDelete);
+    } else {
+      setShippingAddr(addr);
+    }
     if (user) {
       await supabase.from("order_messages").update({ is_read: true }).eq("order_id", orderId).eq("recipient_id", user.id).eq("is_read", false);
     }
@@ -3149,13 +3147,36 @@ const OrderMessagesTab = () => {
       ) : (
         <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden" }}>
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
-            <button onClick={()=>{setSelected(null); setWarning(null); setInput("");}} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:C.orange }}>←</button>
+            <button onClick={()=>{setSelected(null); setShippingAddr(null); setWarning(null); setInput("");}} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:C.orange }}>←</button>
             <div style={{ width:32, height:32, borderRadius:"50%", background: selected.partner_avatar ? `url(${selected.partner_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:C.orange, flexShrink:0 }}>{!selected.partner_avatar && (selected.partner_name||"?").charAt(0).toUpperCase()}</div>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{selected.partner_name}</div>
               <div style={{ fontSize:10, color:C.warmGray }}>{selected.listing_title}</div>
             </div>
           </div>
+
+          {/* 配送先住所バナー（出品者にのみ表示） */}
+          {shippingAddr && selected.seller_id === user?.id && (
+            <div style={{ padding:"12px 16px", background:"#FFF8F0", borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>📦 配送先住所</span>
+                {shippingAddr.delete_at && (
+                  <span style={{ fontSize:9, padding:"2px 6px", background:"#FFE0B2", color:"#E65100", borderRadius:4, fontWeight:700 }}>
+                    {Math.ceil((new Date(shippingAddr.delete_at).getTime() - Date.now()) / (1000*60*60*24))}日後に自動削除
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
+                <div><strong style={{ color:C.dark }}>{shippingAddr.recipient_name}</strong> 様</div>
+                <div>〒{shippingAddr.postal_code}</div>
+                <div>{shippingAddr.prefecture}{shippingAddr.city}{shippingAddr.address_line}</div>
+                <div>📱 {shippingAddr.phone}</div>
+              </div>
+              <div style={{ fontSize:10, color:C.warmGray, marginTop:6, padding:"6px 8px", background:"#FFF", borderRadius:6 }}>
+                ⚠️ この情報は配送目的のみに使用してください。第三者への漏洩は規約違反となります。
+              </div>
+            </div>
+          )}
 
           {selected.status !== "completed" && (
             <div style={{ padding:"8px 16px", background:"#FFF8E1", borderBottom:`1px solid ${C.border}`, fontSize:11, color:"#996200", display:"flex", alignItems:"center", gap:6 }}>
