@@ -127,6 +127,7 @@ const useListings = () => {
           desc: l.description,
           delivery: l.delivery_days || "要相談",
           delivery_type: l.delivery_type || "data_only",
+          delivery_type: l.delivery_type || "data_only",
           bg: CAT_COLORS[l.category] || "#FFF3E0",
           imageUrl: l.image_urls?.[0] || "",
           imageUrls: l.image_urls || [],
@@ -600,11 +601,11 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
   const menuItems = [
     { icon:"🏠", label:"ホーム", page:"home" },
     { icon:"🔍", label:"さがす", page:"search" },
+    { icon:"💬", label:"コミュニティ", page:"communities" },
     { icon:"🐾", label:"ギャラリー", page:"gallery" },
     { icon:"🐕", label:"施設マップ", page:"facilities" },
     { icon:"📝", label:"ブログ", page:"blog" },
     { icon:"📅", label:"イベント", page:"events" },
-    { icon:"❤️", label:"お気に入り", page:"liked" },
     { icon:"🐾", label:"出品する", page:"sell" },
   ];
 
@@ -1018,6 +1019,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [ordered, setOrdered] = useState(false);
   const [ordering, setOrdering] = useState(false);
+  const [showAddressStep, setShowAddressStep] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string|null>(null);
+  const [addressForm, setAddressForm] = useState({ recipient_name:"", postal_code:"", prefecture:"", city:"", address_line:"", phone:"", label:"自宅" });
+  const [addressMode, setAddressMode] = useState<"select"|"new">("select");
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState("");
   const [reportDone, setReportDone] = useState(false);
@@ -1030,8 +1036,27 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
 
   const toggleOption = (idx) => setSelectedOptions(prev => ({...prev, [idx]: !prev[idx]}));
 
-  const handleOrder = () => {
+  const handleOrder = async () => {
     if (!user) { setPage("signup"); return; }
+    if (item.delivery_type === "shipping") {
+      const { data } = await supabase
+        .from("shipping_addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("delete_at", null)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const addrs = data || [];
+      setSavedAddresses(addrs);
+      if (addrs.length > 0) {
+        setSelectedAddressId(addrs[0].id);
+        setAddressMode("select");
+      } else {
+        setAddressMode("new");
+      }
+      setShowAddressStep(true);
+      return;
+    }
     setShowConfirm(true);
   };
 
@@ -1043,6 +1068,35 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
     try {
       const selectedOpts = itemOptions.filter((_, i) => selectedOptions[i]).map(o => ({ name: o.name, price: o.price }));
 
+      let shippingAddressId = null;
+      if (item.delivery_type === "shipping") {
+        if (addressMode === "new") {
+          const { data: newAddr, error: addrErr } = await supabase
+            .from("shipping_addresses")
+            .insert({
+              user_id: user.id,
+              recipient_name: addressForm.recipient_name,
+              postal_code: addressForm.postal_code,
+              prefecture: addressForm.prefecture,
+              city: addressForm.city,
+              address_line: addressForm.address_line,
+              phone: addressForm.phone,
+              label: addressForm.label || "自宅",
+              is_default: savedAddresses.length === 0,
+            })
+            .select()
+            .single();
+          if (addrErr) {
+            alert("住所の保存に失敗: " + addrErr.message);
+            setOrdering(false);
+            return;
+          }
+          shippingAddressId = newAddr.id;
+        } else {
+          shippingAddressId = selectedAddressId;
+        }
+      }
+
       const res = await fetch("https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1053,6 +1107,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           options: selectedOpts,
           buyer_id: user.id,
           seller_id: item.seller_id,
+          shipping_address_id: shippingAddressId,
         })
       });
 
@@ -1223,6 +1278,103 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 配送先住所選択モーダル */}
+      {showAddressStep && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:201, display:"flex", alignItems:"flex-end" }} onClick={()=>setShowAddressStep(false)}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px", width:"100%", maxHeight:"85vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>📦 配送先を選択</div>
+              <button onClick={()=>setShowAddressStep(false)} style={{ background:"none", border:"none", fontSize:20, color:C.warmGray, cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ background:"#FFF8F0", padding:"10px 12px", borderRadius:10, fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.5 }}>
+              🔒 配送先情報は出品者に共有され、配送目的のみに使用されます。取引完了後30日で自動削除されます。
+            </div>
+
+            {savedAddresses.length > 0 && (
+              <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                <button onClick={()=>setAddressMode("select")} style={{
+                  flex:1, padding:"10px", border:`1.5px solid ${addressMode==="select"?C.orange:C.border}`,
+                  borderRadius:10, background:addressMode==="select"?C.orangePale:C.white,
+                  color:addressMode==="select"?C.orange:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+                }}>📋 保存済みから選択</button>
+                <button onClick={()=>setAddressMode("new")} style={{
+                  flex:1, padding:"10px", border:`1.5px solid ${addressMode==="new"?C.orange:C.border}`,
+                  borderRadius:10, background:addressMode==="new"?C.orangePale:C.white,
+                  color:addressMode==="new"?C.orange:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+                }}>➕ 新規入力</button>
+              </div>
+            )}
+
+            {addressMode === "select" && savedAddresses.length > 0 && (
+              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
+                {savedAddresses.map(addr => (
+                  <button key={addr.id} onClick={()=>setSelectedAddressId(addr.id)} style={{
+                    padding:"12px 14px", border:`2px solid ${selectedAddressId===addr.id?C.orange:C.border}`,
+                    borderRadius:10, background:selectedAddressId===addr.id?C.orangePale:C.white,
+                    cursor:"pointer", fontFamily:"inherit", textAlign:"left"
+                  }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                      <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{addr.label || "住所"}</span>
+                      {addr.is_default && <span style={{ fontSize:10, padding:"2px 8px", background:C.orange, color:"#fff", borderRadius:6, fontWeight:700 }}>デフォルト</span>}
+                      {selectedAddressId===addr.id && <span style={{ marginLeft:"auto", color:C.orange, fontSize:18 }}>✓</span>}
+                    </div>
+                    <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.5 }}>
+                      <div>{addr.recipient_name} 様</div>
+                      <div>〒{addr.postal_code} {addr.prefecture}{addr.city}</div>
+                      <div>{addr.address_line}</div>
+                      <div>📱 {addr.phone}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {addressMode === "new" && (
+              <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
+                {[
+                  { k:"label", label:"ラベル", placeholder:"自宅", maxLength:20 },
+                  { k:"recipient_name", label:"受取人名（本名）*", placeholder:"山田 太郎" },
+                  { k:"postal_code", label:"郵便番号 *", placeholder:"530-0001", maxLength:8 },
+                  { k:"prefecture", label:"都道府県 *", placeholder:"大阪府" },
+                  { k:"city", label:"市区町村 *", placeholder:"大阪市北区梅田" },
+                  { k:"address_line", label:"番地・建物名 *", placeholder:"1-1-1 〇〇マンション101" },
+                  { k:"phone", label:"電話番号 *", placeholder:"090-1234-5678", maxLength:13 },
+                ].map(f => (
+                  <div key={f.k}>
+                    <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>{f.label}</label>
+                    <input
+                      value={addressForm[f.k as keyof typeof addressForm] as string}
+                      onChange={e=>setAddressForm({...addressForm, [f.k]:e.target.value})}
+                      placeholder={f.placeholder}
+                      maxLength={f.maxLength}
+                      style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={()=>setShowAddressStep(false)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
+              <button onClick={()=>{
+                if (addressMode === "new") {
+                  if (!addressForm.recipient_name || !addressForm.postal_code || !addressForm.prefecture || !addressForm.city || !addressForm.address_line || !addressForm.phone) {
+                    alert("必須項目をすべて入力してください");
+                    return;
+                  }
+                } else {
+                  if (!selectedAddressId) { alert("住所を選択してください"); return; }
+                }
+                setShowAddressStep(false);
+                setShowConfirm(true);
+              }} style={{ flex:2, padding:"13px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>
+                次へ進む →
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1408,6 +1560,31 @@ const SellPage = ({ setPage }) => {
                   <option value="">選択</option>
                   {["即日","3日以内","1週間以内","2週間以内","要相談"].map(d=><option key={d} value={d}>{d}</option>)}
                 </select>
+              </div>
+            </div>
+            {/* 配送タイプ選択 */}
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>受け渡し方法</label>
+              <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>サービスの提供方法を選択してください（プライバシー保護のため正確に選んでください）</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {[
+                  { v:"data_only", icon:"💻", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要）" },
+                  { v:"shipping", icon:"📦", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送" },
+                  { v:"visit", icon:"📍", label:"訪問あり", desc:"しつけ・撮影など、対面で提供（場所はDMで調整）" },
+                ].map(opt => (
+                  <button key={opt.v} type="button" onClick={()=>up("delivery_type", opt.v)} style={{
+                    padding:"12px 14px", border:`2px solid ${form.delivery_type===opt.v ? C.orange : C.border}`,
+                    borderRadius:10, background:form.delivery_type===opt.v ? C.orangePale : C.white,
+                    cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:12, alignItems:"center"
+                  }}>
+                    <span style={{ fontSize:24, flexShrink:0 }}>{opt.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:2 }}>{opt.label}</div>
+                      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.4 }}>{opt.desc}</div>
+                    </div>
+                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18 }}>✓</span>}
+                  </button>
+                ))}
               </div>
             </div>
             {/* 配送タイプ選択 */}
@@ -2077,13 +2254,15 @@ const MyPage = ({ setPage }) => {
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
+                { icon:"❤️", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
                 { icon:"📦", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
+                { icon:"🏠", label:"配送先住所", desc:"住所の管理", action:()=>setTab("addresses") },
                 { icon:"💬", label:"メッセージ", desc:"取引メッセージ", action:()=>setTab("messages") },
                 { icon:"🔔", label:"通知", desc:`${unreadNotifs}件の未読`, action:()=>setTab("notifications") },
                 { icon:"🎧", label:"サポート", desc:"お問い合わせ", action:()=>setTab("support") },
               ].map((item, i) => (
                 <button key={item.label} onClick={item.action} style={{
-                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
+                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 5 ? `1px solid ${C.border}` : "none",
                   background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit", textAlign:"left"
                 }}>
                   <div style={{ width:40, height:40, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
@@ -2101,6 +2280,9 @@ const MyPage = ({ setPage }) => {
 
         {/* Orders Tab */}
         {tab==="orders" && <OrdersTab/>}
+
+        {/* Addresses Tab */}
+        {tab==="addresses" && <AddressesTab/>}
 
         {/* Messages Tab */}
         {tab==="messages" && <MessagesTab/>}
@@ -2349,6 +2531,201 @@ const OrderStatusBar = ({ status }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// ── Addresses Tab (配送先住所管理) ──────────────────────────────────────
+const AddressesTab = () => {
+  const { user } = useAuth();
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string|null>(null);
+  const [form, setForm] = useState({ recipient_name:"", postal_code:"", prefecture:"", city:"", address_line:"", phone:"", label:"自宅", is_default:false });
+
+  const fetchAddresses = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("shipping_addresses")
+      .select("*")
+      .eq("user_id", user.id)
+      .is("delete_at", null)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) console.error(error);
+    setAddresses(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAddresses(); }, [user?.id]);
+
+  const resetForm = () => {
+    setForm({ recipient_name:"", postal_code:"", prefecture:"", city:"", address_line:"", phone:"", label:"自宅", is_default:false });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!form.recipient_name || !form.postal_code || !form.prefecture || !form.city || !form.address_line || !form.phone) {
+      alert("必須項目をすべて入力してください");
+      return;
+    }
+    if (!user?.id) { alert("ログインしてください"); return; }
+
+    if (form.is_default) {
+      await supabase.from("shipping_addresses").update({ is_default: false }).eq("user_id", user.id);
+    }
+
+    if (editingId) {
+      const { error } = await supabase
+        .from("shipping_addresses")
+        .update({
+          recipient_name: form.recipient_name,
+          postal_code: form.postal_code,
+          prefecture: form.prefecture,
+          city: form.city,
+          address_line: form.address_line,
+          phone: form.phone,
+          label: form.label,
+          is_default: form.is_default,
+        })
+        .eq("id", editingId);
+      if (error) { alert("更新失敗: " + error.message); return; }
+    } else {
+      const { error } = await supabase
+        .from("shipping_addresses")
+        .insert({
+          user_id: user.id,
+          recipient_name: form.recipient_name,
+          postal_code: form.postal_code,
+          prefecture: form.prefecture,
+          city: form.city,
+          address_line: form.address_line,
+          phone: form.phone,
+          label: form.label,
+          is_default: addresses.length === 0 || form.is_default,
+        });
+      if (error) { alert("追加失敗: " + error.message); return; }
+    }
+    resetForm();
+    fetchAddresses();
+  };
+
+  const handleEdit = (addr:any) => {
+    setForm({
+      recipient_name: addr.recipient_name,
+      postal_code: addr.postal_code,
+      prefecture: addr.prefecture,
+      city: addr.city,
+      address_line: addr.address_line,
+      phone: addr.phone,
+      label: addr.label || "自宅",
+      is_default: addr.is_default,
+    });
+    setEditingId(addr.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (addr:any) => {
+    if (!confirm(`「${addr.label || "住所"}」を削除しますか？`)) return;
+    const { error } = await supabase.from("shipping_addresses").delete().eq("id", addr.id);
+    if (error) { alert("削除失敗: " + error.message); return; }
+    fetchAddresses();
+  };
+
+  const handleSetDefault = async (addr:any) => {
+    if (!user?.id) return;
+    await supabase.from("shipping_addresses").update({ is_default: false }).eq("user_id", user.id);
+    await supabase.from("shipping_addresses").update({ is_default: true }).eq("id", addr.id);
+    fetchAddresses();
+  };
+
+  return (
+    <div style={{ padding:"20px 16px", paddingBottom:80 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+        <h2 style={{ fontSize:20, fontWeight:900, color:C.dark, margin:0 }}>🏠 配送先住所</h2>
+        <button onClick={()=>{ resetForm(); setShowForm(true); }} style={{
+          padding:"8px 14px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+        }}>+ 追加</button>
+      </div>
+      <div style={{ background:"#FFF8F0", padding:"12px 14px", borderRadius:10, fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.5 }}>
+        🔒 配送が必要な取引時に出品者に共有される住所です。取引完了後30日で自動削除されます。
+      </div>
+
+      {loading && <div style={{ textAlign:"center", padding:20, color:C.warmGray }}>読み込み中...</div>}
+
+      {!loading && addresses.length === 0 && !showForm && (
+        <div style={{ textAlign:"center", padding:"40px 20px", background:C.white, borderRadius:14, border:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:36, marginBottom:10 }}>📭</div>
+          <div style={{ fontSize:14, color:C.warmGray, marginBottom:14 }}>登録された住所はありません</div>
+          <button onClick={()=>setShowForm(true)} style={{ padding:"10px 20px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>+ 住所を追加</button>
+        </div>
+      )}
+
+      {!loading && addresses.map(addr => (
+        <div key={addr.id} style={{ background:C.white, padding:"14px", borderRadius:12, marginBottom:10, border:`1px solid ${C.border}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:14, fontWeight:800, color:C.dark }}>{addr.label || "住所"}</span>
+            {addr.is_default && <span style={{ fontSize:10, padding:"3px 8px", background:C.orange, color:"#fff", borderRadius:6, fontWeight:700 }}>デフォルト</span>}
+          </div>
+          <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.6, marginBottom:10 }}>
+            <div>{addr.recipient_name} 様</div>
+            <div>〒{addr.postal_code} {addr.prefecture}{addr.city}</div>
+            <div>{addr.address_line}</div>
+            <div>📱 {addr.phone}</div>
+          </div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {!addr.is_default && (
+              <button onClick={()=>handleSetDefault(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.orange}`, borderRadius:8, color:C.orange, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>デフォルトに設定</button>
+            )}
+            <button onClick={()=>handleEdit(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:8, color:C.warmGray, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ 編集</button>
+            <button onClick={()=>handleDelete(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.red}`, borderRadius:8, color:C.red, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>🗑️ 削除</button>
+          </div>
+        </div>
+      ))}
+
+      {showForm && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"flex-end" }} onClick={resetForm}>
+          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px", width:"100%", maxHeight:"85vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>{editingId ? "✏️ 住所を編集" : "+ 住所を追加"}</div>
+              <button onClick={resetForm} style={{ background:"none", border:"none", fontSize:20, color:C.warmGray, cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
+              {[
+                { k:"label", label:"ラベル", placeholder:"自宅", maxLength:20 },
+                { k:"recipient_name", label:"受取人名（本名）*", placeholder:"山田 太郎" },
+                { k:"postal_code", label:"郵便番号 *", placeholder:"530-0001", maxLength:8 },
+                { k:"prefecture", label:"都道府県 *", placeholder:"大阪府" },
+                { k:"city", label:"市区町村 *", placeholder:"大阪市北区梅田" },
+                { k:"address_line", label:"番地・建物名 *", placeholder:"1-1-1 〇〇マンション101" },
+                { k:"phone", label:"電話番号 *", placeholder:"090-1234-5678", maxLength:13 },
+              ].map(f => (
+                <div key={f.k}>
+                  <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>{f.label}</label>
+                  <input
+                    value={form[f.k as keyof typeof form] as string}
+                    onChange={e=>setForm({...form, [f.k]:e.target.value})}
+                    placeholder={f.placeholder}
+                    maxLength={f.maxLength}
+                    style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                  />
+                </div>
+              ))}
+              <label style={{ display:"flex", alignItems:"center", gap:8, padding:"10px", background:C.lightGray, borderRadius:8, cursor:"pointer" }}>
+                <input type="checkbox" checked={form.is_default} onChange={e=>setForm({...form, is_default:e.target.checked})} />
+                <span style={{ fontSize:13, color:C.dark }}>デフォルト住所として設定</span>
+              </label>
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={resetForm} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
+              <button onClick={handleSubmit} style={{ flex:2, padding:"13px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{editingId ? "更新する" : "追加する"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -4067,7 +4444,7 @@ const TabBar = ({ page, setPage }) => {
   const { user } = useAuth();
   const tabs = [
     { id:"home", icon:"🏠", label:"ホーム" },
-    { id:"search", icon:"🔍", label:"さがす" },
+    { id:"communities", icon:"💬", label:"コミュニティ" },
     { id:"sell", icon:"➕", label:"" },
     { id:"events", icon:"📅", label:"イベント" },
     { id: user ? "mypage" : "signup", icon:"👤", label: user ? "マイページ" : "ログイン" },
