@@ -126,6 +126,7 @@ const useListings = () => {
           pet: l.pet_type,
           desc: l.description,
           delivery: l.delivery_days || "要相談",
+          delivery_type: l.delivery_type || "data_only",
           bg: CAT_COLORS[l.category] || "#FFF3E0",
           imageUrl: l.image_urls?.[0] || "",
           imageUrls: l.image_urls || [],
@@ -197,6 +198,7 @@ const submitListing = async (userId, form, imageFiles, options = []) => {
     category: form.cat,
     pet_type: form.pet,
     delivery_days: form.delivery,
+    delivery_type: form.delivery_type || 'data_only',
     image_urls: imageUrls,
     options: options.filter(o => o.name && o.price > 0),
     status: "pending",
@@ -598,11 +600,11 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
   const menuItems = [
     { icon:"🏠", label:"ホーム", page:"home" },
     { icon:"🔍", label:"さがす", page:"search" },
-    { icon:"💬", label:"コミュニティ", page:"communities" },
     { icon:"🐾", label:"ギャラリー", page:"gallery" },
     { icon:"🐕", label:"施設マップ", page:"facilities" },
     { icon:"📝", label:"ブログ", page:"blog" },
     { icon:"📅", label:"イベント", page:"events" },
+    { icon:"❤️", label:"お気に入り", page:"liked" },
     { icon:"🐾", label:"出品する", page:"sell" },
   ];
 
@@ -1142,7 +1144,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           </div>
         )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
-          {[["⏱️ 納期", item.delivery],["🐾 対象", item.pet==="dog"?"🐕 犬向け":item.pet==="cat"?"🐈 猫向け":"🐾 両対応"],["🔒 保証","エスクロー決済"]].map(([k,v])=>(
+          {[["⏱️ 納期", item.delivery],["📬 受け渡し", item.delivery_type==="shipping"?"📦 配送":item.delivery_type==="visit"?"📍 訪問":"💻 データ"],["🐾 対象", item.pet==="dog"?"🐕 犬向け":item.pet==="cat"?"🐈 猫向け":"🐾 両対応"],["🔒 保証","エスクロー決済"]].map(([k,v])=>(
             <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
               <span style={{ fontSize:13, color:C.warmGray }}>{k}</span>
               <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{v}</span>
@@ -1297,7 +1299,7 @@ const SellPage = ({ setPage }) => {
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"" });
+  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only" });
   const [images, setImages] = useState([]);
   const [options, setOptions] = useState([]);
   const up = (k,v) => setForm(p=>({...p,[k]:v}));
@@ -1340,7 +1342,7 @@ const SellPage = ({ setPage }) => {
         <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
         <h2 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:10 }}>出品完了！</h2>
         <p style={{ color:C.warmGray, fontSize:14, lineHeight:1.7, marginBottom:24 }}>審査後（最大24時間）に公開されます🐾</p>
-        <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:""});setImages([]);setOptions([]);}} style={{ padding:"12px 28px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer" }}>続けて出品する</button>
+        <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only"});setImages([]);setOptions([]);}} style={{ padding:"12px 28px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer" }}>続けて出品する</button>
       </div>
     </div>
   );
@@ -1408,6 +1410,31 @@ const SellPage = ({ setPage }) => {
                 </select>
               </div>
             </div>
+            {/* 配送タイプ選択 */}
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>受け渡し方法</label>
+              <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>サービスの提供方法を選択してください（プライバシー保護のため正確に選んでください）</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {[
+                  { v:"data_only", icon:"💻", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要）" },
+                  { v:"shipping", icon:"📦", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送" },
+                  { v:"visit", icon:"📍", label:"訪問あり", desc:"しつけ・撮影など、対面で提供（場所はDMで調整）" },
+                ].map(opt => (
+                  <button key={opt.v} type="button" onClick={()=>up("delivery_type", opt.v)} style={{
+                    padding:"12px 14px", border:`2px solid ${form.delivery_type===opt.v ? C.orange : C.border}`,
+                    borderRadius:10, background:form.delivery_type===opt.v ? C.orangePale : C.white,
+                    cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:12, alignItems:"center"
+                  }}>
+                    <span style={{ fontSize:24, flexShrink:0 }}>{opt.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:2 }}>{opt.label}</div>
+                      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.4 }}>{opt.desc}</div>
+                    </div>
+                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18 }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* 画像アップロード */}
             <div>
               <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>画像（最大5枚）</label>
@@ -1453,6 +1480,7 @@ const SellPage = ({ setPage }) => {
                 ["タイトル", form.title||"未入力"],
                 ["料金", form.price?`¥${Number(form.price).toLocaleString()}`:"未設定"],
                 ["納期", form.delivery||"未設定"],
+                ["受け渡し方法", form.delivery_type==="shipping"?"📦 配送あり":form.delivery_type==="visit"?"📍 訪問あり":"💻 データのみ"],
                 ["画像", `${images.length}枚`],
               ].map(([k,v])=>(
                 <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
@@ -2049,14 +2077,13 @@ const MyPage = ({ setPage }) => {
             <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
-                { icon:"❤️", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
                 { icon:"📦", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
                 { icon:"💬", label:"メッセージ", desc:"取引メッセージ", action:()=>setTab("messages") },
                 { icon:"🔔", label:"通知", desc:`${unreadNotifs}件の未読`, action:()=>setTab("notifications") },
                 { icon:"🎧", label:"サポート", desc:"お問い合わせ", action:()=>setTab("support") },
               ].map((item, i) => (
                 <button key={item.label} onClick={item.action} style={{
-                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 4 ? `1px solid ${C.border}` : "none",
+                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
                   background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit", textAlign:"left"
                 }}>
                   <div style={{ width:40, height:40, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
@@ -3914,52 +3941,49 @@ const LegalPage = ({ type, setPage }) => {
   const pages = {
     terms: {
       title: "利用規約",
-      updated: "2026年4月28日",
+      updated: "2026年4月16日",
       sections: [
         { h:"第1条（適用）", p:"本規約は、Qocca（以下「当サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意した上で当サービスを利用するものとします。" },
         { h:"第2条（定義）", p:"「ユーザー」とは当サービスに登録した個人または法人を指します。「出品者」とはサービスを出品するユーザー、「購入者」とはサービスを購入するユーザーを指します。「取引」とは出品者と購入者の間で行われるサービスの売買を指します。" },
-        { h:"第3条（登録）", p:"ユーザーは正確な情報を登録し、虚偽の情報を提供してはなりません。13歳未満の方はご利用いただけません。13歳以上18歳未満の方は保護者の同意を得た上でご利用ください。1人につき1アカウントの登録に限ります。アカウントの貸与・譲渡・売買は禁止します。" },
+        { h:"第3条（登録）", p:"ユーザーは正確な情報を登録し、虚偽の情報を提供してはなりません。18歳未満の方は保護者の同意を得た上でご利用ください。1人につき1アカウントの登録に限ります。" },
         { h:"第4条（エスクロー決済）", p:"当サービスはエスクロー方式を採用しています。購入者の支払いは当サービスが一時預かり、取引完了後に出品者へ支払います。納品後72時間以内に購入者が受取確認も異議申し立ても行わない場合、自動的に取引完了となります。" },
         { h:"第5条（手数料）", p:"出品者は取引成立時に以下の手数料を負担します。初回取引：0%、登録後3ヶ月以内：5%＋決済手数料3.6%、通常：10%＋決済手数料3.6%。すべての手数料は出品者の売上から差し引かれます。購入者が支払う金額は出品ページに表示された価格のみです。売上金の振込には振込手数料（1回あたり275円・税込）がかかります。最低振込申請額は3,000円です。" },
-        { h:"第6条（禁止事項）", p:"以下の行為を禁止します。(1)生体動物の売買 (2)プラットフォーム外への取引誘導（LINE、メール等での直接取引） (3)著作権・知的財産権・肖像権を侵害する出品（実在キャラクター・芸能人の似顔絵や写真等を含む） (4)古物（中古品）の販売（古物営業法上の許可が必要なため） (5)虚偽の情報・なりすまし (6)他のユーザーへの嫌がらせ・誹謗中傷 (7)法令または公序良俗に違反する行為 (8)当サービスのシステムに対する不正アクセス (9)マネーロンダリングを目的とした取引 (10)反社会的勢力との関係" },
+        { h:"第6条（禁止事項）", p:"以下の行為を禁止します。(1)生体動物の売買 (2)プラットフォーム外への取引誘導（LINE、メール等での直接取引） (3)著作権・知的財産権を侵害する出品 (4)虚偽の情報・なりすまし (5)他のユーザーへの嫌がらせ・誹謗中傷 (6)法令に違反する行為 (7)当サービスのシステムに対する不正アクセス" },
         { h:"第7条（キャンセル・返金）", p:"作業開始前のキャンセルは購入者へ全額返金されます。納品後72時間以内に異議申し立てが可能です。出品者都合による返金の場合、購入者へ全額返金され、決済手数料は出品者が負担します。購入者都合による納品前キャンセルの場合、決済手数料（商品代金の3.6%）を差し引いた金額が返金されます。納品済み・受取確認後のキャンセルは原則不可です。" },
         { h:"第8条（異議申し立て）", p:"購入者は納品後72時間以内に異議を申し立てることができます。異議申し立て後、出品者に48時間の回答期限が設定されます。回答がない場合、自動的に購入者へ返金されます。当サービスは両者の主張を確認し、公正に判断します。" },
         { h:"第9条（ペナルティ）", p:"禁止事項に該当する行為が確認された場合、警告、出品停止、アカウント停止等の措置を取ることがあります。特に重大な違反（生体売買・詐欺）については即時アカウント停止となります。" },
         { h:"第10条（免責事項）", p:"当サービスはユーザー間の取引の仲介プラットフォームであり、出品されたサービスの品質・安全性を保証するものではありません。天災、システム障害等の不可抗力による損害について、当サービスは責任を負いません。" },
         { h:"第11条（規約の変更）", p:"当サービスは本規約を随時変更できるものとします。変更後の規約は当サービス上に掲載した時点で効力を生じます。重要な変更の場合はメールまたはアプリ内通知でお知らせします。" },
-        { h:"第12条（個人情報の取扱い）", p:"配送が必要な取引においては、購入者は配送先情報（受取人名・住所・電話番号）を提供する必要があります。提供された配送先情報は当該取引の出品者に開示され、配送目的でのみ使用されます。配送先情報は取引完了後30日以内に当サービスのデータベースから自動削除されます。詳細はプライバシーポリシーをご確認ください。" },
-        { h:"第13条（準拠法・管轄）", p:"本規約の解釈は日本法に準拠します。本規約に関連する紛争については、大阪地方裁判所を第一審の専属的合意管轄裁判所とします。" },
+        { h:"第12条（準拠法・管轄）", p:"本規約の解釈は日本法に準拠します。本規約に関連する紛争については、大阪地方裁判所を第一審の専属的合意管轄裁判所とします。" },
       ]
     },
     privacy: {
       title: "プライバシーポリシー",
-      updated: "2026年4月28日",
+      updated: "2026年4月16日",
       sections: [
-        { h:"1. 収集する情報", p:"当サービスは以下の情報を収集します。(1)アカウント情報（メールアドレス、表示名、パスワードのハッシュ値） (2)プロフィール情報（プロフィール画像、自己紹介文） (3)取引情報（注文履歴、メッセージ内容、レビュー） (4)配送先情報（配送が必要な取引時のみ：受取人名、郵便番号、住所、電話番号） (5)出品者の振込先情報（Stripe Connectが管理。当サービスは銀行口座情報を直接保持しません） (6)決済情報（Stripeが処理。当サービスはクレジットカード番号を保持しません） (7)利用情報（アクセスログ、IPアドレス、ブラウザ情報）" },
+        { h:"1. 収集する情報", p:"当サービスは以下の情報を収集します。(1)アカウント情報（メールアドレス、表示名、パスワードのハッシュ値） (2)プロフィール情報（プロフィール画像、自己紹介文） (3)取引情報（注文履歴、メッセージ内容、レビュー） (4)決済情報（Stripeが処理。当サービスはクレジットカード番号を保持しません） (5)利用情報（アクセスログ、IPアドレス、ブラウザ情報）" },
         { h:"2. 情報の利用目的", p:"収集した情報は以下の目的で利用します。(1)サービスの提供・運営 (2)ユーザーサポート (3)不正利用の防止・検出 (4)サービスの改善・新機能の開発 (5)お知らせ・マーケティング情報の送信（オプトアウト可能）" },
-        { h:"3. 情報の第三者提供", p:"法令に基づく場合、ユーザーの同意がある場合、または以下の業務委託先を除き、個人情報を第三者に提供しません。決済処理：Stripe, Inc.（決済情報・出品者振込先）、ホスティング：Vercel Inc.、データベース：Supabase Inc.、メール配信：Resend, Inc.（メールアドレス・表示名）、配送業者：配送が必要な取引時のみ、配送先情報（受取人名・住所・電話番号）を出品者経由で提供します。" },
-        { h:"4. 情報の保管・セキュリティ", p:"個人情報はSupabaseの暗号化されたデータベースに保管されます。パスワードはbcryptによりハッシュ化されます。SSL/TLSによる通信の暗号化を実施しています。データベースへのアクセスは行レベルセキュリティ（RLS）により制限され、許可されたユーザーのみが自身のデータを閲覧できます。" },
-        { h:"5. 情報の保存期間", p:"配送先情報：取引完了後30日以内に自動削除します。\nアカウント情報・プロフィール情報：アカウント削除時に削除します。\n取引履歴・決済情報：電子帳簿保存法等の法令に基づき、最長7年間保存します。\nアクセスログ：原則6ヶ月以内に削除します。\n削除後のデータ復元はできませんのでご注意ください。" },
-        { h:"6. Cookie", p:"当サービスはセッション管理のためにCookieを使用します。ブラウザの設定でCookieを無効にできますが、一部の機能が利用できなくなる場合があります。" },
-        { h:"7. ユーザーの権利", p:"ユーザーは自身の個人情報について、開示・訂正・削除・利用停止を請求できます。アカウント設定ページから、またはお問い合わせフォームからご連絡ください。" },
-        { h:"8. 未成年者の利用", p:"18歳未満のユーザーは保護者の同意を得た上でご利用ください。13歳未満のお子様の個人情報を意図的に収集することはありません。" },
-        { h:"9. 改定", p:"本ポリシーは随時改定される場合があります。重要な変更はメールまたはアプリ内通知でお知らせします。" },
-        { h:"10. お問い合わせ", p:"プライバシーに関するお問い合わせは、アプリ内サポートまたは support@qocca.pet までご連絡ください。" },
+        { h:"3. 情報の第三者提供", p:"法令に基づく場合、ユーザーの同意がある場合、または以下の業務委託先を除き、個人情報を第三者に提供しません。決済処理：Stripe, Inc.、ホスティング：Vercel Inc.、データベース：Supabase Inc." },
+        { h:"4. 情報の保管・セキュリティ", p:"個人情報はSupabaseの暗号化されたデータベースに保管されます。パスワードはbcryptによりハッシュ化されます。SSL/TLSによる通信の暗号化を実施しています。" },
+        { h:"5. Cookie", p:"当サービスはセッション管理のためにCookieを使用します。ブラウザの設定でCookieを無効にできますが、一部の機能が利用できなくなる場合があります。" },
+        { h:"6. ユーザーの権利", p:"ユーザーは自身の個人情報について、開示・訂正・削除・利用停止を請求できます。アカウント設定ページから、またはお問い合わせフォームからご連絡ください。" },
+        { h:"7. 未成年者の利用", p:"18歳未満のユーザーは保護者の同意を得た上でご利用ください。13歳未満のお子様の個人情報を意図的に収集することはありません。" },
+        { h:"8. 改定", p:"本ポリシーは随時改定される場合があります。重要な変更はメールまたはアプリ内通知でお知らせします。" },
+        { h:"9. お問い合わせ", p:"プライバシーに関するお問い合わせは、アプリ内サポートまたは support@qocca.pet までご連絡ください。" },
       ]
     },
     tokusho: {
       title: "特定商取引法に基づく表記",
-      updated: "2026年4月28日",
+      updated: "2026年4月16日",
       sections: [
         { h:"事業者名", p:"Qocca（個人事業）" },
         { h:"代表者", p:"正和1204（開業届提出後に本名を記載）" },
         { h:"所在地", p:"大阪府（詳細住所は請求があった場合に遅滞なく開示いたします）" },
         { h:"連絡先", p:"support@qocca.pet（お問い合わせはアプリ内サポートをご利用ください）\n電話番号は請求があった場合に遅滞なく開示いたします。" },
         { h:"販売価格", p:"各出品ページに表示された金額（税込）。購入者が支払う金額は表示価格のみです。決済手数料・サービス手数料はすべて出品者が負担します。" },
-        { h:"商品代金以外の必要料金（送料）", p:"配送が必要な取引の場合、送料は出品ページに表示されます。送料は出品者が設定し、商品代金に含まれる場合と別途請求される場合があります。各出品ページの記載をご確認ください。データのみの納品取引、訪問取引については送料は発生しません。" },
         { h:"支払方法", p:"クレジットカード決済（Stripe経由：VISA、Mastercard、JCB、American Express対応）" },
         { h:"支払時期", p:"注文確定時に決済されます。エスクロー方式により、取引完了まで当サービスがお預かりします。" },
-        { h:"サービス提供時期・納品方法", p:"注文確定後、出品者が設定した納期内に提供されます。納品方法は取引タイプにより異なります：\n・配送あり取引：出品者から購入者の登録住所へ郵送\n・データのみ取引：取引メッセージ機能経由でデータ送付\n・訪問取引：取引メッセージ機能で日時・場所を調整" },
+        { h:"サービス提供時期", p:"注文確定後、出品者が設定した納期内に提供されます。" },
         { h:"返品・キャンセル", p:"作業開始前（購入者都合）：決済手数料（3.6%）を差し引いた金額を返金。\n作業開始前（出品者都合）：全額返金。\n納品後72時間以内：異議申し立て可能（出品者都合の場合は全額返金）。\n納品後72時間経過：取引完了（返金不可）。\n詳細は利用規約第7条をご確認ください。" },
         { h:"動作環境", p:"Google Chrome、Safari、Firefox、Edgeの最新版を推奨。\nスマートフォンはiOS 15以降、Android 10以降を推奨。" },
         { h:"役務の対価以外の必要料金", p:"インターネット接続料金、通信料はユーザー負担となります。" },
@@ -4043,7 +4067,7 @@ const TabBar = ({ page, setPage }) => {
   const { user } = useAuth();
   const tabs = [
     { id:"home", icon:"🏠", label:"ホーム" },
-    { id:"communities", icon:"💬", label:"コミュニティ" },
+    { id:"search", icon:"🔍", label:"さがす" },
     { id:"sell", icon:"➕", label:"" },
     { id:"events", icon:"📅", label:"イベント" },
     { id: user ? "mypage" : "signup", icon:"👤", label: user ? "マイページ" : "ログイン" },
