@@ -127,7 +127,6 @@ const useListings = () => {
           desc: l.description,
           delivery: l.delivery_days || "要相談",
           delivery_type: l.delivery_type || "data_only",
-          delivery_type: l.delivery_type || "data_only",
           bg: CAT_COLORS[l.category] || "#FFF3E0",
           imageUrl: l.image_urls?.[0] || "",
           imageUrls: l.image_urls || [],
@@ -2139,6 +2138,7 @@ const MyPage = ({ setPage }) => {
   const tabs = [
     { id:"profile", icon:"👤", label:"プロフィール" },
     { id:"orders", icon:"📦", label:"注文履歴", badge:MOCK_ORDERS.filter(o=>o.status==="delivered").length },
+    { id:"earnings", icon:"💰", label:"売上" },
     { id:"addresses", icon:"🏠", label:"配送先" },
     { id:"messages", icon:"💬", label:"メッセージ", badge:unreadMsgs },
     { id:"notifications", icon:"🔔", label:"通知", badge:unreadNotifs },
@@ -2232,13 +2232,14 @@ const MyPage = ({ setPage }) => {
               {[
                 { icon:"❤️", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
                 { icon:"📦", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
+                { icon:"💰", label:"売上", desc:"売上・出金管理", action:()=>setTab("earnings") },
                 { icon:"🏠", label:"配送先住所", desc:"住所の管理", action:()=>setTab("addresses") },
                 { icon:"💬", label:"メッセージ", desc:"取引メッセージ", action:()=>setTab("messages") },
                 { icon:"🔔", label:"通知", desc:`${unreadNotifs}件の未読`, action:()=>setTab("notifications") },
                 { icon:"🎧", label:"サポート", desc:"お問い合わせ", action:()=>setTab("support") },
               ].map((item, i) => (
                 <button key={item.label} onClick={item.action} style={{
-                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 5 ? `1px solid ${C.border}` : "none",
+                  width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 6 ? `1px solid ${C.border}` : "none",
                   background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit", textAlign:"left"
                 }}>
                   <div style={{ width:40, height:40, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
@@ -2256,6 +2257,9 @@ const MyPage = ({ setPage }) => {
 
         {/* Orders Tab */}
         {tab==="orders" && <OrdersTab/>}
+
+        {/* Earnings Tab */}
+        {tab==="earnings" && <EarningsTab/>}
 
         {/* Addresses Tab */}
         {tab==="addresses" && <AddressesTab/>}
@@ -2507,6 +2511,265 @@ const OrderStatusBar = ({ status }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// ── Earnings Tab (売上・出金管理) ──────────────────────────────────────
+const EarningsTab = () => {
+  const { user } = useAuth();
+  const [balance, setBalance] = useState<any>(null);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [connectStatus, setConnectStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showInstantModal, setShowInstantModal] = useState(false);
+  const [instantAmount, setInstantAmount] = useState("");
+  const [settings, setSettings] = useState<Record<string, string>>({});
+
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qufrqkuipzuqeqkvuhkx.supabase.co";
+  const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
+
+  const loadData = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+      // 残高サマリー
+      const { data: bal } = await sb
+        .from("seller_balances")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      setBalance(bal);
+
+      // 出金履歴
+      const { data: payoutData } = await sb
+        .from("payouts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setPayouts(payoutData || []);
+
+      // platform_settings
+      const { data: settingsData } = await sb
+        .from("platform_settings")
+        .select("key, value")
+        .in("key", ["instant_payout_fee_rate", "instant_payout_fee_min", "monthly_payout_threshold"]);
+      const settingsMap: Record<string, string> = {};
+      for (const s of settingsData || []) settingsMap[s.key] = s.value;
+      setSettings(settingsMap);
+
+      // Stripe Connect ステータス確認
+      const statusRes = await fetch(`${SUPABASE_URL}/functions/v1/stripe-connect-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON}`, "apikey": SUPABASE_ANON },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const statusData = await statusRes.json();
+      setConnectStatus(statusData);
+    } catch (e) {
+      console.error("Load earnings failed:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, [user?.id]);
+
+  const handleStartOnboarding = async () => {
+    if (!user?.id) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-connect-onboard`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON}`, "apikey": SUPABASE_ANON },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("オンボーディング URL の取得に失敗しました: " + (data.error || ""));
+      }
+    } catch (e) {
+      console.error(e);
+      alert("エラーが発生しました");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleInstantPayout = async () => {
+    if (!user?.id) return;
+    const amount = parseInt(instantAmount);
+    if (!amount || amount < 100) { alert("100円以上の金額を入力してください"); return; }
+    
+    const feeRate = parseFloat(settings.instant_payout_fee_rate || "0.015");
+    const feeMin = parseInt(settings.instant_payout_fee_min || "250");
+    const fee = Math.max(Math.floor(amount * feeRate), feeMin);
+    const net = amount - fee;
+    
+    if (!confirm(`即時受け取りを実行しますか？\n\n出金額: ¥${amount.toLocaleString()}\n手数料: ¥${fee.toLocaleString()} (${(feeRate*100).toFixed(1)}%, 最低¥${feeMin})\n受取額: ¥${net.toLocaleString()}\n\n数分以内に銀行口座へ振込されます。`)) return;
+    
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-instant-payout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON}`, "apikey": SUPABASE_ANON },
+        body: JSON.stringify({ user_id: user.id, amount }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ 即時受け取りが完了しました！\n\n出金額: ¥${data.breakdown.gross.toLocaleString()}\n手数料: ¥${data.breakdown.fee.toLocaleString()}\n受取額: ¥${data.breakdown.net.toLocaleString()}`);
+        setShowInstantModal(false);
+        setInstantAmount("");
+        loadData();
+      } else {
+        alert("エラー: " + (data.message || data.error || "不明"));
+      }
+    } catch (e) {
+      console.error(e);
+      alert("通信エラーが発生しました");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding:40, textAlign:"center", color:C.textMuted }}>読み込み中...</div>;
+  }
+
+  const isConnected = connectStatus?.connected && connectStatus?.payouts_enabled;
+  const monthlyThreshold = parseInt(settings.monthly_payout_threshold || "30000");
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+      {/* Stripe Connect 連携状況 */}
+      {!isConnected && (
+        <div style={{ background:"#FFF3E0", border:`2px solid ${C.orange}`, borderRadius:16, padding:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+            <span style={{ fontSize:24 }}>🏦</span>
+            <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:C.orange }}>銀行口座を設定してください</h3>
+          </div>
+          <p style={{ margin:"8px 0 12px", fontSize:13, color:C.text, lineHeight:1.6 }}>
+            売上を受け取るには、Stripe で銀行口座を連携する必要があります。<br/>
+            セキュアな本人確認を経て、安全に振込が可能になります。
+          </p>
+          <button
+            onClick={handleStartOnboarding}
+            disabled={actionLoading}
+            style={{ background:C.orange, color:C.white, border:"none", borderRadius:12, padding:"12px 24px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity: actionLoading ? 0.6 : 1 }}
+          >
+            {actionLoading ? "処理中..." : "🏦 銀行口座を設定する"}
+          </button>
+        </div>
+      )}
+
+      {/* 残高サマリー */}
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
+        <h3 style={{ margin:"0 0 16px", fontSize:14, fontWeight:800, color:C.text }}>💰 残高サマリー</h3>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
+          <div style={{ background:C.orangePale, padding:14, borderRadius:12, textAlign:"center" }}>
+            <div style={{ fontSize:11, color:C.textMuted, marginBottom:4 }}>取引中</div>
+            <div style={{ fontSize:18, fontWeight:800, color:C.text }}>¥{(balance?.in_escrow || 0).toLocaleString()}</div>
+          </div>
+          <div style={{ background:"#FFF8F0", padding:14, borderRadius:12, textAlign:"center", border:`2px solid ${C.orange}` }}>
+            <div style={{ fontSize:11, color:C.orange, fontWeight:700, marginBottom:4 }}>受取可能</div>
+            <div style={{ fontSize:18, fontWeight:800, color:C.orange }}>¥{(balance?.pending_balance || 0).toLocaleString()}</div>
+          </div>
+          <div style={{ background:"#F0F9FF", padding:14, borderRadius:12, textAlign:"center" }}>
+            <div style={{ fontSize:11, color:C.textMuted, marginBottom:4 }}>累計売上</div>
+            <div style={{ fontSize:18, fontWeight:800, color:C.text }}>¥{(balance?.total_earned || 0).toLocaleString()}</div>
+          </div>
+        </div>
+        <div style={{ marginTop:12, fontSize:11, color:C.textMuted, lineHeight:1.6 }}>
+          完了取引数: {balance?.completed_orders_count || 0}件
+        </div>
+      </div>
+
+      {/* 振込スケジュール案内 */}
+      <div style={{ background:"#F8F9FA", borderRadius:16, padding:16, fontSize:12, lineHeight:1.7, color:C.text }}>
+        <div style={{ fontWeight:800, marginBottom:6 }}>📅 振込について</div>
+        <div>• <strong>月末自動振込</strong>: ¥{monthlyThreshold.toLocaleString()}以上は手数料無料、未満は出品者負担（次月繰越も可）</div>
+        <div>• <strong>即時受け取り</strong>: 手数料 1.5%（最低¥250）/ 数分で着金</div>
+      </div>
+
+      {/* 即時受け取りボタン */}
+      {isConnected && (balance?.pending_balance || 0) > 0 && (
+        <button
+          onClick={() => setShowInstantModal(true)}
+          style={{ background:C.orange, color:C.white, border:"none", borderRadius:14, padding:"14px 24px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}
+        >
+          ⚡ 今すぐ受け取る（手数料あり）
+        </button>
+      )}
+
+      {/* 出金履歴 */}
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
+        <h3 style={{ margin:"0 0 12px", fontSize:14, fontWeight:800, color:C.text }}>📜 出金履歴</h3>
+        {payouts.length === 0 ? (
+          <div style={{ padding:20, textAlign:"center", color:C.textMuted, fontSize:13 }}>まだ出金履歴はありません</div>
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {payouts.map(p => (
+              <div key={p.id} style={{ padding:12, border:`1px solid ${C.border}`, borderRadius:10, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>
+                    {new Date(p.created_at).toLocaleDateString("ja-JP")} - {p.payout_type === "instant" ? "⚡即時" : p.payout_type === "monthly_auto" ? "📅月末" : "🖱️手動"}
+                  </div>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.text }}>¥{p.net_amount.toLocaleString()}</div>
+                  {p.fee > 0 && <div style={{ fontSize:11, color:C.textMuted }}>手数料 ¥{p.fee.toLocaleString()}</div>}
+                </div>
+                <span style={{ 
+                  fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:8,
+                  background: p.status === "paid" ? "#E8F5E9" : p.status === "in_transit" ? "#FFF3E0" : p.status === "failed" ? "#FFEBEE" : "#F5F5F5",
+                  color: p.status === "paid" ? "#2E7D32" : p.status === "in_transit" ? "#EF6C00" : p.status === "failed" ? "#C62828" : "#666"
+                }}>
+                  {p.status === "paid" ? "✅完了" : p.status === "in_transit" ? "🚀 振込中" : p.status === "failed" ? "❌失敗" : "保留中"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 即時受け取りモーダル */}
+      {showInstantModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999 }}>
+          <div style={{ background:C.white, borderRadius:16, padding:24, maxWidth:400, width:"90%", maxHeight:"90vh", overflowY:"auto" }}>
+            <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:800 }}>⚡ 即時受け取り</h3>
+            <p style={{ fontSize:13, color:C.text, lineHeight:1.6, margin:"0 0 16px" }}>
+              手数料: 1.5%（最低¥250）<br/>
+              受取可能残高: <strong>¥{(balance?.pending_balance || 0).toLocaleString()}</strong>
+            </p>
+            <div style={{ marginBottom:16 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, marginBottom:6 }}>出金額（円）</label>
+              <input
+                type="number"
+                value={instantAmount}
+                onChange={e => setInstantAmount(e.target.value)}
+                placeholder="例: 10000"
+                style={{ width:"100%", padding:12, border:`1px solid ${C.border}`, borderRadius:10, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }}
+              />
+              {instantAmount && (
+                <div style={{ marginTop:8, padding:10, background:C.orangePale, borderRadius:10, fontSize:12, lineHeight:1.6 }}>
+                  手数料: ¥{Math.max(Math.floor(parseInt(instantAmount||"0") * 0.015), 250).toLocaleString()}<br/>
+                  受取額: ¥{Math.max(0, parseInt(instantAmount||"0") - Math.max(Math.floor(parseInt(instantAmount||"0") * 0.015), 250)).toLocaleString()}
+                </div>
+              )}
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => { setShowInstantModal(false); setInstantAmount(""); }} style={{ flex:1, padding:12, border:`1px solid ${C.border}`, background:C.white, borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
+              <button onClick={handleInstantPayout} disabled={actionLoading || !instantAmount} style={{ flex:1, padding:12, border:"none", background:C.orange, color:C.white, borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity: (actionLoading || !instantAmount) ? 0.5 : 1 }}>
+                {actionLoading ? "処理中..." : "実行"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
