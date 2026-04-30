@@ -2601,7 +2601,28 @@ const EarningsTab = () => {
       setActionLoading(false);
     }
   };
-
+const handleOpenDashboard = async () => {
+    if (!user?.id) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-connect-dashboard-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_ANON}`, "apikey": SUPABASE_ANON },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        alert("ダッシュボードへのリンク取得に失敗しました: " + (data.error || ""));
+      }
+    } catch (e) {
+      console.error(e);
+      alert("エラーが発生しました");
+    } finally {
+      setActionLoading(false);
+    }
+  };
   const handleInstantPayout = async () => {
     if (!user?.id) return;
     const amount = parseInt(instantAmount);
@@ -2706,7 +2727,26 @@ const EarningsTab = () => {
           ⚡ 今すぐ受け取る（手数料あり）
         </button>
       )}
-
+{/* 銀行口座・支払い設定を変更（Stripe Express ダッシュボード） */}
+      {isConnected && (
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:16 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+            <div style={{ flex:1, minWidth:200 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.text, marginBottom:4 }}>🏦 銀行口座・支払い設定</div>
+              <div style={{ fontSize:11, color:C.textMuted, lineHeight:1.5 }}>
+                銀行口座の変更、住所変更、税情報の更新などはStripeのページから安全に行えます。
+              </div>
+            </div>
+            <button
+              onClick={handleOpenDashboard}
+              disabled={actionLoading}
+              style={{ background:C.white, color:C.orange, border:`2px solid ${C.orange}`, borderRadius:10, padding:"10px 18px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity: actionLoading ? 0.6 : 1, whiteSpace:"nowrap" }}
+            >
+              {actionLoading ? "処理中..." : "設定を変更する ↗"}
+            </button>
+          </div>
+        </div>
+      )}
       {/* 出金履歴 */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
         <h3 style={{ margin:"0 0 12px", fontSize:14, fontWeight:800, color:C.text }}>📜 出金履歴</h3>
