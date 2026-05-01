@@ -9,8 +9,9 @@ import AdminDashboard from "./Admin";
 import { ReviewModal } from "./components/ReviewModal";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
+const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
 const supabase = createClient(
-  "https://qufrqkuipzuqeqkvuhkx.supabase.co",
+  SUPABASE_URL,
   "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou"
 );
 
@@ -256,14 +257,6 @@ const evPetColor = (p) => p==="dog"?C.orange:p==="cat"?"#9C27B0":C.green;
 const evPetBg = (p) => p==="dog"?C.orangePale:p==="cat"?"#F3E5F5":C.greenPale;
 
 // ── Mock Orders ───────────────────────────────────────────────────────────
-const MOCK_ORDERS = [
-  { id:"QOC-2026-0501", item:"愛犬の水彩似顔絵", seller:"みかん工房", price:3800, status:"completed", date:"2026.03.15", deliveredAt:"2026.03.20", completedAt:"2026.03.21", emoji:"🎨", bg:"#FFF3E0" },
-  { id:"QOC-2026-0512", item:"猫ちゃん専用ニット服", seller:"てづくり屋さん", price:5200, status:"delivered", date:"2026.04.08", deliveredAt:"2026.04.11", emoji:"🧶", bg:"#F3E5F5" },
-  { id:"QOC-2026-0520", item:"デジタル似顔絵（即日）", seller:"イラスト工房ハル", price:1500, status:"working", date:"2026.04.12", emoji:"💻", bg:"#FFF8E1" },
-  { id:"QOC-2026-0489", item:"しつけ個別相談60分", seller:"ドッグトレーナー山本", price:6000, status:"disputed", date:"2026.04.07", deliveredAt:"2026.04.10", emoji:"🎓", bg:"#E0F7FA", disputeReason:"予約時間にトレーナーが現れなかった", disputeStatus:"investigating" },
-  { id:"QOC-2026-0410", item:"アクリルキーホルダー", seller:"クリエイトパレット", price:2200, status:"refunded", date:"2026.03.25", emoji:"✨", bg:"#E8F5E9", disputeReason:"商品が届かない（配送事故）" },
-];
-
 const ORDER_STEPS = [
   { key:"pending", label:"注文確定", icon:"🛒" },
   { key:"working", label:"作業中", icon:"🎨" },
@@ -281,33 +274,6 @@ const stepIndex = (status) => {
   if (status==="cancelled") return -1;
   return 0;
 };
-
-// ── Mock Notifications ────────────────────────────────────────────────────
-const MOCK_NOTIFICATIONS = [
-  { id:1, type:"order", title:"納品がありました", body:"「猫ちゃん専用ニット服」が納品されました。内容をご確認ください。", link:"orders", isRead:false, date:"2026.04.11 14:30" },
-  { id:2, type:"order", title:"作業が開始されました", body:"「デジタル似顔絵（即日）」の作業が開始されました。", link:"orders", isRead:false, date:"2026.04.12 10:00" },
-  { id:3, type:"dispute", title:"異議の調査を開始しました", body:"「しつけ個別相談60分」の異議について調査を開始しました。", link:"orders", isRead:true, date:"2026.04.10 16:00" },
-  { id:4, type:"system", title:"レビューをお願いします", body:"「愛犬の水彩似顔絵」のレビューを書いてみませんか？", link:"orders", isRead:true, date:"2026.03.22 09:00" },
-  { id:5, type:"support", title:"サポートから返信がありました", body:"お問い合わせ TKT-0012 に返信がありました。", link:"support", isRead:false, date:"2026.04.11 13:00" },
-];
-
-// ── Mock Messages ─────────────────────────────────────────────────────────
-const MOCK_CONVERSATIONS = [
-  { id:1, orderId:"QOC-2026-0512", partner:"てづくり屋さん", partnerIcon:"🧶", lastMsg:"サイズの件、確認しますね！", date:"2026.04.11", unread:1, messages:[
-    { from:"me", text:"Mサイズで注文したのですが、確認お願いします！", time:"2026.04.10 15:00" },
-    { from:"partner", text:"サイズの件、確認しますね！少々お待ちください。", time:"2026.04.11 09:30" },
-  ]},
-  { id:2, orderId:"QOC-2026-0520", partner:"イラスト工房ハル", partnerIcon:"💻", lastMsg:"写真ありがとうございます！本日中に納品します。", date:"2026.04.12", unread:0, messages:[
-    { from:"me", text:"よろしくお願いします！こちらが愛犬の写真です。", time:"2026.04.12 10:05" },
-    { from:"partner", text:"写真ありがとうございます！本日中に納品します。", time:"2026.04.12 10:20" },
-  ]},
-];
-
-const MOCK_SUPPORT_MSGS = [
-  { from:"me", text:"しつけ相談の件で、予約時間にトレーナーが現れませんでした。返金をお願いしたいです。", time:"2026.04.10 11:00" },
-  { from:"support", text:"お問い合わせありがとうございます。受付番号: TKT-0012。内容を確認し、48時間以内にご回答いたします。", time:"2026.04.10 11:00" },
-  { from:"support", text:"出品者に確認したところ、体調不良で連絡が遅れたとのことです。現在、対応方法を検討中です。", time:"2026.04.11 13:00" },
-];
 
 const DISPUTE_REASONS = [
   { id:"quality", label:"イメージと違う・品質問題", icon:"😕" },
@@ -2130,14 +2096,48 @@ const MyPage = ({ setPage }) => {
   const initial = displayName.charAt(0).toUpperCase();
   const provider = user?.app_metadata?.provider;
   const providerLabel = provider === "google" ? "Google" : provider === "twitter" ? "X" : "メール";
-  const unreadNotifs = MOCK_NOTIFICATIONS.filter(n=>!n.isRead).length;
-  const unreadMsgs = MOCK_CONVERSATIONS.reduce((s,c)=>s+c.unread,0);
 
   const handleSignOut = async () => { await signOut(); setPage("home"); };
 
+  // バッジ用の未読数（DBから取得、初期値0）
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0); // 受取確認待ちの注文数（購入者として）
+  const [pendingSalesCount, setPendingSalesCount] = useState(0); // 対応待ちの販売（出品者として）
+
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      // 受取確認待ち（自分が購入者でstatus=delivered）
+      const { count: ordersCount } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("buyer_id", user.id)
+        .eq("status", "delivered");
+      setPendingOrdersCount(ordersCount || 0);
+
+      // 対応待ちの販売（自分が出品者でstatus=workingまたはpending）
+      const { count: salesCount } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("seller_id", user.id)
+        .in("status", ["pending", "working"]);
+      setPendingSalesCount(salesCount || 0);
+
+      // 未読DM数（recipient_idが自分でis_read=false）
+      const { count: dmCount } = await supabase
+        .from("direct_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", user.id)
+        .eq("is_read", false);
+      setUnreadMsgs(dmCount || 0);
+    })();
+  }, [user?.id, refreshKey]);
+
   const tabs = [
     { id:"profile", icon:"👤", label:"プロフィール" },
-    { id:"orders", icon:"📦", label:"注文履歴", badge:MOCK_ORDERS.filter(o=>o.status==="delivered").length },
+    { id:"sales", icon:"🛍️", label:"販売管理", badge:pendingSalesCount },
+    { id:"orders", icon:"📦", label:"注文履歴", badge:pendingOrdersCount },
     { id:"earnings", icon:"💰", label:"売上" },
     { id:"addresses", icon:"🏠", label:"配送先" },
     { id:"messages", icon:"💬", label:"メッセージ", badge:unreadMsgs },
@@ -2148,17 +2148,18 @@ const MyPage = ({ setPage }) => {
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, padding:"80px 16px 40px" }}>
       <div style={{ maxWidth:600, margin:"0 auto" }}>
-        {/* Tab Navigation */}
-        <div style={{ display:"flex", gap:4, marginBottom:20, overflowX:"auto", paddingBottom:4 }}>
+        {/* Tab Navigation - 2行グリッドで全タブが見える */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:6, marginBottom:20 }}>
           {tabs.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)} style={{
-              flexShrink:0, padding:"8px 16px", border:`1.5px solid ${tab===t.id?C.orange:C.border}`,
+              padding:"8px 6px", border:`1.5px solid ${tab===t.id?C.orange:C.border}`,
               borderRadius:12, background:tab===t.id?C.orangePale:C.white,
-              color:tab===t.id?C.orange:C.warmGray, fontSize:12, fontWeight:700,
-              cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6, position:"relative"
+              color:tab===t.id?C.orange:C.warmGray, fontSize:11, fontWeight:700,
+              cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:4, position:"relative", minHeight:40
             }}>
-              <span>{t.icon}</span>{t.label}
-              {t.badge > 0 && <span style={{ background:C.orange, color:"#fff", fontSize:9, fontWeight:800, padding:"1px 6px", borderRadius:8, minWidth:14, textAlign:"center" }}>{t.badge}</span>}
+              <span style={{ fontSize:14 }}>{t.icon}</span>
+              <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.label}</span>
+              {t.badge > 0 && <span style={{ background:C.orange, color:"#fff", fontSize:9, fontWeight:800, padding:"1px 5px", borderRadius:8, minWidth:14, textAlign:"center", flexShrink:0 }}>{t.badge}</span>}
             </button>
           ))}
         </div>
@@ -2254,6 +2255,9 @@ const MyPage = ({ setPage }) => {
             <button onClick={handleSignOut} style={{ width:"100%", padding:"14px", marginTop:20, background:C.white, border:`1.5px solid ${C.red}`, borderRadius:14, color:C.red, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>🚪 ログアウト</button>
           </>
         )}
+
+        {/* Sales Tab (販売管理 - 出品者向け) */}
+        {tab==="sales" && <SalesTab/>}
 
         {/* Orders Tab */}
         {tab==="orders" && <OrdersTab/>}
@@ -3009,13 +3013,50 @@ const AddressesTab = () => {
   );
 };
 
-// ── Orders Tab ────────────────────────────────────────────────────────────
+// ── Orders Tab（購入者向け：自分が買った注文一覧） ─────────────────────────
 const OrdersTab = () => {
-  const [orders, setOrders] = useState(MOCK_ORDERS);
-  const [selected, setSelected] = useState(null);
-  const [showDispute, setShowDispute] = useState(null);
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<any>(null);
+  const [showDispute, setShowDispute] = useState<any>(null);
   const [showReview, setShowReview] = useState<any>(null);
   const [filter, setFilter] = useState("all");
+
+  const loadOrders = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, status, escrow_status, amount, created_at, delivered_at, completed_at, listing_id, seller_id, dispute_reason, dispute_status, refund_reason")
+      .eq("buyer_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) { console.error("orders fetch error:", error); setLoading(false); return; }
+
+    // listing と seller profile を別途取得して付与
+    const listingIds = Array.from(new Set((data || []).map(o => o.listing_id).filter(Boolean)));
+    const sellerIds = Array.from(new Set((data || []).map(o => o.seller_id).filter(Boolean)));
+
+    const [{ data: listings }, { data: sellers }] = await Promise.all([
+      listingIds.length ? supabase.from("listings").select("id, title, photos, category").in("id", listingIds) : Promise.resolve({ data: [] }),
+      sellerIds.length ? supabase.from("profiles").select("id, display_name").in("id", sellerIds) : Promise.resolve({ data: [] }),
+    ]);
+
+    const listingMap = new Map((listings || []).map(l => [l.id, l]));
+    const sellerMap = new Map((sellers || []).map(s => [s.id, s]));
+
+    const enriched = (data || []).map(o => ({
+      ...o,
+      listing: listingMap.get(o.listing_id),
+      seller: sellerMap.get(o.seller_id),
+    }));
+
+    setOrders(enriched);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadOrders(); }, [user?.id]);
 
   const filtered = orders.filter(o => filter==="all" || o.status===filter);
 
@@ -3024,10 +3065,27 @@ const OrdersTab = () => {
     return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
-  const handleConfirm = (orderId) => {
-    setOrders(prev=>prev.map(o=>o.id===orderId?{...o,status:"completed",completedAt:new Date().toLocaleDateString("ja-JP").replace(/\//g,".")}:o));
-    setSelected(null);
+  const handleConfirm = async (orderId: string) => {
+    if (!confirm("受取を確定しますか？\nこの操作で出品者へ売上が支払われます。")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/complete-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "受取確認に失敗しました");
+      alert("受取を確定しました。出品者へ売上が支払われます。");
+      setSelected(null);
+      await loadOrders();
+    } catch (e: any) {
+      alert(`エラー: ${e.message}`);
+    }
   };
+
+  const formatDate = (s?: string) => s ? new Date(s).toLocaleDateString("ja-JP").replace(/\//g, ".") : "";
+  const photoUrl = (l?: any) => Array.isArray(l?.photos) && l.photos.length ? l.photos[0] : null;
 
   return (
     <div>
@@ -3041,45 +3099,56 @@ const OrdersTab = () => {
         ))}
       </div>
 
-      {filtered.length===0 ? (
-        <div style={{ textAlign:"center", padding:"48px 20px" }}><div style={{ fontSize:40, marginBottom:8 }}>📦</div><div style={{ fontWeight:700, color:C.warmGray }}>注文がありません</div></div>
+      {loading ? (
+        <div style={{ textAlign:"center", padding:"48px 20px", color:C.warmGray, fontSize:13 }}>読み込み中…</div>
+      ) : filtered.length===0 ? (
+        <div style={{ textAlign:"center", padding:"48px 20px" }}>
+          <div style={{ fontSize:40, marginBottom:8 }}>📦</div>
+          <div style={{ fontWeight:700, color:C.warmGray }}>注文がありません</div>
+          <div style={{ fontSize:11, color:C.warmGray, marginTop:6 }}>気になる商品を購入してみましょう</div>
+        </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {filtered.map(order => {
             const st = statusLabel(order.status);
+            const title = order.listing?.title || "（削除された商品）";
+            const sellerName = order.seller?.display_name || "—";
+            const img = photoUrl(order.listing);
             return (
               <div key={order.id} onClick={()=>setSelected(selected?.id===order.id?null:order)} style={{
                 background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden", cursor:"pointer"
               }}>
                 <div style={{ padding:"16px", display:"flex", gap:14, alignItems:"center" }}>
-                  <div style={{ width:48, height:48, borderRadius:12, background:order.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{order.emoji}</div>
+                  <div style={{ width:48, height:48, borderRadius:12, background:img?`url(${img}) center/cover`:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
+                    {!img && "📦"}
+                  </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                      <span style={{ fontSize:13, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{order.item}</span>
+                      <span style={{ fontSize:13, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{title}</span>
                       <span style={{ background:st.bg, color:st.color, fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, flexShrink:0 }}>{st.text}</span>
                     </div>
-                    <div style={{ fontSize:11, color:C.warmGray }}>{order.seller} · {order.date}</div>
-                    <div style={{ fontSize:15, fontWeight:900, color:C.orange, marginTop:4 }}>¥{order.price.toLocaleString()}</div>
+                    <div style={{ fontSize:11, color:C.warmGray }}>{sellerName} · {formatDate(order.created_at)}</div>
+                    <div style={{ fontSize:15, fontWeight:900, color:C.orange, marginTop:4 }}>¥{Number(order.amount || 0).toLocaleString()}</div>
                   </div>
                 </div>
 
                 {selected?.id===order.id && (
                   <div style={{ borderTop:`1px solid ${C.border}`, padding:"16px", background:C.lightGray }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {order.id}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {order.id.slice(0, 8)}</div>
                     <OrderStatusBar status={order.status}/>
 
                     {order.status==="disputed" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
                         <div style={{ fontWeight:700, marginBottom:4 }}>⚠️ 異議申し立て中</div>
-                        <div>{order.disputeReason}</div>
-                        <div style={{ fontSize:11, color:C.warmGray, marginTop:4 }}>ステータス: {order.disputeStatus==="investigating"?"調査中":"回答待ち"}</div>
+                        <div>{order.dispute_reason}</div>
+                        <div style={{ fontSize:11, color:C.warmGray, marginTop:4 }}>ステータス: {order.dispute_status==="investigating"?"調査中":"回答待ち"}</div>
                       </div>
                     )}
 
                     {order.status==="refunded" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
                         <div style={{ fontWeight:700 }}>💸 返金済み</div>
-                        <div>{order.disputeReason}</div>
+                        {order.refund_reason && <div>{order.refund_reason}</div>}
                       </div>
                     )}
 
@@ -3097,10 +3166,10 @@ const OrdersTab = () => {
                         </>
                       )}
                       {order.status==="completed" && (
-                        <button onClick={(e)=>{e.stopPropagation();setShowReview(order);}} style={{
-                flex:1, padding:"11px", background:C.orange, border:"none", borderRadius:10,
-                color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
-              }}>⭐ レビューを書く</button>
+                        <button onClick={(e)=>{e.stopPropagation();setShowReview({...order, item:title, seller:sellerName});}} style={{
+                          flex:1, padding:"11px", background:C.orange, border:"none", borderRadius:10,
+                          color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
+                        }}>⭐ レビューを書く</button>
                       )}
                     </div>
                   </div>
@@ -3112,11 +3181,199 @@ const OrdersTab = () => {
       )}
 
       {/* Dispute Modal */}
-      {showDispute && <DisputeModal order={showDispute} onClose={()=>setShowDispute(null)} onSubmit={(orderId, reason, desc)=>{
-        setOrders(prev=>prev.map(o=>o.id===orderId?{...o,status:"disputed",disputeReason:desc,disputeStatus:"new"}:o));
+      {showDispute && <DisputeModal order={{...showDispute, item: showDispute.listing?.title || ""}} onClose={()=>setShowDispute(null)} onSubmit={async (orderId, reason, desc)=>{
+        try {
+          await supabase.from("orders").update({ status:"disputed", dispute_reason: desc, dispute_status:"new", updated_at: new Date().toISOString() }).eq("id", orderId);
+          await loadOrders();
+        } catch(e: any) { alert("エラー: "+e.message); }
         setShowDispute(null);
       }}/>}
       {showReview && <ReviewModal order={showReview} onClose={()=>setShowReview(null)} onSubmit={()=>setShowReview(null)} />}
+    </div>
+  );
+};
+
+// ── Sales Tab（出品者向け：自分が売った注文一覧、対応操作可） ──────────────
+const SalesTab = () => {
+  const { user } = useAuth();
+  const [sales, setSales] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<any>(null);
+  const [filter, setFilter] = useState("active");
+  const [busy, setBusy] = useState(false);
+
+  const loadSales = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, status, escrow_status, transfer_status, amount, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
+      .eq("seller_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) { console.error("sales fetch error:", error); setLoading(false); return; }
+
+    const listingIds = Array.from(new Set((data || []).map(o => o.listing_id).filter(Boolean)));
+    const buyerIds = Array.from(new Set((data || []).map(o => o.buyer_id).filter(Boolean)));
+
+    const [{ data: listings }, { data: buyers }] = await Promise.all([
+      listingIds.length ? supabase.from("listings").select("id, title, photos, delivery_type").in("id", listingIds) : Promise.resolve({ data: [] }),
+      buyerIds.length ? supabase.from("profiles").select("id, display_name").in("id", buyerIds) : Promise.resolve({ data: [] }),
+    ]);
+
+    const listingMap = new Map((listings || []).map(l => [l.id, l]));
+    const buyerMap = new Map((buyers || []).map(b => [b.id, b]));
+
+    const enriched = (data || []).map(o => ({
+      ...o,
+      listing: listingMap.get(o.listing_id),
+      buyer: buyerMap.get(o.buyer_id),
+    }));
+
+    setSales(enriched);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadSales(); }, [user?.id]);
+
+  // フィルタ：active=対応中(pending+working+delivered+disputed) / completed=完了 / cancelled=キャンセル系
+  const filtered = sales.filter(o => {
+    if (filter === "active") return ["pending", "working", "delivered", "disputed"].includes(o.status);
+    if (filter === "completed") return o.status === "completed";
+    if (filter === "cancelled") return ["cancelled", "refunded"].includes(o.status);
+    return true;
+  });
+
+  const statusLabel = (s) => {
+    const map = { pending:{text:"注文確定",bg:C.orangePale,color:C.orange}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
+    return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
+  };
+
+  const startWork = async (orderId: string) => {
+    if (!confirm("作業を開始しますか？")) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("orders").update({ status: "working", updated_at: new Date().toISOString() }).eq("id", orderId);
+      if (error) throw error;
+      await loadSales();
+    } catch(e: any) { alert("エラー: "+e.message); }
+    finally { setBusy(false); }
+  };
+
+  const markDelivered = async (orderId: string) => {
+    if (!confirm("納品完了として通知しますか？\n購入者が受取確認したら売上が支払われます。")) return;
+    setBusy(true);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from("orders").update({ status: "delivered", delivered_at: now, updated_at: now }).eq("id", orderId);
+      if (error) throw error;
+      await loadSales();
+    } catch(e: any) { alert("エラー: "+e.message); }
+    finally { setBusy(false); }
+  };
+
+  const formatDate = (s?: string) => s ? new Date(s).toLocaleDateString("ja-JP").replace(/\//g, ".") : "";
+  const photoUrl = (l?: any) => Array.isArray(l?.photos) && l.photos.length ? l.photos[0] : null;
+
+  return (
+    <div>
+      <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginBottom:14, fontSize:11, color:C.dark, lineHeight:1.6 }}>
+        💡 受けた注文の管理画面です。作業状況を更新すると購入者に通知されます。
+      </div>
+
+      <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
+        {[["active","対応中"],["completed","完了"],["cancelled","キャンセル"],["all","すべて"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFilter(v)} style={{
+            flexShrink:0, padding:"6px 14px", border:`1.5px solid ${filter===v?C.orange:C.border}`,
+            borderRadius:10, background:filter===v?C.orangePale:C.white,
+            color:filter===v?C.orange:C.warmGray, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+          }}>{l}</button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign:"center", padding:"48px 20px", color:C.warmGray, fontSize:13 }}>読み込み中…</div>
+      ) : filtered.length===0 ? (
+        <div style={{ textAlign:"center", padding:"48px 20px" }}>
+          <div style={{ fontSize:40, marginBottom:8 }}>🛍️</div>
+          <div style={{ fontWeight:700, color:C.warmGray }}>該当する販売がありません</div>
+          <div style={{ fontSize:11, color:C.warmGray, marginTop:6 }}>注文が入るとここに表示されます</div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {filtered.map(sale => {
+            const st = statusLabel(sale.status);
+            const title = sale.listing?.title || "（削除された商品）";
+            const buyerName = sale.buyer?.display_name || "—";
+            const img = photoUrl(sale.listing);
+            const isShipping = sale.listing?.delivery_type === "shipping";
+            return (
+              <div key={sale.id} onClick={()=>setSelected(selected?.id===sale.id?null:sale)} style={{
+                background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden", cursor:"pointer"
+              }}>
+                <div style={{ padding:"16px", display:"flex", gap:14, alignItems:"center" }}>
+                  <div style={{ width:48, height:48, borderRadius:12, background:img?`url(${img}) center/cover`:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
+                    {!img && "🛍️"}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontSize:13, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{title}</span>
+                      <span style={{ background:st.bg, color:st.color, fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, flexShrink:0 }}>{st.text}</span>
+                    </div>
+                    <div style={{ fontSize:11, color:C.warmGray }}>購入者: {buyerName} · {formatDate(sale.created_at)}</div>
+                    <div style={{ fontSize:15, fontWeight:900, color:C.orange, marginTop:4 }}>¥{Number(sale.amount || 0).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                {selected?.id===sale.id && (
+                  <div style={{ borderTop:`1px solid ${C.border}`, padding:"16px", background:C.lightGray }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {sale.id.slice(0, 8)}</div>
+                    <OrderStatusBar status={sale.status}/>
+
+                    {isShipping && sale.shipping_address_id && (
+                      <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginTop:10, fontSize:11, color:C.dark, lineHeight:1.6 }}>
+                        🔒 配送先住所が登録されています。<br/>
+                        メッセージタブの取引メッセージから詳細を確認できます。<br/>
+                        <span style={{ fontSize:10, color:C.warmGray }}>※ 取引完了後30日で自動削除されます</span>
+                      </div>
+                    )}
+
+                    <div style={{ display:"flex", gap:8, marginTop:12, flexWrap:"wrap" }}>
+                      {sale.status==="pending" && (
+                        <button disabled={busy} onClick={(e)=>{e.stopPropagation();startWork(sale.id);}} style={{
+                          flex:1, minWidth:140, padding:"11px", background:C.blue, border:"none", borderRadius:10,
+                          color:"#fff", fontWeight:800, fontSize:13, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", opacity:busy?0.6:1
+                        }}>🎨 作業を開始</button>
+                      )}
+                      {sale.status==="working" && (
+                        <button disabled={busy} onClick={(e)=>{e.stopPropagation();markDelivered(sale.id);}} style={{
+                          flex:1, minWidth:140, padding:"11px", background:C.orange, border:"none", borderRadius:10,
+                          color:"#fff", fontWeight:800, fontSize:13, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", opacity:busy?0.6:1
+                        }}>📦 納品完了として通知</button>
+                      )}
+                      {sale.status==="delivered" && (
+                        <div style={{ flex:1, padding:"11px", background:"#FFF3E0", borderRadius:10, color:C.orange, fontWeight:700, fontSize:12, textAlign:"center" }}>
+                          購入者の受取確認待ち（72時間後に自動完了）
+                        </div>
+                      )}
+                      {sale.status==="completed" && (
+                        <div style={{ flex:1, padding:"11px", background:C.greenPale, borderRadius:10, color:C.green, fontWeight:700, fontSize:12, textAlign:"center" }}>
+                          ✅ 取引完了 · 売上反映済み
+                        </div>
+                      )}
+                      {sale.status==="disputed" && (
+                        <div style={{ flex:1, padding:"11px", background:"#FFEBEE", borderRadius:10, color:C.red, fontWeight:700, fontSize:12, textAlign:"center" }}>
+                          ⚠️ 異議申し立て中（運営にて対応中）
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -3787,125 +4044,46 @@ const MessagesTab = () => {
 
 // ── Notifications Tab ─────────────────────────────────────────────────────
 const NotificationsTab = () => {
-  const [notifs, setNotifs] = useState(MOCK_NOTIFICATIONS);
-
-  const markRead = (id) => setNotifs(prev=>prev.map(n=>n.id===id?{...n,isRead:true}:n));
-  const typeIcon = (t) => t==="order"?"📦":t==="dispute"?"⚠️":t==="support"?"🎧":"🔔";
-
+  // 通知DBは未実装。実装までは空状態で運用。
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-      {notifs.map(n=>(
-        <div key={n.id} onClick={()=>markRead(n.id)} style={{
-          background:n.isRead?C.white:C.orangePale, borderRadius:14, padding:"14px",
-          border:`1px solid ${n.isRead?C.border:C.orange}`, cursor:"pointer", transition:"background 0.2s"
-        }}>
-          <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-            <div style={{ fontSize:20, marginTop:2 }}>{typeIcon(n.type)}</div>
-            <div style={{ flex:1 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{n.title}</span>
-                {!n.isRead && <div style={{ width:8, height:8, borderRadius:"50%", background:C.orange }}/>}
-              </div>
-              <div style={{ fontSize:12, color:"#555", lineHeight:1.6 }}>{n.body}</div>
-              <div style={{ fontSize:10, color:C.warmGray, marginTop:6 }}>{n.date}</div>
-            </div>
-          </div>
-        </div>
-      ))}
+    <div style={{ textAlign:"center", padding:"48px 20px" }}>
+      <div style={{ fontSize:40, marginBottom:8 }}>🔔</div>
+      <div style={{ fontWeight:700, color:C.warmGray, marginBottom:6 }}>新しい通知はありません</div>
+      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
+        重要なお知らせは登録メールアドレス宛にお送りしています。<br/>
+        メッセージタブの取引メッセージ・DMもご確認ください。
+      </div>
     </div>
   );
 };
 
 // ── Support Tab ───────────────────────────────────────────────────────────
 const SupportTab = () => {
-  const [msgs, setMsgs] = useState(MOCK_SUPPORT_MSGS);
-  const [input, setInput] = useState("");
-  const [showNew, setShowNew] = useState(false);
-  const [newSubject, setNewSubject] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-
-  const sendMsg = () => {
-    if (!input.trim()) return;
-    setMsgs(prev=>[...prev, { from:"me", text:input, time:new Date().toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(/\//g,".") }]);
-    setInput("");
-    // Simulate auto-reply
-    setTimeout(()=>{
-      setMsgs(prev=>[...prev, { from:"support", text:"お問い合わせありがとうございます。内容を確認し、順次対応いたします。通常48時間以内にご回答いたします。", time:new Date().toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(/\//g,".") }]);
-    }, 1000);
-  };
-
-  const submitNew = () => {
-    if (!newSubject || !newCategory) return;
-    setMsgs([{ from:"me", text:`【${newCategory}】${newSubject}\n\n${newDesc}`, time:new Date().toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(/\//g,".") }]);
-    setShowNew(false);
-    setTimeout(()=>{
-      setMsgs(prev=>[...prev, { from:"support", text:"お問い合わせありがとうございます。受付番号: TKT-" + String(Math.floor(Math.random()*9000)+1000) + "。内容を確認し、通常48時間以内にご回答いたします。緊急の場合は「緊急」とご記入ください。", time:new Date().toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(/\//g,".") }]);
-    }, 800);
-  };
-
+  // サポートチケット機能は未実装。当面はメール案内のみ。
+  const supportEmail = "support@qocca.pet";
   return (
     <div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-        <div style={{ fontSize:14, fontWeight:700, color:C.dark }}>🎧 サポート</div>
-        <button onClick={()=>setShowNew(true)} style={{ padding:"7px 14px", background:C.orange, border:"none", borderRadius:8, color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>+ 新規問い合わせ</button>
+      <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:14 }}>🎧 サポート</div>
+
+      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📧 メールでお問い合わせ</div>
+        <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
+          ご不明点・トラブル・要望などはメールでお問い合わせください。<br/>
+          通常2営業日以内にご返信いたします。
+        </div>
+        <a href={`mailto:${supportEmail}?subject=Qocca%20%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B`}
+          style={{ display:"inline-block", padding:"10px 18px", background:C.orange, color:"#fff", borderRadius:10, fontWeight:800, fontSize:13, textDecoration:"none" }}>
+          {supportEmail}
+        </a>
       </div>
 
-      {showNew && (
-        <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"16px", marginBottom:16 }}>
-          <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>新規お問い合わせ</div>
-          <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.dark, marginBottom:4 }}>カテゴリ</div>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {["返金","出品","注文","技術","その他"].map(c=>(
-                <button key={c} onClick={()=>setNewCategory(c)} style={{
-                  padding:"6px 12px", border:`1.5px solid ${newCategory===c?C.orange:C.border}`,
-                  borderRadius:8, background:newCategory===c?C.orangePale:C.white,
-                  color:newCategory===c?C.orange:C.warmGray, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
-                }}>{c}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.dark, marginBottom:4 }}>件名</div>
-            <input value={newSubject} onChange={e=>setNewSubject(e.target.value)} placeholder="例：返金の進捗について"
-              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
-          </div>
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.dark, marginBottom:4 }}>詳細</div>
-            <textarea value={newDesc} onChange={e=>setNewDesc(e.target.value)} rows={3} placeholder="お問い合わせの詳細..."
-              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
-          </div>
-          <div style={{ display:"flex", gap:8 }}>
-            <button onClick={()=>setShowNew(false)} style={{ flex:1, padding:"10px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
-            <button onClick={submitNew} style={{ flex:2, padding:"10px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>送信</button>
-          </div>
-        </div>
-      )}
-
-      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-        <div style={{ padding:"16px", minHeight:250, display:"flex", flexDirection:"column", gap:10 }}>
-          {msgs.map((m,i)=>(
-            <div key={i} style={{ display:"flex", justifyContent:m.from==="me"?"flex-end":"flex-start" }}>
-              <div style={{
-                maxWidth:"80%", padding:"10px 14px", borderRadius:14,
-                background:m.from==="me"?C.orange:m.from==="support"?"#E8F5E9":"#F0EFEC",
-                color:m.from==="me"?"#fff":C.dark,
-                borderBottomRightRadius:m.from==="me"?4:14,
-                borderBottomLeftRadius:m.from==="me"?14:4,
-              }}>
-                {m.from==="support" && <div style={{ fontSize:10, fontWeight:700, color:C.green, marginBottom:4 }}>🎧 Qoccaサポート</div>}
-                <div style={{ fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.text}</div>
-                <div style={{ fontSize:9, marginTop:4, opacity:0.5, textAlign:"right" }}>{m.time}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.border}`, display:"flex", gap:8 }}>
-          <input value={input} onChange={e=>setInput(e.target.value)} placeholder="サポートに連絡..."
-            onKeyDown={e=>{if(e.key==="Enter")sendMsg();}}
-            style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
-          <button onClick={sendMsg} style={{ padding:"10px 16px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>送信</button>
+      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px" }}>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>💡 よくあるご質問</div>
+        <div style={{ fontSize:12, color:"#555", lineHeight:1.7 }}>
+          ・出品の流れや手数料について<br/>
+          ・Stripe Connect（売上振込）の登録方法<br/>
+          ・取引完了・キャンセル・返金について<br/>
+          <span style={{ color:C.warmGray, fontSize:11 }}>※ ヘルプページは順次公開予定です</span>
         </div>
       </div>
     </div>
