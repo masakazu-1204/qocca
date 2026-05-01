@@ -3039,7 +3039,7 @@ const OrdersTab = () => {
     const sellerIds = Array.from(new Set((data || []).map(o => o.seller_id).filter(Boolean)));
 
     const [{ data: listings }, { data: sellers }] = await Promise.all([
-      listingIds.length ? supabase.from("listings").select("id, title, photos, category").in("id", listingIds) : Promise.resolve({ data: [] }),
+      listingIds.length ? supabase.from("listings").select("id, title, image_urls, category").in("id", listingIds) : Promise.resolve({ data: [] }),
       sellerIds.length ? supabase.from("profiles").select("id, display_name").in("id", sellerIds) : Promise.resolve({ data: [] }),
     ]);
 
@@ -3085,7 +3085,7 @@ const OrdersTab = () => {
   };
 
   const formatDate = (s?: string) => s ? new Date(s).toLocaleDateString("ja-JP").replace(/\//g, ".") : "";
-  const photoUrl = (l?: any) => Array.isArray(l?.photos) && l.photos.length ? l.photos[0] : null;
+  const photoUrl = (l?: any) => Array.isArray(l?.image_urls) && l.image_urls.length ? l.image_urls[0] : null;
 
   return (
     <div>
@@ -3217,7 +3217,7 @@ const SalesTab = () => {
     const buyerIds = Array.from(new Set((data || []).map(o => o.buyer_id).filter(Boolean)));
 
     const [{ data: listings }, { data: buyers }] = await Promise.all([
-      listingIds.length ? supabase.from("listings").select("id, title, photos, delivery_type").in("id", listingIds) : Promise.resolve({ data: [] }),
+      listingIds.length ? supabase.from("listings").select("id, title, image_urls, delivery_type").in("id", listingIds) : Promise.resolve({ data: [] }),
       buyerIds.length ? supabase.from("profiles").select("id, display_name").in("id", buyerIds) : Promise.resolve({ data: [] }),
     ]);
 
@@ -3273,7 +3273,7 @@ const SalesTab = () => {
   };
 
   const formatDate = (s?: string) => s ? new Date(s).toLocaleDateString("ja-JP").replace(/\//g, ".") : "";
-  const photoUrl = (l?: any) => Array.isArray(l?.photos) && l.photos.length ? l.photos[0] : null;
+  const photoUrl = (l?: any) => Array.isArray(l?.image_urls) && l.image_urls.length ? l.image_urls[0] : null;
 
   return (
     <div>
