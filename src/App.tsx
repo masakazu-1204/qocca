@@ -2024,6 +2024,13 @@ const handleFollow = async () => {
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState("profile");
+  const [isPC, setIsPC] = useState(typeof window !== "undefined" ? window.innerWidth >= 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsPC(window.innerWidth >= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const handleOpenDM = () => setTab("messages");
@@ -2148,14 +2155,14 @@ const MyPage = ({ setPage }) => {
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, padding:"80px 16px 40px" }}>
       <div style={{ maxWidth:600, margin:"0 auto" }}>
-        {/* Tab Navigation - 2行グリッドで全タブが見える */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:6, marginBottom:20 }}>
+        {/* Tab Navigation - レスポンシブ：スマホ2列(4行) / PC4列(2行) */}
+        <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap:6, marginBottom:20 }}>
           {tabs.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)} style={{
-              padding:"8px 6px", border:`1.5px solid ${tab===t.id?C.orange:C.border}`,
+              padding:"10px 8px", border:`1.5px solid ${tab===t.id?C.orange:C.border}`,
               borderRadius:12, background:tab===t.id?C.orangePale:C.white,
-              color:tab===t.id?C.orange:C.warmGray, fontSize:11, fontWeight:700,
-              cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:4, position:"relative", minHeight:40
+              color:tab===t.id?C.orange:C.warmGray, fontSize:12, fontWeight:700,
+              cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:5, position:"relative", minHeight:42
             }}>
               <span style={{ fontSize:14 }}>{t.icon}</span>
               <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.label}</span>
@@ -3028,7 +3035,7 @@ const OrdersTab = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("orders")
-      .select("id, status, escrow_status, amount, created_at, delivered_at, completed_at, listing_id, seller_id, dispute_reason, dispute_status, refund_reason")
+      .select("id, status, escrow_status, amount, created_at, delivered_at, completed_at, listing_id, seller_id")
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -3140,15 +3147,13 @@ const OrdersTab = () => {
                     {order.status==="disputed" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
                         <div style={{ fontWeight:700, marginBottom:4 }}>⚠️ 異議申し立て中</div>
-                        <div>{order.dispute_reason}</div>
-                        <div style={{ fontSize:11, color:C.warmGray, marginTop:4 }}>ステータス: {order.dispute_status==="investigating"?"調査中":"回答待ち"}</div>
+                        <div style={{ fontSize:11, color:C.warmGray }}>運営にて対応中です</div>
                       </div>
                     )}
 
                     {order.status==="refunded" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
                         <div style={{ fontWeight:700 }}>💸 返金済み</div>
-                        {order.refund_reason && <div>{order.refund_reason}</div>}
                       </div>
                     )}
 
@@ -3183,7 +3188,9 @@ const OrdersTab = () => {
       {/* Dispute Modal */}
       {showDispute && <DisputeModal order={{...showDispute, item: showDispute.listing?.title || ""}} onClose={()=>setShowDispute(null)} onSubmit={async (orderId, reason, desc)=>{
         try {
-          await supabase.from("orders").update({ status:"disputed", dispute_reason: desc, dispute_status:"new", updated_at: new Date().toISOString() }).eq("id", orderId);
+          // status のみ更新（dispute_reason/dispute_status カラムは未実装）
+          await supabase.from("orders").update({ status:"disputed", updated_at: new Date().toISOString() }).eq("id", orderId);
+          alert("問題を報告しました。運営が確認次第対応いたします。");
           await loadOrders();
         } catch(e: any) { alert("エラー: "+e.message); }
         setShowDispute(null);
