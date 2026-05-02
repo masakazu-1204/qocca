@@ -6,6 +6,7 @@ import AboutSection from "./components/AboutSection";
 import CommentModal from "./components/CommentModal";
 import ProfileEditModal from "./components/ProfileEditModal";
 import AdminDashboard from "./Admin";
+import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
@@ -6113,6 +6114,8 @@ function QoccaAppInner() {
               </div>
             }/>
             <Route path="/admin" element={<AdminDashboard/>}/>
+            <Route path="/help" element={<HelpPage/>}/>
+            <Route path="/help/:slug" element={<HelpPage/>}/>
           </Routes>
           <SharedFooter setPage={setPage}/>
         </div>
@@ -6133,6 +6136,8 @@ function QoccaAppInner() {
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
+            <Route path="/help" element={<HelpPage/>}/>
+            <Route path="/help/:slug" element={<HelpPage/>}/>
             <Route path="/user/:userId" element={<UserProfilePage setPage={setPage}/>}/>
             <Route path="/favorites" element={<LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}/>
             {["terms","privacy","tokusho","contact"].map(t => (
