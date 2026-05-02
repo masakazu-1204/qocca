@@ -4067,32 +4067,49 @@ const NotificationsTab = () => {
 
 // ── Support Tab ───────────────────────────────────────────────────────────
 const SupportTab = () => {
-  // サポートチケット機能は未実装。当面はメール案内のみ。
+  // サポートチケット機能は未実装。当面はメール案内 + ヘルプページ。
   const supportEmail = "support@qocca.pet";
   return (
     <div>
       <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:14 }}>🎧 サポート</div>
 
       <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📚 ヘルプセンター</div>
+        <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
+          よくあるご質問や使い方をまとめています。お問い合わせの前にご確認ください。
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:8 }}>
+          <a href="/help/getting-started" style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.cream, borderRadius:10, textDecoration:"none", color:C.dark, fontSize:12, fontWeight:700 }}>
+            <span style={{ fontSize:18 }}>📝</span>
+            <span style={{ flex:1 }}>出品の始め方</span>
+            <span style={{ color:C.orange }}>→</span>
+          </a>
+          <a href="/help/stripe-connect" style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.cream, borderRadius:10, textDecoration:"none", color:C.dark, fontSize:12, fontWeight:700 }}>
+            <span style={{ fontSize:18 }}>💳</span>
+            <span style={{ flex:1 }}>Stripe Connect 登録ガイド</span>
+            <span style={{ color:C.orange }}>→</span>
+          </a>
+          <a href="/help/buying" style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.cream, borderRadius:10, textDecoration:"none", color:C.dark, fontSize:12, fontWeight:700 }}>
+            <span style={{ fontSize:18 }}>🛒</span>
+            <span style={{ flex:1 }}>購入ガイド</span>
+            <span style={{ color:C.orange }}>→</span>
+          </a>
+          <a href="/help" style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"8px 14px", color:C.warmGray, fontSize:11, fontWeight:700, textDecoration:"none" }}>
+            ヘルプ一覧を見る →
+          </a>
+        </div>
+      </div>
+
+      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px" }}>
         <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📧 メールでお問い合わせ</div>
         <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
-          ご不明点・トラブル・要望などはメールでお問い合わせください。<br/>
+          ヘルプで解決しない場合はメールでお問い合わせください。<br/>
           通常2営業日以内にご返信いたします。
         </div>
         <a href={`mailto:${supportEmail}?subject=Qocca%20%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B`}
           style={{ display:"inline-block", padding:"10px 18px", background:C.orange, color:"#fff", borderRadius:10, fontWeight:800, fontSize:13, textDecoration:"none" }}>
           {supportEmail}
         </a>
-      </div>
-
-      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px" }}>
-        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>💡 よくあるご質問</div>
-        <div style={{ fontSize:12, color:"#555", lineHeight:1.7 }}>
-          ・出品の流れや手数料について<br/>
-          ・Stripe Connect（売上振込）の登録方法<br/>
-          ・取引完了・キャンセル・返金について<br/>
-          <span style={{ color:C.warmGray, fontSize:11 }}>※ ヘルプページは順次公開予定です</span>
-        </div>
       </div>
     </div>
   );
@@ -4920,7 +4937,7 @@ const SharedFooter = ({ setPage }) => (
   <footer style={{ background:"#0D0A05", padding:"24px 16px" }}>
     <Logo size={24}/>
     <div style={{ display:"flex", flexWrap:"wrap", gap:16, marginTop:16 }}>
-      {[["terms","利用規約"],["privacy","プライバシー"],["tokusho","特定商取引法"],["contact","お問い合わせ"]].map(([id,l])=>(
+      {[["help","ヘルプ"],["terms","利用規約"],["privacy","プライバシー"],["tokusho","特定商取引法"],["contact","お問い合わせ"]].map(([id,l])=>(
         <span key={id} onClick={()=>setPage(id)} style={{ fontSize:11, color:"rgba(255,255,255,0.3)", cursor:"pointer" }}>{l}</span>
       ))}
     </div>
