@@ -6201,6 +6201,7 @@ function QoccaAppInner() {
             }/>
           </Routes>
           {showTabBar && <TabBar page={page} setPage={setPage}/>}
+          <AddToHomeScreenBanner />
         </>
       )}
 
