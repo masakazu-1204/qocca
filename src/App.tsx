@@ -4067,12 +4067,13 @@ const NotificationsTab = () => {
 
 // ── Support Tab ───────────────────────────────────────────────────────────
 const SupportTab = () => {
-  // サポートチケット機能は未実装。当面はメール案内 + ヘルプページ。
+  // お問い合わせ表記との整合性確保のためのサポートタブ
   const supportEmail = "support@qocca.pet";
   return (
     <div>
       <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:14 }}>🎧 サポート</div>
 
+      {/* ヘルプセンター */}
       <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
         <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📚 ヘルプセンター</div>
         <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
@@ -4100,16 +4101,46 @@ const SupportTab = () => {
         </div>
       </div>
 
-      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px" }}>
+      {/* メッセージ機能（準備中） */}
+      <div style={{ background:"#FFF8E7", borderRadius:16, border:`1px solid #F0D898`, padding:"16px 20px", marginBottom:14 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:"#8B6914", marginBottom:6 }}>💬 アプリ内サポートメッセージ</div>
+        <div style={{ fontSize:12, color:"#8B6914", lineHeight:1.7 }}>
+          現在、こちらの機能は準備中です。<br/>
+          お問い合わせは下記の方法でお願いいたします。
+        </div>
+      </div>
+
+      {/* メールでお問い合わせ */}
+      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
         <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📧 メールでお問い合わせ</div>
         <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
           ヘルプで解決しない場合はメールでお問い合わせください。<br/>
-          通常2営業日以内にご返信いたします。
+          件名に「お問い合わせ」と注文番号（お持ちの場合）をご記入ください。
         </div>
         <a href={`mailto:${supportEmail}?subject=Qocca%20%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B`}
           style={{ display:"inline-block", padding:"10px 18px", background:C.orange, color:"#fff", borderRadius:10, fontWeight:800, fontSize:13, textDecoration:"none" }}>
           {supportEmail}
         </a>
+      </div>
+
+      {/* Instagram DM */}
+      <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📷 Instagram DM</div>
+        <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
+          Instagram からもお問い合わせいただけます。
+        </div>
+        <a href="https://www.instagram.com/qocca_pet/" target="_blank" rel="noopener noreferrer"
+          style={{ display:"inline-block", padding:"10px 18px", background:"#E4405F", color:"#fff", borderRadius:10, fontWeight:800, fontSize:13, textDecoration:"none" }}>
+          @qocca_pet
+        </a>
+      </div>
+
+      {/* 対応時間 */}
+      <div style={{ background:C.cream, borderRadius:12, padding:"14px 18px", fontSize:12, color:C.warmGray, lineHeight:1.7 }}>
+        <strong style={{ color:C.dark }}>📅 対応時間</strong><br/>
+        平日 10:00〜18:00（土日祝休み）<br/>
+        通常 48 時間以内にご返信いたします。<br/>
+        ※ 緊急の不正利用報告は 24 時間受付
       </div>
     </div>
   );
