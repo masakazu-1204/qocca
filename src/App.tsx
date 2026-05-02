@@ -8,6 +8,7 @@ import ProfileEditModal from "./components/ProfileEditModal";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
+import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
