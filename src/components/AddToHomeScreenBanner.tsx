@@ -9,7 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 const STORAGE_KEY = 'qocca_install_banner_dismissed_at';
 const DISMISS_DURATION = 7 * 24 * 60 * 60 * 1000; // 7日間
-const DELAY_BEFORE_SHOW = 30 * 1000; // 30秒
+const DELAY_BEFORE_SHOW = 30 * 1000; // 3秒
 
 export default function AddToHomeScreenBanner() {
   const [show, setShow] = useState(false);
