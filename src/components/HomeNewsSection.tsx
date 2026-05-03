@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
 const supabase = createClient(
   SUPABASE_URL,
-  "sb_publishable_TWEGFx7kfggQfFOSzs31Jg_J3yYZqou"
+  "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou"
 );
 
 interface BlogPost {
