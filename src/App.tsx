@@ -8,6 +8,7 @@ import ProfileEditModal from "./components/ProfileEditModal";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
+import HomeNewsSection from "./components/HomeNewsSection";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
@@ -738,6 +739,7 @@ useEffect(() => {
         </div>
       </section>
 <AboutSection />
+      <HomeNewsSection />
       <section style={{ padding:"24px 16px 0", background:C.cream }}>
         <h2 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:14 }}>カテゴリから探す</h2>
         <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
