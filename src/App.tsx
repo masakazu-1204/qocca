@@ -3,12 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
+import HomeNewsSection from "./components/HomeNewsSection";
+import QoccaUniverseSection from "./components/QoccaUniverseSection";
+import CommunityShowcase from "./components/CommunityShowcase";
+import FacilityMapPromo from "./components/FacilityMapPromo";
 import CommentModal from "./components/CommentModal";
 import ProfileEditModal from "./components/ProfileEditModal";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
-import HomeNewsSection from "./components/HomeNewsSection";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
@@ -738,6 +741,7 @@ useEffect(() => {
           </div>
         </div>
       </section>
+<QoccaUniverseSection />
 <AboutSection />
       <HomeNewsSection />
       <section style={{ padding:"24px 16px 0", background:C.cream }}>
@@ -774,6 +778,9 @@ useEffect(() => {
           <button onClick={()=>setPage("sell")} style={{ padding:"12px 24px", background:"#fff", border:"none", borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer" }}>🐾 無料で出品を始める</button>
         </div>
       </section>
+
+      <CommunityShowcase />
+      <FacilityMapPromo />
 
       <section style={{ padding:"0 16px 24px", background:C.cream }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -5959,6 +5966,7 @@ function QoccaAppInner() {
             <Route path="/" element={
               <div>
                 <PCHeroSection setPage={setPage}/>
+                <QoccaUniverseSection />
                 <AboutSection />
                 <HomeNewsSection />
                 <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
@@ -6074,6 +6082,8 @@ function QoccaAppInner() {
                     </div>
                   </div>
                 </div>
+                <CommunityShowcase />
+                <FacilityMapPromo />
               </div>
             }/>
             <Route path="/search" element={
