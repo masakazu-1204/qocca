@@ -425,7 +425,7 @@ export default function AboutPage() {
             <div style={badgeLabel}>FEE STRUCTURE</div>
             <h2 style={h2Style}>手数料について</h2>
             <p style={{ fontSize: 12, color: TEXT_MUTED, margin: "8px 0 0" }}>
-              購入者様は表示価格のみ。手数料は出品者様からいただきます。
+              出品者の販売手数料は段階制。決済手数料は購入者負担(バイヤープロテクション4%)で、出品者の手取りはダイレクトです。
             </p>
           </div>
           <div
@@ -435,9 +435,90 @@ export default function AboutPage() {
               gap: 12,
             }}
           >
-            <FeeCard label="はじめての取引" value="0%" sub="決済手数料のみ" />
-            <FeeCard label="3ヶ月以内" value="5%" sub="+決済手数料3.6%" />
-            <FeeCard label="通常" value="10%" sub="+決済手数料3.6%" />
+            <FeeCard label="はじめての取引" value="0%" sub="完全無料スタート" />
+            <FeeCard label="3ヶ月以内" value="5%" sub="お得な期間" />
+            <FeeCard label="通常" value="10%" sub="標準手数料" />
+          </div>
+
+          {/* バイヤープロテクション説明 */}
+          <div
+            style={{
+              marginTop: 24,
+              padding: "20px 18px",
+              background: "#FFFFFF",
+              border: `1px solid ${BORDER_WARM}`,
+              borderRadius: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <span style={{ fontSize: 22 }}>🛡️</span>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: TEXT_DARK,
+                }}
+              >
+                バイヤープロテクション(購入者負担 4%)
+              </div>
+            </div>
+            <p
+              style={{
+                fontSize: 12,
+                lineHeight: 1.7,
+                color: TEXT_MUTED,
+                margin: 0,
+              }}
+            >
+              決済の安全性確保とトラブル時の補償のため、購入時に商品価格の4%をご負担いただきます。
+              納品まではQoccaが代金をお預かりし、お互いが安心して取引できる仕組みです。
+            </p>
+          </div>
+
+          {/* 振込手数料説明 */}
+          <div
+            style={{
+              marginTop: 12,
+              padding: "20px 18px",
+              background: "#FFFFFF",
+              border: `1px solid ${BORDER_WARM}`,
+              borderRadius: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <span style={{ fontSize: 22 }}>🏦</span>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: TEXT_DARK,
+                }}
+              >
+                振込手数料
+              </div>
+            </div>
+            <div style={{ fontSize: 12, lineHeight: 1.8, color: TEXT_MUTED }}>
+              <div>
+                ・<strong style={{ color: TEXT_DARK }}>月末自動振込</strong>:月の売上¥30,000以上で<strong style={{ color: BRAND }}>無料</strong>、未満は¥275(税込)
+              </div>
+              <div>
+                ・<strong style={{ color: TEXT_DARK }}>即時受取</strong>:一律¥275(税込) / 数分で着金
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -455,7 +536,7 @@ export default function AboutPage() {
           />
           <FaqRow
             q="注文をキャンセルできますか?"
-            a="作業開始前であれば全額返金で対応します。作業開始後は決済手数料を差し引いて返金、納品後72時間以内は異議申立が可能です。"
+            a="作業開始前であれば全額返金で対応します。作業開始後はバイヤープロテクション分を差し引いて返金、納品後72時間以内は異議申立が可能です。"
           />
           <FaqRow
             q="クリエイターとして出品したい"
