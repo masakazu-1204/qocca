@@ -770,7 +770,7 @@ useEffect(() => {
           <div style={{ position:"absolute", right:-10, top:-10, fontSize:100, opacity:0.1 }}>🐾</div>
           <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", marginBottom:6 }}>CREATOR WANTED</div>
           <h3 style={{ fontSize:22, fontWeight:900, color:"#fff", marginBottom:10, lineHeight:1.3 }}>あなたのスキルを<br/>ペット好きに届けよう</h3>
-          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginBottom:18 }}>初回出品は手数料0%！購入者は表示価格のみ</p>
+          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginBottom:18 }}>初回取引は手数料0%！決済手数料は購入者負担で、手取りがダイレクト ✨</p>
           <button onClick={()=>setPage("sell")} style={{ padding:"12px 24px", background:"#fff", border:"none", borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer" }}>🐾 無料で出品を始める</button>
         </div>
       </section>
@@ -1367,9 +1367,13 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
                     <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>+¥{o.price.toLocaleString()}</span>
                   </div>
                 ))}
+                <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
+                  <span style={{ fontSize:12, color:C.warmGray }}>🛡️ バイヤープロテクション(4%)</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.warmGray }}>+¥{Math.floor(totalPrice * 0.04).toLocaleString()}</span>
+                </div>
                 <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", borderTop:`2px solid ${C.dark}`, marginTop:4 }}>
                   <span style={{ fontSize:14, fontWeight:800, color:C.dark }}>お支払い合計</span>
-                  <span style={{ fontSize:20, fontWeight:900, color:C.orange }}>¥{totalPrice.toLocaleString()}</span>
+                  <span style={{ fontSize:20, fontWeight:900, color:C.orange }}>¥{(totalPrice + Math.floor(totalPrice * 0.04)).toLocaleString()}</span>
                 </div>
               </div>
               <div style={{ background:"#E3F2FD", borderRadius:10, padding:"10px", marginBottom:12, fontSize:11, color:C.blue, lineHeight:1.6 }}>
@@ -1397,9 +1401,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         boxShadow:"0 -4px 20px rgba(0,0,0,0.08)"
       }}>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:11, color:C.warmGray }}>お支払い金額{optionsTotal > 0 ? "（オプション込）" : ""}</div>
-          <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>¥{totalPrice.toLocaleString()}</div>
-          {optionsTotal > 0 && <div style={{ fontSize:10, color:C.warmGray }}>基本 ¥{item.price.toLocaleString()} + オプション ¥{optionsTotal.toLocaleString()}</div>}
+          <div style={{ fontSize:11, color:C.warmGray }}>お支払い金額(BP込)</div>
+          <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>¥{(totalPrice + Math.floor(totalPrice * 0.04)).toLocaleString()}</div>
+          <div style={{ fontSize:10, color:C.warmGray }}>
+            商品 ¥{item.price.toLocaleString()}{optionsTotal > 0 ? ` + オプション ¥${optionsTotal.toLocaleString()}` : ""} + BP ¥{Math.floor(totalPrice * 0.04).toLocaleString()}
+          </div>
         </div>
         {ordered ? (
           <div style={{ flex:2, textAlign:"center", padding:"12px", background:C.green, borderRadius:12, color:"#fff", fontWeight:800 }}>🎉 注文完了！</div>
@@ -1621,6 +1627,37 @@ const SellPage = ({ setPage }) => {
                 </div>
               )}
             </div>
+            {form.price && Number(form.price) > 0 && (
+              <div style={{ background:C.orangePale, borderRadius:14, padding:"14px", marginBottom:16, border:`1px solid ${C.orange}` }}>
+                <div style={{ fontSize:13, fontWeight:800, color:C.orange, marginBottom:8 }}>💰 あなたの手取り目安</div>
+                {(() => {
+                  const basePrice = Number(form.price) + options.filter(o=>o.name&&o.price).reduce((sum, o) => sum + Number(o.price||0), 0);
+                  const firstNet = basePrice;
+                  const within3M = basePrice - Math.floor(basePrice * 0.05);
+                  const stdNet = basePrice - Math.floor(basePrice * 0.10);
+                  return (
+                    <>
+                      <div style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", fontSize:12 }}>
+                        <span style={{ color:C.dark }}>初回取引(0%)</span>
+                        <span style={{ fontWeight:700, color:C.green }}>¥{firstNet.toLocaleString()}</span>
+                      </div>
+                      <div style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", fontSize:12 }}>
+                        <span style={{ color:C.dark }}>3ヶ月以内(5%)</span>
+                        <span style={{ fontWeight:700, color:C.dark }}>¥{within3M.toLocaleString()}</span>
+                      </div>
+                      <div style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", fontSize:12 }}>
+                        <span style={{ color:C.dark }}>通常期(10%)</span>
+                        <span style={{ fontWeight:700, color:C.dark }}>¥{stdNet.toLocaleString()}</span>
+                      </div>
+                      <div style={{ fontSize:10, color:C.warmGray, marginTop:6, lineHeight:1.5 }}>
+                        ※購入者は商品価格+4%(バイヤープロテクション)を支払います<br/>
+                        ※決済手数料は購入者負担なので、出品者の手取りはダイレクトです
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
             {images.length > 0 && (
               <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
                 {images.map((img, i) => (
@@ -2643,12 +2680,10 @@ const handleOpenDashboard = async () => {
     const amount = parseInt(instantAmount);
     if (!amount || amount < 100) { alert("100円以上の金額を入力してください"); return; }
     
-    const feeRate = parseFloat(settings.instant_payout_fee_rate || "0.015");
-    const feeMin = parseInt(settings.instant_payout_fee_min || "250");
-    const fee = Math.max(Math.floor(amount * feeRate), feeMin);
+    const fee = parseInt(settings.instant_payout_fee_min || "250"); // 一律¥250(税抜・税込¥275)
     const net = amount - fee;
     
-    if (!confirm(`即時受け取りを実行しますか？\n\n出金額: ¥${amount.toLocaleString()}\n手数料: ¥${fee.toLocaleString()} (${(feeRate*100).toFixed(1)}%, 最低¥${feeMin})\n受取額: ¥${net.toLocaleString()}\n\n数分以内に銀行口座へ振込されます。`)) return;
+    if (!confirm(`即時受け取りを実行しますか？\n\n出金額: ¥${amount.toLocaleString()}\n手数料: ¥${fee.toLocaleString()} (一律)\n受取額: ¥${net.toLocaleString()}\n\n数分以内に銀行口座へ振込されます。`)) return;
     
     setActionLoading(true);
     try {
@@ -2729,8 +2764,8 @@ const handleOpenDashboard = async () => {
       {/* 振込スケジュール案内 */}
       <div style={{ background:"#F8F9FA", borderRadius:16, padding:16, fontSize:12, lineHeight:1.7, color:C.text }}>
         <div style={{ fontWeight:800, marginBottom:6 }}>📅 振込について</div>
-        <div>• <strong>月末自動振込</strong>: ¥{monthlyThreshold.toLocaleString()}以上は手数料無料、未満は出品者負担（次月繰越も可）</div>
-        <div>• <strong>即時受け取り</strong>: 手数料 1.5%（最低¥250）/ 数分で着金</div>
+        <div>• <strong>月末自動振込</strong>: ¥{monthlyThreshold.toLocaleString()}以上は手数料無料、未満は¥275(税込)</div>
+        <div>• <strong>即時受け取り</strong>: 一律¥275(税込) / 数分で着金</div>
       </div>
 
       {/* 即時受け取りボタン */}
@@ -2797,7 +2832,7 @@ const handleOpenDashboard = async () => {
           <div style={{ background:C.white, borderRadius:16, padding:24, maxWidth:400, width:"90%", maxHeight:"90vh", overflowY:"auto" }}>
             <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:800 }}>⚡ 即時受け取り</h3>
             <p style={{ fontSize:13, color:C.text, lineHeight:1.6, margin:"0 0 16px" }}>
-              手数料: 1.5%（最低¥250）<br/>
+              手数料: 一律¥275(税込)<br/>
               受取可能残高: <strong>¥{(balance?.pending_balance || 0).toLocaleString()}</strong>
             </p>
             <div style={{ marginBottom:16 }}>
@@ -2811,8 +2846,8 @@ const handleOpenDashboard = async () => {
               />
               {instantAmount && (
                 <div style={{ marginTop:8, padding:10, background:C.orangePale, borderRadius:10, fontSize:12, lineHeight:1.6 }}>
-                  手数料: ¥{Math.max(Math.floor(parseInt(instantAmount||"0") * 0.015), 250).toLocaleString()}<br/>
-                  受取額: ¥{Math.max(0, parseInt(instantAmount||"0") - Math.max(Math.floor(parseInt(instantAmount||"0") * 0.015), 250)).toLocaleString()}
+                  手数料: ¥250 (税込¥275)<br/>
+                  受取額: ¥{Math.max(0, parseInt(instantAmount||"0") - 250).toLocaleString()}
                 </div>
               )}
             </div>
