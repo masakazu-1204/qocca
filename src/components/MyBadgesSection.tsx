@@ -13,7 +13,6 @@ const C = {
   border: "#EDE9E3", white: "#FFFFFF",
 };
 
-// バッジカテゴリの順番と表示名
 const CATEGORY_INFO: Record<string, { label: string; icon: string; order: number }> = {
   special:   { label: "特別バッジ",       icon: "👑", order: 0 },
   trade:     { label: "取引バッジ",       icon: "🛍️", order: 1 },
@@ -23,7 +22,6 @@ const CATEGORY_INFO: Record<string, { label: string; icon: string; order: number
   community: { label: "コミュニティバッジ", icon: "💬", order: 5 },
 };
 
-// ティアごとの色
 const TIER_COLORS: Record<string, { bg: string; border: string; glow: string }> = {
   founding: { bg: "linear-gradient(135deg,#FFD700,#FF6B6B,#4ECDC4)", border: "#FFD700", glow: "rgba(255,215,0,0.6)" },
   bronze:   { bg: "#FFE0B2", border: "#CD7F32", glow: "rgba(205,127,50,0.4)" },
@@ -47,7 +45,7 @@ interface Badge {
 
 interface Props {
   userId: string;
-  isOwn?: boolean; // 自分のページ=true, 他人のページ=false
+  isOwn?: boolean;
 }
 
 export default function MyBadgesSection({ userId, isOwn = true }: Props) {
@@ -63,13 +61,11 @@ export default function MyBadgesSection({ userId, isOwn = true }: Props) {
   async function loadBadges() {
     setLoading(true);
     try {
-      // 全バッジマスター取得
       const { data: allBadges } = await supabase
         .from("badges")
         .select("*")
         .order("tier_order");
 
-      // ユーザーが獲得したバッジ取得
       const { data: userBadges } = await supabase
         .from("user_badges")
         .select("badge_id, earned_at")
@@ -103,7 +99,6 @@ export default function MyBadgesSection({ userId, isOwn = true }: Props) {
     );
   }
 
-  // カテゴリ別にグルーピング
   const groupedByCategory: Record<string, Badge[]> = {};
   badges.forEach((b) => {
     if (!groupedByCategory[b.category]) groupedByCategory[b.category] = [];
@@ -112,6 +107,73 @@ export default function MyBadgesSection({ userId, isOwn = true }: Props) {
 
   const earnedCount = badges.filter((b) => b.earned).length;
   const totalCount = badges.length;
+
+  // バッジ1個のレンダリング関数
+  const renderBadge = (b: Badge) => {
+    const tierColor = TIER_COLORS[b.tier] || TIER_COLORS.bronze;
+    return (
+      <button
+        key={b.id}
+        onClick={() => setSelectedBadge(b)}
+        style={{
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          padding: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          fontFamily: "inherit",
+          opacity: b.earned ? 1 : 0.35,
+          filter: b.earned ? "none" : "grayscale(0.8)",
+          transition: "transform 0.15s ease",
+          width: "100%",
+        }}
+        onMouseEnter={(e) => {
+          if (b.earned) e.currentTarget.style.transform = "scale(1.08)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+        }}
+      >
+        <div style={{
+          width: "100%",
+          aspectRatio: "1 / 1",
+          borderRadius: "50%",
+          overflow: "hidden",
+          background: b.earned ? tierColor.bg : C.lightGray,
+          boxShadow: b.earned ? `0 0 12px ${tierColor.glow}` : "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          {b.image_url ? (
+            <img
+              src={b.image_url}
+              alt={b.name}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            <span style={{ fontSize: 24 }}>👑</span>
+          )}
+        </div>
+        <div style={{
+          fontSize: 9,
+          color: b.earned ? C.dark : C.warmGray,
+          textAlign: "center",
+          fontWeight: b.earned ? 700 : 500,
+          lineHeight: 1.2,
+        }}>
+          {b.tier === "founding" ? "創業" : b.tier.charAt(0).toUpperCase() + b.tier.slice(1)}
+        </div>
+      </button>
+    );
+  };
 
   return (
     <>
@@ -139,6 +201,7 @@ export default function MyBadgesSection({ userId, isOwn = true }: Props) {
               if (catBadges.length === 0) return null;
 
               const earnedInCat = catBadges.filter((b) => b.earned).length;
+              const isSpecial = catKey === "special";
 
               return (
                 <div key={catKey} style={{ marginBottom: 18 }}>
@@ -154,77 +217,18 @@ export default function MyBadgesSection({ userId, isOwn = true }: Props) {
                     </div>
                   </div>
 
+                  {/* 常に5カラム固定。少ないカテゴリは空セルでパディング */}
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: catBadges.length === 1
-                      ? "1fr"
-                      : `repeat(${Math.min(catBadges.length, 5)}, 1fr)`,
-                    gap: 8
+                    gridTemplateColumns: "repeat(5, 1fr)",
+                    gap: 8,
                   }}>
-                    {catBadges.map((b) => {
-                      const tierColor = TIER_COLORS[b.tier] || TIER_COLORS.bronze;
-                      return (
-                        <button
-                          key={b.id}
-                          onClick={() => setSelectedBadge(b)}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 4,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 4,
-                            fontFamily: "inherit",
-                            opacity: b.earned ? 1 : 0.35,
-                            filter: b.earned ? "none" : "grayscale(0.8)",
-                            transition: "transform 0.15s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (b.earned) e.currentTarget.style.transform = "scale(1.08)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "scale(1)";
-                          }}
-                        >
-                          <div style={{
-                            width: "100%",
-                            aspectRatio: "1 / 1",
-                            borderRadius: "50%",
-                            overflow: "hidden",
-                            background: b.earned ? tierColor.bg : C.lightGray,
-                            boxShadow: b.earned ? `0 0 12px ${tierColor.glow}` : "none",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}>
-                            {b.image_url ? (
-                              <img
-                                src={b.image_url}
-                                alt={b.name}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "contain",
-                                }}
-                              />
-                            ) : (
-                              <span style={{ fontSize: 24 }}>{catInfo.icon}</span>
-                            )}
-                          </div>
-                          <div style={{
-                            fontSize: 9,
-                            color: b.earned ? C.dark : C.warmGray,
-                            textAlign: "center",
-                            fontWeight: b.earned ? 700 : 500,
-                            lineHeight: 1.2,
-                          }}>
-                            {b.tier === "founding" ? "創業" : b.tier.charAt(0).toUpperCase() + b.tier.slice(1)}
-                          </div>
-                        </button>
-                      );
-                    })}
+                    {catBadges.map(renderBadge)}
+                    {isSpecial && catBadges.length < 5 &&
+                      Array.from({ length: 5 - catBadges.length }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))
+                    }
                   </div>
                 </div>
               );
