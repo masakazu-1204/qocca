@@ -13,6 +13,8 @@ import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
+import MyBadgesSection from "./components/MyBadgesSection";
+import FeaturedBadges from "./components/FeaturedBadges";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
@@ -2257,7 +2259,8 @@ const MyPage = ({ setPage }) => {
                 <span style={{ fontSize:11, color:C.warmGray, marginLeft:6 }}>フォロワー</span>
               </button>
             </div>
-
+　　　　　　{/* マイバッジセクション */}
+            {user?.id && <MyBadgesSection userId={user.id} isOwn={true} />}
             {/* マイ活動セクション */}
             <div style={{ marginTop:20 }}>
               <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:8, paddingLeft:4 }}>🎯 マイ活動</div>
