@@ -2052,6 +2052,8 @@ const handleFollow = async () => {
             </button>
           )}
         </div>
+      {/* バッジ表示（他人視点） */}
+      {userId && <MyBadgesSection userId={userId} isOwn={false} />}
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
