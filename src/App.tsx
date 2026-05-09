@@ -4511,6 +4511,48 @@ const FACILITY_CATS = [
   { id:"shop", icon:"🛍", label:"ペットショップ" },
 ];
 
+// 気分タグ（ポジティブ・ファクトベース型）
+const MOOD_TAGS = [
+  { id:"fun", icon:"🐕", label:"楽しく遊べた" },
+  { id:"clean", icon:"✨", label:"きれいで快適" },
+  { id:"empty", icon:"☀️", label:"空いていた" },
+  { id:"moderate", icon:"🌤", label:"適度な人出" },
+  { id:"busy", icon:"⛅", label:"少し混んでいた" },
+  { id:"water", icon:"💧", label:"水道・足洗い場あり" },
+  { id:"parking", icon:"🚗", label:"駐車場が便利" },
+  { id:"shade", icon:"🌳", label:"日陰・木陰あり" },
+  { id:"roof", icon:"🏠", label:"屋根あり" },
+  { id:"small_dog", icon:"🐕‍🦺", label:"小型犬向け" },
+  { id:"large_dog", icon:"🦮", label:"大型犬向け" },
+  { id:"agility", icon:"🎯", label:"アジリティあり" },
+];
+
+const FACILITY_REPORT_REASONS = [
+  { id:"inappropriate", label:"不適切な内容" },
+  { id:"spam", label:"スパム・宣伝" },
+  { id:"misinformation", label:"誤った情報" },
+  { id:"defamation", label:"誹謗中傷・名誉毀損" },
+  { id:"privacy", label:"プライバシー侵害" },
+  { id:"other", label:"その他" },
+];
+
+// 名誉毀損リスクを下げるためのNGワード（コメント投稿時のチェック）
+const FACILITY_NG_WORDS = [
+  "最悪","ひどい","クソ","くそ","死ね","殺","ゴミ","汚い","汚れすぎ",
+  "詐欺","二度と行かない","潰れろ","訴え","営業停止","違法",
+  "店員がムカつく","スタッフが最悪","オーナーが","○○さん",
+];
+
+// NGワードチェック関数
+const checkFacilityNGWords = (text) => {
+  if (!text) return null;
+  for (const word of FACILITY_NG_WORDS) {
+    if (text.includes(word)) return word;
+  }
+  return null;
+};
+
+
 const PREFS = ["北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川","新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良","和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分","宮崎","鹿児島","沖縄"];
 
 const FacilitiesPage = ({ setPage, isPC }) => {
@@ -4523,10 +4565,12 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const [addForm, setAddForm] = useState({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // 詳細表示の対象施設（null なら一覧表示）
+  const [selectedFacility, setSelectedFacility] = useState(null);
 
   const fetchFacilities = async () => {
     setLoading(true);
-    let query = supabase.from("pet_facilities").select("*").eq("approved", true).order("avg_rating", { ascending: false });
+    let query = supabase.from("pet_facilities").select("*").eq("approved", true).order("review_count", { ascending: false });
     const { data, error } = await query;
     if (!error) setFacilities(data || []);
     setLoading(false);
@@ -4557,6 +4601,11 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const catIcon = (c) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
   const catLabel = (c) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
 
+  // 詳細ページ表示中なら、それを返す
+  if (selectedFacility) {
+    return <FacilityDetailView facility={selectedFacility} onBack={()=>{ setSelectedFacility(null); fetchFacilities(); }} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
+  }
+
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       {/* ヘッダー */}
@@ -4564,7 +4613,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
             <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>🐕 ペット施設マップ</h1>
-            <p style={{ fontSize:12, color:C.warmGray }}>ドッグラン・ペットカフェ・動物病院を探そう</p>
+            <p style={{ fontSize:12, color:C.warmGray }}>みんなのリアルな訪問レポートをチェック</p>
           </div>
           {user && (
             <button onClick={()=>setShowAdd(true)} style={{
@@ -4608,50 +4657,56 @@ const FacilitiesPage = ({ setPage, isPC }) => {
             <p style={{ fontSize:11, color:C.warmGray, marginBottom:16 }}>投稿後、運営の審査を経て公開されます</p>
             {[
               ["施設名", "name", "text", "例：わんわんパーク大阪"],
-              ["住所", "address", "text", "例：大阪府大阪市中央区1-1-1"],
-              ["電話番号", "phone", "text", "例：06-1234-5678"],
-              ["ウェブサイト", "website", "text", "例：https://..."],
-              ["営業時間", "hours", "text", "例：9:00〜18:00（定休日：水曜）"],
+              ["住所", "address", "text", "例：大阪市北区..."],
+              ["電話番号", "phone", "tel", "06-1234-5678"],
+              ["公式サイト", "website", "url", "https://..."],
+              ["営業時間", "hours", "text", "10:00〜18:00"],
             ].map(([label, key, type, ph]) => (
               <div key={key} style={{ marginBottom:12 }}>
                 <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>{label}</label>
-                <input value={addForm[key]} onChange={e=>setAddForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
-                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                <input type={type} value={addForm[key]} onChange={e=>setAddForm({...addForm, [key]: e.target.value})} placeholder={ph} style={{
+                  width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+                  fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
+                }}/>
               </div>
             ))}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-              <div>
-                <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>カテゴリ</label>
-                <select value={addForm.category} onChange={e=>setAddForm(p=>({...p,category:e.target.value}))}
-                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box" }}>
-                  {FACILITY_CATS.filter(c=>c.id!=="all").map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>都道府県</label>
-                <select value={addForm.prefecture} onChange={e=>setAddForm(p=>({...p,prefecture:e.target.value}))}
-                  style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box" }}>
-                  {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>カテゴリ</label>
+              <select value={addForm.category} onChange={e=>setAddForm({...addForm, category: e.target.value})} style={{
+                width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+                fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box"
+              }}>
+                {FACILITY_CATS.filter(c=>c.id!=="all").map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>都道府県</label>
+              <select value={addForm.prefecture} onChange={e=>setAddForm({...addForm, prefecture: e.target.value})} style={{
+                width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+                fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box"
+              }}>
+                {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
             <div style={{ marginBottom:16 }}>
-              <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>説明（任意）</label>
-              <textarea value={addForm.description} onChange={e=>setAddForm(p=>({...p,description:e.target.value}))} rows={3} placeholder="施設の特徴やおすすめポイント..."
-                style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
+              <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>説明</label>
+              <textarea value={addForm.description} onChange={e=>setAddForm({...addForm, description: e.target.value})} rows={3} placeholder="施設の特徴や魅力を教えてください" style={{
+                width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+                fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
+              }}/>
             </div>
-            <button disabled={!addForm.name||!addForm.address||submitting} onClick={handleSubmitFacility} style={{
-              width:"100%", padding:"13px", background:(!addForm.name||!addForm.address||submitting)?C.warmGray:C.orange,
-              border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:(!addForm.name||!addForm.address||submitting)?"not-allowed":"pointer"
-            }}>{submitting ? "送信中..." : "🐕 施設を投稿する"}</button>
+            <button disabled={!user || !addForm.name || !addForm.address || submitting} onClick={handleSubmitFacility} style={{
+              width:"100%", padding:"13px", background:(!user || !addForm.name || !addForm.address || submitting)?C.warmGray:C.orange,
+              border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14,
+              cursor:(!user || !addForm.name || !addForm.address || submitting)?"not-allowed":"pointer", fontFamily:"inherit"
+            }}>{submitting ? "送信中..." : "🐕 投稿する"}</button>
           </div>
         </div>
       )}
 
-      {/* 投稿完了メッセージ */}
       {submitted && (
-        <div style={{ padding:"12px 16px", background:C.greenPale, borderBottom:`1px solid ${C.green}` }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.green }}>✅ 施設を投稿しました！審査後に公開されます。</div>
+        <div style={{ position:"fixed", top:80, left:"50%", transform:"translateX(-50%)", background:C.green, color:"#fff", padding:"12px 24px", borderRadius:12, zIndex:400, fontWeight:800, fontSize:13 }}>
+          ✅ 投稿ありがとうございます！審査後に公開されます
         </div>
       )}
 
@@ -4673,10 +4728,10 @@ const FacilitiesPage = ({ setPage, isPC }) => {
         ) : (
           <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:12 }}>
             {filtered.map(f => (
-              <div key={f.id} style={{
+              <div key={f.id} onClick={()=>setSelectedFacility(f)} style={{
                 background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`,
-                boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
-              }}>
+                boxShadow:"0 2px 8px rgba(0,0,0,0.04)", cursor:"pointer", transition:"transform 0.15s"
+              }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
                 <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
                   <div style={{ width:48, height:48, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
                     {catIcon(f.category)}
@@ -4685,19 +4740,534 @@ const FacilitiesPage = ({ setPage, isPC }) => {
                     <div style={{ fontSize:15, fontWeight:800, color:C.dark, marginBottom:4 }}>{f.name}</div>
                     <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📍 {f.address}</div>
                     {f.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {f.hours}</div>}
-                    {f.phone && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📞 {f.phone}</div>}
                     <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(f.category)}</span>
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{f.prefecture}</span>
-                      {f.avg_rating > 0 && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFF8E1", color:"#F9A825", fontWeight:700 }}>⭐ {f.avg_rating}</span>}
+                      {(f.review_count > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {f.review_count}件のレポート</span>}
                     </div>
                   </div>
                 </div>
-                {f.description && <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>{f.description}</div>}
-                {f.website && <a href={f.website} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:11, color:C.blue, fontWeight:700 }}>🔗 ウェブサイトを見る</a>}
+                {f.description && <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>{f.description.length > 80 ? f.description.slice(0,80)+"..." : f.description}</div>}
+                <div style={{ marginTop:10, fontSize:11, color:C.orange, fontWeight:700 }}>タップして詳細を見る →</div>
               </div>
             ))}
           </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Facility Detail View（訪問レポート機能付き）─────────────────────────
+const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel }) => {
+  const { user } = useAuth();
+  const [visits, setVisits] = useState([]);
+  const [loadingVisits, setLoadingVisits] = useState(true);
+  const [showVisitForm, setShowVisitForm] = useState(false);
+  const [showCorrectionForm, setShowCorrectionForm] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+
+  const fetchVisits = async () => {
+    setLoadingVisits(true);
+    const { data, error } = await supabase
+      .from("facility_visits")
+      .select("*")
+      .eq("facility_id", facility.id)
+      .eq("is_hidden", false)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      const userIds = [...new Set(data.map(v => v.user_id))];
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds);
+        const profMap = {};
+        (profs || []).forEach(p => { profMap[p.id] = p; });
+        const enriched = data.map(v => ({
+          ...v,
+          authorName: profMap[v.user_id]?.display_name || "匿名",
+          authorAvatar: profMap[v.user_id]?.avatar_url || "",
+        }));
+        setVisits(enriched);
+      } else {
+        setVisits(data);
+      }
+    }
+    setLoadingVisits(false);
+  };
+
+  useEffect(() => { fetchVisits(); }, [facility.id]);
+
+  const moodLabel = (id) => MOOD_TAGS.find(m => m.id === id)?.label || id;
+  const moodIcon = (id) => MOOD_TAGS.find(m => m.id === id)?.icon || "🐾";
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      {/* ヘッダー */}
+      <div style={{ padding:"16px", background:C.white, borderBottom:`1px solid ${C.border}`, position:"sticky", top:isPC?0:60, zIndex:50 }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:8, padding:0, fontFamily:"inherit" }}>← 一覧に戻る</button>
+        <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
+          <div style={{ width:56, height:56, borderRadius:14, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>
+            {catIcon(facility.category)}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <h1 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>{facility.name}</h1>
+            <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📍 {facility.address}</div>
+            {facility.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {facility.hours}</div>}
+            {facility.phone && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📞 {facility.phone}</div>}
+            <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+              <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(facility.category)}</span>
+              <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{facility.prefecture}</span>
+              {(facility.review_count > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {facility.review_count}件のレポート</span>}
+            </div>
+          </div>
+        </div>
+        {facility.description && <div style={{ fontSize:12, color:"#666", lineHeight:1.7, marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>{facility.description}</div>}
+        {facility.website && <a href={facility.website} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:12, color:C.blue, fontWeight:700 }}>🔗 ウェブサイトを見る</a>}
+        <button onClick={()=>setShowCorrectionForm(true)} style={{ display:"block", marginTop:8, fontSize:11, color:C.warmGray, background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline", fontFamily:"inherit" }}>この情報を訂正する</button>
+      </div>
+
+      {/* 訪問レポート投稿ボタン */}
+      <div style={{ padding:"16px" }}>
+        {user ? (
+          <button onClick={()=>setShowVisitForm(true)} style={{
+            width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12,
+            color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit",
+            boxShadow:"0 4px 12px rgba(245, 169, 74, 0.3)"
+          }}>📝 訪問レポートを投稿する</button>
+        ) : (
+          <button onClick={()=>setPage("login")} style={{
+            width:"100%", padding:"14px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12,
+            color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit"
+          }}>🔒 ログインしてレポートを投稿</button>
+        )}
+      </div>
+
+      {/* 訪問レポート一覧 */}
+      <div style={{ padding:"0 16px 80px" }}>
+        <h2 style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>🐾 みんなの訪問レポート</h2>
+        {loadingVisits ? (
+          <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
+        ) : visits.length === 0 ? (
+          <div style={{ background:C.white, borderRadius:16, padding:"40px 20px", border:`1px dashed ${C.border}`, textAlign:"center" }}>
+            <div style={{ fontSize:40, marginBottom:8 }}>🐾</div>
+            <div style={{ fontSize:13, color:C.warmGray, lineHeight:1.7 }}>まだレポートがありません<br/>最初のレポート投稿者になりませんか？</div>
+          </div>
+        ) : (
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {visits.map(v => (
+              <div key={v.id} style={{ background:C.white, borderRadius:16, padding:"14px 16px", border:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:14 }}>
+                    {v.authorAvatar ? <img src={v.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{v.authorName}</div>
+                    <div style={{ fontSize:10, color:C.warmGray }}>
+                      {v.visited_at ? `${new Date(v.visited_at).toLocaleDateString("ja-JP")}に訪問` : new Date(v.created_at).toLocaleDateString("ja-JP")}
+                    </div>
+                  </div>
+                  {user && user.id !== v.user_id && (
+                    <button onClick={()=>setReportTarget(v)} style={{ background:"none", border:"none", color:C.warmGray, fontSize:11, cursor:"pointer", fontFamily:"inherit", padding:"4px 8px" }}>⚠ 通報</button>
+                  )}
+                </div>
+                {Array.isArray(v.mood_tags) && v.mood_tags.length > 0 && (
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:v.comment?8:0 }}>
+                    {v.mood_tags.map(t => (
+                      <span key={t} style={{ fontSize:11, padding:"4px 10px", borderRadius:12, background:C.cream, color:C.dark, fontWeight:700 }}>
+                        {moodIcon(t)} {moodLabel(t)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {v.comment && (
+                  <div style={{ fontSize:13, color:C.dark, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{v.comment}</div>
+                )}
+                {Array.isArray(v.photo_urls) && v.photo_urls.length > 0 && (
+                  <div style={{ display:"grid", gridTemplateColumns:`repeat(${Math.min(v.photo_urls.length, 3)}, 1fr)`, gap:6, marginTop:10 }}>
+                    {v.photo_urls.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img src={url} alt="" style={{ width:"100%", aspectRatio:"1/1", objectFit:"cover", borderRadius:10 }}/>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 訪問レポート投稿モーダル */}
+      {showVisitForm && (
+        <FacilityVisitForm
+          facility={facility}
+          user={user}
+          onClose={()=>setShowVisitForm(false)}
+          onSubmitted={()=>{ setShowVisitForm(false); fetchVisits(); }}
+        />
+      )}
+
+      {/* 通報モーダル */}
+      {reportTarget && (
+        <FacilityReportModal
+          visit={reportTarget}
+          user={user}
+          onClose={()=>setReportTarget(null)}
+          onSubmitted={()=>{ setReportTarget(null); fetchVisits(); }}
+        />
+      )}
+
+      {/* 訂正リクエストモーダル */}
+      {showCorrectionForm && (
+        <FacilityCorrectionForm
+          facility={facility}
+          user={user}
+          onClose={()=>setShowCorrectionForm(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// ── 訪問レポート投稿フォーム ──────────────────────────────────────────
+const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
+  const [selectedMoods, setSelectedMoods] = useState([]);
+  const [comment, setComment] = useState("");
+  const [visitedAt, setVisitedAt] = useState("");
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const fileRef = useRef(null);
+
+  const toggleMood = (id) => {
+    setSelectedMoods(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handlePhotoSelect = (e) => {
+    const files = Array.from(e.target.files || []).slice(0, 3 - photoFiles.length);
+    if (files.length === 0) return;
+    const newFiles = [...photoFiles, ...files].slice(0, 3);
+    setPhotoFiles(newFiles);
+    const previews = newFiles.map(f => URL.createObjectURL(f));
+    setPhotoPreviews(previews);
+  };
+
+  const removePhoto = (idx) => {
+    const newFiles = photoFiles.filter((_, i) => i !== idx);
+    const newPreviews = photoPreviews.filter((_, i) => i !== idx);
+    setPhotoFiles(newFiles);
+    setPhotoPreviews(newPreviews);
+  };
+
+  const handleSubmitClick = () => {
+    setError("");
+    if (selectedMoods.length === 0 && !comment.trim() && photoFiles.length === 0) {
+      setError("気分タグ・コメント・写真のいずれかを入力してください");
+      return;
+    }
+    // NGワードチェック
+    const ngWord = checkFacilityNGWords(comment);
+    if (ngWord) {
+      setError(`不適切な表現が含まれています: 「${ngWord}」\n他の方を傷つけない表現でお願いします`);
+      return;
+    }
+    if (comment.length > 1000) {
+      setError("コメントは1000文字以内でお願いします");
+      return;
+    }
+    setConfirming(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    if (!user) return;
+    setSubmitting(true);
+    setError("");
+
+    // 写真アップロード
+    let photoUrls = [];
+    for (let i = 0; i < photoFiles.length; i++) {
+      const f = photoFiles[i];
+      const ext = f.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/${facility.id}_${Date.now()}_${i}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("facility-photos").upload(path, f);
+      if (upErr) {
+        setError(`写真のアップロードに失敗しました: ${upErr.message}`);
+        setSubmitting(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("facility-photos").getPublicUrl(path);
+      photoUrls.push(urlData.publicUrl);
+    }
+
+    // 投稿
+    const { error: insErr } = await supabase.from("facility_visits").insert({
+      facility_id: facility.id,
+      user_id: user.id,
+      mood_tags: selectedMoods,
+      comment: comment.trim() || null,
+      visited_at: visitedAt || null,
+      photo_urls: photoUrls,
+    });
+
+    if (insErr) {
+      setError(`投稿に失敗しました: ${insErr.message}`);
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmitting(false);
+    onSubmitted();
+  };
+
+  if (confirming) {
+    return (
+      <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+        <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%" }}>
+          <div style={{ fontSize:40, textAlign:"center", marginBottom:12 }}>🐾</div>
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, textAlign:"center", marginBottom:12 }}>投稿前に最終確認</h2>
+          <div style={{ background:C.cream, borderRadius:12, padding:"14px", fontSize:12, color:C.dark, lineHeight:1.7, marginBottom:16 }}>
+            ✅ 他の人を傷つけない内容ですか？<br/>
+            ✅ 個人を特定できる情報は含まれていませんか？<br/>
+            ✅ 事実に基づいた内容ですか？<br/>
+            <br/>
+            <span style={{ color:C.warmGray, fontSize:11 }}>※ 通報が3件以上集まると自動的に非表示になります</span>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={()=>setConfirming(false)} disabled={submitting} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:submitting?"not-allowed":"pointer", fontFamily:"inherit" }}>戻って修正</button>
+            <button onClick={handleConfirmSubmit} disabled={submitting} style={{ flex:2, padding:"12px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:submitting?"not-allowed":"pointer", fontFamily:"inherit" }}>{submitting ? "投稿中..." : "🐾 投稿する"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:480, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📝 訪問レポート</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+        </div>
+        <p style={{ fontSize:11, color:C.warmGray, marginBottom:14 }}>{facility.name} のレポート</p>
+
+        {/* 気分タグ */}
+        <div style={{ marginBottom:16 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:8 }}>あなたの体験は？（複数選択可）</label>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {MOOD_TAGS.map(t => (
+              <button key={t.id} onClick={()=>toggleMood(t.id)} style={{
+                padding:"6px 12px", borderRadius:20, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                background: selectedMoods.includes(t.id) ? C.orange : C.white,
+                color: selectedMoods.includes(t.id) ? "#fff" : C.dark,
+                border:`1.5px solid ${selectedMoods.includes(t.id) ? C.orange : C.border}`,
+              }}>{t.icon} {t.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* 訪問日 */}
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>訪問日（任意）</label>
+          <input type="date" value={visitedAt} onChange={e=>setVisitedAt(e.target.value)} max={new Date().toISOString().split("T")[0]} style={{
+            padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none"
+          }}/>
+        </div>
+
+        {/* コメント */}
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>コメント（任意・1000文字以内）</label>
+          <textarea value={comment} onChange={e=>setComment(e.target.value)} rows={4} placeholder="うちの子の様子、おすすめポイントを教えてね 🐾" maxLength={1000} style={{
+            width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
+          }}/>
+          <div style={{ fontSize:10, color:C.warmGray, textAlign:"right", marginTop:4 }}>{comment.length}/1000</div>
+        </div>
+
+        {/* 写真 */}
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>写真（任意・最大3枚）</label>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handlePhotoSelect} style={{ display:"none" }}/>
+          {photoPreviews.length > 0 && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:6, marginBottom:8 }}>
+              {photoPreviews.map((src, i) => (
+                <div key={i} style={{ position:"relative" }}>
+                  <img src={src} alt="" style={{ width:"100%", aspectRatio:"1/1", objectFit:"cover", borderRadius:10 }}/>
+                  <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:4, right:4, width:24, height:24, borderRadius:"50%", background:"rgba(0,0,0,0.6)", color:"#fff", border:"none", cursor:"pointer", fontSize:12 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {photoFiles.length < 3 && (
+            <button onClick={()=>fileRef.current?.click()} style={{
+              width:"100%", padding:"20px", border:`2px dashed ${C.border}`, borderRadius:12,
+              background:C.lightGray, cursor:"pointer", color:C.warmGray, fontSize:13, fontFamily:"inherit"
+            }}>📷 写真を追加（残り{3 - photoFiles.length}枚）</button>
+          )}
+        </div>
+
+        {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12, whiteSpace:"pre-wrap" }}>{error}</div>}
+
+        <div style={{ background:"#FFF8E1", borderRadius:10, padding:"10px 12px", fontSize:11, color:"#5D4037", lineHeight:1.7, marginBottom:14 }}>
+          📜 投稿は<a href="https://qocca.pet/terms" target="_blank" rel="noopener noreferrer" style={{ color:C.orange, fontWeight:700 }}>利用規約</a>に従い、誹謗中傷や個人を特定できる情報は禁止です
+        </div>
+
+        <button onClick={handleSubmitClick} style={{
+          width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12,
+          color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit"
+        }}>確認画面へ →</button>
+      </div>
+    </div>
+  );
+};
+
+// ── 通報モーダル ──────────────────────────────────────────────────────
+const FacilityReportModal = ({ visit, user, onClose, onSubmitted }) => {
+  const [reason, setReason] = useState("");
+  const [detail, setDetail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    if (!user || !reason) return;
+    setSubmitting(true);
+    setError("");
+    const { error: insErr } = await supabase.from("facility_visit_reports").insert({
+      visit_id: visit.id,
+      reporter_id: user.id,
+      reason,
+      detail: detail.trim() || null,
+    });
+    if (insErr) {
+      if (insErr.message.includes("duplicate") || insErr.code === "23505") {
+        setError("この投稿は既に通報済みです");
+      } else {
+        setError(`通報に失敗しました: ${insErr.message}`);
+      }
+      setSubmitting(false);
+      return;
+    }
+    setSubmitting(false);
+    alert("通報を受け付けました。確認後、運営が対応します。");
+    onSubmitted();
+  };
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark }}>⚠ 通報する</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+        </div>
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:8 }}>通報理由</label>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {FACILITY_REPORT_REASONS.map(r => (
+              <label key={r.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", border:`1.5px solid ${reason===r.id?C.orange:C.border}`, borderRadius:10, cursor:"pointer", background:reason===r.id?C.orangePale:C.white }}>
+                <input type="radio" name="reason" value={r.id} checked={reason===r.id} onChange={e=>setReason(e.target.value)}/>
+                <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{r.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>詳細（任意）</label>
+          <textarea value={detail} onChange={e=>setDetail(e.target.value)} rows={3} maxLength={500} placeholder="補足情報があれば記入してください" style={{
+            width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
+          }}/>
+        </div>
+        {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
+        <button onClick={handleSubmit} disabled={!reason || submitting} style={{
+          width:"100%", padding:"12px", background:(!reason||submitting)?C.warmGray:C.red, border:"none", borderRadius:12,
+          color:"#fff", fontWeight:800, fontSize:14, cursor:(!reason||submitting)?"not-allowed":"pointer", fontFamily:"inherit"
+        }}>{submitting ? "送信中..." : "通報する"}</button>
+      </div>
+    </div>
+  );
+};
+
+// ── 施設情報訂正フォーム ──────────────────────────────────────────────
+const FacilityCorrectionForm = ({ facility, user, onClose }) => {
+  const [fieldName, setFieldName] = useState("");
+  const [proposedValue, setProposedValue] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+
+  const FIELDS = [
+    { id:"address", label:"住所" },
+    { id:"phone", label:"電話番号" },
+    { id:"hours", label:"営業時間" },
+    { id:"website", label:"公式サイト" },
+    { id:"closed", label:"閉店・移転している" },
+    { id:"other", label:"その他" },
+  ];
+
+  const handleSubmit = async () => {
+    if (!fieldName) return;
+    setSubmitting(true);
+    setError("");
+    const { error: insErr } = await supabase.from("facility_corrections").insert({
+      facility_id: facility.id,
+      user_id: user?.id || null,
+      field_name: fieldName,
+      current_value: facility[fieldName] || null,
+      proposed_value: proposedValue.trim() || null,
+    });
+    if (insErr) {
+      setError(`送信に失敗しました: ${insErr.message}`);
+      setSubmitting(false);
+      return;
+    }
+    setSubmitting(false);
+    setDone(true);
+    setTimeout(()=>onClose(), 2000);
+  };
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark }}>📝 情報を訂正</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+        </div>
+        {done ? (
+          <div style={{ textAlign:"center", padding:"30px 10px" }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+            <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:6 }}>送信ありがとうございます</div>
+            <div style={{ fontSize:12, color:C.warmGray }}>運営が確認後、情報を更新します</div>
+          </div>
+        ) : (
+          <>
+            <p style={{ fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.6 }}>※ この内容は公開されません。運営のみが確認します</p>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:8 }}>訂正する項目</label>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {FIELDS.map(f => (
+                  <label key={f.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", border:`1.5px solid ${fieldName===f.id?C.orange:C.border}`, borderRadius:10, cursor:"pointer", background:fieldName===f.id?C.orangePale:C.white }}>
+                    <input type="radio" name="field" value={f.id} checked={fieldName===f.id} onChange={e=>setFieldName(e.target.value)}/>
+                    <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{f.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>正しい情報・詳細</label>
+              <textarea value={proposedValue} onChange={e=>setProposedValue(e.target.value)} rows={3} maxLength={500} placeholder="正しい情報を教えてください" style={{
+                width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+                fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
+              }}/>
+            </div>
+            {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
+            <button onClick={handleSubmit} disabled={!fieldName || submitting} style={{
+              width:"100%", padding:"12px", background:(!fieldName||submitting)?C.warmGray:C.orange, border:"none", borderRadius:12,
+              color:"#fff", fontWeight:800, fontSize:14, cursor:(!fieldName||submitting)?"not-allowed":"pointer", fontFamily:"inherit"
+            }}>{submitting ? "送信中..." : "送信する"}</button>
+          </>
         )}
       </div>
     </div>
