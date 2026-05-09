@@ -13,8 +13,6 @@ import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
-import MyBadgesSection from "./components/MyBadgesSection";
-import FeaturedBadges from "./components/FeaturedBadges";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
 const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
@@ -776,7 +774,7 @@ useEffect(() => {
           <div style={{ position:"absolute", right:-10, top:-10, fontSize:100, opacity:0.1 }}>🐾</div>
           <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", marginBottom:6 }}>CREATOR WANTED</div>
           <h3 style={{ fontSize:22, fontWeight:900, color:"#fff", marginBottom:10, lineHeight:1.3 }}>あなたのスキルを<br/>ペット好きに届けよう</h3>
-          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginBottom:18 }}>初回取引は手数料0%！決済手数料は購入者負担で、手取りがダイレクト ✨</p>
+          <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginBottom:18 }}>初回取引は手数料0%！今すぐ始められます ✨</p>
           <button onClick={()=>setPage("sell")} style={{ padding:"12px 24px", background:"#fff", border:"none", borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer" }}>🐾 無料で出品を始める</button>
         </div>
       </section>
@@ -1659,8 +1657,7 @@ const SellPage = ({ setPage }) => {
                         <span style={{ fontWeight:700, color:C.dark }}>¥{stdNet.toLocaleString()}</span>
                       </div>
                       <div style={{ fontSize:10, color:C.warmGray, marginTop:6, lineHeight:1.5 }}>
-                        ※購入者は商品価格+4%(バイヤープロテクション)を支払います<br/>
-                        ※決済手数料は購入者負担なので、出品者の手取りはダイレクトです
+                        ※出品価格がそのまま手取りとして反映されます
                       </div>
                     </>
                   );
@@ -2052,8 +2049,6 @@ const handleFollow = async () => {
             </button>
           )}
         </div>
-      {/* バッジ表示（他人視点） */}
-      {userId && <MyBadgesSection userId={userId} isOwn={false} />}
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
@@ -2261,8 +2256,7 @@ const MyPage = ({ setPage }) => {
                 <span style={{ fontSize:11, color:C.warmGray, marginLeft:6 }}>フォロワー</span>
               </button>
             </div>
-　　　　　　{/* マイバッジセクション */}
-            {user?.id && <MyBadgesSection userId={user.id} isOwn={true} />}
+
             {/* マイ活動セクション */}
             <div style={{ marginTop:20 }}>
               <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:8, paddingLeft:4 }}>🎯 マイ活動</div>
