@@ -88,9 +88,14 @@ export default function AboutSection() {
                 fontStyle: "italic",
                 color: TEXT_DARK,
                 margin: 0,
+                lineHeight: 1.7,
+                wordBreak: "keep-all",
+                overflowWrap: "break-word",
               }}
             >
-              「想いを形にして、ふたりをつなぐ。」
+              「想いを形にして、
+              <br />
+              ふたりをつなぐ。」
             </p>
           </div>
         </div>
@@ -140,12 +145,12 @@ export default function AboutSection() {
             />
             <FeatureMini
               Icon={Tag}
-              title="初回手数料0%"
+              title="初回手数料無料"
               body={
                 <>
-                  出品者も購入者も
+                  初回取引：0%
                   <br />
-                  スタート無料
+                  今すぐ始められる
                 </>
               }
             />
