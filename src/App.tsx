@@ -688,6 +688,116 @@ const useHeroStats = () => {
 };
 
 // ── HOME (Mobile) ─────────────────────────────────────────────────────────
+// ── Qocca Town Guide ("What is Qocca?" 街の機能ガイド)─────────────────
+const QoccaTownGuide = ({ setPage }) => {
+  const features = [
+    { icon:"💬", emoji:"🏞", label:"広場", title:"仲間と話せる広場", desc:"同じ犬種・年齢・お悩みの仲間とつながる。\nペット好き専用のコミュニティ。", to:"communities" },
+    { icon:"🛍", emoji:"🏪", label:"商店街", title:"想いを形にした商店街", desc:"似顔絵・ハンドメイド服・写真撮影。\nペット好きクリエイターの一点物が並ぶ。", to:"search" },
+    { icon:"🗺", emoji:"🏯", label:"案内所", title:"全国の施設・イベント案内所", desc:"ドッグラン、公園、ペット可カフェ。\n全国の情報がここに集まる。", to:"facilities" },
+    { icon:"📷", emoji:"🖼", label:"掲示板", title:"うちの子の写真掲示板", desc:"自慢のうちの子をシェアして、\n他の住民とコメントで盛り上がる。", to:"gallery" },
+  ];
+  return (
+    <section style={{ padding:"50px 20px 40px", background:C.cream }}>
+      <div style={{ maxWidth:880, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ display:"inline-block", padding:"4px 14px", background:C.orangePale, color:C.orange, fontSize:11, fontWeight:800, borderRadius:20, marginBottom:14, letterSpacing:0.5 }}>
+            🏘 QOCCA TOWN
+          </div>
+          <h2 style={{ fontSize:24, fontWeight:900, color:C.dark, lineHeight:1.4, marginBottom:10 }}>
+            Qoccaは、こんな街です 🐾
+          </h2>
+          <p style={{ fontSize:13, color:C.warmGray, lineHeight:1.8 }}>
+            ペット好きしか住んでいない、温かい街。<br/>
+            ここには、4つの場所があります。
+          </p>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:14 }}>
+          {features.map((f,i) => (
+            <div key={i} onClick={()=>setPage(f.to)} style={{
+              background:C.white, borderRadius:16, padding:"24px 18px", border:`1px solid ${C.border}`,
+              cursor:"pointer", transition:"transform 0.15s, box-shadow 0.15s",
+              boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
+            }} onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 8px 20px rgba(245,169,74,0.15)"; }} onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,0.04)"; }}>
+              <div style={{ fontSize:42, marginBottom:10, lineHeight:1 }}>{f.emoji}</div>
+              <div style={{ fontSize:10, color:C.orange, fontWeight:800, letterSpacing:1, marginBottom:6 }}>{f.icon} {f.label.toUpperCase()}</div>
+              <div style={{ fontSize:14, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.4 }}>{f.title}</div>
+              <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.7, whiteSpace:"pre-line" }}>{f.desc}</div>
+              <div style={{ fontSize:11, color:C.orange, fontWeight:700, marginTop:12 }}>のぞいてみる →</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop:28, padding:"18px 20px", background:`linear-gradient(135deg, ${C.orangePale} 0%, ${C.cream} 100%)`, borderRadius:14, textAlign:"center", border:`1px dashed ${C.orange}` }}>
+          <p style={{ fontSize:13, color:C.dark, fontWeight:700, lineHeight:1.7, margin:0 }}>
+            🐨 「動物を飼ったら、まずQocca」
+          </p>
+          <p style={{ fontSize:11, color:C.warmGray, marginTop:6, lineHeight:1.7 }}>
+            そんな"当たり前"を目指して、街を育てています。
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ── First Step Guide ("はじめての方へ" 3ステップ)────────────────────
+const FirstStepGuide = ({ setPage }) => {
+  const steps = [
+    { num:"1", emoji:"🐾", title:"住民になる(30秒)", desc:"うちの子のプロフィールを登録。\n街の住民として歓迎されます。", action:"アカウント作成", to:"signup" },
+    { num:"2", emoji:"💬", title:"広場で挨拶する(1分)", desc:"同じ犬種・地域の仲間がいる\nコミュニティに参加してみよう。", action:"広場をのぞく", to:"communities" },
+    { num:"3", emoji:"🏘", title:"街を散歩する", desc:"商店街でお気に入りを探したり、\n近所の施設を案内所でチェック。", action:"街を歩く", to:"search" },
+  ];
+  return (
+    <section style={{ padding:"40px 20px 50px", background:C.white }}>
+      <div style={{ maxWidth:780, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ display:"inline-block", padding:"4px 14px", background:"#E8F5E9", color:"#2E7D32", fontSize:11, fontWeight:800, borderRadius:20, marginBottom:14, letterSpacing:0.5 }}>
+            👋 FIRST STEP
+          </div>
+          <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, lineHeight:1.4, marginBottom:8 }}>
+            はじめての方へ
+          </h2>
+          <p style={{ fontSize:13, color:C.warmGray, lineHeight:1.8 }}>
+            3ステップで、Qoccaの住民デビュー 🐨
+          </p>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {steps.map((s,i)=>(
+            <div key={i} style={{
+              display:"flex", alignItems:"center", gap:16, padding:"18px 20px",
+              background:C.cream, borderRadius:16, border:`1px solid ${C.border}`
+            }}>
+              <div style={{
+                width:48, height:48, borderRadius:"50%",
+                background:`linear-gradient(135deg, ${C.orange} 0%, ${C.orangeLight} 100%)`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:18, fontWeight:900, color:"#fff", flexShrink:0,
+                boxShadow:"0 4px 10px rgba(245,169,74,0.3)"
+              }}>{s.num}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                  <span style={{ fontSize:18 }}>{s.emoji}</span>
+                  <span style={{ fontSize:14, fontWeight:900, color:C.dark }}>{s.title}</span>
+                </div>
+                <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.7, whiteSpace:"pre-line", marginBottom:8 }}>{s.desc}</div>
+                <button onClick={()=>setPage(s.to)} style={{
+                  padding:"6px 14px", background:C.white, border:`1.5px solid ${C.orange}`,
+                  borderRadius:20, color:C.orange, fontWeight:800, fontSize:11,
+                  cursor:"pointer", fontFamily:"inherit"
+                }}>{s.action} →</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop:24, textAlign:"center" }}>
+          <p style={{ fontSize:12, color:C.warmGray, lineHeight:1.7 }}>
+            迷ったら、まずは <span onClick={()=>setPage("communities")} style={{ color:C.orange, fontWeight:800, cursor:"pointer", textDecoration:"underline" }}>広場をのぞいてみる</span> のがおすすめ 🐾
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
   const heroStats = useHeroStats();
   const [activeCat, setActiveCat] = useState("all");
@@ -719,28 +829,34 @@ useEffect(() => {
         padding:"80px 20px 60px", position:"relative", overflow:"hidden"
       }}>
         <div style={{ position:"absolute", right:-20, top:"10%", fontSize:100, opacity:0.05 }}>🐾</div>
+        <div style={{ position:"absolute", left:-30, bottom:"10%", fontSize:80, opacity:0.04 }}>🏘</div>
         <div style={{ position:"relative", zIndex:1 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 14px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:20 }}>
             <span style={{ fontSize:13 }}>🐨</span>
-            <span style={{ fontSize:12, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット</span>
+            <span style={{ fontSize:12, color:C.orange, fontWeight:700 }}>ペット好きが集まる、温かい街</span>
           </div>
-          <h1 style={{ fontSize:40, fontWeight:900, color:C.white, lineHeight:1.15, marginBottom:16, letterSpacing:"-1px" }}>
-            うちの子のための<br/><span style={{ color:C.orange }}>特別なもの</span>を。
+          <h1 style={{ fontSize:38, fontWeight:900, color:C.white, lineHeight:1.2, marginBottom:16, letterSpacing:"-1px" }}>
+            うちの子の話で、<br/><span style={{ color:C.orange }}>つながる場所。</span>
           </h1>
-          <p style={{ fontSize:15, color:"rgba(255,255,255,0.65)", lineHeight:1.7, marginBottom:28 }}>
-            似顔絵・ハンドメイド服・フォト撮影・グッズ制作。世界にひとつだけの作品。
+          <p style={{ fontSize:14, color:"rgba(255,255,255,0.7)", lineHeight:1.8, marginBottom:28 }}>
+            同じ犬種の仲間と話せる広場。<br/>
+            想いのこもった一点物が並ぶ商店街。<br/>
+            全国のドッグランや施設の案内所。<br/>
+            ぜんぶ、ここにある街です。🐾
           </p>
           <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-            <button onClick={()=>setPage("search")} style={{ padding:"13px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>🔍 サービスを探す</button>
-            <button onClick={()=>setPage("sell")} style={{ padding:"13px 20px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>出品者になる →</button>
+            <button onClick={()=>setPage("communities")} style={{ padding:"13px 22px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer" }}>👋 仲間と話す</button>
+            <button onClick={()=>setPage("search")} style={{ padding:"13px 20px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>街を歩く →</button>
           </div>
-          <div style={{ display:"flex", gap:24, marginTop:24 }}>
-            {[[heroStats.listings,"出品"],[heroStats.users,"登録者"],[heroStats.communities,"💬 コミュニティ"]].map(([v,l])=>(
+          <div style={{ display:"flex", gap:20, marginTop:28, flexWrap:"wrap" }}>
+            {[[heroStats.users,"住民"],[heroStats.listings,"出品"],[heroStats.communities,"💬 広場"]].map(([v,l])=>(
               <div key={l}><div style={{ fontSize:20, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>{l}</div></div>
             ))}
           </div>
         </div>
       </section>
+<QoccaTownGuide setPage={setPage} />
+<FirstStepGuide setPage={setPage} />
 <QoccaUniverseSection />
 <AboutSection />
       <HomeNewsSection />
@@ -4565,7 +4681,6 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const [addForm, setAddForm] = useState({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  // 詳細表示の対象施設（null なら一覧表示）
   const [selectedFacility, setSelectedFacility] = useState(null);
 
   const fetchFacilities = async () => {
@@ -4601,14 +4716,12 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const catIcon = (c) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
   const catLabel = (c) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
 
-  // 詳細ページ表示中なら、それを返す
   if (selectedFacility) {
     return <FacilityDetailView facility={selectedFacility} onBack={()=>{ setSelectedFacility(null); fetchFacilities(); }} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
   }
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
-      {/* ヘッダー */}
       <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
@@ -4624,7 +4737,6 @@ const FacilitiesPage = ({ setPage, isPC }) => {
         </div>
       </div>
 
-      {/* フィルター */}
       <div style={{ padding:"10px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", gap:8, overflowX:"auto" }}>
         {FACILITY_CATS.map(c => (
           <button key={c.id} onClick={()=>setCat(c.id)} style={{
@@ -4646,7 +4758,6 @@ const FacilitiesPage = ({ setPage, isPC }) => {
         <span style={{ marginLeft:12, fontSize:12, color:C.warmGray }}>{filtered.length}件の施設</span>
       </div>
 
-      {/* 施設追加モーダル */}
       {showAdd && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:440, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
@@ -4710,7 +4821,6 @@ const FacilitiesPage = ({ setPage, isPC }) => {
         </div>
       )}
 
-      {/* 施設リスト */}
       <div style={{ padding:"16px" }}>
         {loading ? (
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
@@ -4758,7 +4868,6 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   );
 };
 
-// ── Facility Detail View（訪問レポート機能付き）─────────────────────────
 const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel }) => {
   const { user } = useAuth();
   const [visits, setVisits] = useState([]);
@@ -4803,7 +4912,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
-      {/* ヘッダー */}
       <div style={{ padding:"16px", background:C.white, borderBottom:`1px solid ${C.border}`, position:"sticky", top:isPC?0:60, zIndex:50 }}>
         <button onClick={onBack} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:8, padding:0, fontFamily:"inherit" }}>← 一覧に戻る</button>
         <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
@@ -4827,7 +4935,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
         <button onClick={()=>setShowCorrectionForm(true)} style={{ display:"block", marginTop:8, fontSize:11, color:C.warmGray, background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline", fontFamily:"inherit" }}>この情報を訂正する</button>
       </div>
 
-      {/* 訪問レポート投稿ボタン */}
       <div style={{ padding:"16px" }}>
         {user ? (
           <button onClick={()=>setShowVisitForm(true)} style={{
@@ -4843,7 +4950,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
         )}
       </div>
 
-      {/* 訪問レポート一覧 */}
       <div style={{ padding:"0 16px 80px" }}>
         <h2 style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>🐾 みんなの訪問レポート</h2>
         {loadingVisits ? (
@@ -4898,7 +5004,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
         )}
       </div>
 
-      {/* 訪問レポート投稿モーダル */}
       {showVisitForm && (
         <FacilityVisitForm
           facility={facility}
@@ -4908,7 +5013,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
         />
       )}
 
-      {/* 通報モーダル */}
       {reportTarget && (
         <FacilityReportModal
           visit={reportTarget}
@@ -4918,7 +5022,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
         />
       )}
 
-      {/* 訂正リクエストモーダル */}
       {showCorrectionForm && (
         <FacilityCorrectionForm
           facility={facility}
@@ -4930,7 +5033,6 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
   );
 };
 
-// ── 訪問レポート投稿フォーム ──────────────────────────────────────────
 const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
   const [selectedMoods, setSelectedMoods] = useState([]);
   const [comment, setComment] = useState("");
@@ -4968,7 +5070,6 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
       setError("気分タグ・コメント・写真のいずれかを入力してください");
       return;
     }
-    // NGワードチェック
     const ngWord = checkFacilityNGWords(comment);
     if (ngWord) {
       setError(`不適切な表現が含まれています: 「${ngWord}」\n他の方を傷つけない表現でお願いします`);
@@ -4986,7 +5087,6 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
     setSubmitting(true);
     setError("");
 
-    // 写真アップロード
     let photoUrls = [];
     for (let i = 0; i < photoFiles.length; i++) {
       const f = photoFiles[i];
@@ -5002,7 +5102,6 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
       photoUrls.push(urlData.publicUrl);
     }
 
-    // 投稿
     const { error: insErr } = await supabase.from("facility_visits").insert({
       facility_id: facility.id,
       user_id: user.id,
@@ -5053,9 +5152,8 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
         </div>
         <p style={{ fontSize:11, color:C.warmGray, marginBottom:14 }}>{facility.name} のレポート</p>
 
-        {/* 気分タグ */}
         <div style={{ marginBottom:16 }}>
-          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:8 }}>あなたの体験は？（複数選択可）</label>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:8 }}>あなたの体験は？(複数選択可)</label>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {MOOD_TAGS.map(t => (
               <button key={t.id} onClick={()=>toggleMood(t.id)} style={{
@@ -5068,18 +5166,16 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
           </div>
         </div>
 
-        {/* 訪問日 */}
         <div style={{ marginBottom:14 }}>
-          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>訪問日（任意）</label>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>訪問日(任意)</label>
           <input type="date" value={visitedAt} onChange={e=>setVisitedAt(e.target.value)} max={new Date().toISOString().split("T")[0]} style={{
             padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
             fontSize:13, fontFamily:"inherit", outline:"none"
           }}/>
         </div>
 
-        {/* コメント */}
         <div style={{ marginBottom:14 }}>
-          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>コメント（任意・1000文字以内）</label>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>コメント(任意・1000文字以内)</label>
           <textarea value={comment} onChange={e=>setComment(e.target.value)} rows={4} placeholder="うちの子の様子、おすすめポイントを教えてね 🐾" maxLength={1000} style={{
             width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
             fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
@@ -5087,9 +5183,8 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
           <div style={{ fontSize:10, color:C.warmGray, textAlign:"right", marginTop:4 }}>{comment.length}/1000</div>
         </div>
 
-        {/* 写真 */}
         <div style={{ marginBottom:14 }}>
-          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>写真（任意・最大3枚）</label>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>写真(任意・最大3枚)</label>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handlePhotoSelect} style={{ display:"none" }}/>
           {photoPreviews.length > 0 && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:6, marginBottom:8 }}>
@@ -5105,7 +5200,7 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
             <button onClick={()=>fileRef.current?.click()} style={{
               width:"100%", padding:"20px", border:`2px dashed ${C.border}`, borderRadius:12,
               background:C.lightGray, cursor:"pointer", color:C.warmGray, fontSize:13, fontFamily:"inherit"
-            }}>📷 写真を追加（残り{3 - photoFiles.length}枚）</button>
+            }}>📷 写真を追加(残り{3 - photoFiles.length}枚)</button>
           )}
         </div>
 
@@ -5124,7 +5219,6 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
   );
 };
 
-// ── 通報モーダル ──────────────────────────────────────────────────────
 const FacilityReportModal = ({ visit, user, onClose, onSubmitted }) => {
   const [reason, setReason] = useState("");
   const [detail, setDetail] = useState("");
@@ -5174,7 +5268,7 @@ const FacilityReportModal = ({ visit, user, onClose, onSubmitted }) => {
           </div>
         </div>
         <div style={{ marginBottom:14 }}>
-          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>詳細（任意）</label>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>詳細(任意)</label>
           <textarea value={detail} onChange={e=>setDetail(e.target.value)} rows={3} maxLength={500} placeholder="補足情報があれば記入してください" style={{
             width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
             fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
@@ -5190,7 +5284,6 @@ const FacilityReportModal = ({ visit, user, onClose, onSubmitted }) => {
   );
 };
 
-// ── 施設情報訂正フォーム ──────────────────────────────────────────────
 const FacilityCorrectionForm = ({ facility, user, onClose }) => {
   const [fieldName, setFieldName] = useState("");
   const [proposedValue, setProposedValue] = useState("");
@@ -5660,23 +5753,24 @@ const PCHeroSection = ({ setPage }) => {
     position:"relative", overflow:"hidden"
   }}>
     <div style={{ position:"absolute", left:-60, top:-40, fontSize:280, opacity:0.03, pointerEvents:"none" }}>🐾</div>
-    <div style={{ position:"absolute", right:-40, bottom:-60, fontSize:200, opacity:0.03, pointerEvents:"none" }}>🐾</div>
+    <div style={{ position:"absolute", right:-40, bottom:-60, fontSize:200, opacity:0.03, pointerEvents:"none" }}>🏘</div>
     <div style={{ maxWidth:1280, margin:"0 auto", padding:"80px 48px", display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center" }}>
       <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 16px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:24 }}>
-        <span>🐨</span><span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペットオーナー専門マーケット · 出品者募集中</span>
+        <span>🐨</span><span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペット好きが集まる、温かい街 · 住民募集中</span>
       </div>
       <h1 style={{ fontSize:52, fontWeight:900, color:"#fff", lineHeight:1.15, marginBottom:18, letterSpacing:"-1px" }}>
-        うちの子のための<span style={{ color:C.orange }}>特別なもの</span>を。
+        うちの子の話で、<span style={{ color:C.orange }}>つながる場所。</span>
       </h1>
-      <p style={{ fontSize:16, color:"rgba(255,255,255,0.55)", lineHeight:1.8, marginBottom:32, maxWidth:560 }}>
-        似顔絵・ハンドメイド服・フォト撮影・グッズ制作。<br/>ペット専門クリエイターが作る、世界にひとつだけの作品。
+      <p style={{ fontSize:16, color:"rgba(255,255,255,0.65)", lineHeight:1.9, marginBottom:32, maxWidth:620 }}>
+        同じ犬種の仲間と話せる広場、想いのこもった一点物が並ぶ商店街、<br/>
+        全国のドッグランや施設の案内所。ぜんぶ、ここにある街です 🐾
       </p>
       <div style={{ display:"flex", gap:12, marginBottom:36 }}>
-        <button onClick={()=>setPage("search")} style={{ padding:"14px 36px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>🔍 サービスを探す</button>
-        <button onClick={()=>setPage("sell")} style={{ padding:"14px 28px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>出品者になる →</button>
+        <button onClick={()=>setPage("communities")} style={{ padding:"14px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>👋 仲間と話す</button>
+        <button onClick={()=>setPage("search")} style={{ padding:"14px 28px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>街を歩く →</button>
       </div>
       <div style={{ display:"flex", gap:40 }}>
-        {[[heroStats.listings,"出品"],[heroStats.users,"登録者"],[heroStats.communities,"💬 コミュニティ"],["¥0","初回手数料"]].map(([v,l])=>(
+        {[[heroStats.users,"住民"],[heroStats.listings,"出品"],[heroStats.communities,"💬 広場"],["¥0","初回手数料"]].map(([v,l])=>(
           <div key={l}><div style={{ fontSize:24, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:4 }}>{l}</div></div>
         ))}
       </div>
@@ -6535,6 +6629,8 @@ function QoccaAppInner() {
             <Route path="/" element={
               <div>
                 <PCHeroSection setPage={setPage}/>
+                <QoccaTownGuide setPage={setPage} />
+                <FirstStepGuide setPage={setPage} />
                 <QoccaUniverseSection />
                 <AboutSection />
                 <HomeNewsSection />
