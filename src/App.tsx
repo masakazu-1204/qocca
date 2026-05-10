@@ -2341,6 +2341,7 @@ const MyPage = ({ setPage }) => {
 
   const tabs = [
     { id:"profile", icon:"👤", label:"プロフィール" },
+    { id:"listings", icon:"🐾", label:"マイ出品" },
     { id:"sales", icon:"🛍️", label:"販売管理", badge:pendingSalesCount },
     { id:"orders", icon:"📦", label:"注文履歴", badge:pendingOrdersCount },
     { id:"earnings", icon:"💰", label:"売上" },
@@ -2460,6 +2461,9 @@ const MyPage = ({ setPage }) => {
             <button onClick={handleSignOut} style={{ width:"100%", padding:"14px", marginTop:20, background:C.white, border:`1.5px solid ${C.red}`, borderRadius:14, color:C.red, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>🚪 ログアウト</button>
           </>
         )}
+
+        {/* My Listings Tab (マイ出品 - 出品者向け) */}
+        {tab==="listings" && <MyListingsTab setPage={setPage}/>}
 
         {/* Sales Tab (販売管理 - 出品者向け) */}
         {tab==="sales" && <SalesTab/>}
@@ -3397,6 +3401,348 @@ const OrdersTab = () => {
 };
 
 // ── Sales Tab（出品者向け：自分が売った注文一覧、対応操作可） ──────────────
+const MyListingsTab = ({ setPage }) => {
+  const { user } = useAuth();
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [editTarget, setEditTarget] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const loadListings = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("seller_id", user.id)
+      .order("created_at", { ascending: false });
+    if (!error) setListings(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadListings(); }, [user?.id]);
+
+  const filtered = listings.filter(l => {
+    if (filter === "all") return true;
+    if (filter === "draft") return l.status === "draft";
+    if (filter === "pending") return l.status === "pending";
+    if (filter === "approved") return l.status === "approved";
+    if (filter === "sold_out") return l.status === "sold_out";
+    if (filter === "rejected") return l.status === "rejected";
+    return true;
+  });
+
+  const statusBadge = (s) => {
+    const map = {
+      draft:    { text:"💾 下書き",    bg:C.lightGray,    color:C.warmGray },
+      pending:  { text:"⏳ 審査中",    bg:C.orangePale,   color:C.orange },
+      approved: { text:"✅ 公開中",    bg:"#E8F5E9",      color:C.green },
+      sold_out: { text:"🔴 売り切れ",  bg:"#FFEBEE",      color:C.red },
+      rejected: { text:"❌ 非承認",    bg:"#FFEBEE",      color:C.red },
+    };
+    return map[s] || { text:s, bg:C.lightGray, color:C.warmGray };
+  };
+
+  const handleStockChange = async (listing, delta) => {
+    if (busy) return;
+    const current = listing.stock_quantity ?? 0;
+    const newStock = Math.max(0, current + delta);
+    setBusy(true);
+    const { error } = await supabase.from("listings").update({ stock_quantity: newStock }).eq("id", listing.id);
+    setBusy(false);
+    if (error) { alert("在庫数変更に失敗: " + error.message); return; }
+    await loadListings();
+  };
+
+  const handleEnableStock = async (listing) => {
+    if (busy) return;
+    const value = prompt("在庫数を入力してください（数字）", "10");
+    if (value === null) return;
+    const n = parseInt(value);
+    if (isNaN(n) || n < 0) { alert("0以上の数字を入力してください"); return; }
+    setBusy(true);
+    const { error } = await supabase.from("listings").update({ stock_quantity: n }).eq("id", listing.id);
+    setBusy(false);
+    if (error) { alert("在庫管理開始に失敗: " + error.message); return; }
+    await loadListings();
+  };
+
+  const handleDisableStock = async (listing) => {
+    if (busy) return;
+    if (!confirm("在庫管理を停止します。\n以降「在庫無制限（オーダーメイド型）」として扱われます。よろしいですか？")) return;
+    setBusy(true);
+    const { error } = await supabase.from("listings").update({ stock_quantity: null }).eq("id", listing.id);
+    setBusy(false);
+    if (error) { alert("在庫管理停止に失敗: " + error.message); return; }
+    await loadListings();
+  };
+
+  const handlePublishDraft = async (listing) => {
+    if (busy) return;
+    if (!confirm("この下書きを公開申請しますか？\n（NGワードチェック・信頼度判定の上で、即時公開 or 審査待ちになります）")) return;
+    setBusy(true);
+    // status を pending に変更すると、auto_approve_listing トリガーが UPDATE では発火しないため
+    // 一度 INSERT 用の関数を再利用するために、ここでは直接 status を pending にする
+    const { error } = await supabase.from("listings").update({ status: "pending" }).eq("id", listing.id);
+    setBusy(false);
+    if (error) { alert("公開申請に失敗: " + error.message); return; }
+    alert("公開申請しました。NGワードチェックや信頼度判定の上、近日中に公開されます。");
+    await loadListings();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget || busy) return;
+    setBusy(true);
+    const { error } = await supabase.from("listings").delete().eq("id", deleteTarget.id);
+    setBusy(false);
+    if (error) { alert("削除に失敗: " + error.message); return; }
+    setDeleteTarget(null);
+    await loadListings();
+  };
+
+  const counts = {
+    all: listings.length,
+    draft: listings.filter(l=>l.status==="draft").length,
+    pending: listings.filter(l=>l.status==="pending").length,
+    approved: listings.filter(l=>l.status==="approved").length,
+    sold_out: listings.filter(l=>l.status==="sold_out").length,
+    rejected: listings.filter(l=>l.status==="rejected").length,
+  };
+
+  return (
+    <div>
+      <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginBottom:14, fontSize:11, color:C.dark, lineHeight:1.6 }}>
+        🐾 出品した商品の一覧です。下書きの編集・公開、在庫管理、削除ができます。
+      </div>
+
+      {/* フィルター */}
+      <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
+        {[
+          ["all","すべて",counts.all],
+          ["draft","💾 下書き",counts.draft],
+          ["pending","⏳ 審査中",counts.pending],
+          ["approved","✅ 公開中",counts.approved],
+          ["sold_out","🔴 売切",counts.sold_out],
+          ["rejected","❌ 非承認",counts.rejected],
+        ].map(([v,l,c])=>(
+          <button key={v} onClick={()=>setFilter(v)} style={{
+            flexShrink:0, padding:"6px 12px", border:`1.5px solid ${filter===v?C.orange:C.border}`,
+            borderRadius:10, background:filter===v?C.orangePale:C.white,
+            color:filter===v?C.orange:C.warmGray, fontSize:12, fontWeight:700,
+            cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4
+          }}>{l} <span style={{ fontSize:10, opacity:0.7 }}>({c})</span></button>
+        ))}
+      </div>
+
+      {/* リスト */}
+      {loading ? (
+        <div style={{ textAlign:"center", padding:40, color:C.warmGray, fontSize:13 }}>読み込み中...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ background:C.white, borderRadius:16, padding:"40px 20px", textAlign:"center", border:`1px dashed ${C.border}` }}>
+          <div style={{ fontSize:48, marginBottom:8 }}>🐾</div>
+          <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:6 }}>
+            {filter === "all" ? "まだ出品がありません" : "該当する出品がありません"}
+          </div>
+          {filter === "all" && (
+            <button onClick={()=>setPage("sell")} style={{
+              marginTop:14, padding:"10px 24px", background:C.orange, border:"none", borderRadius:10,
+              color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
+            }}>＋ 出品する</button>
+          )}
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {filtered.map(l => {
+            const badge = statusBadge(l.status);
+            const photo = Array.isArray(l.image_urls) && l.image_urls.length ? l.image_urls[0] : null;
+            const stock = l.stock_quantity;
+            const stockManaged = stock !== null && stock !== undefined;
+            return (
+              <div key={l.id} style={{ background:C.white, borderRadius:14, padding:"14px", border:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", gap:12 }}>
+                  {photo ? (
+                    <img src={photo} alt="" style={{ width:64, height:64, borderRadius:10, objectFit:"cover", flexShrink:0 }}/>
+                  ) : (
+                    <div style={{ width:64, height:64, borderRadius:10, background:C.lightGray, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>🐾</div>
+                  )}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:badge.bg, color:badge.color, fontWeight:800 }}>{badge.text}</span>
+                      {stockManaged && (
+                        <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:stock===0?"#FFEBEE":"#E3F2FD", color:stock===0?C.red:C.blue, fontWeight:800 }}>
+                          📦 在庫{stock}
+                        </span>
+                      )}
+                      {!stockManaged && (
+                        <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>
+                          ♾ 在庫管理なし
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.title}</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.orange }}>¥{Number(l.price).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                {/* アクションボタン */}
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:12, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+                  {/* 在庫管理 */}
+                  {stockManaged ? (
+                    <>
+                      <button disabled={busy} onClick={()=>handleStockChange(l, -1)} style={miniBtnStyle(C.white, C.warmGray, busy)}>📦 在庫 −1</button>
+                      <button disabled={busy} onClick={()=>handleStockChange(l, +1)} style={miniBtnStyle(C.white, C.green, busy)}>📦 在庫 +1</button>
+                      <button disabled={busy} onClick={()=>handleDisableStock(l)} style={miniBtnStyle(C.white, C.warmGray, busy)}>♾ 在庫管理OFF</button>
+                    </>
+                  ) : (
+                    <button disabled={busy} onClick={()=>handleEnableStock(l)} style={miniBtnStyle(C.white, C.blue, busy)}>📦 在庫管理ON</button>
+                  )}
+                  {/* 下書きの公開申請 */}
+                  {l.status === "draft" && (
+                    <button disabled={busy} onClick={()=>handlePublishDraft(l)} style={miniBtnStyle(C.orange, "#fff", busy)}>🚀 公開申請</button>
+                  )}
+                  {/* 編集 */}
+                  <button disabled={busy} onClick={()=>setEditTarget(l)} style={miniBtnStyle(C.white, C.blue, busy)}>✏️ 編集</button>
+                  {/* 削除 */}
+                  <button disabled={busy} onClick={()=>setDeleteTarget(l)} style={miniBtnStyle(C.white, C.red, busy)}>🗑 削除</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 編集モーダル */}
+      {editTarget && (
+        <ListingEditModal
+          listing={editTarget}
+          onClose={()=>setEditTarget(null)}
+          onSaved={()=>{ setEditTarget(null); loadListings(); }}
+        />
+      )}
+
+      {/* 削除確認モーダル */}
+      {deleteTarget && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:380, width:"100%" }}>
+            <div style={{ fontSize:40, textAlign:"center", marginBottom:12 }}>🗑</div>
+            <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, textAlign:"center", marginBottom:8 }}>本当に削除しますか？</h2>
+            <p style={{ fontSize:12, color:C.warmGray, textAlign:"center", marginBottom:14, lineHeight:1.7 }}>
+              「{deleteTarget.title}」<br/>
+              ⚠️ この操作は取り消せません
+            </p>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>setDeleteTarget(null)} disabled={busy} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit" }}>キャンセル</button>
+              <button onClick={handleDelete} disabled={busy} style={{ flex:2, padding:"12px", background:busy?C.warmGray:C.red, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit" }}>{busy ? "削除中..." : "🗑 削除する"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── 小さなボタン用スタイル ──
+const miniBtnStyle = (bg, color, disabled) => ({
+  padding: "6px 10px",
+  fontSize: 11,
+  fontWeight: 700,
+  borderRadius: 8,
+  background: bg,
+  color,
+  border: `1.5px solid ${color === "#fff" ? bg : color}`,
+  cursor: disabled ? "not-allowed" : "pointer",
+  opacity: disabled ? 0.5 : 1,
+  fontFamily: "inherit",
+});
+
+// ── 出品編集モーダル ─────────────────────────────────────────────────
+const ListingEditModal = ({ listing, onClose, onSaved }) => {
+  const [title, setTitle] = useState(listing.title || "");
+  const [description, setDescription] = useState(listing.description || "");
+  const [price, setPrice] = useState(listing.price?.toString() || "");
+  const [delivery, setDelivery] = useState(listing.delivery_days || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    setError("");
+    if (!title.trim()) { setError("タイトルを入力してください"); return; }
+    if (!description.trim()) { setError("説明を入力してください"); return; }
+    const priceNum = parseInt(price);
+    if (isNaN(priceNum) || priceNum <= 0) { setError("価格は1円以上の数字を入力してください"); return; }
+    setSaving(true);
+    const { error: updErr } = await supabase
+      .from("listings")
+      .update({
+        title: title.trim(),
+        description: description.trim(),
+        price: priceNum,
+        delivery_days: delivery,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", listing.id);
+    setSaving(false);
+    if (updErr) { setError("保存に失敗しました: " + updErr.message); return; }
+    onSaved();
+  };
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:480, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>✏️ 出品を編集</h2>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+        </div>
+        <p style={{ fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.6 }}>
+          ※ 大きな変更は再審査の対象になる場合があります。<br/>
+          画像・カテゴリの変更は現状未対応です（後日追加予定）。
+        </p>
+
+        <div style={{ marginBottom:12 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>タイトル</label>
+          <input value={title} onChange={e=>setTitle(e.target.value)} maxLength={80} style={{
+            width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
+          }}/>
+        </div>
+
+        <div style={{ marginBottom:12 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>説明</label>
+          <textarea value={description} onChange={e=>setDescription(e.target.value)} rows={5} maxLength={2000} style={{
+            width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
+          }}/>
+        </div>
+
+        <div style={{ marginBottom:12 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>価格（円）</label>
+          <input type="number" value={price} onChange={e=>setPrice(e.target.value)} min="1" style={{
+            width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
+          }}/>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>納期</label>
+          <input value={delivery} onChange={e=>setDelivery(e.target.value)} placeholder="例: 2〜5営業日" style={{
+            width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+            fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
+          }}/>
+        </div>
+
+        {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
+
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={onClose} disabled={saving} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>キャンセル</button>
+          <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:"12px", background:saving?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>{saving ? "保存中..." : "💾 保存する"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SalesTab = () => {
   const { user } = useAuth();
   const [sales, setSales] = useState<any[]>([]);
