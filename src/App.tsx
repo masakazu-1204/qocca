@@ -2664,21 +2664,22 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
     }
     if (type === "gallery") {
       return (
-        <div key={item.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+        <button key={item.id} onClick={()=>handleNavigate(`gallery/${item.id}`)} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", cursor:"pointer", padding:0, fontFamily:"inherit", textAlign:"left" }}>
           <div style={{ width:"100%", aspectRatio:"1", background: `url(${item.image_url}) center/cover` }}/>
           {item.caption && <div style={{ padding:"8px 12px", fontSize:11, color:C.dark, lineHeight:1.5, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{item.caption}</div>}
-        </div>
+        </button>
       );
     }
     if (type === "blog") {
       return (
-        <div key={item.id} style={{ display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, alignItems:"center" }}>
+        <button key={item.id} onClick={()=>handleNavigate(`blog/${item.id}`)} style={{ width:"100%", display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, alignItems:"center", cursor:"pointer", textAlign:"left", fontFamily:"inherit" }}>
           <div style={{ width:50, height:50, borderRadius:8, background: item.cover_image_url ? `url(${item.cover_image_url}) center/cover` : C.orangePale, flexShrink:0 }}/>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
             <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>{item.category} · {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
           </div>
-        </div>
+          <span style={{ fontSize:14, color:C.orange }}>›</span>
+        </button>
       );
     }
     if (type === "following" || type === "followers") {
@@ -4726,6 +4727,8 @@ const BLOG_CATS = [
 
 const BlogPage = ({ setPage, isPC }) => {
   const { user } = useAuth();
+  const { postId } = useParams();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("all");
@@ -4768,6 +4771,48 @@ const BlogPage = ({ setPage, isPC }) => {
   };
 
   useEffect(() => { fetchPosts(); }, []);
+
+  // URL から postId を取得して、該当記事を自動的に詳細表示
+  useEffect(() => {
+    if (!postId) {
+      setViewPost(null);
+      return;
+    }
+    if (posts.length === 0) return;
+    const target = posts.find(p => p.id === postId);
+    if (target) {
+      setViewPost(target);
+      // 閲覧数 +1
+      supabase.from("blog_posts").update({ views_count: (target.views_count || 0) + 1 }).eq("id", target.id).then(()=>{});
+    } else {
+      // 一覧に無い記事 → 単独取得
+      supabase.from("blog_posts").select("*").eq("id", postId).eq("published", true).single().then(async ({ data }) => {
+        if (data) {
+          const { data: prof } = await supabase.from("profiles").select("id, display_name, avatar_url").eq("id", data.author_id).single();
+          setViewPost({
+            ...data,
+            authorName: prof?.display_name || "ユーザー",
+            authorAvatar: prof?.avatar_url || "",
+          });
+          await supabase.from("blog_posts").update({ views_count: (data.views_count || 0) + 1 }).eq("id", data.id);
+        }
+      });
+    }
+  }, [postId, posts]);
+
+  // 詳細表示を閉じた時に URL を /blog に戻す
+  const closeViewPost = () => {
+    setViewPost(null);
+    if (postId) navigate("/blog");
+  };
+
+  // 一覧記事クリック時に URL を /blog/:id にする
+  const openViewPost = (post) => {
+    setViewPost(post);
+    navigate(`/blog/${post.id}`);
+    // 閲覧数 +1
+    supabase.from("blog_posts").update({ views_count: (post.views_count || 0) + 1 }).eq("id", post.id).then(()=>{});
+  };
 
   const handleCoverSelect = (e) => {
     const file = e.target.files?.[0];
@@ -4817,10 +4862,7 @@ const BlogPage = ({ setPage, isPC }) => {
     }
   };
 
-  const openPost = async (post) => {
-    setViewPost(post);
-    await supabase.from("blog_posts").update({ views_count: (post.views_count||0)+1 }).eq("id", post.id);
-  };
+  const openPost = openViewPost;
 
   const filtered = posts.filter(p => cat === "all" || p.category === cat);
   const blogCatLabel = (c) => BLOG_CATS.find(bc => bc.id === c)?.label || c;
@@ -4830,7 +4872,7 @@ const BlogPage = ({ setPage, isPC }) => {
   if (viewPost) return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       <div style={{ padding:"12px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={()=>setViewPost(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange, fontWeight:700 }}>←</button>
+        <button onClick={closeViewPost} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange, fontWeight:700 }}>←</button>
         <span style={{ fontSize:14, fontWeight:700, color:C.dark }}>ブログ</span>
       </div>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"24px 16px 80px" }}>
@@ -5776,6 +5818,8 @@ const FacilityCorrectionForm = ({ facility, user, onClose }) => {
 // ── Gallery (うちの子ギャラリー) ──────────────────────────────────────────
 const GalleryPage = ({ setPage, isPC }) => {
   const { user } = useAuth();
+  const { itemId: galleryItemId } = useParams();
+  const galleryNavigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -6925,8 +6969,10 @@ const useNav = () => {
     else if (page === "liked") navigate("/favorites");
     else if (page === "events") navigate("/events");
     else if (page === "gallery") navigate("/gallery");
+    else if (typeof page === "string" && page.startsWith("gallery/")) navigate("/" + page);
     else if (page === "facilities") navigate("/facilities");
     else if (page === "blog") navigate("/blog");
+    else if (typeof page === "string" && page.startsWith("blog/")) navigate("/" + page);
     else if (page === "communities") navigate("/communities");
     else if (typeof page === "string" && page.startsWith("community/")) navigate("/" + page);
     else if (page === "terms") navigate("/terms");
@@ -7192,6 +7238,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/gallery/:itemId" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <GalleryPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/facilities" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -7201,6 +7255,14 @@ function QoccaAppInner() {
               </div>
             }/>
             <Route path="/blog" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <BlogPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
+            <Route path="/blog/:postId" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
                 <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
@@ -7299,8 +7361,10 @@ function QoccaAppInner() {
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
             <Route path="/events" element={<EventsPage isPC={false} setPage={setPage}/>}/>
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/blog/:postId" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/communities" element={<CommunitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/community/:communityId" element={<CommunityDetailPage setPage={setPage} isPC={false}/>}/>
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
