@@ -107,7 +107,7 @@ const useListings = () => {
     const { data, error } = await supabase
       .from("listings")
       .select("*")
-      .eq("status", "approved")
+      .in("status", ["approved", "sold_out"])
       .order("created_at", { ascending: false });
     if (!error && data && data.length > 0) {
       // 出品者名を取得
@@ -197,6 +197,10 @@ const submitListing = async (userId, form, imageFiles, options = []) => {
     }
   }
 
+  const stockValue = form.stock !== "" && form.stock !== null && form.stock !== undefined
+    ? parseInt(form.stock)
+    : null;
+
   const { data, error } = await supabase.from("listings").insert({
     seller_id: userId,
     title: form.title,
@@ -208,7 +212,8 @@ const submitListing = async (userId, form, imageFiles, options = []) => {
     delivery_type: form.delivery_type || 'data_only',
     image_urls: imageUrls,
     options: options.filter(o => o.name && o.price > 0),
-    status: "pending",
+    stock_quantity: isNaN(stockValue) ? null : stockValue,
+    status: isDraft ? "draft" : "pending",
   }).select().single();
 
   return { data, error };
@@ -807,7 +812,7 @@ useEffect(() => {
     const { data } = await supabase
       .from("events")
       .select("*")
-      .eq("status", "approved")
+      .in("status", ["approved", "sold_out"])
       .gte("event_date", new Date().toISOString().slice(0, 10))
       .order("event_date", { ascending: true })
       .limit(3);
@@ -1549,7 +1554,7 @@ const SellPage = ({ setPage }) => {
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only" });
+  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only", stock:"" });
   const [images, setImages] = useState([]);
   const [options, setOptions] = useState([]);
   const up = (k,v) => setForm(p=>({...p,[k]:v}));
@@ -1566,13 +1571,13 @@ const SellPage = ({ setPage }) => {
   };
   const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isDraft = false) => {
     setSubmitting(true);
     setError("");
-    const { error: err } = await submitListing(user.id, form, images, options.map(o => ({ name:o.name, price:parseInt(o.price)||0 })));
+    const { error: err } = await submitListing(user.id, form, images, options.map(o => ({ name:o.name, price:parseInt(o.price)||0 })), isDraft);
     setSubmitting(false);
-    if (err) { setError("出品に失敗しました: " + err.message); return; }
-    setDone(true);
+    if (err) { setError((isDraft ? "下書き保存" : "出品") + "に失敗しました: " + err.message); return; }
+    setDone({ isDraft });
   };
 
   if (!user) return (
@@ -1586,16 +1591,24 @@ const SellPage = ({ setPage }) => {
     </div>
   );
 
-  if (done) return (
+  if (done) {
+    const isDraftDone = done && done.isDraft;
+    return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div style={{ textAlign:"center", padding:32 }}>
-        <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
-        <h2 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:10 }}>出品完了！</h2>
-        <p style={{ color:C.warmGray, fontSize:14, lineHeight:1.7, marginBottom:24 }}>審査後（最大24時間）に公開されます🐾</p>
-        <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only"});setImages([]);setOptions([]);}} style={{ padding:"12px 28px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer" }}>続けて出品する</button>
+      <div style={{ textAlign:"center", padding:32, maxWidth:400 }}>
+        <div style={{ fontSize:64, marginBottom:16 }}>{isDraftDone ? "💾" : "🎉"}</div>
+        <h2 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:10 }}>{isDraftDone ? "下書き保存しました！" : "出品完了！"}</h2>
+        <p style={{ color:C.warmGray, fontSize:14, lineHeight:1.7, marginBottom:24 }}>
+          {isDraftDone ? "マイページの「下書き一覧」から、いつでも編集して投稿できます🐾" : "審査後（最大24時間）に公開されます🐾"}
+        </p>
+        <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+          <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only",stock:""});setImages([]);setOptions([]);}} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>続けて出品する</button>
+          <button onClick={()=>setPage("mypage")} style={{ padding:"12px 24px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>マイページへ</button>
+        </div>
       </div>
     </div>
-  );
+    );
+  }
 
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream }}>
@@ -1701,6 +1714,20 @@ const SellPage = ({ setPage }) => {
                 )}
               </div>
             </div>
+            {/* 在庫数 */}
+            <div style={{ marginTop:16 }}>
+              <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>在庫数（任意）</label>
+              <p style={{ fontSize:11, color:C.warmGray, marginBottom:8, lineHeight:1.6 }}>
+                物販で在庫管理が必要な場合のみ入力してください。<br/>
+                未入力（オーダーメイド・受注生産など）= 在庫管理しない<br/>
+                数字を入力すると、売れるたびに自動で減算され、0になると「売り切れ」表示になります。
+              </p>
+              <div style={{ position:"relative", maxWidth:160 }}>
+                <input type="number" value={form.stock} onChange={e=>up("stock", e.target.value)} placeholder="例: 10" min="0"
+                  style={{ width:"100%", padding:"10px 32px 10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:12, color:C.warmGray }}>個</span>
+              </div>
+            </div>
             {/* 有料オプション */}
             <div style={{ marginTop:16 }}>
               <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>有料オプション（任意）</label>
@@ -1731,6 +1758,7 @@ const SellPage = ({ setPage }) => {
                 ["料金", form.price?`¥${Number(form.price).toLocaleString()}`:"未設定"],
                 ["納期", form.delivery||"未設定"],
                 ["受け渡し方法", form.delivery_type==="shipping"?"📦 配送あり":form.delivery_type==="visit"?"📍 訪問あり":"💻 データのみ"],
+                ["在庫数", form.stock!==""&&form.stock!==null?`${form.stock}個`:"管理しない"],
                 ["画像", `${images.length}枚`],
               ].map(([k,v])=>(
                 <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
@@ -1793,10 +1821,17 @@ const SellPage = ({ setPage }) => {
           </>}
           <div style={{ display:"flex", gap:10, marginTop:24 }}>
             {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, fontWeight:800, fontSize:14, cursor:"pointer", color:C.warmGray, fontFamily:"inherit" }}>← 戻る</button>}
-            <button disabled={submitting} onClick={()=>step<3?setStep(s=>s+1):handleSubmit()} style={{ flex:2, padding:"13px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12, fontWeight:800, fontSize:14, cursor:submitting?"not-allowed":"pointer", color:"#fff", fontFamily:"inherit" }}>
+            <button disabled={submitting} onClick={()=>step<3?setStep(s=>s+1):handleSubmit(false)} style={{ flex:2, padding:"13px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12, fontWeight:800, fontSize:14, cursor:submitting?"not-allowed":"pointer", color:"#fff", fontFamily:"inherit" }}>
               {submitting ? "送信中..." : step<3 ? "次へ →" : "🐾 出品する！"}
             </button>
           </div>
+          {step===3 && (
+            <button disabled={submitting} onClick={()=>handleSubmit(true)} style={{
+              width:"100%", marginTop:10, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`,
+              borderRadius:12, fontWeight:700, fontSize:13, cursor:submitting?"not-allowed":"pointer",
+              color:C.warmGray, fontFamily:"inherit"
+            }}>💾 下書き保存（後で編集して投稿できます）</button>
+          )}
         </div>
       </div>
     </div>
@@ -5802,7 +5837,7 @@ const EventsPage = ({ isPC, setPage }) => {
     const { data, error } = await supabase
       .from("events")
       .select("*")
-      .eq("status", "approved")
+      .in("status", ["approved", "sold_out"])
       .order("event_date", { ascending: true });
     if (!error && data) {
       // モックデータの形式に合わせて変換
