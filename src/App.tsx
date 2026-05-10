@@ -152,6 +152,28 @@ const useListings = () => {
 };
 
 const CAT_COLORS = { illust:"#FFF3E0", clothes:"#F3E5F5", photo:"#E3F2FD", goods:"#E8F5E9", food:"#FCE4EC", training:"#E0F7FA" };
+// ── 人気スコア計算（ハイブリッドアルゴリズム）─────────────────────────
+// 販売数×5 + お気に入り×1 + 閲覧数×0.1 + 新規ボーナス×30(14日以内) - 経過日数×0.1
+const calcPopularityScore = (item) => {
+  if (!item) return 0;
+  const sales = item.sales_count || 0;
+  const favs  = item.favorite_count || 0;
+  const views = item.view_count || 0;
+  const created = item.created_at ? new Date(item.created_at) : new Date();
+  const daysSince = Math.max(0, Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)));
+  const newBonus = daysSince <= 14 ? 30 : 0;
+  
+  return (sales * 5.0)
+       + (favs * 1.0)
+       + (views * 0.1)
+       + newBonus
+       - (daysSince * 0.1);
+};
+
+const sortByPopularity = (items) => {
+  return [...items].sort((a, b) => calcPopularityScore(b) - calcPopularityScore(a));
+};
+
 
 // お気に入りをSupabaseで管理
 const useFavorites = (userId) => {
@@ -820,7 +842,7 @@ useEffect(() => {
   })();
 }, []);
   // 人気 = お気に入り数順（fallback: レビュー数順）
-  const popular = [...listings].sort((a,b) => (b.favorite_count||b.reviews||0) - (a.favorite_count||a.reviews||0)).slice(0,4);
+  const popular = sortByPopularity(listings).slice(0,4);
   // 新着 = 作成日順（DBデータはcreated_at、モックデータはid逆順）
   const newItems = [...listings].sort((a,b) => {
     if (a.created_at && b.created_at) return new Date(b.created_at) - new Date(a.created_at);
@@ -916,9 +938,12 @@ useEffect(() => {
       {/* ── ランキングセクション ── */}
       <section style={{ padding:"24px 16px", background:C.white, borderTop:`1px solid ${C.border}` }}>
         <h2 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>🏆 人気サービスランキング</h2>
+        <p style={{ fontSize:10, color:C.warmGray, marginBottom:8, lineHeight:1.6 }}>
+          📊 販売数・お気に入り・閲覧数・新規度を総合評価。広告枠なし、すべて自然なランキング🐾
+        </p>
         <p style={{ fontSize:12, color:C.warmGray, marginBottom:16 }}>お気に入り数が多い順</p>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {[...listings].sort((a,b) => (b.favorite_count||0) - (a.favorite_count||0)).slice(0,5).map((item, i) => (
+          {sortByPopularity(listings).slice(0,5).map((item, i) => (
             <div key={item.id} onClick={()=>onDetail(item)} style={{
               display:"flex", alignItems:"center", gap:12, padding:"12px", background:i===0?C.orangePale:C.lightGray,
               borderRadius:14, cursor:"pointer", border:i===0?`2px solid ${C.orange}`:`1px solid ${C.border}`
@@ -1051,7 +1076,7 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC
     if (search && !l.title.includes(search) && !l.seller.includes(search)) return false;
     return true;
   });
-  if (sort === "popular") results = [...results].sort((a,b) => b.reviews - a.reviews);
+  if (sort === "popular") results = sortByPopularity(results);
   if (sort === "cheap") results = [...results].sort((a,b) => a.price - b.price);
   if (sort === "rating") results = [...results].sort((a,b) => b.rating - a.rating);
 
@@ -7020,7 +7045,7 @@ function QoccaAppInner() {
                   <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:16 }}>🔥 人気のサービス</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
-                      {[...listings].sort((a,b) => (b.favorite_count||b.reviews||0) - (a.favorite_count||a.reviews||0)).slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+                      {sortByPopularity(listings).slice(0,3).map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
                     </div>
                     <PCBanner setPage={setPage}/>
                     <div style={{ fontSize:20, fontWeight:900, color:C.dark, margin:"24px 0 16px" }}>🆕 新着サービス</div>
@@ -7069,8 +7094,11 @@ function QoccaAppInner() {
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24, marginTop:32 }}>
                       <div style={{ background:C.white, borderRadius:16, padding:"20px", border:`1px solid ${C.border}` }}>
                         <h3 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>🏆 人気サービスランキング</h3>
+                        <p style={{ fontSize:10, color:C.warmGray, marginBottom:8, lineHeight:1.6 }}>
+                          📊 販売数・お気に入り・閲覧数・新規度を総合評価。広告枠なし、すべて自然なランキング🐾
+                        </p>
                         <p style={{ fontSize:12, color:C.warmGray, marginBottom:16 }}>お気に入り数が多い順</p>
-                        {[...listings].sort((a,b) => (b.favorite_count||0) - (a.favorite_count||0)).slice(0,5).map((item, i) => (
+                        {sortByPopularity(listings).slice(0,5).map((item, i) => (
                           <div key={item.id} onClick={()=>onDetail(item)} style={{
                             display:"flex", alignItems:"center", gap:10, padding:"10px", marginBottom:6,
                             background:i===0?C.orangePale:"transparent", borderRadius:10, cursor:"pointer",
