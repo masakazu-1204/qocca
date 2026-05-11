@@ -1153,6 +1153,10 @@ const FirstStepGuide = ({ setPage }) => {
   );
 };
 
+// ============================================================================
+// 旧 HomePage（リニューアル前）- コメントアウト保持（いつでも戻せる）
+// ============================================================================
+/*
 const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
   const heroStats = useHeroStats();
   const [activeCat, setActiveCat] = useState("all");
@@ -1389,6 +1393,705 @@ useEffect(() => {
         </div>
       </section>
 
+      <SharedFooter setPage={setPage}/>
+    </div>
+  );
+};
+*/
+
+// ============================================================================
+// Qocca リニューアル用デザイントークン
+// ============================================================================
+const QC = {
+  warmWhite: '#FAF7F2',
+  cream: '#F5EFE6',
+  lightSand: '#EEE6D9',
+  charcoal: '#2C2926',
+  warmGray: '#6B6259',
+  softBrown: '#8B6F5C',
+  mutedGreen: '#7A8B6E',
+  sage: '#A8B59E',
+  terracotta: '#C97B5F',
+};
+
+const QC_FONT_JP = '"Zen Kaku Gothic New", "LINE Seed JP", "Noto Sans JP", sans-serif';
+const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
+
+// CSS keyframes（インライン用）
+const QC_KEYFRAMES = `
+  @keyframes qocca-breathe {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+  }
+  @keyframes qocca-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes qocca-reactionPop {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+    100% { transform: translateY(0); }
+  }
+`;
+
+// ============================================================================
+// SECTION 1: ファーストビュー (SectionHero)
+// ============================================================================
+
+// 各画像の表示時間（秒）- display_priority 1〜7 に対応
+const QC_HERO_DURATIONS = [10, 7, 7, 7, 7, 7, 10];
+const QC_TRANSITION_MS = 800;
+const QC_PC_BREAKPOINT = 768;
+
+const SectionHero = () => {
+  const [images, setImages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPC, setIsPC] = useState(
+    typeof window !== "undefined" && window.innerWidth >= QC_PC_BREAKPOINT
+  );
+
+  // レスポンシブ判定
+  useEffect(() => {
+    const check = () => setIsPC(window.innerWidth >= QC_PC_BREAKPOINT);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // データ取得
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("gallery_posts")
+          .select("id, image_url, caption, pet_name")
+          .eq("is_official", true)
+          .lt("display_priority", 100)
+          .order("display_priority", { ascending: true });
+        if (error) throw error;
+        if (mounted) setImages(data || []);
+      } catch (e) {
+        console.error("Hero fetch error:", e);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // プリロード
+  useEffect(() => {
+    images.forEach((img) => {
+      const preloader = new Image();
+      preloader.src = img.image_url;
+    });
+  }, [images]);
+
+  // ローテーション
+  useEffect(() => {
+    if (images.length === 0) return;
+    const duration = (QC_HERO_DURATIONS[currentIndex] || 7) * 1000;
+    const timer = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [currentIndex, images.length]);
+
+  if (isLoading || images.length === 0) {
+    return (
+      <section style={{
+        position:"relative", width:"100%", height:"100vh",
+        minHeight:600, background:QC.charcoal
+      }}>
+        <style>{QC_KEYFRAMES}</style>
+      </section>
+    );
+  }
+
+  return (
+    <section style={{
+      position:"relative", width:"100%", height:"100vh",
+      minHeight:600, overflow:"hidden", background:QC.charcoal
+    }}>
+      <style>{QC_KEYFRAMES}</style>
+
+      {/* 画像レイヤー */}
+      {images.map((img, i) => {
+        const isActive = i === currentIndex;
+        const isFirst = i === 0;
+
+        if (isPC) {
+          return (
+            <React.Fragment key={img.id}>
+              {/* PC: 背景ぼかし */}
+              <img
+                src={img.image_url}
+                alt=""
+                aria-hidden
+                loading={isFirst ? "eager" : "lazy"}
+                decoding="async"
+                style={{
+                  position:"absolute", inset:0, width:"100%", height:"100%",
+                  objectFit:"cover",
+                  filter:"blur(60px) brightness(0.7)",
+                  transform:"scale(1.15)",
+                  opacity: isActive ? 0.4 : 0,
+                  transition: `opacity ${QC_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                  pointerEvents:"none",
+                }}
+              />
+              {/* PC: 中央縦長メイン画像 */}
+              <img
+                src={img.image_url}
+                alt={img.caption}
+                loading={isFirst ? "eager" : "lazy"}
+                decoding="async"
+                style={{
+                  position:"absolute", top:"50%", left:"50%",
+                  transform:"translate(-50%, -50%)",
+                  maxWidth:"min(480px, 35vw)", maxHeight:"85vh",
+                  width:"auto", height:"auto", objectFit:"contain",
+                  opacity: isActive ? 1 : 0,
+                  transition: `opacity ${QC_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                  boxShadow:"0 30px 90px rgba(44, 41, 38, 0.4)",
+                  borderRadius:4, pointerEvents:"none",
+                }}
+              />
+            </React.Fragment>
+          );
+        }
+
+        // モバイル: 縦長フルスクリーン
+        return (
+          <img
+            key={img.id}
+            src={img.image_url}
+            alt={img.caption}
+            loading={isFirst ? "eager" : "lazy"}
+            decoding="async"
+            style={{
+              position:"absolute", inset:0, width:"100%", height:"100%",
+              objectFit:"cover", objectPosition:"center center",
+              opacity: isActive ? 1 : 0,
+              transition: `opacity ${QC_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+              pointerEvents:"none",
+            }}
+          />
+        );
+      })}
+
+      {/* 中央下キャッチコピー */}
+      <div style={{
+        position:"absolute", bottom:"15%", left:"50%",
+        transform:"translateX(-50%)", textAlign:"center",
+        width:"90%", maxWidth:640, padding:"20px 28px",
+        background:"rgba(44, 41, 38, 0.18)",
+        backdropFilter:"blur(10px)",
+        WebkitBackdropFilter:"blur(10px)",
+        borderRadius:4, zIndex:10,
+        animation:"qocca-fadeIn 1.2s ease 0.5s both",
+      }}>
+        <p style={{
+          fontSize:"clamp(20px, 4.5vw, 30px)",
+          fontFamily: QC_FONT_JP,
+          fontWeight:600, color: QC.warmWhite,
+          letterSpacing:"0.05em", lineHeight:1.5,
+          opacity:0.96, margin:0,
+          textShadow:"0 2px 12px rgba(44, 41, 38, 0.4)",
+        }}>
+          うちの子を愛してる人が集まる街。
+        </p>
+      </div>
+
+      {/* 右上ロゴ */}
+      <div style={{
+        position:"absolute", top:24, right:24,
+        fontFamily: QC_FONT_EN, fontSize:22, color: QC.warmWhite,
+        opacity:0.7, letterSpacing:0.5, zIndex:20,
+        fontWeight:400, fontStyle:"italic",
+        textShadow:"0 1px 4px rgba(44, 41, 38, 0.3)",
+      }}>
+        Qocca
+      </div>
+
+      {/* 下中央スクロール誘導 */}
+      <div style={{
+        position:"absolute", bottom:32, left:"50%",
+        transform:"translateX(-50%)", width:1, height:32,
+        background: QC.warmWhite, zIndex:10,
+        animation:"qocca-breathe 2s ease-in-out infinite",
+      }}/>
+    </section>
+  );
+};
+
+// ============================================================================
+// SECTION 2: 今日のうちの子たち (SectionTodaysMoments)
+// ============================================================================
+
+const QC_REACTIONS: { key: string; label: string }[] = [
+  { key: "precious", label: "尊い" },
+  { key: "healed", label: "癒された" },
+  { key: "glad_met", label: "出会えてよかった" },
+  { key: "want_see", label: "ずっと見てたい" },
+];
+
+const SectionTodaysMoments = ({ setPage }) => {
+  const { user } = useAuth();
+  const [moments, setMoments] = useState<any[]>([]);
+  const [reactionCounts, setReactionCounts] = useState<Record<string, any>>({});
+  const [myReactionsMap, setMyReactionsMap] = useState<Record<string, Set<string>>>({});
+  const [selectedMoment, setSelectedMoment] = useState<any | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
+  const [animatingKey, setAnimatingKey] = useState<string | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [columnCount, setColumnCount] = useState(2);
+
+  // レスポンシブ
+  useEffect(() => {
+    const checkSize = () => {
+      const w = window.innerWidth;
+      setIsMobile(w < 768);
+      setColumnCount(w >= 1024 ? 4 : w >= 768 ? 3 : 2);
+    };
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
+  }, []);
+
+  // データ取得
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data: posts, error: pe } = await supabase
+          .from("gallery_posts")
+          .select("id, image_url, caption, pet_name, pet_type, time_of_day, created_at, display_priority, user_id")
+          .eq("is_official", true)
+          .gte("display_priority", 100)
+          .lt("display_priority", 200)
+          .order("display_priority", { ascending: true });
+
+        if (pe) throw pe;
+        if (!mounted) return;
+
+        // ランダムに12枚選択
+        const shuffled = [...(posts ?? [])].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 12);
+        setMoments(selected);
+
+        const postIds = selected.map(p => p.id);
+        if (postIds.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        // リアクション数取得
+        const { data: rxs } = await supabase
+          .from("post_reactions_summary")
+          .select("*")
+          .in("post_id", postIds)
+          .eq("post_type", "gallery");
+
+        if (rxs && mounted) {
+          const counts: Record<string, any> = {};
+          rxs.forEach((r: any) => {
+            counts[r.post_id] = {
+              precious: r.precious_count ?? 0,
+              healed: r.healed_count ?? 0,
+              glad_met: r.glad_met_count ?? 0,
+              want_see: r.want_see_count ?? 0,
+            };
+          });
+          setReactionCounts(counts);
+        }
+
+        // 自分のリアクション
+        if (user?.id) {
+          const { data: my } = await supabase
+            .from("post_reactions")
+            .select("post_id, reaction_type")
+            .in("post_id", postIds)
+            .eq("post_type", "gallery")
+            .eq("user_id", user.id);
+
+          if (my && mounted) {
+            const map: Record<string, Set<string>> = {};
+            my.forEach((r: any) => {
+              if (!map[r.post_id]) map[r.post_id] = new Set();
+              map[r.post_id].add(r.reaction_type);
+            });
+            setMyReactionsMap(map);
+          }
+        }
+      } catch (e) {
+        console.error("Moments fetch error:", e);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user?.id]);
+
+  // リアクション操作
+  const handleReact = async (postId: string, reactionKey: string) => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    setAnimatingKey(`${postId}-${reactionKey}`);
+    setTimeout(() => setAnimatingKey(null), 400);
+
+    const myRx = myReactionsMap[postId] || new Set();
+    const isReacted = myRx.has(reactionKey);
+
+    // 楽観的UI更新
+    setReactionCounts(prev => {
+      const cur = prev[postId] || { precious:0, healed:0, glad_met:0, want_see:0 };
+      return {
+        ...prev,
+        [postId]: {
+          ...cur,
+          [reactionKey]: Math.max(0, cur[reactionKey] + (isReacted ? -1 : 1)),
+        },
+      };
+    });
+
+    setMyReactionsMap(prev => {
+      const m = { ...prev };
+      const s = new Set(m[postId] || []);
+      if (isReacted) s.delete(reactionKey); else s.add(reactionKey);
+      m[postId] = s;
+      return m;
+    });
+
+    try {
+      if (isReacted) {
+        await supabase.from("post_reactions").delete()
+          .eq("post_id", postId).eq("post_type", "gallery")
+          .eq("user_id", user.id).eq("reaction_type", reactionKey);
+      } else {
+        await supabase.from("post_reactions").insert({
+          post_id: postId, post_type: "gallery",
+          user_id: user.id, reaction_type: reactionKey,
+        });
+      }
+    } catch (e) {
+      console.error("Reaction error:", e);
+    }
+  };
+
+  return (
+    <>
+      <section style={{
+        padding:"120px 0 160px",
+        background: QC.warmWhite,
+        position:"relative",
+      }}>
+        <div style={{ maxWidth:1280, margin:"0 auto" }}>
+          {/* セクションヘッダー */}
+          <div style={{ padding:"0 24px 40px", marginBottom:24 }}>
+            <p style={{
+              fontFamily: QC_FONT_EN,
+              fontSize:14, fontStyle:"italic",
+              color: QC.warmGray,
+              letterSpacing:0.5, marginBottom:8,
+              opacity:0.85, margin:"0 0 8px 0",
+            }}>
+              Today's Quiet Moments
+            </p>
+            <h2 style={{
+              fontFamily: QC_FONT_JP,
+              fontSize:28, fontWeight:700,
+              color: QC.softBrown,
+              letterSpacing:0.5, lineHeight:1.4, margin:0,
+            }}>
+              今日のうちの子たち
+            </h2>
+            <div style={{
+              marginTop:24, width:40, height:1,
+              background: QC.lightSand,
+            }}/>
+          </div>
+
+          {/* Masonryギャラリー */}
+          <div style={{
+            columnCount: columnCount,
+            columnGap: columnCount === 4 ? 16 : columnCount === 3 ? 14 : 12,
+            padding: columnCount === 4 ? "0 48px" : columnCount === 3 ? "0 32px" : "0 16px",
+            maxWidth: columnCount === 4 ? 1280 : columnCount === 3 ? 1100 : "100%",
+            margin: "0 auto",
+          }}>
+            {isLoading ? (
+              <p style={{ color: QC.warmGray, textAlign:"center", padding:40, fontFamily: QC_FONT_JP }}>
+                Loading...
+              </p>
+            ) : moments.map(m => {
+              const isHover = hoveredCardId === m.id;
+              const counts = reactionCounts[m.id] || { precious:0, healed:0, glad_met:0, want_see:0 };
+              const mySet = myReactionsMap[m.id] || new Set();
+
+              return (
+                <div
+                  key={m.id}
+                  onMouseEnter={() => setHoveredCardId(m.id)}
+                  onMouseLeave={() => setHoveredCardId(null)}
+                  onClick={() => { if (isMobile) setSelectedMoment(m); }}
+                  style={{
+                    position:"relative", borderRadius:8, overflow:"hidden",
+                    background: QC.cream,
+                    border:"1px solid rgba(44, 41, 38, 0.04)",
+                    marginBottom:12, cursor:"pointer",
+                    transition:"transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+                    transform: isHover ? "scale(1.02)" : "scale(1)",
+                    breakInside:"avoid", display:"block",
+                  }}
+                >
+                  <img
+                    src={m.image_url}
+                    alt={m.caption}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      width:"100%", height:"auto",
+                      display:"block", objectFit:"cover",
+                    }}
+                  />
+
+                  {/* ホバー時オーバーレイ（PC） */}
+                  {!isMobile && (
+                    <div style={{
+                      position:"absolute", inset:0,
+                      background:"linear-gradient(to bottom, transparent 0%, rgba(250, 247, 242, 0.95) 70%)",
+                      opacity: isHover ? 1 : 0,
+                      transition:"opacity 0.4s ease",
+                      display:"flex", flexDirection:"column",
+                      justifyContent:"flex-end", padding:16,
+                      pointerEvents: isHover ? "auto" : "none",
+                    }}>
+                      <p style={{
+                        fontSize:14, fontWeight:600, color: QC.charcoal,
+                        marginBottom:4, fontFamily: QC_FONT_JP,
+                        lineHeight:1.5, margin:"0 0 4px 0",
+                      }}>
+                        「{m.caption}」
+                      </p>
+                      <p style={{
+                        fontSize:11, color: QC.warmGray,
+                        marginBottom:10, fontFamily: QC_FONT_JP,
+                        margin:"0 0 10px 0",
+                      }}>
+                        {m.pet_name}
+                      </p>
+                      <div style={{
+                        display:"flex", flexWrap:"wrap", gap:"8px 14px",
+                        fontSize:12, fontFamily: QC_FONT_JP,
+                      }}>
+                        {QC_REACTIONS.map(({ key, label }) => {
+                          const isSel = mySet.has(key);
+                          const cnt = counts[key];
+                          const isAnim = animatingKey === `${m.id}-${key}`;
+                          return (
+                            <button
+                              key={key}
+                              onClick={(e) => { e.stopPropagation(); handleReact(m.id, key); }}
+                              style={{
+                                display:"inline-flex", alignItems:"center", gap:6,
+                                padding:"2px 0", cursor:"pointer",
+                                color: isSel ? QC.softBrown : QC.warmGray,
+                                background:"none", border:"none",
+                                borderBottomWidth:1, borderBottomStyle:"solid",
+                                borderBottomColor: isSel ? QC.softBrown : "transparent",
+                                transition:"all 0.2s ease",
+                                fontFamily:"inherit", fontSize:"inherit",
+                                transform: isAnim ? "translateY(-4px)" : "translateY(0)",
+                              }}
+                            >
+                              <span>{label}</span>
+                              {cnt > 0 && (
+                                <span style={{ fontSize:10, color: QC.sage, fontWeight:500 }}>
+                                  {cnt}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 通常時フッター */}
+                  <div style={{
+                    padding:"10px 14px", fontSize:12,
+                    color: QC.warmGray, fontFamily: QC_FONT_JP,
+                    letterSpacing:0.3,
+                  }}>
+                    {m.pet_name}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* モバイル詳細モーダル */}
+      {selectedMoment && (
+        <div
+          onClick={() => setSelectedMoment(null)}
+          style={{
+            position:"fixed", inset:0,
+            background:"rgba(44, 41, 38, 0.85)",
+            zIndex:1000, display:"flex", alignItems:"flex-end",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width:"100%", background: QC.warmWhite,
+              borderTopLeftRadius:24, borderTopRightRadius:24,
+              padding:24, maxHeight:"90vh", overflowY:"auto",
+            }}
+          >
+            <div style={{
+              width:40, height:4, background: QC.lightSand,
+              borderRadius:2, margin:"0 auto 24px",
+            }}/>
+            <img
+              src={selectedMoment.image_url}
+              alt={selectedMoment.caption}
+              style={{
+                width:"100%", maxHeight:"60vh", objectFit:"cover",
+                borderRadius:12, marginBottom:24,
+              }}
+            />
+            <p style={{
+              fontSize:18, fontWeight:500, color: QC.charcoal,
+              marginBottom:8, fontFamily: QC_FONT_JP,
+              lineHeight:1.6, margin:"0 0 8px 0",
+            }}>
+              「{selectedMoment.caption}」
+            </p>
+            <p style={{
+              fontSize:13, color: QC.warmGray,
+              marginBottom:32, fontFamily: QC_FONT_JP,
+              margin:"0 0 32px 0",
+            }}>
+              {selectedMoment.pet_name}
+            </p>
+            <div style={{
+              display:"flex", flexWrap:"wrap", gap:"12px 16px",
+              fontSize:14, fontFamily: QC_FONT_JP,
+            }}>
+              {QC_REACTIONS.map(({ key, label }) => {
+                const cnt = (reactionCounts[selectedMoment.id] || {})[key] || 0;
+                const isSel = (myReactionsMap[selectedMoment.id] || new Set()).has(key);
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleReact(selectedMoment.id, key)}
+                    style={{
+                      display:"inline-flex", alignItems:"center", gap:6,
+                      padding:"4px 0", cursor:"pointer",
+                      color: isSel ? QC.softBrown : QC.warmGray,
+                      background:"none", border:"none",
+                      borderBottomWidth:1, borderBottomStyle:"solid",
+                      borderBottomColor: isSel ? QC.softBrown : "transparent",
+                      fontFamily:"inherit", fontSize:"inherit",
+                    }}
+                  >
+                    <span>{label}</span>
+                    {cnt > 0 && (
+                      <span style={{ fontSize:11, color: QC.sage, fontWeight:500 }}>
+                        {cnt}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ログイン誘導モーダル */}
+      {showLoginModal && (
+        <div
+          onClick={() => setShowLoginModal(false)}
+          style={{
+            position:"fixed", inset:0,
+            background:"rgba(44, 41, 38, 0.85)",
+            zIndex:1100, display:"flex",
+            alignItems:"center", justifyContent:"center", padding:24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: QC.warmWhite, borderRadius:16,
+              padding:32, maxWidth:400, width:"100%", textAlign:"center",
+            }}
+          >
+            <h3 style={{
+              fontSize:22, color: QC.charcoal,
+              marginBottom:16, fontFamily: QC_FONT_JP,
+              fontWeight:700, margin:"0 0 16px 0",
+            }}>
+              街の住民になりませんか？
+            </h3>
+            <p style={{
+              fontSize:14, color: QC.warmGray,
+              marginBottom:32, lineHeight:1.7,
+              fontFamily: QC_FONT_JP, margin:"0 0 32px 0",
+            }}>
+              ログインすると、お気に入りのうちの子に<br/>
+              気持ちを伝えられます。
+            </p>
+            <button
+              onClick={() => { setShowLoginModal(false); setPage("login"); }}
+              style={{
+                background: QC.terracotta, color: QC.warmWhite,
+                border:"none", padding:"14px 32px",
+                borderRadius:8, fontSize:14, fontWeight:600,
+                cursor:"pointer", fontFamily: QC_FONT_JP,
+                letterSpacing:0.5, width:"100%",
+              }}
+            >
+              Qoccaに登録する
+            </button>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                background:"transparent", color: QC.warmGray,
+                border:"none", padding:"14px 32px",
+                marginTop:8, fontSize:13, cursor:"pointer",
+                fontFamily: QC_FONT_JP,
+              }}
+            >
+              またあとで
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// ============================================================================
+// 新 HomePage（Phase 1.5 リニューアル版）
+// ============================================================================
+const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
+  return (
+    <div style={{ background: QC.warmWhite }}>
+      <SectionHero />
+      <SectionTodaysMoments setPage={setPage} />
       <SharedFooter setPage={setPage}/>
     </div>
   );
@@ -7414,6 +8117,13 @@ function QoccaAppInner() {
             <Route path="/terms" element={<TermsPage setPage={setPage} isPC={true}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
+            {/* ============================================================================
+                旧 PC版 Route (リニューアル前) - コメントアウト保持（いつでも戻せる）
+                PCHeroSection / QoccaTownGuide / FirstStepGuide / QoccaUniverseSection /
+                AboutSection / HomeNewsSection / Sidebar / ランキング / コミュニティCTA
+                などの既存PC構造を全部含む元のコード。
+            ============================================================================ */}
+            {/*
             <Route path="/" element={
               <div>
                 <PCHeroSection setPage={setPage}/>
@@ -7542,6 +8252,10 @@ function QoccaAppInner() {
                 <FacilityMapPromo />
               </div>
             }/>
+            */}
+            
+            {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
+            <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
             <Route path="/search" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
