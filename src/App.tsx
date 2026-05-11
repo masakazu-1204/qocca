@@ -715,6 +715,334 @@ const useHeroStats = () => {
 };
 
 // ── HOME (Mobile) ─────────────────────────────────────────────────────────
+
+// ============================================================================
+// 法律系ページ（バグ#1-4 修正）
+// ============================================================================
+
+// ── 特定商取引法に基づく表記（法的義務）─────────────────────────────
+const TokushoPage = ({ setPage, isPC }) => {
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
+        <button onClick={()=>setPage("home")} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:16, padding:0, fontFamily:"inherit" }}>← ホームに戻る</button>
+        <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.4 }}>📜 特定商取引法に基づく表記</h1>
+        <p style={{ fontSize:11, color:C.warmGray, marginBottom:24 }}>最終更新日: 2026年5月11日</p>
+
+        <div style={{ background:C.white, borderRadius:16, padding:"24px", border:`1px solid ${C.border}`, lineHeight:1.8 }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+            <tbody>
+              {[
+                ["販売事業者", "Qocca運営事務局"],
+                ["運営責任者", "正和"],
+                ["所在地", "ご請求があれば遅滞なく開示いたします"],
+                ["連絡先", "support@qocca.pet（お問い合わせフォームよりご連絡ください）"],
+                ["販売価格", "各商品ページに表示の価格"],
+                ["商品代金以外の必要料金", "決済手数料（購入者負担・購入時に明示）／配送料（出品者の定めによる）"],
+                ["お支払い方法", "クレジットカード決済（Stripe）"],
+                ["お支払い時期", "ご注文時に決済"],
+                ["商品引渡し時期", "各商品ページに記載の納期に準ずる"],
+                ["返品・交換について", "オーダーメイド作品の性質上、原則として返品・交換は受け付けておりません。商品に明らかな瑕疵がある場合は、商品到着後7日以内にお問い合わせフォームよりご連絡ください。"],
+                ["事業者の検査済証", "特定商取引法第11条第6号に基づく表記"],
+              ].map(([k,v]) => (
+                <tr key={k} style={{ borderBottom:`1px solid ${C.border}` }}>
+                  <td style={{ padding:"12px 12px 12px 0", fontWeight:800, color:C.dark, verticalAlign:"top", width:"30%", minWidth:120 }}>{k}</td>
+                  <td style={{ padding:"12px 0", color:"#444" }}>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ fontSize:11, color:C.warmGray, marginTop:24, lineHeight:1.7 }}>
+            ※ 本表記は特定商取引法第11条に基づくものです。<br/>
+            ※ Qoccaはペットオーナー向けクリエイターマーケットプレイスとして運営されており、各取引はQoccaを通じて出品者と購入者の間で成立します。
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── 利用規約 ─────────────────────────────────────────────────────
+const TermsPage = ({ setPage, isPC }) => {
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
+        <button onClick={()=>setPage("home")} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:16, padding:0, fontFamily:"inherit" }}>← ホームに戻る</button>
+        <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.4 }}>📋 利用規約</h1>
+        <p style={{ fontSize:11, color:C.warmGray, marginBottom:24 }}>最終更新日: 2026年5月11日</p>
+
+        <div style={{ background:C.white, borderRadius:16, padding:"24px 28px", border:`1px solid ${C.border}`, lineHeight:1.9, fontSize:13, color:"#333" }}>
+          <p style={{ marginBottom:20 }}>
+            本利用規約（以下「本規約」）は、Qocca運営事務局（以下「当社」）が提供するペットオーナー向けクリエイターマーケットプレイス「Qocca」（以下「本サービス」）の利用条件を定めるものです🐾
+          </p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第1条（定義）</h2>
+          <p>「ユーザー」とは、本規約に同意の上、本サービスを利用する個人または法人をいいます。「出品者」とは、本サービス上で商品やサービスを販売するユーザーをいいます。「購入者」とは、本サービス上で商品やサービスを購入するユーザーをいいます。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第2条（規約の同意）</h2>
+          <p>ユーザーは、本サービスの利用開始時点で本規約に同意したものとみなされます。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第3条（アカウント）</h2>
+          <p>ユーザーは、自己の責任においてアカウント情報を管理するものとし、第三者に譲渡・貸与してはなりません。アカウント情報の漏洩により生じた損害について、当社は責任を負いません。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第4条（禁止事項）</h2>
+          <p>ユーザーは以下の行為を行ってはなりません：</p>
+          <ul style={{ paddingLeft:20, marginTop:6 }}>
+            <li>法令または公序良俗に違反する行為</li>
+            <li>他者の権利・利益を侵害する行為</li>
+            <li>動物の福祉に反する商品・サービスの出品</li>
+            <li>偽造品・盗品の出品</li>
+            <li>誹謗中傷、嫌がらせ、差別的表現の投稿</li>
+            <li>本サービスを介さない取引の誘導</li>
+            <li>不正アクセス、システム妨害</li>
+            <li>その他、当社が不適切と判断する行為</li>
+          </ul>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第5条（取引）</h2>
+          <p>本サービス上の取引は、出品者と購入者の間で成立します。当社は決済の代行・エスクローを行いますが、商品の品質・配送等については出品者が責任を負います。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第6条（手数料）</h2>
+          <p>当社は出品者から販売手数料を、購入者から決済保証手数料を受領します。手数料率は別途定め、本サービス上で明示します。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第7条（コンテンツ）</h2>
+          <p>ユーザーが投稿したコンテンツ（商品画像、ブログ、ギャラリー、コメント等）について、ユーザーは著作権を保持します。当社は本サービスの運営に必要な範囲で、当該コンテンツを利用できるものとします。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第8条（サービスの変更・中止）</h2>
+          <p>当社は、本サービスの内容を予告なく変更・追加・中止できるものとします。これによりユーザーに生じた損害について、当社は責任を負いません。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第9条（免責事項）</h2>
+          <p>当社は、本サービスに関して、その完全性・正確性・有用性等について保証しません。本サービスの利用により生じた損害について、当社の故意または重過失による場合を除き、責任を負いません。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第10条（規約の変更）</h2>
+          <p>当社は、本規約を予告なく変更できるものとします。変更後の規約は、本サービス上に掲載した時点で効力を生じます。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>第11条（準拠法・管轄）</h2>
+          <p>本規約は日本法に準拠し、本サービスに関する紛争については、東京地方裁判所を第一審の専属的合意管轄裁判所とします。</p>
+
+          <p style={{ marginTop:32, padding:"16px", background:C.cream, borderRadius:10, fontSize:12, color:C.warmGray }}>
+            🐾 Qoccaは「ペット好きが集まる温かい街」を目指しています。<br/>
+            すべてのユーザーが安心して利用できるよう、本規約の遵守をお願いいたします。
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── プライバシーポリシー ────────────────────────────────────────────
+const PrivacyPage = ({ setPage, isPC }) => {
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
+        <button onClick={()=>setPage("home")} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:16, padding:0, fontFamily:"inherit" }}>← ホームに戻る</button>
+        <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.4 }}>🔒 プライバシーポリシー</h1>
+        <p style={{ fontSize:11, color:C.warmGray, marginBottom:24 }}>最終更新日: 2026年5月11日</p>
+
+        <div style={{ background:C.white, borderRadius:16, padding:"24px 28px", border:`1px solid ${C.border}`, lineHeight:1.9, fontSize:13, color:"#333" }}>
+          <p style={{ marginBottom:20 }}>
+            Qocca運営事務局（以下「当社」）は、ユーザーの個人情報の保護を重要な責務と認識し、個人情報保護法および関連法令を遵守して、適切に取り扱います🐾
+          </p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>1. 取得する情報</h2>
+          <ul style={{ paddingLeft:20 }}>
+            <li>氏名、ニックネーム、メールアドレス、プロフィール画像</li>
+            <li>取引履歴（出品・購入・決済情報）</li>
+            <li>配送先住所（購入時のみ）</li>
+            <li>口座情報（出品者のみ・Stripe Connect経由）</li>
+            <li>サービス利用ログ（IPアドレス、Cookie、デバイス情報）</li>
+          </ul>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>2. 利用目的</h2>
+          <ul style={{ paddingLeft:20 }}>
+            <li>本サービスの提供・運営</li>
+            <li>本人確認、決済処理</li>
+            <li>サポート対応、不正利用の防止</li>
+            <li>サービスの改善、新機能開発</li>
+            <li>マーケティング（同意のある場合のみ）</li>
+          </ul>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>3. 第三者への提供</h2>
+          <p>当社は、以下の場合を除き、ユーザーの個人情報を第三者に提供しません：</p>
+          <ul style={{ paddingLeft:20, marginTop:6 }}>
+            <li>ユーザーの同意がある場合</li>
+            <li>法令に基づく場合</li>
+            <li>取引相手への必要最小限の情報提供（出品者から購入者への配送など）</li>
+            <li>決済代行業者（Stripe）への取引情報の提供</li>
+          </ul>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>4. 情報の管理</h2>
+          <p>当社は、取得した個人情報を安全に管理し、不正アクセス・紛失・改ざん・漏洩等が起きないよう適切な措置を講じます。データはSupabase（PostgreSQL）で暗号化保存され、Row Level Security（RLS）により厳格にアクセス制御しています。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>5. Cookieの利用</h2>
+          <p>本サービスは、利便性向上のためCookieを利用します。Cookieの受け入れはブラウザ設定で拒否することができますが、その場合一部機能が利用できない可能性があります。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>6. 開示・訂正・削除請求</h2>
+          <p>ユーザーは、自己の個人情報について、開示・訂正・削除を請求できます。お問い合わせフォームよりご連絡ください。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>7. アカウント削除</h2>
+          <p>退会希望のユーザーは、お問い合わせフォームより削除請求していただけます。一定期間経過後、技術的に可能な範囲で個人情報を削除いたします。なお、取引履歴・法令で保管が義務付けられた情報は、法定期間保管します。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>8. プライバシーポリシーの変更</h2>
+          <p>当社は、本ポリシーを必要に応じて変更できるものとします。重要な変更がある場合は、本サービス上で通知します。</p>
+
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>9. お問い合わせ</h2>
+          <p>本ポリシーに関するお問い合わせは、お問い合わせフォームよりご連絡ください。</p>
+
+          <p style={{ marginTop:32, padding:"16px", background:C.cream, borderRadius:10, fontSize:12, color:C.warmGray }}>
+            🐾 Qoccaは、ペットオーナー様の大切な個人情報を、ペットへの愛情と同じ気持ちで、大切に守ります。
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── お問い合わせ ─────────────────────────────────────────────────
+const ContactPage = ({ setPage, isPC }) => {
+  const { user } = useAuth();
+  const [category, setCategory] = useState("general");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState(user?.email || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!email.trim() || !subject.trim() || !message.trim()) {
+      setError("すべての項目を入力してください");
+      return;
+    }
+    setSubmitting(true);
+    
+    // 1. support_tickets にチケット本体を作成
+    const ticketNumber = "QC-" + Date.now().toString().slice(-8);
+    const { data: ticketData, error: ticketErr } = await supabase
+      .from("support_tickets")
+      .insert({
+        ticket_number: ticketNumber,
+        user_id: user?.id || null,
+        category,
+        subject: subject.trim(),
+        priority: "normal",
+        status: "open",
+      })
+      .select()
+      .single();
+    
+    if (ticketErr || !ticketData) {
+      setSubmitting(false);
+      setError("送信に失敗しました: " + (ticketErr?.message || "ticket creation failed"));
+      return;
+    }
+    
+    // 2. support_messages に初回メッセージ（本文 + email 情報）を保存
+    const bodyText = `【返信先メールアドレス】\n${email.trim()}\n\n【お問い合わせ内容】\n${message.trim()}`;
+    const { error: msgErr } = await supabase
+      .from("support_messages")
+      .insert({
+        ticket_id: ticketData.id,
+        sender_type: "user",
+        sender_id: user?.id || null,
+        body: bodyText,
+      });
+    
+    setSubmitting(false);
+    if (msgErr) {
+      setError("メッセージ保存に失敗しました: " + msgErr.message);
+      return;
+    }
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ textAlign:"center", padding:32, maxWidth:400 }}>
+          <div style={{ fontSize:64, marginBottom:16 }}>✅</div>
+          <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:10 }}>送信ありがとうございます！</h2>
+          <p style={{ color:C.warmGray, fontSize:13, lineHeight:1.7, marginBottom:24 }}>
+            お問い合わせを受け付けました🐾<br/>
+            運営事務局より、3営業日以内にご返信いたします。
+          </p>
+          <button onClick={()=>setPage("home")} style={{ padding:"12px 28px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>ホームに戻る</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+      <div style={{ maxWidth:640, margin:"0 auto", padding:"40px 20px 60px" }}>
+        <button onClick={()=>setPage("home")} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:16, padding:0, fontFamily:"inherit" }}>← ホームに戻る</button>
+        <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.4 }}>🎧 お問い合わせ</h1>
+        <p style={{ fontSize:13, color:C.warmGray, marginBottom:24, lineHeight:1.7 }}>
+          Qoccaに関するご質問・ご要望はこちらから🐾<br/>
+          3営業日以内にメールにてご返信いたします。
+        </p>
+
+        <div style={{ background:C.white, borderRadius:16, padding:"24px", border:`1px solid ${C.border}` }}>
+          <div style={{ marginBottom:14 }}>
+            <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>お問い合わせ種別</label>
+            <select value={category} onChange={e=>setCategory(e.target.value)} style={{
+              width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+              fontSize:13, fontFamily:"inherit", outline:"none", background:C.white, boxSizing:"border-box"
+            }}>
+              <option value="general">一般的なご質問</option>
+              <option value="account">アカウント・ログインについて</option>
+              <option value="order">注文・取引について</option>
+              <option value="payment">決済・支払いについて</option>
+              <option value="creator">出品者として参加したい</option>
+              <option value="bug">不具合の報告</option>
+              <option value="feature">機能要望・提案</option>
+              <option value="press">取材・メディア掲載依頼</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom:14 }}>
+            <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>返信先メールアドレス *</label>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" style={{
+              width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+              fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
+            }}/>
+          </div>
+
+          <div style={{ marginBottom:14 }}>
+            <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>件名 *</label>
+            <input value={subject} onChange={e=>setSubject(e.target.value)} maxLength={100} placeholder="例: 出品方法について" style={{
+              width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+              fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
+            }}/>
+          </div>
+
+          <div style={{ marginBottom:14 }}>
+            <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>お問い合わせ内容 *</label>
+            <textarea value={message} onChange={e=>setMessage(e.target.value)} rows={6} maxLength={3000} placeholder="お問い合わせの詳細をご記入ください" style={{
+              width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
+              fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
+            }}/>
+            <div style={{ fontSize:10, color:C.warmGray, textAlign:"right", marginTop:4 }}>{message.length}/3000</div>
+          </div>
+
+          {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
+
+          <div style={{ background:C.cream, borderRadius:10, padding:"12px 14px", fontSize:11, color:"#5D4037", lineHeight:1.7, marginBottom:14 }}>
+            📋 個人情報の取扱いについては<span onClick={()=>setPage("privacy")} style={{ color:C.orange, fontWeight:700, cursor:"pointer" }}>プライバシーポリシー</span>をご確認ください。<br/>
+            🐾 お返事まで通常2-3営業日いただきます。お急ぎの場合はその旨ご記載ください。
+          </div>
+
+          <button disabled={submitting} onClick={handleSubmit} style={{
+            width:"100%", padding:"14px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12,
+            color:"#fff", fontWeight:800, fontSize:14, cursor:submitting?"not-allowed":"pointer", fontFamily:"inherit"
+          }}>{submitting ? "送信中..." : "📨 送信する"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Qocca Town Guide ("What is Qocca?" 街の機能ガイド)─────────────────
 const QoccaTownGuide = ({ setPage }) => {
   const features = [
@@ -6975,6 +7303,10 @@ const useNav = () => {
     else if (typeof page === "string" && page.startsWith("blog/")) navigate("/" + page);
     else if (page === "communities") navigate("/communities");
     else if (typeof page === "string" && page.startsWith("community/")) navigate("/" + page);
+    else if (page === "tokusho") navigate("/tokusho");
+    else if (page === "terms") navigate("/terms");
+    else if (page === "privacy") navigate("/privacy");
+    else if (page === "contact") navigate("/contact");
     else if (page === "terms") navigate("/terms");
     else if (page === "privacy") navigate("/privacy");
     else if (page === "tokusho") navigate("/tokusho");
@@ -7078,6 +7410,10 @@ function QoccaAppInner() {
         <div style={{ paddingTop:68 }}>
           <Routes>
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={true}/>} />
+            <Route path="/terms" element={<TermsPage setPage={setPage} isPC={true}/>} />
+            <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
+            <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             <Route path="/" element={
               <div>
                 <PCHeroSection setPage={setPage}/>
@@ -7357,6 +7693,10 @@ function QoccaAppInner() {
           <Routes>
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={false}/>} />
+            <Route path="/terms" element={<TermsPage setPage={setPage} isPC={false}/>} />
+            <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={false}/>} />
+            <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
             <Route path="/events" element={<EventsPage isPC={false} setPage={setPage}/>}/>
