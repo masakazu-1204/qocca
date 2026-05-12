@@ -1594,14 +1594,14 @@ const SectionWhatIsQocca = ({ setPage }) => {
       title: 'うちの子との記憶を、形に残す',
       quote: '"あの瞬間を、永遠の形に"',
       desc: '似顔絵、羊毛作品、記念グッズ。\n街の作家たちが、心を込めて。',
-      linkText: '商店街へ',
+      linkText: '商店街を覗いてみる',
       onClick: () => setPage("search"),
     },
     {
       title: 'うちの子の話で、笑い合う',
       quote: '"犬種ごとの、専門コミュニティ"',
       desc: '毎日の発見を、分かり合える人と。\nうちの子と同じ仲間の集まり。',
-      linkText: '広場へ',
+      linkText: '広場でつながる',
       onClick: () => setPage("communities"),
     },
     {
@@ -1672,15 +1672,12 @@ const SectionWhatIsQocca = ({ setPage }) => {
                 style={{
                   background: QC.warmWhite,
                   borderRadius: 4,
-                  padding: '48px 32px',
+                  padding: isMobile ? '64px 32px' : '80px 48px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  transition: 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.8s ease',
-                  border: `1px solid ${QC.lightSand}`,
+                  transition: 'transform 1.0s ease, border-color 0.8s ease',
+                  border: `1px solid ${isHover ? QC.softBrown : QC.lightSand}`,
                   transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
-                  boxShadow: isHover
-                    ? '0 8px 24px rgba(44, 41, 38, 0.04)'
-                    : 'none',
                   display: 'flex',
                   flexDirection: 'column',
                   height: '100%',
@@ -1751,6 +1748,22 @@ const SectionWhatIsQocca = ({ setPage }) => {
               </div>
             );
           })}
+        </div>
+
+        {/* 空気コピー (3カードの下) */}
+        <div style={{ marginTop: 80, textAlign: 'center' }}>
+          <p style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 11,
+            fontStyle: 'italic',
+            fontWeight: 300,
+            color: QC.warmGray,
+            letterSpacing: 1.2,
+            opacity: 0.7,
+            margin: 0,
+          }}>
+            今日も、新しい思い出が置かれています。
+          </p>
         </div>
       </div>
     </section>
