@@ -68,7 +68,7 @@ const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
       },
     });
     return { data, error };
@@ -81,7 +81,7 @@ const AuthProvider = ({ children }) => {
 
   const resetPassword = async (email) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/?page=reset`,
+      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/?page=reset` : undefined,
     });
     return { data, error };
   };
@@ -1171,31 +1171,161 @@ const QC = {
 const QC_FONT_JP = '"Zen Kaku Gothic New", "LINE Seed JP", "Noto Sans JP", sans-serif';
 const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
 
-// CSS keyframes（インライン用）
+// CSS keyframes（インライン用）- 静けさ Redesign 版
 const QC_KEYFRAMES = `
-  @keyframes qocca-breathe {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.8; }
-  }
-  @keyframes qocca-fadeIn {
+  @keyframes qocca-fadeInSlow {
     from { opacity: 0; }
-    to { opacity: 1; }
+    to   { opacity: 1; }
   }
-  @keyframes qocca-reactionPop {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-    100% { transform: translateY(0); }
+
+  @keyframes qocca-fadeInSlowUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes qocca-breathe-slow {
+    0%, 100% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
+    50%      { opacity: 0.6; transform: translateX(-50%) translateY(4px); }
+  }
+
+  @keyframes qocca-ken-burns-1 {
+    0%   { transform: scale(1.0) translate(0, 0); }
+    100% { transform: scale(1.08) translate(-1%, -1%); }
+  }
+
+  @keyframes qocca-ken-burns-2 {
+    0%   { transform: scale(1.05) translate(1%, 0); }
+    100% { transform: scale(1.0) translate(0, -1%); }
+  }
+
+  @keyframes qocca-ken-burns-3 {
+    0%   { transform: scale(1.0) translate(0, 1%); }
+    100% { transform: scale(1.08) translate(1%, 0); }
   }
 `;
+
+// タイミング定数
+const QC_TIMING = {
+  hoverDuration: '0.8s',
+  hoverEasing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  sectionFadeIn: '1.2s',
+  sectionFadeInEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+  heroCrossFade: 1500,
+  pageTransition: '0.8s',
+  buttonHover: '0.6s',
+  microMotion: '1.0s',
+  staggerDelay: 200,
+};
 
 // ============================================================================
 // SECTION 1: ファーストビュー (SectionHero)
 // ============================================================================
 
 // 各画像の表示時間（秒）- display_priority 1〜7 に対応
-const QC_HERO_DURATIONS = [10, 7, 7, 7, 7, 7, 10];
-const QC_TRANSITION_MS = 800;
+// 静けさ Redesign: 各 +40% で時間をゆっくり流す
+const QC_HERO_DURATIONS = [14, 10, 10, 10, 10, 10, 14];
+const QC_HERO_TRANSITION_MS = 1500;
 const QC_PC_BREAKPOINT = 768;
+
+// ----------------------------------------------------------------------------
+// useScrollProgress hook - スクロール量を 0-1 で取得
+// ----------------------------------------------------------------------------
+const useScrollProgress = () => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let raf: number | null = null;
+
+    const handleScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+        const p = maxScroll > 0 ? Math.min(1, Math.max(0, scrollY / maxScroll)) : 0;
+        setProgress(p);
+        raf = null;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return progress;
+};
+
+// ----------------------------------------------------------------------------
+// 背景色補間関数 - progress (0-1) に応じて朝→昼→夕→夜の背景色を返す
+// ----------------------------------------------------------------------------
+const qoccaInterpolateBackground = (p: number): string => {
+  const stops = [
+    { at: 0.0,  color: [250, 247, 242] }, // warmWhite 朝
+    { at: 0.4,  color: [245, 239, 230] }, // cream 昼
+    { at: 0.75, color: [238, 230, 217] }, // lightSand 夕
+    { at: 1.0,  color: [232, 221, 207] }, // 夜
+  ];
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (p >= stops[i].at && p <= stops[i + 1].at) {
+      const t = (p - stops[i].at) / (stops[i + 1].at - stops[i].at);
+      const [r1, g1, b1] = stops[i].color;
+      const [r2, g2, b2] = stops[i + 1].color;
+      const r = Math.round(r1 + (r2 - r1) * t);
+      const g = Math.round(g1 + (g2 - g1) * t);
+      const b = Math.round(b1 + (b2 - b1) * t);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+  }
+  return `rgb(${stops[stops.length - 1].color.join(',')})`;
+};
+
+// ----------------------------------------------------------------------------
+// useInViewStaggered hook - IntersectionObserver で要素が見えたら index に応じて遅延発火
+// ----------------------------------------------------------------------------
+const useInViewStaggered = (index = 0, delay = 200) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setInView(true), index * delay);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [index, delay]);
+
+  return { ref, inView };
+};
+
+// ----------------------------------------------------------------------------
+// QoccaNoiseOverlay - 全画面に薄くノイズ (film grain) を重ねる
+// ----------------------------------------------------------------------------
+const QoccaNoiseOverlay = () => (
+  <div
+    aria-hidden
+    style={{
+      position: 'fixed',
+      inset: 0,
+      pointerEvents: 'none',
+      zIndex: 9999,
+      opacity: 0.04,
+      mixBlendMode: 'multiply',
+      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+    }}
+  />
+);
 
 const SectionHero = () => {
   const [images, setImages] = useState<any[]>([]);
@@ -1246,18 +1376,22 @@ const SectionHero = () => {
   // ローテーション
   useEffect(() => {
     if (images.length === 0) return;
-    const duration = (QC_HERO_DURATIONS[currentIndex] || 7) * 1000;
+    const duration = (QC_HERO_DURATIONS[currentIndex] || 10) * 1000;
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }, duration);
     return () => clearTimeout(timer);
   }, [currentIndex, images.length]);
 
+  // ローディング中 (背景のみ)
   if (isLoading || images.length === 0) {
     return (
       <section style={{
-        position:"relative", width:"100%", height:"100vh",
-        minHeight:600, background:QC.charcoal
+        position: "relative",
+        width: "100%",
+        height: "100vh",
+        minHeight: 600,
+        background: QC.charcoal,
       }}>
         <style>{QC_KEYFRAMES}</style>
       </section>
@@ -1266,8 +1400,12 @@ const SectionHero = () => {
 
   return (
     <section style={{
-      position:"relative", width:"100%", height:"100vh",
-      minHeight:600, overflow:"hidden", background:QC.charcoal
+      position: "relative",
+      width: "100%",
+      height: "100vh",
+      minHeight: 600,
+      overflow: "hidden",
+      background: QC.charcoal,
     }}>
       <style>{QC_KEYFRAMES}</style>
 
@@ -1275,11 +1413,13 @@ const SectionHero = () => {
       {images.map((img, i) => {
         const isActive = i === currentIndex;
         const isFirst = i === 0;
+        const kenBurnsIndex = (i % 3) + 1;
+        const kenBurnsDuration = QC_HERO_DURATIONS[i] + 2;
 
         if (isPC) {
           return (
             <React.Fragment key={img.id}>
-              {/* PC: 背景ぼかし */}
+              {/* PC: 背景ぼかし (Ken Burns 適用しない) */}
               <img
                 src={img.image_url}
                 alt=""
@@ -1287,13 +1427,16 @@ const SectionHero = () => {
                 loading={isFirst ? "eager" : "lazy"}
                 decoding="async"
                 style={{
-                  position:"absolute", inset:0, width:"100%", height:"100%",
-                  objectFit:"cover",
-                  filter:"blur(60px) brightness(0.7)",
-                  transform:"scale(1.15)",
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  filter: "blur(60px) brightness(0.6)",
+                  transform: "scale(1.15)",
                   opacity: isActive ? 0.4 : 0,
-                  transition: `opacity ${QC_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                  pointerEvents:"none",
+                  transition: `opacity ${QC_HERO_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                  pointerEvents: "none",
                 }}
               />
               {/* PC: 中央縦長メイン画像 */}
@@ -1303,21 +1446,28 @@ const SectionHero = () => {
                 loading={isFirst ? "eager" : "lazy"}
                 decoding="async"
                 style={{
-                  position:"absolute", top:"50%", left:"50%",
-                  transform:"translate(-50%, -50%)",
-                  maxWidth:"min(480px, 35vw)", maxHeight:"85vh",
-                  width:"auto", height:"auto", objectFit:"contain",
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  maxWidth: "min(480px, 35vw)",
+                  maxHeight: "85vh",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
                   opacity: isActive ? 1 : 0,
-                  transition: `opacity ${QC_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                  boxShadow:"0 30px 90px rgba(44, 41, 38, 0.4)",
-                  borderRadius:4, pointerEvents:"none",
+                  transition: `opacity ${QC_HERO_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                  boxShadow: "0 30px 90px rgba(44, 41, 38, 0.4)",
+                  borderRadius: 4,
+                  pointerEvents: "none",
+                  transformOrigin: "center center",
+                  transform: "translate(-50%, -50%)",
                 }}
               />
             </React.Fragment>
           );
         }
 
-        // モバイル: 縦長フルスクリーン
+        // モバイル: 縦長フルスクリーン + Ken Burns
         return (
           <img
             key={img.id}
@@ -1326,57 +1476,86 @@ const SectionHero = () => {
             loading={isFirst ? "eager" : "lazy"}
             decoding="async"
             style={{
-              position:"absolute", inset:0, width:"100%", height:"100%",
-              objectFit:"cover", objectPosition:"center center",
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center center",
               opacity: isActive ? 1 : 0,
-              transition: `opacity ${QC_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-              pointerEvents:"none",
+              transition: `opacity ${QC_HERO_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+              animation: isActive
+                ? `qocca-ken-burns-${kenBurnsIndex} ${kenBurnsDuration}s linear infinite alternate`
+                : "none",
+              pointerEvents: "none",
             }}
           />
         );
       })}
 
-      {/* 中央下キャッチコピー */}
+      {/* 中央下キャッチコピー (ガラス感削除、影だけ) */}
       <div style={{
-        position:"absolute", bottom:"15%", left:"50%",
-        transform:"translateX(-50%)", textAlign:"center",
-        width:"90%", maxWidth:640, padding:"20px 28px",
-        background:"rgba(44, 41, 38, 0.18)",
-        backdropFilter:"blur(10px)",
-        WebkitBackdropFilter:"blur(10px)",
-        borderRadius:4, zIndex:10,
-        animation:"qocca-fadeIn 1.2s ease 0.5s both",
+        position: "absolute",
+        bottom: "20%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        textAlign: "center",
+        width: "85%",
+        maxWidth: 720,
+        padding: 0,
+        background: "transparent",
+        zIndex: 10,
+        opacity: 0,
+        animation: "qocca-fadeInSlow 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards",
       }}>
         <p style={{
-          fontSize:"clamp(20px, 4.5vw, 30px)",
+          fontSize: "clamp(18px, 4vw, 28px)",
           fontFamily: QC_FONT_JP,
-          fontWeight:600, color: QC.warmWhite,
-          letterSpacing:"0.05em", lineHeight:1.5,
-          opacity:0.96, margin:0,
-          textShadow:"0 2px 12px rgba(44, 41, 38, 0.4)",
+          fontWeight: 300,
+          color: QC.warmWhite,
+          letterSpacing: "0.08em",
+          lineHeight: 1.8,
+          opacity: 0.92,
+          margin: 0,
+          textShadow: "0 2px 24px rgba(44, 41, 38, 0.5), 0 1px 4px rgba(44, 41, 38, 0.3)",
         }}>
-          うちの子を愛してる人が集まる街。
+          うちの子を愛してる人が
+          <br />
+          集まる街。
         </p>
       </div>
 
-      {/* 右上ロゴ */}
+      {/* 右上ロゴ (フェードイン 0.5s遅延 + 2s) */}
       <div style={{
-        position:"absolute", top:24, right:24,
-        fontFamily: QC_FONT_EN, fontSize:22, color: QC.warmWhite,
-        opacity:0.7, letterSpacing:0.5, zIndex:20,
-        fontWeight:400, fontStyle:"italic",
-        textShadow:"0 1px 4px rgba(44, 41, 38, 0.3)",
+        position: "absolute",
+        top: 32,
+        right: 32,
+        fontFamily: QC_FONT_EN,
+        fontSize: 20,
+        color: QC.warmWhite,
+        opacity: 0,
+        letterSpacing: 0.8,
+        zIndex: 20,
+        fontWeight: 300,
+        fontStyle: "italic",
+        textShadow: "0 1px 6px rgba(44, 41, 38, 0.4)",
+        animation: "qocca-fadeInSlow 2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards",
       }}>
         Qocca
       </div>
 
-      {/* 下中央スクロール誘導 */}
+      {/* 下中央スクロール誘導 (呼吸4秒) */}
       <div style={{
-        position:"absolute", bottom:32, left:"50%",
-        transform:"translateX(-50%)", width:1, height:32,
-        background: QC.warmWhite, zIndex:10,
-        animation:"qocca-breathe 2s ease-in-out infinite",
-      }}/>
+        position: "absolute",
+        bottom: 40,
+        left: "50%",
+        width: 1,
+        height: 48,
+        background: QC.warmWhite,
+        zIndex: 10,
+        opacity: 0,
+        animation: "qocca-breathe-slow 4s ease-in-out 2s infinite",
+      }} />
     </section>
   );
 };
@@ -1424,7 +1603,7 @@ const SectionTodaysMoments = ({ setPage }) => {
     let mounted = true;
     (async () => {
       try {
-        const { data: posts, error: pe } = await supabase
+        const { data: posts } = await supabase
           .from("gallery_posts")
           .select("id, image_url, caption, pet_name, pet_type, time_of_day, created_at, display_priority, user_id")
           .eq("is_official", true)
@@ -1432,10 +1611,8 @@ const SectionTodaysMoments = ({ setPage }) => {
           .lt("display_priority", 200)
           .order("display_priority", { ascending: true });
 
-        if (pe) throw pe;
         if (!mounted) return;
 
-        // ランダムに12枚選択
         const shuffled = [...(posts ?? [])].sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, 12);
         setMoments(selected);
@@ -1446,7 +1623,6 @@ const SectionTodaysMoments = ({ setPage }) => {
           return;
         }
 
-        // リアクション数取得
         const { data: rxs } = await supabase
           .from("post_reactions_summary")
           .select("*")
@@ -1466,7 +1642,6 @@ const SectionTodaysMoments = ({ setPage }) => {
           setReactionCounts(counts);
         }
 
-        // 自分のリアクション
         if (user?.id) {
           const { data: my } = await supabase
             .from("post_reactions")
@@ -1506,9 +1681,8 @@ const SectionTodaysMoments = ({ setPage }) => {
     const myRx = myReactionsMap[postId] || new Set();
     const isReacted = myRx.has(reactionKey);
 
-    // 楽観的UI更新
     setReactionCounts(prev => {
-      const cur = prev[postId] || { precious:0, healed:0, glad_met:0, want_see:0 };
+      const cur = prev[postId] || { precious: 0, healed: 0, glad_met: 0, want_see: 0 };
       return {
         ...prev,
         [postId]: {
@@ -1545,151 +1719,88 @@ const SectionTodaysMoments = ({ setPage }) => {
   return (
     <>
       <section style={{
-        padding:"120px 0 160px",
-        background: QC.warmWhite,
-        position:"relative",
+        padding: "200px 0 200px",
+        background: "transparent",
+        position: "relative",
       }}>
-        <div style={{ maxWidth:1280, margin:"0 auto" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+
           {/* セクションヘッダー */}
-          <div style={{ padding:"0 24px 40px", marginBottom:24 }}>
+          <div style={{
+            padding: "0 32px 80px",
+            marginBottom: 32,
+          }}>
             <p style={{
               fontFamily: QC_FONT_EN,
-              fontSize:14, fontStyle:"italic",
+              fontSize: 13,
+              fontStyle: "italic",
               color: QC.warmGray,
-              letterSpacing:0.5, marginBottom:8,
-              opacity:0.85, margin:"0 0 8px 0",
+              letterSpacing: 0.8,
+              marginBottom: 12,
+              opacity: 0.75,
+              margin: "0 0 12px 0",
+              fontWeight: 300,
             }}>
               Today's Quiet Moments
             </p>
             <h2 style={{
               fontFamily: QC_FONT_JP,
-              fontSize:28, fontWeight:700,
+              fontSize: 24,
+              fontWeight: 500,
               color: QC.softBrown,
-              letterSpacing:0.5, lineHeight:1.4, margin:0,
+              letterSpacing: 0.8,
+              lineHeight: 1.5,
+              margin: 0,
             }}>
               今日のうちの子たち
             </h2>
             <div style={{
-              marginTop:24, width:40, height:1,
+              marginTop: 40,
+              width: 32,
+              height: 1,
               background: QC.lightSand,
-            }}/>
+              opacity: 0.6,
+            }} />
           </div>
 
-          {/* Masonryギャラリー */}
+          {/* Masonry ギャラリー */}
           <div style={{
             columnCount: columnCount,
-            columnGap: columnCount === 4 ? 16 : columnCount === 3 ? 14 : 12,
-            padding: columnCount === 4 ? "0 48px" : columnCount === 3 ? "0 32px" : "0 16px",
-            maxWidth: columnCount === 4 ? 1280 : columnCount === 3 ? 1100 : "100%",
+            columnGap: columnCount === 4 ? 24 : columnCount === 3 ? 22 : 20,
+            padding: columnCount === 4 ? "0 64px" : columnCount === 3 ? "0 48px" : "0 24px",
+            maxWidth: 1280,
             margin: "0 auto",
           }}>
             {isLoading ? (
-              <p style={{ color: QC.warmGray, textAlign:"center", padding:40, fontFamily: QC_FONT_JP }}>
+              <p style={{
+                color: QC.warmGray,
+                textAlign: "center",
+                padding: 40,
+                fontFamily: QC_FONT_JP,
+                fontWeight: 300,
+              }}>
                 Loading...
               </p>
-            ) : moments.map(m => {
+            ) : moments.map((m, idx) => {
               const isHover = hoveredCardId === m.id;
-              const counts = reactionCounts[m.id] || { precious:0, healed:0, glad_met:0, want_see:0 };
+              const counts = reactionCounts[m.id] || { precious: 0, healed: 0, glad_met: 0, want_see: 0 };
               const mySet = myReactionsMap[m.id] || new Set();
 
               return (
-                <div
+                <MomentCard
                   key={m.id}
+                  moment={m}
+                  isHover={isHover}
+                  counts={counts}
+                  mySet={mySet}
+                  animatingKey={animatingKey}
+                  isMobile={isMobile}
+                  index={idx}
                   onMouseEnter={() => setHoveredCardId(m.id)}
                   onMouseLeave={() => setHoveredCardId(null)}
                   onClick={() => { if (isMobile) setSelectedMoment(m); }}
-                  style={{
-                    position:"relative", borderRadius:8, overflow:"hidden",
-                    background: QC.cream,
-                    border:"1px solid rgba(44, 41, 38, 0.04)",
-                    marginBottom:12, cursor:"pointer",
-                    transition:"transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
-                    transform: isHover ? "scale(1.02)" : "scale(1)",
-                    breakInside:"avoid", display:"block",
-                  }}
-                >
-                  <img
-                    src={m.image_url}
-                    alt={m.caption}
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      width:"100%", height:"auto",
-                      display:"block", objectFit:"cover",
-                    }}
-                  />
-
-                  {/* ホバー時オーバーレイ（PC） */}
-                  {!isMobile && (
-                    <div style={{
-                      position:"absolute", inset:0,
-                      background:"linear-gradient(to bottom, transparent 0%, rgba(250, 247, 242, 0.95) 70%)",
-                      opacity: isHover ? 1 : 0,
-                      transition:"opacity 0.4s ease",
-                      display:"flex", flexDirection:"column",
-                      justifyContent:"flex-end", padding:16,
-                      pointerEvents: isHover ? "auto" : "none",
-                    }}>
-                      <p style={{
-                        fontSize:14, fontWeight:600, color: QC.charcoal,
-                        marginBottom:4, fontFamily: QC_FONT_JP,
-                        lineHeight:1.5, margin:"0 0 4px 0",
-                      }}>
-                        「{m.caption}」
-                      </p>
-                      <p style={{
-                        fontSize:11, color: QC.warmGray,
-                        marginBottom:10, fontFamily: QC_FONT_JP,
-                        margin:"0 0 10px 0",
-                      }}>
-                        {m.pet_name}
-                      </p>
-                      <div style={{
-                        display:"flex", flexWrap:"wrap", gap:"8px 14px",
-                        fontSize:12, fontFamily: QC_FONT_JP,
-                      }}>
-                        {QC_REACTIONS.map(({ key, label }) => {
-                          const isSel = mySet.has(key);
-                          const cnt = counts[key];
-                          const isAnim = animatingKey === `${m.id}-${key}`;
-                          return (
-                            <button
-                              key={key}
-                              onClick={(e) => { e.stopPropagation(); handleReact(m.id, key); }}
-                              style={{
-                                display:"inline-flex", alignItems:"center", gap:6,
-                                padding:"2px 0", cursor:"pointer",
-                                color: isSel ? QC.softBrown : QC.warmGray,
-                                background:"none", border:"none",
-                                borderBottomWidth:1, borderBottomStyle:"solid",
-                                borderBottomColor: isSel ? QC.softBrown : "transparent",
-                                transition:"all 0.2s ease",
-                                fontFamily:"inherit", fontSize:"inherit",
-                                transform: isAnim ? "translateY(-4px)" : "translateY(0)",
-                              }}
-                            >
-                              <span>{label}</span>
-                              {cnt > 0 && (
-                                <span style={{ fontSize:10, color: QC.sage, fontWeight:500 }}>
-                                  {cnt}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 通常時フッター */}
-                  <div style={{
-                    padding:"10px 14px", fontSize:12,
-                    color: QC.warmGray, fontFamily: QC_FONT_JP,
-                    letterSpacing:0.3,
-                  }}>
-                    {m.pet_name}
-                  </div>
-                </div>
+                  onReact={handleReact}
+                />
               );
             })}
           </div>
@@ -1698,145 +1809,372 @@ const SectionTodaysMoments = ({ setPage }) => {
 
       {/* モバイル詳細モーダル */}
       {selectedMoment && (
-        <div
-          onClick={() => setSelectedMoment(null)}
-          style={{
-            position:"fixed", inset:0,
-            background:"rgba(44, 41, 38, 0.85)",
-            zIndex:1000, display:"flex", alignItems:"flex-end",
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width:"100%", background: QC.warmWhite,
-              borderTopLeftRadius:24, borderTopRightRadius:24,
-              padding:24, maxHeight:"90vh", overflowY:"auto",
-            }}
-          >
-            <div style={{
-              width:40, height:4, background: QC.lightSand,
-              borderRadius:2, margin:"0 auto 24px",
-            }}/>
-            <img
-              src={selectedMoment.image_url}
-              alt={selectedMoment.caption}
-              style={{
-                width:"100%", maxHeight:"60vh", objectFit:"cover",
-                borderRadius:12, marginBottom:24,
-              }}
-            />
-            <p style={{
-              fontSize:18, fontWeight:500, color: QC.charcoal,
-              marginBottom:8, fontFamily: QC_FONT_JP,
-              lineHeight:1.6, margin:"0 0 8px 0",
-            }}>
-              「{selectedMoment.caption}」
-            </p>
-            <p style={{
-              fontSize:13, color: QC.warmGray,
-              marginBottom:32, fontFamily: QC_FONT_JP,
-              margin:"0 0 32px 0",
-            }}>
-              {selectedMoment.pet_name}
-            </p>
-            <div style={{
-              display:"flex", flexWrap:"wrap", gap:"12px 16px",
-              fontSize:14, fontFamily: QC_FONT_JP,
-            }}>
-              {QC_REACTIONS.map(({ key, label }) => {
-                const cnt = (reactionCounts[selectedMoment.id] || {})[key] || 0;
-                const isSel = (myReactionsMap[selectedMoment.id] || new Set()).has(key);
-                return (
-                  <button
-                    key={key}
-                    onClick={() => handleReact(selectedMoment.id, key)}
-                    style={{
-                      display:"inline-flex", alignItems:"center", gap:6,
-                      padding:"4px 0", cursor:"pointer",
-                      color: isSel ? QC.softBrown : QC.warmGray,
-                      background:"none", border:"none",
-                      borderBottomWidth:1, borderBottomStyle:"solid",
-                      borderBottomColor: isSel ? QC.softBrown : "transparent",
-                      fontFamily:"inherit", fontSize:"inherit",
-                    }}
-                  >
-                    <span>{label}</span>
-                    {cnt > 0 && (
-                      <span style={{ fontSize:11, color: QC.sage, fontWeight:500 }}>
-                        {cnt}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <MomentModal
+          moment={selectedMoment}
+          counts={reactionCounts[selectedMoment.id]}
+          mySet={myReactionsMap[selectedMoment.id]}
+          onReact={handleReact}
+          onClose={() => setSelectedMoment(null)}
+        />
       )}
 
       {/* ログイン誘導モーダル */}
       {showLoginModal && (
-        <div
-          onClick={() => setShowLoginModal(false)}
-          style={{
-            position:"fixed", inset:0,
-            background:"rgba(44, 41, 38, 0.85)",
-            zIndex:1100, display:"flex",
-            alignItems:"center", justifyContent:"center", padding:24,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: QC.warmWhite, borderRadius:16,
-              padding:32, maxWidth:400, width:"100%", textAlign:"center",
-            }}
-          >
-            <h3 style={{
-              fontSize:22, color: QC.charcoal,
-              marginBottom:16, fontFamily: QC_FONT_JP,
-              fontWeight:700, margin:"0 0 16px 0",
-            }}>
-              街の住民になりませんか？
-            </h3>
-            <p style={{
-              fontSize:14, color: QC.warmGray,
-              marginBottom:32, lineHeight:1.7,
-              fontFamily: QC_FONT_JP, margin:"0 0 32px 0",
-            }}>
-              ログインすると、お気に入りのうちの子に<br/>
-              気持ちを伝えられます。
-            </p>
-            <button
-              onClick={() => { setShowLoginModal(false); setPage("login"); }}
-              style={{
-                background: QC.terracotta, color: QC.warmWhite,
-                border:"none", padding:"14px 32px",
-                borderRadius:8, fontSize:14, fontWeight:600,
-                cursor:"pointer", fontFamily: QC_FONT_JP,
-                letterSpacing:0.5, width:"100%",
-              }}
-            >
-              Qoccaに登録する
-            </button>
-            <button
-              onClick={() => setShowLoginModal(false)}
-              style={{
-                background:"transparent", color: QC.warmGray,
-                border:"none", padding:"14px 32px",
-                marginTop:8, fontSize:13, cursor:"pointer",
-                fontFamily: QC_FONT_JP,
-              }}
-            >
-              またあとで
-            </button>
-          </div>
-        </div>
+        <LoginPromptModal
+          onClose={() => setShowLoginModal(false)}
+          onLogin={() => { setShowLoginModal(false); setPage("login"); }}
+        />
       )}
     </>
   );
 };
+
+// ----------------------------------------------------------------------------
+// MomentCard - 静けさ実装 (stagger フェードイン、ホバー時のみ pet_name)
+// ----------------------------------------------------------------------------
+const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, index, onMouseEnter, onMouseLeave, onClick, onReact }) => {
+  const { ref, inView } = useInViewStaggered(index, 200);
+
+  return (
+    <div
+      ref={ref}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
+      style={{
+        position: "relative",
+        borderRadius: 4,
+        overflow: "hidden",
+        background: QC.cream,
+        border: "1px solid rgba(44, 41, 38, 0.03)",
+        marginBottom: 20,
+        cursor: "pointer",
+        transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 1.2s ease",
+        transform: isHover
+          ? "scale(1.015)"
+          : (inView ? "translateY(0)" : "translateY(16px)"),
+        opacity: inView ? 1 : 0,
+        breakInside: "avoid",
+        display: "block",
+      }}
+    >
+      <img
+        src={moment.image_url}
+        alt={moment.caption}
+        loading="lazy"
+        decoding="async"
+        style={{
+          width: "100%",
+          height: "auto",
+          display: "block",
+          objectFit: "cover",
+        }}
+      />
+
+      {/* ホバー時オーバーレイ (PC) */}
+      {!isMobile && (
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(to bottom, transparent 0%, rgba(250, 247, 242, 0.95) 70%)",
+          opacity: isHover ? 1 : 0,
+          transition: "opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          padding: 24,
+          pointerEvents: isHover ? "auto" : "none",
+        }}>
+          <p style={{
+            fontSize: 14,
+            fontWeight: 400,
+            color: QC.charcoal,
+            marginBottom: 6,
+            fontFamily: QC_FONT_JP,
+            lineHeight: 1.7,
+            margin: "0 0 6px 0",
+            letterSpacing: 0.5,
+          }}>
+            「{moment.caption}」
+          </p>
+          <p style={{
+            fontSize: 11,
+            color: QC.warmGray,
+            marginBottom: 14,
+            fontFamily: QC_FONT_JP,
+            fontWeight: 300,
+            margin: "0 0 14px 0",
+            letterSpacing: 0.5,
+          }}>
+            {moment.pet_name}
+          </p>
+
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px 16px",
+            fontSize: 12,
+            fontFamily: QC_FONT_JP,
+          }}>
+            {QC_REACTIONS.map(({ key, label }) => {
+              const isSel = mySet.has(key);
+              const cnt = counts[key];
+              const isAnim = animatingKey === `${moment.id}-${key}`;
+              return (
+                <button
+                  key={key}
+                  onClick={(e) => { e.stopPropagation(); onReact(moment.id, key); }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "2px 0",
+                    cursor: "pointer",
+                    color: isSel ? QC.softBrown : QC.warmGray,
+                    background: "none",
+                    border: "none",
+                    borderBottomWidth: 1,
+                    borderBottomStyle: "solid",
+                    borderBottomColor: isSel ? QC.softBrown : "transparent",
+                    transition: "all 0.6s ease",
+                    fontFamily: "inherit",
+                    fontSize: "inherit",
+                    fontWeight: 300,
+                    transform: isAnim ? "translateY(-4px)" : "translateY(0)",
+                  }}
+                >
+                  <span>{label}</span>
+                  {cnt > 0 && (
+                    <span style={{
+                      fontSize: 10,
+                      color: QC.sage,
+                      fontWeight: 400,
+                    }}>
+                      {cnt}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {/* 通常時フッター = 削除 (ホバーオーバーレイのみで pet_name 表示) */}
+    </div>
+  );
+};
+
+// ----------------------------------------------------------------------------
+// MomentModal - モバイル詳細モーダル (フォント軽く)
+// ----------------------------------------------------------------------------
+const MomentModal = ({ moment, counts = {}, mySet = new Set(), onReact, onClose }) => (
+  <div
+    onClick={onClose}
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(44, 41, 38, 0.85)",
+      zIndex: 1000,
+      display: "flex",
+      alignItems: "flex-end",
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        width: "100%",
+        background: QC.warmWhite,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 32,
+        maxHeight: "90vh",
+        overflowY: "auto",
+      }}
+    >
+      <div style={{
+        width: 40, height: 4,
+        background: QC.lightSand,
+        borderRadius: 2,
+        margin: "0 auto 32px",
+      }} />
+
+      <img
+        src={moment.image_url}
+        alt={moment.caption}
+        style={{
+          width: "100%",
+          maxHeight: "60vh",
+          objectFit: "cover",
+          borderRadius: 4,
+          marginBottom: 32,
+        }}
+      />
+
+      <p style={{
+        fontSize: 18,
+        fontWeight: 400,
+        color: QC.charcoal,
+        marginBottom: 8,
+        fontFamily: QC_FONT_JP,
+        lineHeight: 1.7,
+        margin: "0 0 8px 0",
+        letterSpacing: 0.5,
+      }}>
+        「{moment.caption}」
+      </p>
+
+      <p style={{
+        fontSize: 13,
+        fontWeight: 300,
+        color: QC.warmGray,
+        marginBottom: 40,
+        fontFamily: QC_FONT_JP,
+        margin: "0 0 40px 0",
+        letterSpacing: 0.5,
+      }}>
+        {moment.pet_name}
+      </p>
+
+      <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "14px 20px",
+        fontSize: 14,
+        fontFamily: QC_FONT_JP,
+      }}>
+        {QC_REACTIONS.map(({ key, label }) => {
+          const cnt = (counts || {})[key] || 0;
+          const isSel = (mySet || new Set()).has(key);
+          return (
+            <button
+              key={key}
+              onClick={() => onReact(moment.id, key)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 0",
+                cursor: "pointer",
+                color: isSel ? QC.softBrown : QC.warmGray,
+                background: "none",
+                border: "none",
+                borderBottomWidth: 1,
+                borderBottomStyle: "solid",
+                borderBottomColor: isSel ? QC.softBrown : "transparent",
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                fontWeight: 300,
+                transition: "all 0.6s ease",
+              }}
+            >
+              <span>{label}</span>
+              {cnt > 0 && (
+                <span style={{ fontSize: 11, color: QC.sage, fontWeight: 400 }}>
+                  {cnt}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+);
+
+// ----------------------------------------------------------------------------
+// LoginPromptModal - CTA弱める版
+// ----------------------------------------------------------------------------
+const LoginPromptModal = ({ onClose, onLogin }) => (
+  <div
+    onClick={onClose}
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(44, 41, 38, 0.85)",
+      zIndex: 1100,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 32,
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: QC.warmWhite,
+        borderRadius: 4,
+        padding: 48,
+        maxWidth: 400,
+        width: "100%",
+        textAlign: "center",
+      }}
+    >
+      <h3 style={{
+        fontSize: 20,
+        color: QC.charcoal,
+        marginBottom: 20,
+        fontFamily: QC_FONT_JP,
+        fontWeight: 400,
+        margin: "0 0 20px 0",
+        letterSpacing: 0.5,
+      }}>
+        街の住民になりませんか
+      </h3>
+
+      <p style={{
+        fontSize: 13,
+        fontWeight: 300,
+        color: QC.warmGray,
+        marginBottom: 40,
+        lineHeight: 1.9,
+        fontFamily: QC_FONT_JP,
+        margin: "0 0 40px 0",
+      }}>
+        ログインすると、お気に入りのうちの子に
+        <br />
+        気持ちを伝えられます
+      </p>
+
+      <button
+        onClick={() => { onClose(); onLogin(); }}
+        style={{
+          background: "transparent",
+          color: QC.terracotta,
+          border: `1px solid ${QC.terracotta}`,
+          padding: "14px 32px",
+          borderRadius: 0,
+          fontSize: 13,
+          fontWeight: 300,
+          cursor: "pointer",
+          fontFamily: QC_FONT_JP,
+          letterSpacing: 1.2,
+          width: "100%",
+          transition: "all 0.6s ease",
+        }}
+      >
+        Qoccaに登録する
+      </button>
+
+      <button
+        onClick={onClose}
+        style={{
+          background: "transparent",
+          color: QC.warmGray,
+          border: "none",
+          padding: "14px 32px",
+          marginTop: 12,
+          fontSize: 12,
+          fontWeight: 300,
+          cursor: "pointer",
+          fontFamily: QC_FONT_JP,
+          letterSpacing: 0.5,
+        }}
+      >
+        またあとで
+      </button>
+    </div>
+  </div>
+);
 
 
 // ============================================================================
@@ -1845,133 +2183,154 @@ const SectionTodaysMoments = ({ setPage }) => {
 
 const SectionTownMap = ({ setPage }) => {
   const places = [
-    { 
-      icon: "◯", 
-      name: "広場", 
+    {
+      icon: "○",
+      name: "広場",
       en: "Plaza",
-      desc: "犬種・猫種別のコミュニティ。\n同じ\"うちの子\"を持つ仲間と語り合える。",
+      desc: "同じうちの子を持つ仲間と語る場所",
       onClick: () => setPage("communities"),
     },
-    { 
-      icon: "△", 
-      name: "商店街", 
+    {
+      icon: "□",
+      name: "商店街",
       en: "Atelier",
-      desc: "心を込めて作る、街の作家たち。\n一点物の世界に、出会いに行く。",
+      desc: "心を込めて作る、街の作家たち",
       onClick: () => setPage("search"),
     },
-    { 
-      icon: "□", 
-      name: "案内所", 
+    {
+      icon: "◇",
+      name: "案内所",
       en: "Map",
-      desc: "ドッグカフェ、ペット同伴可施設。\n街の隅々まで、知る人ぞ知る場所を。",
+      desc: "ペット同伴可の場所を、隅々まで",
       onClick: () => setPage("facilities"),
     },
-    { 
-      icon: "◇", 
-      name: "展示場", 
+    {
+      icon: "△",
+      name: "展示場",
       en: "Gallery",
-      desc: "うちの子の、いちばんの瞬間を。\nみんなのギャラリー。",
+      desc: "うちの子の、いちばんの瞬間を",
       onClick: () => setPage("gallery"),
     },
   ];
 
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
   return (
     <section style={{
-      padding: "120px 0 120px",
-      background: QC.cream,
+      padding: "200px 0 200px",
+      background: "rgba(245, 239, 230, 0.5)",
       borderTop: `1px solid ${QC.lightSand}`,
       borderBottom: `1px solid ${QC.lightSand}`,
     }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-        
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+
         {/* セクションヘッダー */}
-        <div style={{ marginBottom: 60, textAlign: "center" }}>
+        <div style={{ marginBottom: 80, textAlign: "center" }}>
           <p style={{
             fontFamily: QC_FONT_EN,
-            fontSize: 14, fontStyle: "italic",
-            color: QC.warmGray, letterSpacing: 0.5,
-            margin: "0 0 8px 0", opacity: 0.85,
+            fontSize: 13,
+            fontStyle: "italic",
+            color: QC.warmGray,
+            letterSpacing: 0.8,
+            margin: "0 0 12px 0",
+            opacity: 0.75,
+            fontWeight: 300,
           }}>
             A Town Map
           </p>
           <h2 style={{
             fontFamily: QC_FONT_JP,
-            fontSize: "clamp(22px, 4vw, 28px)",
-            fontWeight: 700, color: QC.softBrown,
-            letterSpacing: 0.5, lineHeight: 1.5,
+            fontSize: "clamp(20px, 4vw, 24px)",
+            fontWeight: 500,
+            color: QC.softBrown,
+            letterSpacing: 0.8,
+            lineHeight: 1.6,
             margin: 0,
           }}>
             Qocca、こんな街です
           </h2>
           <div style={{
-            marginTop: 24, width: 40, height: 1,
-            background: QC.softBrown, opacity: 0.3,
-            margin: "24px auto 0",
-          }}/>
+            marginTop: 40,
+            width: 32,
+            height: 1,
+            background: QC.softBrown,
+            opacity: 0.3,
+            margin: "40px auto 0",
+          }} />
         </div>
 
         {/* 4つの場所カード */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: 20,
+          gap: 32,
         }}>
-          {places.map((p, i) => (
-            <div
-              key={i}
-              onClick={p.onClick}
-              style={{
-                background: QC.warmWhite,
-                borderRadius: 12,
-                padding: "40px 28px",
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "transform 0.4s ease, box-shadow 0.4s ease",
-                border: `1px solid ${QC.lightSand}`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(44, 41, 38, 0.06)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{
-                fontSize: 32, color: QC.sage,
-                marginBottom: 16, fontWeight: 300,
-                opacity: 0.7,
-              }}>
-                {p.icon}
+          {places.map((p, i) => {
+            const isHover = hoverIndex === i;
+            return (
+              <div
+                key={i}
+                onClick={p.onClick}
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
+                style={{
+                  background: QC.warmWhite,
+                  borderRadius: 4,
+                  padding: "56px 32px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.8s ease",
+                  border: `1px solid ${QC.lightSand}`,
+                  transform: isHover ? "translateY(-2px)" : "translateY(0)",
+                  boxShadow: isHover ? "0 8px 24px rgba(44, 41, 38, 0.04)" : "none",
+                }}
+              >
+                <div style={{
+                  fontSize: 24,
+                  color: QC.warmGray,
+                  marginBottom: 24,
+                  fontWeight: 200,
+                  opacity: 0.6,
+                  lineHeight: 1,
+                }}>
+                  {p.icon}
+                </div>
+                <p style={{
+                  fontFamily: QC_FONT_EN,
+                  fontSize: 12,
+                  fontStyle: "italic",
+                  color: QC.warmGray,
+                  letterSpacing: 0.8,
+                  margin: "0 0 8px 0",
+                  opacity: 0.75,
+                  fontWeight: 300,
+                }}>
+                  {p.en}
+                </p>
+                <h3 style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: 18,
+                  fontWeight: 400,
+                  color: QC.softBrown,
+                  margin: "0 0 20px 0",
+                  letterSpacing: 0.8,
+                }}>
+                  {p.name}
+                </h3>
+                <p style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: 12,
+                  fontWeight: 300,
+                  color: QC.warmGray,
+                  lineHeight: 1.9,
+                  margin: 0,
+                  letterSpacing: 0.3,
+                }}>
+                  {p.desc}
+                </p>
               </div>
-              <p style={{
-                fontFamily: QC_FONT_EN,
-                fontSize: 12, fontStyle: "italic",
-                color: QC.warmGray, letterSpacing: 0.5,
-                margin: "0 0 6px 0", opacity: 0.85,
-              }}>
-                {p.en}
-              </p>
-              <h3 style={{
-                fontFamily: QC_FONT_JP,
-                fontSize: 18, fontWeight: 700,
-                color: QC.softBrown,
-                margin: "0 0 16px 0",
-                letterSpacing: 0.5,
-              }}>
-                {p.name}
-              </h3>
-              <p style={{
-                fontFamily: QC_FONT_JP,
-                fontSize: 12, color: QC.warmGray,
-                lineHeight: 1.8, margin: 0,
-                whiteSpace: "pre-line",
-              }}>
-                {p.desc}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -1983,115 +2342,153 @@ const SectionTownMap = ({ setPage }) => {
 // ============================================================================
 
 const SectionAtelier = ({ listings, onDetail, setPage }) => {
-  // approved の出品から最大6件、display用
+  const [columnCount, setColumnCount] = useState(2);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [allLinkHover, setAllLinkHover] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => {
+      const w = window.innerWidth;
+      setColumnCount(w >= 1024 ? 4 : w >= 768 ? 3 : 2);
+    };
+    checkSize();
+    window.addEventListener("resize", checkSize);
+    return () => window.removeEventListener("resize", checkSize);
+  }, []);
+
   const featured = (listings || [])
     .filter(l => l.status === "approved")
     .slice(0, 6);
 
-  if (featured.length === 0) {
-    return null; // 出品がなければセクション表示しない
-  }
+  if (featured.length === 0) return null;
 
   return (
     <section style={{
-      padding: "120px 0 120px",
-      background: QC.warmWhite,
+      padding: "200px 0 200px",
+      background: "transparent",
     }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-        
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+
         {/* セクションヘッダー */}
-        <div style={{ marginBottom: 48 }}>
+        <div style={{ marginBottom: 80 }}>
           <p style={{
             fontFamily: QC_FONT_EN,
-            fontSize: 14, fontStyle: "italic",
-            color: QC.warmGray, letterSpacing: 0.5,
-            margin: "0 0 8px 0", opacity: 0.85,
+            fontSize: 13,
+            fontStyle: "italic",
+            color: QC.warmGray,
+            letterSpacing: 0.8,
+            margin: "0 0 12px 0",
+            opacity: 0.75,
+            fontWeight: 300,
           }}>
             From the Atelier
           </p>
           <h2 style={{
             fontFamily: QC_FONT_JP,
-            fontSize: "clamp(22px, 4vw, 28px)",
-            fontWeight: 700, color: QC.softBrown,
-            letterSpacing: 0.5, lineHeight: 1.4,
+            fontSize: "clamp(20px, 4vw, 24px)",
+            fontWeight: 500,
+            color: QC.softBrown,
+            letterSpacing: 0.8,
+            lineHeight: 1.5,
             margin: 0,
           }}>
             街のお店から
           </h2>
           <p style={{
             fontFamily: QC_FONT_JP,
-            fontSize: 14, color: QC.warmGray,
-            margin: "16px 0 0 0", lineHeight: 1.8,
+            fontSize: 13,
+            fontWeight: 300,
+            color: QC.warmGray,
+            margin: "20px 0 0 0",
+            lineHeight: 1.9,
+            letterSpacing: 0.5,
           }}>
             心を込めて作られた、街の作家たちの一点もの。
           </p>
           <div style={{
-            marginTop: 24, width: 40, height: 1,
+            marginTop: 40,
+            width: 32,
+            height: 1,
             background: QC.lightSand,
-          }}/>
+          }} />
         </div>
 
-        {/* 出品グリッド */}
+        {/* Pinterest型 Masonry グリッド */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 24,
+          columnCount: columnCount,
+          columnGap: 28,
+          padding: 0,
         }}>
           {featured.map(item => {
+            const isHover = hoverId === item.id;
             const firstImage = (item.image_urls && item.image_urls[0]) || item.cover_image_url || "";
             return (
               <div
                 key={item.id}
                 onClick={() => onDetail(item)}
+                onMouseEnter={() => setHoverId(item.id)}
+                onMouseLeave={() => setHoverId(null)}
                 style={{
                   background: QC.cream,
-                  borderRadius: 8, overflow: "hidden",
+                  borderRadius: 4,
+                  overflow: "hidden",
                   cursor: "pointer",
-                  transition: "transform 0.4s ease",
-                  border: `1px solid rgba(44, 41, 38, 0.04)`,
+                  transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+                  border: "1px solid rgba(44, 41, 38, 0.03)",
+                  transform: isHover ? "translateY(-1px)" : "translateY(0)",
+                  marginBottom: 28,
+                  breakInside: "avoid",
+                  display: "block",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
               >
                 {firstImage && (
-                  <div style={{
-                    width: "100%", aspectRatio: "1 / 1",
-                    background: QC.lightSand,
-                    overflow: "hidden",
-                  }}>
-                    <img
-                      src={firstImage}
-                      alt={item.title}
-                      loading="lazy"
-                      style={{
-                        width: "100%", height: "100%",
-                        objectFit: "cover", display: "block",
-                      }}
-                    />
-                  </div>
+                  <img
+                    src={firstImage}
+                    alt={item.title}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "auto",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
                 )}
-                <div style={{ padding: "16px 18px" }}>
+                <div style={{ padding: "24px 28px" }}>
                   <p style={{
-                    fontFamily: QC_FONT_JP, fontSize: 13,
-                    fontWeight: 600, color: QC.charcoal,
-                    margin: "0 0 6px 0", lineHeight: 1.5,
-                    overflow: "hidden", textOverflow: "ellipsis",
-                    display: "-webkit-box", WebkitLineClamp: 2,
+                    fontFamily: QC_FONT_JP,
+                    fontSize: 13,
+                    fontWeight: 400,
+                    color: QC.charcoal,
+                    margin: "0 0 8px 0",
+                    lineHeight: 1.7,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
                   }}>
                     {item.title}
                   </p>
+                  {item.seller_name && (
+                    <p style={{
+                      fontFamily: QC_FONT_JP,
+                      fontSize: 11,
+                      fontWeight: 300,
+                      color: QC.warmGray,
+                      margin: "0 0 14px 0",
+                      letterSpacing: 0.5,
+                    }}>
+                      {item.seller_name}
+                    </p>
+                  )}
                   <p style={{
-                    fontFamily: QC_FONT_JP, fontSize: 11,
-                    color: QC.warmGray,
-                    margin: "0 0 10px 0", letterSpacing: 0.3,
-                  }}>
-                    {item.seller_name || "Qoccaの作家"}
-                  </p>
-                  <p style={{
-                    fontFamily: QC_FONT_EN, fontSize: 16,
-                    color: QC.softBrown, fontWeight: 500,
-                    margin: 0, letterSpacing: 0.5,
+                    fontFamily: QC_FONT_EN,
+                    fontSize: 15,
+                    color: QC.softBrown,
+                    fontWeight: 400,
+                    margin: 0,
+                    letterSpacing: 0.8,
                   }}>
                     ¥{(item.price || 0).toLocaleString()}
                   </p>
@@ -2101,31 +2498,27 @@ const SectionAtelier = ({ listings, onDetail, setPage }) => {
           })}
         </div>
 
-        {/* すべて見る */}
-        <div style={{ textAlign: "center", marginTop: 48 }}>
+        {/* CTA: ボタン → 線リンク */}
+        <div style={{ textAlign: "center", marginTop: 80 }}>
           <button
             onClick={() => setPage("search")}
+            onMouseEnter={() => setAllLinkHover(true)}
+            onMouseLeave={() => setAllLinkHover(false)}
             style={{
               fontFamily: QC_FONT_JP,
               background: "transparent",
-              border: `1px solid ${QC.softBrown}`,
+              border: "none",
               color: QC.softBrown,
-              padding: "14px 40px",
-              fontSize: 13, letterSpacing: 1,
+              padding: "0 0 6px 0",
+              fontSize: 13,
+              fontWeight: 300,
+              letterSpacing: 1.2,
               cursor: "pointer",
-              borderRadius: 0,
-              transition: "all 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = QC.softBrown;
-              e.currentTarget.style.color = QC.warmWhite;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = QC.softBrown;
+              borderBottom: `1px solid ${allLinkHover ? QC.softBrown : 'rgba(139, 111, 92, 0.3)'}`,
+              transition: "border-color 0.8s ease, color 0.8s ease",
             }}
           >
-            すべての作品を見る →
+            すべての作品を見る
           </button>
         </div>
       </div>
@@ -2140,7 +2533,8 @@ const SectionAtelier = ({ listings, onDetail, setPage }) => {
 const SectionVoices = ({ setPage }) => {
   const [communities, setCommunities] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hoverIdC, setHoverIdC] = useState<string | null>(null);
+  const [hoverIdE, setHoverIdE] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -2165,8 +2559,6 @@ const SectionVoices = ({ setPage }) => {
         }
       } catch (e) {
         console.error("Voices fetch error:", e);
-      } finally {
-        if (mounted) setIsLoading(false);
       }
     })();
     return () => { mounted = false; };
@@ -2176,86 +2568,106 @@ const SectionVoices = ({ setPage }) => {
 
   return (
     <section style={{
-      padding: "120px 0 120px",
-      background: QC.cream,
+      padding: "200px 0 200px",
+      background: "rgba(245, 239, 230, 0.5)",
       borderTop: `1px solid ${QC.lightSand}`,
       borderBottom: `1px solid ${QC.lightSand}`,
     }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
-        
-        <div style={{ marginBottom: 48 }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+
+        <div style={{ marginBottom: 80 }}>
           <p style={{
             fontFamily: QC_FONT_EN,
-            fontSize: 14, fontStyle: "italic",
-            color: QC.warmGray, letterSpacing: 0.5,
-            margin: "0 0 8px 0", opacity: 0.85,
+            fontSize: 13,
+            fontStyle: "italic",
+            color: QC.warmGray,
+            letterSpacing: 0.8,
+            margin: "0 0 12px 0",
+            opacity: 0.75,
+            fontWeight: 300,
           }}>
             Voices of the Town
           </p>
           <h2 style={{
             fontFamily: QC_FONT_JP,
-            fontSize: "clamp(22px, 4vw, 28px)",
-            fontWeight: 700, color: QC.softBrown,
-            letterSpacing: 0.5, lineHeight: 1.4,
+            fontSize: "clamp(20px, 4vw, 24px)",
+            fontWeight: 500,
+            color: QC.softBrown,
+            letterSpacing: 0.8,
+            lineHeight: 1.5,
             margin: 0,
           }}>
             街の声
           </h2>
           <div style={{
-            marginTop: 24, width: 40, height: 1,
+            marginTop: 40,
+            width: 32,
+            height: 1,
             background: QC.lightSand,
-          }}/>
+          }} />
         </div>
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 32,
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 48,
         }}>
-          
+
           {/* コミュニティ */}
           {communities.length > 0 && (
             <div>
               <h3 style={{
                 fontFamily: QC_FONT_JP,
-                fontSize: 16, fontWeight: 700,
+                fontSize: 15,
+                fontWeight: 400,
                 color: QC.charcoal,
-                margin: "0 0 20px 0", letterSpacing: 0.5,
+                margin: "0 0 28px 0",
+                letterSpacing: 0.8,
               }}>
-                ◯ 広場でのおしゃべり
+                広場でのおしゃべり
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {communities.map(c => (
-                  <div
-                    key={c.id}
-                    onClick={() => setPage("communities")}
-                    style={{
-                      background: QC.warmWhite,
-                      padding: "20px 24px",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      border: `1px solid ${QC.lightSand}`,
-                      transition: "transform 0.3s ease",
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}
-                  >
-                    <p style={{
-                      fontFamily: QC_FONT_JP, fontSize: 14,
-                      fontWeight: 600, color: QC.charcoal,
-                      margin: "0 0 6px 0",
-                    }}>
-                      {c.name}
-                    </p>
-                    <p style={{
-                      fontFamily: QC_FONT_JP, fontSize: 11,
-                      color: QC.warmGray,
-                      margin: 0,
-                    }}>
-                      {c.member_count || 0} 人の住民
-                    </p>
-                  </div>
-                ))}
+                {communities.map(c => {
+                  const isHover = hoverIdC === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => setPage("communities")}
+                      onMouseEnter={() => setHoverIdC(c.id)}
+                      onMouseLeave={() => setHoverIdC(null)}
+                      style={{
+                        background: QC.warmWhite,
+                        padding: "24px 28px",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        border: `1px solid ${QC.lightSand}`,
+                        transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+                        transform: isHover ? "translateX(2px)" : "translateX(0)",
+                      }}
+                    >
+                      <p style={{
+                        fontFamily: QC_FONT_JP,
+                        fontSize: 13,
+                        fontWeight: 400,
+                        color: QC.charcoal,
+                        margin: "0 0 8px 0",
+                        lineHeight: 1.7,
+                      }}>
+                        {c.name}
+                      </p>
+                      <p style={{
+                        fontFamily: QC_FONT_JP,
+                        fontSize: 11,
+                        fontWeight: 300,
+                        color: QC.warmGray,
+                        margin: 0,
+                        letterSpacing: 0.5,
+                      }}>
+                        {c.member_count || 0} 人
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2265,55 +2677,68 @@ const SectionVoices = ({ setPage }) => {
             <div>
               <h3 style={{
                 fontFamily: QC_FONT_JP,
-                fontSize: 16, fontWeight: 700,
+                fontSize: 15,
+                fontWeight: 400,
                 color: QC.charcoal,
-                margin: "0 0 20px 0", letterSpacing: 0.5,
+                margin: "0 0 28px 0",
+                letterSpacing: 0.8,
               }}>
-                △ 街のお知らせ
+                街のお知らせ
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {events.map(ev => {
+                  const isHover = hoverIdE === ev.id;
                   const d = new Date(ev.event_date);
-                  const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                  const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
                   return (
                     <div
                       key={ev.id}
                       onClick={() => setPage("events")}
+                      onMouseEnter={() => setHoverIdE(ev.id)}
+                      onMouseLeave={() => setHoverIdE(null)}
                       style={{
                         background: QC.warmWhite,
-                        padding: "20px 24px",
-                        borderRadius: 8,
+                        padding: "24px 28px",
+                        borderRadius: 4,
                         cursor: "pointer",
                         border: `1px solid ${QC.lightSand}`,
-                        transition: "transform 0.3s ease",
+                        transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+                        transform: isHover ? "translateX(2px)" : "translateX(0)",
                         display: "flex",
-                        gap: 16,
+                        gap: 20,
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}
                     >
                       <div style={{
                         flexShrink: 0,
-                        fontFamily: QC_FONT_EN, fontSize: 18,
-                        color: QC.softBrown, fontWeight: 500,
+                        fontFamily: QC_FONT_EN,
+                        fontSize: 17,
+                        color: QC.softBrown,
+                        fontWeight: 400,
+                        letterSpacing: 0.5,
                       }}>
                         {dateStr}
                       </div>
                       <div>
                         <p style={{
-                          fontFamily: QC_FONT_JP, fontSize: 14,
-                          fontWeight: 600, color: QC.charcoal,
-                          margin: "0 0 4px 0", lineHeight: 1.5,
+                          fontFamily: QC_FONT_JP,
+                          fontSize: 13,
+                          fontWeight: 400,
+                          color: QC.charcoal,
+                          margin: "0 0 6px 0",
+                          lineHeight: 1.7,
                         }}>
                           {ev.title}
                         </p>
                         {ev.location && (
                           <p style={{
-                            fontFamily: QC_FONT_JP, fontSize: 11,
+                            fontFamily: QC_FONT_JP,
+                            fontSize: 11,
+                            fontWeight: 300,
                             color: QC.warmGray,
                             margin: 0,
+                            letterSpacing: 0.5,
                           }}>
-                            📍 {ev.location}
+                            {ev.location}
                           </p>
                         )}
                       </div>
@@ -2335,84 +2760,79 @@ const SectionVoices = ({ setPage }) => {
 
 const SectionJoinTown = ({ setPage }) => {
   const { user } = useAuth();
-  
-  // ログイン済みなら表示しない
+  const [isHover, setIsHover] = useState(false);
+
   if (user) return null;
 
   return (
     <section style={{
-      padding: "140px 0 140px",
-      background: QC.warmWhite,
+      padding: "240px 0 240px",
+      background: "transparent",
       textAlign: "center",
     }}>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 24px" }}>
-        
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 32px" }}>
+
         <p style={{
           fontFamily: QC_FONT_EN,
-          fontSize: 14, fontStyle: "italic",
-          color: QC.warmGray, letterSpacing: 0.5,
-          margin: "0 0 16px 0", opacity: 0.85,
+          fontSize: 13,
+          fontStyle: "italic",
+          color: QC.warmGray,
+          letterSpacing: 1,
+          margin: "0 0 24px 0",
+          opacity: 0.75,
+          fontWeight: 300,
         }}>
           Join the Town
         </p>
 
         <h2 style={{
           fontFamily: QC_FONT_JP,
-          fontSize: "clamp(24px, 4.5vw, 32px)",
-          fontWeight: 700, color: QC.softBrown,
-          letterSpacing: 0.5, lineHeight: 1.5,
-          margin: "0 0 24px 0",
+          fontSize: "clamp(20px, 4vw, 26px)",
+          fontWeight: 400,
+          color: QC.softBrown,
+          letterSpacing: 1,
+          lineHeight: 1.8,
+          margin: "0 0 40px 0",
         }}>
-          あなたの家の窓辺も、
-          <br/>
-          誰かに見せませんか?
+          あなたの家の窓辺を、
+          <br />
+          誰かに見せませんか。
         </h2>
 
         <p style={{
           fontFamily: QC_FONT_JP,
-          fontSize: 14, color: QC.warmGray,
-          lineHeight: 1.8,
-          margin: "0 0 48px 0",
+          fontSize: 13,
+          fontWeight: 300,
+          color: QC.warmGray,
+          lineHeight: 1.9,
+          margin: "0 0 80px 0",
+          letterSpacing: 0.5,
         }}>
-          うちの子の話で笑い合う、
-          <br/>
+          うちの子の話で笑い合える、
+          <br />
           そんな街が、ここにあります。
         </p>
 
         <button
           onClick={() => setPage("login")}
+          onMouseEnter={() => setIsHover(true)}
+          onMouseLeave={() => setIsHover(false)}
           style={{
             fontFamily: QC_FONT_JP,
-            background: QC.terracotta,
-            color: QC.warmWhite,
-            border: "none",
-            padding: "18px 56px",
-            fontSize: 15, fontWeight: 600,
-            letterSpacing: 1,
+            background: isHover ? "rgba(201, 123, 95, 0.05)" : "transparent",
+            color: QC.terracotta,
+            border: `1px solid ${QC.terracotta}`,
+            padding: "16px 48px",
+            fontSize: 14,
+            fontWeight: 300,
+            letterSpacing: 1.5,
             cursor: "pointer",
-            borderRadius: 8,
-            transition: "all 0.3s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 12px 32px rgba(201, 123, 95, 0.3)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "none";
+            borderRadius: 0,
+            transition: "all 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
           Qoccaの住民になる
         </button>
-
-        <p style={{
-          fontFamily: QC_FONT_JP,
-          fontSize: 11, color: QC.warmGray,
-          margin: "24px 0 0 0", letterSpacing: 0.5,
-          opacity: 0.8,
-        }}>
-          登録は無料です
-        </p>
       </div>
     </section>
   );
@@ -2423,8 +2843,19 @@ const SectionJoinTown = ({ setPage }) => {
 // 新 HomePage（Phase 1.5 リニューアル版）
 // ============================================================================
 const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
+  const progress = useScrollProgress();
+  const bgColor = qoccaInterpolateBackground(progress);
+
   return (
-    <div style={{ background: QC.warmWhite }}>
+    <div style={{
+      background: bgColor,
+      transition: "background 1.5s ease",
+      minHeight: "100vh",
+      position: "relative",
+    }}>
+      <style>{QC_KEYFRAMES}</style>
+      <QoccaNoiseOverlay />
+
       <SectionHero />
       <SectionTodaysMoments setPage={setPage} />
       <SectionTownMap setPage={setPage} />
