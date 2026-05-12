@@ -1838,6 +1838,587 @@ const SectionTodaysMoments = ({ setPage }) => {
   );
 };
 
+
+// ============================================================================
+// SECTION 3: Qocca、こんな街です (A Town Map)
+// ============================================================================
+
+const SectionTownMap = ({ setPage }) => {
+  const places = [
+    { 
+      icon: "◯", 
+      name: "広場", 
+      en: "Plaza",
+      desc: "犬種・猫種別のコミュニティ。\n同じ\"うちの子\"を持つ仲間と語り合える。",
+      onClick: () => setPage("communities"),
+    },
+    { 
+      icon: "△", 
+      name: "商店街", 
+      en: "Atelier",
+      desc: "心を込めて作る、街の作家たち。\n一点物の世界に、出会いに行く。",
+      onClick: () => setPage("search"),
+    },
+    { 
+      icon: "□", 
+      name: "案内所", 
+      en: "Map",
+      desc: "ドッグカフェ、ペット同伴可施設。\n街の隅々まで、知る人ぞ知る場所を。",
+      onClick: () => setPage("facilities"),
+    },
+    { 
+      icon: "◇", 
+      name: "展示場", 
+      en: "Gallery",
+      desc: "うちの子の、いちばんの瞬間を。\nみんなのギャラリー。",
+      onClick: () => setPage("gallery"),
+    },
+  ];
+
+  return (
+    <section style={{
+      padding: "120px 0 120px",
+      background: QC.cream,
+      borderTop: `1px solid ${QC.lightSand}`,
+      borderBottom: `1px solid ${QC.lightSand}`,
+    }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
+        
+        {/* セクションヘッダー */}
+        <div style={{ marginBottom: 60, textAlign: "center" }}>
+          <p style={{
+            fontFamily: QC_FONT_EN,
+            fontSize: 14, fontStyle: "italic",
+            color: QC.warmGray, letterSpacing: 0.5,
+            margin: "0 0 8px 0", opacity: 0.85,
+          }}>
+            A Town Map
+          </p>
+          <h2 style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: "clamp(22px, 4vw, 28px)",
+            fontWeight: 700, color: QC.softBrown,
+            letterSpacing: 0.5, lineHeight: 1.5,
+            margin: 0,
+          }}>
+            Qocca、こんな街です
+          </h2>
+          <div style={{
+            marginTop: 24, width: 40, height: 1,
+            background: QC.softBrown, opacity: 0.3,
+            margin: "24px auto 0",
+          }}/>
+        </div>
+
+        {/* 4つの場所カード */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: 20,
+        }}>
+          {places.map((p, i) => (
+            <div
+              key={i}
+              onClick={p.onClick}
+              style={{
+                background: QC.warmWhite,
+                borderRadius: 12,
+                padding: "40px 28px",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "transform 0.4s ease, box-shadow 0.4s ease",
+                border: `1px solid ${QC.lightSand}`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 12px 32px rgba(44, 41, 38, 0.06)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div style={{
+                fontSize: 32, color: QC.sage,
+                marginBottom: 16, fontWeight: 300,
+                opacity: 0.7,
+              }}>
+                {p.icon}
+              </div>
+              <p style={{
+                fontFamily: QC_FONT_EN,
+                fontSize: 12, fontStyle: "italic",
+                color: QC.warmGray, letterSpacing: 0.5,
+                margin: "0 0 6px 0", opacity: 0.85,
+              }}>
+                {p.en}
+              </p>
+              <h3 style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: 18, fontWeight: 700,
+                color: QC.softBrown,
+                margin: "0 0 16px 0",
+                letterSpacing: 0.5,
+              }}>
+                {p.name}
+              </h3>
+              <p style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: 12, color: QC.warmGray,
+                lineHeight: 1.8, margin: 0,
+                whiteSpace: "pre-line",
+              }}>
+                {p.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// SECTION 4: 街のお店から (From the Atelier)
+// ============================================================================
+
+const SectionAtelier = ({ listings, onDetail, setPage }) => {
+  // approved の出品から最大6件、display用
+  const featured = (listings || [])
+    .filter(l => l.status === "approved")
+    .slice(0, 6);
+
+  if (featured.length === 0) {
+    return null; // 出品がなければセクション表示しない
+  }
+
+  return (
+    <section style={{
+      padding: "120px 0 120px",
+      background: QC.warmWhite,
+    }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
+        
+        {/* セクションヘッダー */}
+        <div style={{ marginBottom: 48 }}>
+          <p style={{
+            fontFamily: QC_FONT_EN,
+            fontSize: 14, fontStyle: "italic",
+            color: QC.warmGray, letterSpacing: 0.5,
+            margin: "0 0 8px 0", opacity: 0.85,
+          }}>
+            From the Atelier
+          </p>
+          <h2 style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: "clamp(22px, 4vw, 28px)",
+            fontWeight: 700, color: QC.softBrown,
+            letterSpacing: 0.5, lineHeight: 1.4,
+            margin: 0,
+          }}>
+            街のお店から
+          </h2>
+          <p style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 14, color: QC.warmGray,
+            margin: "16px 0 0 0", lineHeight: 1.8,
+          }}>
+            心を込めて作られた、街の作家たちの一点もの。
+          </p>
+          <div style={{
+            marginTop: 24, width: 40, height: 1,
+            background: QC.lightSand,
+          }}/>
+        </div>
+
+        {/* 出品グリッド */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: 24,
+        }}>
+          {featured.map(item => {
+            const firstImage = (item.image_urls && item.image_urls[0]) || item.cover_image_url || "";
+            return (
+              <div
+                key={item.id}
+                onClick={() => onDetail(item)}
+                style={{
+                  background: QC.cream,
+                  borderRadius: 8, overflow: "hidden",
+                  cursor: "pointer",
+                  transition: "transform 0.4s ease",
+                  border: `1px solid rgba(44, 41, 38, 0.04)`,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+              >
+                {firstImage && (
+                  <div style={{
+                    width: "100%", aspectRatio: "1 / 1",
+                    background: QC.lightSand,
+                    overflow: "hidden",
+                  }}>
+                    <img
+                      src={firstImage}
+                      alt={item.title}
+                      loading="lazy"
+                      style={{
+                        width: "100%", height: "100%",
+                        objectFit: "cover", display: "block",
+                      }}
+                    />
+                  </div>
+                )}
+                <div style={{ padding: "16px 18px" }}>
+                  <p style={{
+                    fontFamily: QC_FONT_JP, fontSize: 13,
+                    fontWeight: 600, color: QC.charcoal,
+                    margin: "0 0 6px 0", lineHeight: 1.5,
+                    overflow: "hidden", textOverflow: "ellipsis",
+                    display: "-webkit-box", WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                  }}>
+                    {item.title}
+                  </p>
+                  <p style={{
+                    fontFamily: QC_FONT_JP, fontSize: 11,
+                    color: QC.warmGray,
+                    margin: "0 0 10px 0", letterSpacing: 0.3,
+                  }}>
+                    {item.seller_name || "Qoccaの作家"}
+                  </p>
+                  <p style={{
+                    fontFamily: QC_FONT_EN, fontSize: 16,
+                    color: QC.softBrown, fontWeight: 500,
+                    margin: 0, letterSpacing: 0.5,
+                  }}>
+                    ¥{(item.price || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* すべて見る */}
+        <div style={{ textAlign: "center", marginTop: 48 }}>
+          <button
+            onClick={() => setPage("search")}
+            style={{
+              fontFamily: QC_FONT_JP,
+              background: "transparent",
+              border: `1px solid ${QC.softBrown}`,
+              color: QC.softBrown,
+              padding: "14px 40px",
+              fontSize: 13, letterSpacing: 1,
+              cursor: "pointer",
+              borderRadius: 0,
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = QC.softBrown;
+              e.currentTarget.style.color = QC.warmWhite;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = QC.softBrown;
+            }}
+          >
+            すべての作品を見る →
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// SECTION 5: 街の声 (Voices) - コミュニティ + イベント
+// ============================================================================
+
+const SectionVoices = ({ setPage }) => {
+  const [communities, setCommunities] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [{ data: cs }, { data: es }] = await Promise.all([
+          supabase
+            .from("communities")
+            .select("id, name, description, pet_type, member_count")
+            .order("member_count", { ascending: false })
+            .limit(3),
+          supabase
+            .from("events")
+            .select("id, title, location, event_date, description")
+            .gte("event_date", new Date().toISOString())
+            .order("event_date", { ascending: true })
+            .limit(3),
+        ]);
+        if (mounted) {
+          setCommunities(cs || []);
+          setEvents(es || []);
+        }
+      } catch (e) {
+        console.error("Voices fetch error:", e);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  if (communities.length === 0 && events.length === 0) return null;
+
+  return (
+    <section style={{
+      padding: "120px 0 120px",
+      background: QC.cream,
+      borderTop: `1px solid ${QC.lightSand}`,
+      borderBottom: `1px solid ${QC.lightSand}`,
+    }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
+        
+        <div style={{ marginBottom: 48 }}>
+          <p style={{
+            fontFamily: QC_FONT_EN,
+            fontSize: 14, fontStyle: "italic",
+            color: QC.warmGray, letterSpacing: 0.5,
+            margin: "0 0 8px 0", opacity: 0.85,
+          }}>
+            Voices of the Town
+          </p>
+          <h2 style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: "clamp(22px, 4vw, 28px)",
+            fontWeight: 700, color: QC.softBrown,
+            letterSpacing: 0.5, lineHeight: 1.4,
+            margin: 0,
+          }}>
+            街の声
+          </h2>
+          <div style={{
+            marginTop: 24, width: 40, height: 1,
+            background: QC.lightSand,
+          }}/>
+        </div>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 32,
+        }}>
+          
+          {/* コミュニティ */}
+          {communities.length > 0 && (
+            <div>
+              <h3 style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: 16, fontWeight: 700,
+                color: QC.charcoal,
+                margin: "0 0 20px 0", letterSpacing: 0.5,
+              }}>
+                ◯ 広場でのおしゃべり
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {communities.map(c => (
+                  <div
+                    key={c.id}
+                    onClick={() => setPage("communities")}
+                    style={{
+                      background: QC.warmWhite,
+                      padding: "20px 24px",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      border: `1px solid ${QC.lightSand}`,
+                      transition: "transform 0.3s ease",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}
+                  >
+                    <p style={{
+                      fontFamily: QC_FONT_JP, fontSize: 14,
+                      fontWeight: 600, color: QC.charcoal,
+                      margin: "0 0 6px 0",
+                    }}>
+                      {c.name}
+                    </p>
+                    <p style={{
+                      fontFamily: QC_FONT_JP, fontSize: 11,
+                      color: QC.warmGray,
+                      margin: 0,
+                    }}>
+                      {c.member_count || 0} 人の住民
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* イベント */}
+          {events.length > 0 && (
+            <div>
+              <h3 style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: 16, fontWeight: 700,
+                color: QC.charcoal,
+                margin: "0 0 20px 0", letterSpacing: 0.5,
+              }}>
+                △ 街のお知らせ
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {events.map(ev => {
+                  const d = new Date(ev.event_date);
+                  const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => setPage("events")}
+                      style={{
+                        background: QC.warmWhite,
+                        padding: "20px 24px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        border: `1px solid ${QC.lightSand}`,
+                        transition: "transform 0.3s ease",
+                        display: "flex",
+                        gap: 16,
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}
+                    >
+                      <div style={{
+                        flexShrink: 0,
+                        fontFamily: QC_FONT_EN, fontSize: 18,
+                        color: QC.softBrown, fontWeight: 500,
+                      }}>
+                        {dateStr}
+                      </div>
+                      <div>
+                        <p style={{
+                          fontFamily: QC_FONT_JP, fontSize: 14,
+                          fontWeight: 600, color: QC.charcoal,
+                          margin: "0 0 4px 0", lineHeight: 1.5,
+                        }}>
+                          {ev.title}
+                        </p>
+                        {ev.location && (
+                          <p style={{
+                            fontFamily: QC_FONT_JP, fontSize: 11,
+                            color: QC.warmGray,
+                            margin: 0,
+                          }}>
+                            📍 {ev.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// SECTION 6: 仲間になろう (Join the Town) - 登録CTA
+// ============================================================================
+
+const SectionJoinTown = ({ setPage }) => {
+  const { user } = useAuth();
+  
+  // ログイン済みなら表示しない
+  if (user) return null;
+
+  return (
+    <section style={{
+      padding: "140px 0 140px",
+      background: QC.warmWhite,
+      textAlign: "center",
+    }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 24px" }}>
+        
+        <p style={{
+          fontFamily: QC_FONT_EN,
+          fontSize: 14, fontStyle: "italic",
+          color: QC.warmGray, letterSpacing: 0.5,
+          margin: "0 0 16px 0", opacity: 0.85,
+        }}>
+          Join the Town
+        </p>
+
+        <h2 style={{
+          fontFamily: QC_FONT_JP,
+          fontSize: "clamp(24px, 4.5vw, 32px)",
+          fontWeight: 700, color: QC.softBrown,
+          letterSpacing: 0.5, lineHeight: 1.5,
+          margin: "0 0 24px 0",
+        }}>
+          あなたの家の窓辺も、
+          <br/>
+          誰かに見せませんか?
+        </h2>
+
+        <p style={{
+          fontFamily: QC_FONT_JP,
+          fontSize: 14, color: QC.warmGray,
+          lineHeight: 1.8,
+          margin: "0 0 48px 0",
+        }}>
+          うちの子の話で笑い合う、
+          <br/>
+          そんな街が、ここにあります。
+        </p>
+
+        <button
+          onClick={() => setPage("login")}
+          style={{
+            fontFamily: QC_FONT_JP,
+            background: QC.terracotta,
+            color: QC.warmWhite,
+            border: "none",
+            padding: "18px 56px",
+            fontSize: 15, fontWeight: 600,
+            letterSpacing: 1,
+            cursor: "pointer",
+            borderRadius: 8,
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 12px 32px rgba(201, 123, 95, 0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          Qoccaの住民になる
+        </button>
+
+        <p style={{
+          fontFamily: QC_FONT_JP,
+          fontSize: 11, color: QC.warmGray,
+          margin: "24px 0 0 0", letterSpacing: 0.5,
+          opacity: 0.8,
+        }}>
+          登録は無料です
+        </p>
+      </div>
+    </section>
+  );
+};
+
+
 // ============================================================================
 // 新 HomePage（Phase 1.5 リニューアル版）
 // ============================================================================
@@ -1846,6 +2427,10 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
     <div style={{ background: QC.warmWhite }}>
       <SectionHero />
       <SectionTodaysMoments setPage={setPage} />
+      <SectionTownMap setPage={setPage} />
+      <SectionAtelier listings={listings} onDetail={onDetail} setPage={setPage} />
+      <SectionVoices setPage={setPage} />
+      <SectionJoinTown setPage={setPage} />
       <SharedFooter setPage={setPage}/>
     </div>
   );
