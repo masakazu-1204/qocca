@@ -1591,14 +1591,14 @@ const SectionWhatIsQocca = ({ setPage }) => {
 
   const items = [
     {
-      title: '思い出を形に残す',
+      title: 'うちの子との記憶を、形に残す',
       quote: '"あの瞬間を、永遠の形に"',
       desc: '似顔絵、羊毛作品、記念グッズ。\n街の作家たちが、心を込めて。',
       linkText: '商店街へ',
       onClick: () => setPage("search"),
     },
     {
-      title: '同じうちの子と話す',
+      title: 'うちの子の話で、笑い合う',
       quote: '"犬種ごとの、専門コミュニティ"',
       desc: '毎日の発見を、分かり合える人と。\nうちの子と同じ仲間の集まり。',
       linkText: '広場へ',
