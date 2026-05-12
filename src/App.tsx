@@ -1571,6 +1571,192 @@ const QC_REACTIONS: { key: string; label: string }[] = [
   { key: "want_see", label: "ずっと見てたい" },
 ];
 
+// ============================================================================
+// SectionWhatIsQocca: 機能理解導線 (Hero と TodaysMoments の間)
+// "感情で引き込み、機能で理解させる" - 05-branding-ux.md 準拠
+// ============================================================================
+
+const SectionWhatIsQocca = ({ setPage }) => {
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const items = [
+    {
+      title: '思い出を形に残す',
+      quote: '"あの瞬間を、永遠の形に"',
+      desc: '似顔絵、羊毛作品、記念グッズ。\n街の作家たちが、心を込めて。',
+      linkText: '商店街へ',
+      onClick: () => setPage("search"),
+    },
+    {
+      title: '同じうちの子と話す',
+      quote: '"犬種ごとの、専門コミュニティ"',
+      desc: '毎日の発見を、分かり合える人と。\nうちの子と同じ仲間の集まり。',
+      linkText: '広場へ',
+      onClick: () => setPage("communities"),
+    },
+    {
+      title: '街を歩いてみる',
+      quote: '"クリエイター、イベント、施設"',
+      desc: 'ペットと過ごす日常を、もっと豊かに。\nお出かけ先、出会い、発見。',
+      linkText: '案内所へ',
+      onClick: () => setPage("facilities"),
+    },
+  ];
+
+  return (
+    <section style={{
+      padding: '160px 0 160px',
+      background: 'transparent',
+      position: 'relative',
+    }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 32px' }}>
+
+        {/* セクションヘッダー */}
+        <div style={{ textAlign: 'center', marginBottom: 80 }}>
+          <p style={{
+            fontFamily: QC_FONT_EN,
+            fontSize: 13,
+            fontStyle: 'italic',
+            color: QC.warmGray,
+            letterSpacing: 0.8,
+            margin: '0 0 12px 0',
+            opacity: 0.75,
+            fontWeight: 300,
+          }}>
+            What you can do here
+          </p>
+          <h2 style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 'clamp(20px, 4vw, 24px)',
+            fontWeight: 500,
+            color: QC.softBrown,
+            letterSpacing: 0.8,
+            lineHeight: 1.5,
+            margin: 0,
+          }}>
+            Qocca、できること
+          </h2>
+          <div style={{
+            marginTop: 40,
+            width: 32,
+            height: 1,
+            background: QC.lightSand,
+            margin: '40px auto 0',
+          }} />
+        </div>
+
+        {/* 3カード */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+          gap: isMobile ? 24 : 32,
+        }}>
+          {items.map((item, i) => {
+            const isHover = hoverIndex === i;
+            return (
+              <div
+                key={i}
+                onClick={item.onClick}
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
+                style={{
+                  background: QC.warmWhite,
+                  borderRadius: 4,
+                  padding: '48px 32px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.8s ease',
+                  border: `1px solid ${QC.lightSand}`,
+                  transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
+                  boxShadow: isHover
+                    ? '0 8px 24px rgba(44, 41, 38, 0.04)'
+                    : 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}
+              >
+                {/* タイトル (詩的・大きく) */}
+                <h3 style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: 17,
+                  fontWeight: 400,
+                  color: QC.softBrown,
+                  margin: '0 0 16px 0',
+                  letterSpacing: 0.8,
+                  lineHeight: 1.6,
+                }}>
+                  {item.title}
+                </h3>
+
+                {/* 引用 (詩的・控えめ) */}
+                <p style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: 12,
+                  fontStyle: 'italic',
+                  fontWeight: 300,
+                  color: QC.warmGray,
+                  margin: '0 0 24px 0',
+                  letterSpacing: 0.5,
+                  lineHeight: 1.7,
+                  opacity: 0.85,
+                }}>
+                  {item.quote}
+                </p>
+
+                {/* 機能説明 (具体的) */}
+                <p style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: 12,
+                  fontWeight: 300,
+                  color: QC.warmGray,
+                  margin: '0 0 32px 0',
+                  lineHeight: 1.9,
+                  letterSpacing: 0.3,
+                  whiteSpace: 'pre-line',
+                }}>
+                  {item.desc}
+                </p>
+
+                {/* リンク (CTA代わり、控えめ) */}
+                <div style={{
+                  marginTop: 'auto',
+                  textAlign: 'center',
+                }}>
+                  <span style={{
+                    fontFamily: QC_FONT_JP,
+                    fontSize: 12,
+                    fontWeight: 300,
+                    color: QC.softBrown,
+                    letterSpacing: 1.2,
+                    borderBottom: `1px solid ${isHover
+                      ? QC.softBrown
+                      : 'rgba(139, 111, 92, 0.3)'}`,
+                    paddingBottom: 4,
+                    transition: 'border-color 0.6s ease',
+                  }}>
+                    {item.linkText}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const SectionTodaysMoments = ({ setPage }) => {
   const { user } = useAuth();
   const [moments, setMoments] = useState<any[]>([]);
@@ -2857,6 +3043,7 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
       <QoccaNoiseOverlay />
 
       <SectionHero />
+      <SectionWhatIsQocca setPage={setPage} />
       <SectionTodaysMoments setPage={setPage} />
       <SectionTownMap setPage={setPage} />
       <SectionAtelier listings={listings} onDetail={onDetail} setPage={setPage} />
