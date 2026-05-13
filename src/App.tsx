@@ -1227,6 +1227,40 @@ const QC_HERO_DURATIONS = [14, 10, 10, 10, 10, 10, 14];
 const QC_HERO_TRANSITION_MS = 1500;
 const QC_PC_BREAKPOINT = 768;
 
+// Phase B: PC 専用シネマ画像 (16:9 フルワイド表示)
+// モバイルは既存の supabase gallery_posts (display_priority 1〜7) を使用
+// per-image caption は alt 属性として使用 (画面表示は静的 main+sub copy)
+const HERO_IMAGES_CINEMA = [
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-1-bed.png',
+    caption: '誰もまだ起きていない、朝。',
+  },
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-2-window.png',
+    caption: '窓の向こうを、ずっと見ていた。',
+  },
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-3-path.png',
+    caption: 'いつもの散歩道、いつもの時間。',
+  },
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-4-living.png',
+    caption: 'ソファに残った、温もり。',
+  },
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-5-kitchen.png',
+    caption: '夕飯の支度の音を、聞いていた。',
+  },
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-6-entrance.png',
+    caption: 'おかえりを、ずっと待っていた。',
+  },
+  {
+    url: 'https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-7-town.png',
+    caption: 'この街と、この子と。',
+  },
+];
+
 // ----------------------------------------------------------------------------
 // useScrollProgress hook - スクロール量を 0-1 で取得
 // ----------------------------------------------------------------------------
@@ -1329,7 +1363,6 @@ const QoccaNoiseOverlay = () => (
 
 const SectionHero = () => {
   const [images, setImages] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPC, setIsPC] = useState(
     typeof window !== "undefined" && window.innerWidth >= QC_PC_BREAKPOINT
@@ -1343,7 +1376,8 @@ const SectionHero = () => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // データ取得
+  // モバイル用データ取得 (gallery_posts の display_priority 1〜7)
+  // PC は HERO_IMAGES_CINEMA を使用するため、この fetch はモバイル専用
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -1358,33 +1392,40 @@ const SectionHero = () => {
         if (mounted) setImages(data || []);
       } catch (e) {
         console.error("Hero fetch error:", e);
-      } finally {
-        if (mounted) setIsLoading(false);
       }
     })();
     return () => { mounted = false; };
   }, []);
 
+  // PC はシネマ画像 (常に 7 枚利用可能)、モバイルは fetch した画像
+  const displayImages = isPC
+    ? HERO_IMAGES_CINEMA.map((c, i) => ({
+        id: `cinema-${i}`,
+        image_url: c.url,
+        caption: c.caption,
+      }))
+    : images;
+
   // プリロード
   useEffect(() => {
-    images.forEach((img) => {
+    displayImages.forEach((img) => {
       const preloader = new Image();
       preloader.src = img.image_url;
     });
-  }, [images]);
+  }, [displayImages]);
 
   // ローテーション
   useEffect(() => {
-    if (images.length === 0) return;
+    if (displayImages.length === 0) return;
     const duration = (QC_HERO_DURATIONS[currentIndex] || 10) * 1000;
     const timer = setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
+      setCurrentIndex((prev) => (prev + 1) % displayImages.length);
     }, duration);
     return () => clearTimeout(timer);
-  }, [currentIndex, images.length]);
+  }, [currentIndex, displayImages.length]);
 
-  // ローディング中 (背景のみ)
-  if (isLoading || images.length === 0) {
+  // ローディング中 (背景のみ) — PC は cinema で常に画像あり、mobile は fetch 待ち
+  if (displayImages.length === 0) {
     return (
       <section style={{
         position: "relative",
@@ -1410,64 +1451,37 @@ const SectionHero = () => {
       <style>{QC_KEYFRAMES}</style>
 
       {/* 画像レイヤー */}
-      {images.map((img, i) => {
+      {displayImages.map((img, i) => {
         const isActive = i === currentIndex;
         const isFirst = i === 0;
         const kenBurnsIndex = (i % 3) + 1;
         const kenBurnsDuration = QC_HERO_DURATIONS[i] + 2;
 
         if (isPC) {
+          // PC: シネマ画像をフルワイドで1枚表示 (両サイドぼかし削除、Ken Burns なし)
           return (
-            <React.Fragment key={img.id}>
-              {/* PC: 背景ぼかし (Ken Burns 適用しない) */}
-              <img
-                src={img.image_url}
-                alt=""
-                aria-hidden
-                loading={isFirst ? "eager" : "lazy"}
-                decoding="async"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  filter: "blur(60px) brightness(0.6)",
-                  transform: "scale(1.15)",
-                  opacity: isActive ? 0.4 : 0,
-                  transition: `opacity ${QC_HERO_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                  pointerEvents: "none",
-                }}
-              />
-              {/* PC: 中央縦長メイン画像 */}
-              <img
-                src={img.image_url}
-                alt={img.caption}
-                loading={isFirst ? "eager" : "lazy"}
-                decoding="async"
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  maxWidth: "min(480px, 35vw)",
-                  maxHeight: "85vh",
-                  width: "auto",
-                  height: "auto",
-                  objectFit: "contain",
-                  opacity: isActive ? 1 : 0,
-                  transition: `opacity ${QC_HERO_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                  boxShadow: "0 30px 90px rgba(44, 41, 38, 0.4)",
-                  borderRadius: 4,
-                  pointerEvents: "none",
-                  transformOrigin: "center center",
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            </React.Fragment>
+            <img
+              key={img.id}
+              src={img.image_url}
+              alt={img.caption}
+              loading={isFirst ? "eager" : "lazy"}
+              decoding="async"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+                opacity: isActive ? 1 : 0,
+                transition: `opacity ${QC_HERO_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                pointerEvents: "none",
+              }}
+            />
           );
         }
 
-        // モバイル: 縦長フルスクリーン + Ken Burns
+        // モバイル: 縦長フルスクリーン + Ken Burns (既存維持)
         return (
           <img
             key={img.id}
@@ -1493,7 +1507,7 @@ const SectionHero = () => {
         );
       })}
 
-      {/* 中央下キャッチコピー (ガラス感削除、影だけ) */}
+      {/* 中央下キャッチコピー (PC: メイン+サブコピー / Mobile: 既存維持) */}
       <div style={{
         position: "absolute",
         bottom: "20%",
@@ -1508,21 +1522,56 @@ const SectionHero = () => {
         opacity: 0,
         animation: "qocca-fadeInSlow 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards",
       }}>
-        <p style={{
-          fontSize: "clamp(18px, 4vw, 28px)",
-          fontFamily: QC_FONT_JP,
-          fontWeight: 300,
-          color: QC.warmWhite,
-          letterSpacing: "0.08em",
-          lineHeight: 1.8,
-          opacity: 0.92,
-          margin: 0,
-          textShadow: "0 2px 24px rgba(44, 41, 38, 0.5), 0 1px 4px rgba(44, 41, 38, 0.3)",
-        }}>
-          うちの子を愛してる人が
-          <br />
-          集まる街。
-        </p>
+        {isPC ? (
+          <>
+            <p style={{
+              fontSize: "clamp(24px, 4vw, 48px)",
+              fontFamily: QC_FONT_JP,
+              fontWeight: 300,
+              color: QC.warmWhite,
+              letterSpacing: "0.08em",
+              lineHeight: 1.6,
+              opacity: 0.95,
+              margin: 0,
+              textShadow: "0 2px 24px rgba(44, 41, 38, 0.5), 0 1px 4px rgba(44, 41, 38, 0.3)",
+            }}>
+              うちの子との時間を、
+              <br />
+              ちゃんと残せる場所。
+            </p>
+            <p style={{
+              fontSize: "clamp(12px, 1.2vw, 16px)",
+              fontFamily: QC_FONT_JP,
+              fontWeight: 300,
+              color: QC.warmWhite,
+              letterSpacing: "0.08em",
+              lineHeight: 1.9,
+              opacity: 0.75,
+              margin: "24px 0 0 0",
+              textShadow: "0 2px 16px rgba(44, 41, 38, 0.5)",
+            }}>
+              ペットを愛する人たちが集まる、
+              <br />
+              コミュニティ＆マーケットプレイス。
+            </p>
+          </>
+        ) : (
+          <p style={{
+            fontSize: "clamp(18px, 4vw, 28px)",
+            fontFamily: QC_FONT_JP,
+            fontWeight: 300,
+            color: QC.warmWhite,
+            letterSpacing: "0.08em",
+            lineHeight: 1.8,
+            opacity: 0.92,
+            margin: 0,
+            textShadow: "0 2px 24px rgba(44, 41, 38, 0.5), 0 1px 4px rgba(44, 41, 38, 0.3)",
+          }}>
+            うちの子を愛してる人が
+            <br />
+            集まる街。
+          </p>
+        )}
       </div>
 
       {/* 右上ロゴ (フェードイン 0.5s遅延 + 2s) */}
