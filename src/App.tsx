@@ -2828,188 +2828,302 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
 };
 
 // ============================================================================
-// SECTION 4: 街のお店から (From the Atelier)
+// SECTION: 街の作家たち (Phase D' - SectionResidentArtisans)
+// "作家ベース" の Resident 特集型 (旧 SectionAtelier を完全リデザイン)
+// 仕様: King 確定 (3者議論 Phase D 直後)
+// 設計判断:
+//   - データソース: 既存 listings prop (useListings hook) を流用
+//     → seller_id で重複排除、各作家の代表作1点 + サブ作品 max 2点
+//   - 旧 SectionAtelier の status filter バグ修正 (常時 false で非表示だった)
+//   - 価格非表示 (作家フォーカス、数字を主役にしない)
+//   - "作品を覗いてみる" → onDetail(代表作)、"すべての作家を覗いてみる" → setPage("search")
 // ============================================================================
 
-const SectionAtelier = ({ listings, onDetail, setPage }) => {
-  const [columnCount, setColumnCount] = useState(2);
-  const [hoverId, setHoverId] = useState<string | null>(null);
+const SectionResidentArtisans = ({ listings, onDetail, setPage }) => {
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [linkHoverIndex, setLinkHoverIndex] = useState<number | null>(null);
   const [allLinkHover, setAllLinkHover] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
 
   useEffect(() => {
-    const checkSize = () => {
-      const w = window.innerWidth;
-      setColumnCount(w >= 1024 ? 4 : w >= 768 ? 3 : 2);
-    };
-    checkSize();
-    window.addEventListener("resize", checkSize);
-    return () => window.removeEventListener("resize", checkSize);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  const featured = (listings || [])
-    .filter(l => l.status === "approved")
-    .slice(0, 6);
+  // 作家ごとに作品をグループ化 (seller_id で重複排除)、最大3人
+  // useListings hook は status=approved/sold_out に絞り済みのため、
+  // 旧 SectionAtelier の status filter (常時 false バグ) は撤去
+  const grouped = new Map<string, { seller_id: string; seller_name: string; works: any[] }>();
+  (listings || []).forEach((item: any) => {
+    const sellerId = item.seller_id;
+    if (!sellerId) return;
+    if (!grouped.has(sellerId)) {
+      grouped.set(sellerId, {
+        seller_id: sellerId,
+        seller_name: item.seller || '街の住民',
+        works: [],
+      });
+    }
+    grouped.get(sellerId)!.works.push(item);
+  });
+  const artisans = Array.from(grouped.values()).slice(0, 3);
 
-  if (featured.length === 0) return null;
+  if (artisans.length === 0) return null;
 
   return (
     <section style={{
-      padding: "200px 0 200px",
-      background: "transparent",
+      padding: '200px 0',
+      background: 'transparent',
+      position: 'relative',
     }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px' }}>
 
-        {/* セクションヘッダー */}
-        <div style={{ marginBottom: 80 }}>
+        {/* ヘッダー */}
+        <div style={{ textAlign: 'center', marginBottom: 100 }}>
           <p style={{
             fontFamily: QC_FONT_EN,
             fontSize: 13,
-            fontStyle: "italic",
+            fontStyle: 'italic',
             color: QC.warmGray,
             letterSpacing: 0.8,
-            margin: "0 0 12px 0",
             opacity: 0.75,
             fontWeight: 300,
+            margin: '0 0 12px 0',
           }}>
-            From the Atelier
+            Residents of the Town
           </p>
           <h2 style={{
             fontFamily: QC_FONT_JP,
-            fontSize: "clamp(20px, 4vw, 24px)",
+            fontSize: 'clamp(20px, 4vw, 26px)',
             fontWeight: 500,
             color: QC.softBrown,
             letterSpacing: 0.8,
             lineHeight: 1.5,
             margin: 0,
           }}>
-            街のお店から
+            街の作家たち
           </h2>
-          <p style={{
-            fontFamily: QC_FONT_JP,
-            fontSize: 13,
-            fontWeight: 300,
-            color: QC.warmGray,
-            margin: "20px 0 0 0",
-            lineHeight: 1.9,
-            letterSpacing: 0.5,
-          }}>
-            心を込めて作られた、街の作家たちの一点もの。
-          </p>
           <div style={{
             marginTop: 40,
             width: 32,
             height: 1,
             background: QC.lightSand,
+            margin: '40px auto 0',
           }} />
         </div>
 
-        {/* Pinterest型 Masonry グリッド */}
+        {/* 作家カード (縦に各作家1枚ずつ、gap 80px) */}
         <div style={{
-          columnCount: columnCount,
-          columnGap: 28,
-          padding: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 80,
         }}>
-          {featured.map(item => {
-            const isHover = hoverId === item.id;
-            const firstImage = (item.image_urls && item.image_urls[0]) || item.cover_image_url || "";
+          {artisans.map((artisan, i) => {
+            const isHover = hoverIndex === i;
+            const works = artisan.works;
+            const mainWork = works[0];
+            const subWorks = works.slice(1, 3);
+            const mainImage = (mainWork.imageUrls && mainWork.imageUrls[0]) || mainWork.imageUrl || '';
+            const workTitles = works.slice(0, 3).map(w => w.title).filter(Boolean).join('、');
+            const introText = workTitles ? `${workTitles}を作っています` : '';
+
             return (
-              <div
-                key={item.id}
-                onClick={() => onDetail(item)}
-                onMouseEnter={() => setHoverId(item.id)}
-                onMouseLeave={() => setHoverId(null)}
+              <article
+                key={artisan.seller_id}
                 style={{
-                  background: QC.cream,
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
-                  border: "1px solid rgba(44, 41, 38, 0.03)",
-                  transform: isHover ? "translateY(-1px)" : "translateY(0)",
-                  marginBottom: 28,
-                  breakInside: "avoid",
-                  display: "block",
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                  gap: isMobile ? 32 : 56,
+                  alignItems: 'center',
                 }}
               >
-                {firstImage && (
-                  <img
-                    src={firstImage}
-                    alt={item.title}
-                    loading="lazy"
+                {/* 左カラム: 作品コラージュ */}
+                <div>
+                  {/* 代表作 */}
+                  <div
+                    onClick={() => onDetail(mainWork)}
+                    onMouseEnter={() => setHoverIndex(i)}
+                    onMouseLeave={() => setHoverIndex(null)}
                     style={{
-                      width: "100%",
-                      height: "auto",
-                      objectFit: "cover",
-                      display: "block",
+                      width: '100%',
+                      aspectRatio: '4/5',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      background: QC.cream,
+                      marginBottom: subWorks.length > 0 ? 16 : 0,
                     }}
-                  />
-                )}
-                <div style={{ padding: "24px 28px" }}>
-                  <p style={{
+                  >
+                    {mainImage && (
+                      <img
+                        src={mainImage}
+                        alt={mainWork.title}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                          transition: 'transform 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease',
+                          transform: isHover ? 'scale(1.02)' : 'scale(1)',
+                          opacity: isHover ? 1.0 : 0.95,
+                          filter: 'saturate(0.9)',
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* サブ作品 (max 2点 横並び 1:1) */}
+                  {subWorks.length > 0 && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${subWorks.length}, 1fr)`,
+                      gap: 16,
+                    }}>
+                      {subWorks.map(sub => {
+                        const subImage = (sub.imageUrls && sub.imageUrls[0]) || sub.imageUrl || '';
+                        return (
+                          <div
+                            key={sub.id}
+                            onClick={() => onDetail(sub)}
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1/1',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              background: QC.cream,
+                            }}
+                          >
+                            {subImage && (
+                              <img
+                                src={subImage}
+                                alt={sub.title}
+                                loading="lazy"
+                                decoding="async"
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                  display: 'block',
+                                  filter: 'saturate(0.9)',
+                                }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 右カラム: 作家情報 + CTA */}
+                <div>
+                  <h3 style={{
                     fontFamily: QC_FONT_JP,
-                    fontSize: 13,
-                    fontWeight: 400,
-                    color: QC.charcoal,
-                    margin: "0 0 8px 0",
-                    lineHeight: 1.7,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
+                    fontSize: 17,
+                    fontWeight: 500,
+                    color: QC.softBrown,
+                    letterSpacing: 0.5,
+                    lineHeight: 1.6,
+                    margin: 0,
                   }}>
-                    {item.title}
-                  </p>
-                  {item.seller_name && (
+                    {artisan.seller_name}
+                    <span style={{
+                      marginLeft: 12,
+                      fontSize: 12,
+                      fontWeight: 300,
+                      fontStyle: 'italic',
+                      opacity: 0.6,
+                      letterSpacing: 0.3,
+                      color: QC.warmGray,
+                    }}>
+                      — この街の住民
+                    </span>
+                  </h3>
+
+                  {introText && (
                     <p style={{
                       fontFamily: QC_FONT_JP,
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: 300,
                       color: QC.warmGray,
-                      margin: "0 0 14px 0",
+                      lineHeight: 1.9,
                       letterSpacing: 0.5,
+                      margin: '24px 0 32px 0',
                     }}>
-                      {item.seller_name}
+                      {introText}
                     </p>
                   )}
-                  <p style={{
-                    fontFamily: QC_FONT_EN,
-                    fontSize: 15,
-                    color: QC.softBrown,
-                    fontWeight: 400,
-                    margin: 0,
-                    letterSpacing: 0.8,
-                  }}>
-                    ¥{(item.price || 0).toLocaleString()}
-                  </p>
+
+                  {/* CTA: 作品を覗いてみる → onDetail(代表作) */}
+                  <span
+                    onClick={() => onDetail(mainWork)}
+                    onMouseEnter={() => setLinkHoverIndex(i)}
+                    onMouseLeave={() => setLinkHoverIndex(null)}
+                    style={{
+                      fontFamily: QC_FONT_JP,
+                      fontSize: 12,
+                      fontWeight: 300,
+                      color: QC.softBrown,
+                      letterSpacing: 1.2,
+                      borderBottom: `1px solid ${linkHoverIndex === i ? QC.softBrown : 'rgba(139, 111, 92, 0.3)'}`,
+                      paddingBottom: 4,
+                      cursor: 'pointer',
+                      transition: 'border-color 0.6s ease',
+                    }}
+                  >
+                    作品を覗いてみる
+                  </span>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
 
-        {/* CTA: ボタン → 線リンク */}
-        <div style={{ textAlign: "center", marginTop: 80 }}>
-          <button
-            onClick={() => setPage("search")}
+        {/* 下部: 空気ナレーション + 区切り点 + "すべての作家を覗いてみる" */}
+        <div style={{ marginTop: 120, textAlign: 'center', padding: '0 32px' }}>
+          <p style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 12,
+            fontStyle: 'italic',
+            fontWeight: 300,
+            color: QC.warmGray,
+            letterSpacing: 1.2,
+            opacity: 0.65,
+            margin: '0 0 24px 0',
+            lineHeight: 1.8,
+          }}>
+            この街で、心を込めて作る人たち。
+          </p>
+          <div style={{
+            width: 4,
+            height: 4,
+            borderRadius: '50%',
+            background: QC.lightSand,
+            margin: '0 auto 40px',
+          }} />
+          <span
+            onClick={() => setPage('search')}
             onMouseEnter={() => setAllLinkHover(true)}
             onMouseLeave={() => setAllLinkHover(false)}
             style={{
               fontFamily: QC_FONT_JP,
-              background: "transparent",
-              border: "none",
-              color: QC.softBrown,
-              padding: "0 0 6px 0",
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 300,
+              color: QC.softBrown,
               letterSpacing: 1.2,
-              cursor: "pointer",
               borderBottom: `1px solid ${allLinkHover ? QC.softBrown : 'rgba(139, 111, 92, 0.3)'}`,
-              transition: "border-color 0.8s ease, color 0.8s ease",
+              paddingBottom: 4,
+              cursor: 'pointer',
+              transition: 'border-color 0.6s ease',
             }}
           >
-            すべての作品を見る
-          </button>
+            すべての作家を覗いてみる
+          </span>
         </div>
       </div>
     </section>
@@ -3351,7 +3465,7 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
       <SectionTodaysMoments setPage={setPage} />
       <SectionTownMap setPage={setPage} />
-      <SectionAtelier listings={listings} onDetail={onDetail} setPage={setPage} />
+      <SectionResidentArtisans listings={listings} onDetail={onDetail} setPage={setPage} />
       <SectionVoices setPage={setPage} />
       <SectionJoinTown setPage={setPage} />
       <SharedFooter setPage={setPage}/>
