@@ -2658,11 +2658,11 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
           }} />
         </div>
 
-        {/* カード Grid (Airbnb 風、画像を主役に) */}
+        {/* カード Grid (街角に作品が並ぶ感覚 / mobile 3列固定) */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-          gap: isMobile ? 40 : 48,
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: isMobile ? 12 : 48,
         }}>
           {items.map((item, i) => {
             const isHover = hoverIndex === i;
@@ -2682,12 +2682,12 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
                   transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
                 }}
               >
-                {/* 画像 (大きく、Airbnb 風) */}
+                {/* 画像 (大きく、Airbnb 風 / mobile はカード詰まり防止で marginBottom 縮小) */}
                 <div style={{
                   width: '100%',
                   aspectRatio: '4/5',
                   overflow: 'hidden',
-                  marginBottom: 20,
+                  marginBottom: isMobile ? 8 : 20,
                   background: QC.cream,
                 }}>
                   {firstImage && (
@@ -2710,60 +2710,60 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
                   )}
                 </div>
 
-                {/* 作品名 */}
+                {/* 作品名 (mobile は詰まり防止で 13px / 1行強制 ellipsis) */}
                 <h3 style={{
                   fontFamily: QC_FONT_JP,
-                  fontSize: 15,
+                  fontSize: isMobile ? 13 : 15,
                   fontWeight: 400,
                   color: QC.softBrown,
                   letterSpacing: 0.5,
                   lineHeight: 1.6,
-                  margin: '0 0 8px 0',
+                  margin: isMobile ? '0 0 4px 0' : '0 0 8px 0',
+                  overflow: isMobile ? 'hidden' : undefined,
+                  textOverflow: isMobile ? 'ellipsis' : undefined,
+                  whiteSpace: isMobile ? 'nowrap' : undefined,
                 }}>
                   {item.title}
                 </h3>
 
-                {/* by ○○ — この街の住民 (Resident 表現) */}
+                {/* by ○○ — この街の住民 (Resident 表現)
+                    mobile: 2 行 (by 〜 改行 — この街の住民)
+                    PC:     1 行 inline */}
                 <p style={{
                   fontFamily: QC_FONT_JP,
-                  fontSize: 11,
+                  fontSize: isMobile ? 10 : 11,
                   fontWeight: 300,
                   color: QC.warmGray,
                   opacity: 0.7,
-                  margin: '0 0 12px 0',
+                  margin: isMobile ? '0 0 6px 0' : '0 0 12px 0',
                   letterSpacing: 0.3,
+                  lineHeight: 1.5,
                 }}>
-                  by {sellerName}
                   <span style={{
-                    marginLeft: 8,
+                    display: isMobile ? 'block' : 'inline',
+                    overflow: isMobile ? 'hidden' : undefined,
+                    textOverflow: isMobile ? 'ellipsis' : undefined,
+                    whiteSpace: isMobile ? 'nowrap' : undefined,
+                  }}>
+                    by {sellerName}
+                  </span>
+                  <span style={{
+                    marginLeft: isMobile ? 0 : 8,
                     opacity: 0.6,
                     fontStyle: 'italic',
+                    display: isMobile ? 'block' : 'inline',
                   }}>
                     — この街の住民
                   </span>
                 </p>
 
-                {/* 共感数字 (>=1 のみ表示) + 価格 */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
+                {/* 価格 + 共感数字
+                    mobile: 価格のみ表示 (10px 左寄せ、"そっと保存" は窮屈なので非表示)
+                    PC:     space-between で両方表示 */}
+                {isMobile ? (
                   <span style={{
                     fontFamily: QC_FONT_JP,
-                    fontSize: 11,
-                    fontStyle: 'italic',
-                    color: QC.warmGray,
-                    opacity: 0.6,
-                  }}>
-                    {favoriteCount >= 1
-                      ? `${favoriteCount}人がそっと保存しました`
-                      : ''}
-                  </span>
-
-                  <span style={{
-                    fontFamily: QC_FONT_JP,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: 300,
                     color: QC.warmGray,
                     opacity: 0.7,
@@ -2771,7 +2771,36 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
                   }}>
                     ¥{(item.price || 0).toLocaleString()}
                   </span>
-                </div>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}>
+                    <span style={{
+                      fontFamily: QC_FONT_JP,
+                      fontSize: 11,
+                      fontStyle: 'italic',
+                      color: QC.warmGray,
+                      opacity: 0.6,
+                    }}>
+                      {favoriteCount >= 1
+                        ? `${favoriteCount}人がそっと保存しました`
+                        : ''}
+                    </span>
+
+                    <span style={{
+                      fontFamily: QC_FONT_JP,
+                      fontSize: 11,
+                      fontWeight: 300,
+                      color: QC.warmGray,
+                      opacity: 0.7,
+                      letterSpacing: 0.3,
+                    }}>
+                      ¥{(item.price || 0).toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })}
