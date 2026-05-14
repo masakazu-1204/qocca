@@ -3187,13 +3187,15 @@ const SectionVoices = ({ setPage }) => {
         const [{ data: cs }, { data: es }] = await Promise.all([
           supabase
             .from("communities")
-            .select("id, name, description, pet_type, member_count")
+            // 実 DB スキーマ: pet_type は存在せず → category ("犬種別" "猫種別" 等) に変更
+            .select("id, name, description, category, member_count")
             .order("member_count", { ascending: false })
             .limit(3),
           supabase
             .from("events")
-            .select("id, title, location, event_date, description")
-            .gte("event_date", new Date().toISOString())
+            // 実 DB スキーマ: location は存在せず → place、event_date は date 型 (YYYY-MM-DD)
+            .select("id, title, place, event_date, description")
+            .gte("event_date", new Date().toISOString().slice(0, 10))
             .order("event_date", { ascending: true })
             .limit(3),
         ]);
@@ -3373,7 +3375,7 @@ const SectionVoices = ({ setPage }) => {
                         }}>
                           {ev.title}
                         </p>
-                        {ev.location && (
+                        {ev.place && (
                           <p style={{
                             fontFamily: QC_FONT_JP,
                             fontSize: 11,
@@ -3382,7 +3384,7 @@ const SectionVoices = ({ setPage }) => {
                             margin: 0,
                             letterSpacing: 0.5,
                           }}>
-                            {ev.location}
+                            {ev.place}
                           </p>
                         )}
                       </div>
