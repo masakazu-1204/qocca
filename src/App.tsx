@@ -2658,11 +2658,19 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
           }} />
         </div>
 
-        {/* カード Grid (街角に作品が並ぶ感覚 / mobile 3列固定) */}
+        {/* カード レイアウト
+            Mobile: 横スクロール (flex + scroll-snap) — "街の道を通れる" 哲学
+                    65vw 幅で次のカードが少し見えて "横に続いてる気配"
+                    矢印・ドット・フェード・自動スクロール 一切なし
+            PC:     3列 grid 維持 (minmax(0, 1fr) で nowrap 子要素の min-content leak 防止) */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: isMobile ? 12 : 48,
+          display: isMobile ? 'flex' : 'grid',
+          gridTemplateColumns: isMobile ? undefined : 'repeat(3, minmax(0, 1fr))',
+          gap: isMobile ? 16 : 48,
+          overflowX: isMobile ? 'auto' : undefined,
+          scrollSnapType: isMobile ? 'x mandatory' : undefined,
+          paddingRight: isMobile ? 24 : undefined,
+          WebkitOverflowScrolling: isMobile ? 'touch' : undefined,
         }}>
           {items.map((item, i) => {
             const isHover = hoverIndex === i;
@@ -2677,6 +2685,9 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
                 onMouseEnter={() => setHoverIndex(i)}
                 onMouseLeave={() => setHoverIndex(null)}
                 style={{
+                  flexShrink: isMobile ? 0 : undefined,
+                  width: isMobile ? '65vw' : undefined,
+                  scrollSnapAlign: isMobile ? 'start' : undefined,
                   cursor: 'pointer',
                   transition: 'transform 1.0s cubic-bezier(0.22, 1, 0.36, 1)',
                   transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
