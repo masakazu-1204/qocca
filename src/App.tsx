@@ -322,11 +322,9 @@ const LISTINGS = [
   { id:12, title:"LINEスタンプ制作", seller:"イラスト工房ハル", sellerIcon:"💬", price:8000, rating:4.7, reviews:33, tag:"", category:"illust", emoji:"💬", pet:"both", desc:"うちの子が主役のオリジナルLINEスタンプを制作。8種類のポーズ込み。申請代行も可能。", delivery:"2週間以内", bg:"#FFF8E1" },
 ];
 
-const REVIEWS = [
-  { user:"ゆきさん", pet:"🐕", rating:5, comment:"本当にそっくりで感動しました！額に入れて飾ってます🥺", date:"2026.3.15" },
-  { user:"まるこさん", pet:"🐈", rating:5, comment:"丁寧な対応で安心できました。また依頼したいです！", date:"2026.3.10" },
-  { user:"けんたさん", pet:"🐕", rating:4, comment:"クオリティ高い！少し時間かかりましたが満足です。", date:"2026.2.28" },
-];
+// レビューはユーザーの実取引完了後に reviews テーブルから取得する設計。
+// 運営による架空レビューは一切置かない（利用規約 第9条、ブランド人格 v3 第2章二・第11章・第13章）。
+const REVIEWS: any[] = [];
 
 const EVENTS: any[] = [];
 const EVENT_PREFS = ["すべて","北海道","東京都","大阪府","愛知県","福岡県"];
@@ -3969,22 +3967,24 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           </div>
         </div>
 
-        <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:80, border:`1px solid ${C.border}` }}>
-          <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>レビュー ({item.reviews}件)</div>
-          {REVIEWS.map((r,i)=>(
-            <div key={i} style={{ marginBottom:12, paddingBottom:12, borderBottom:i<REVIEWS.length-1?`1px solid ${C.border}`:"none" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                <div style={{ width:30, height:30, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>{r.pet}</div>
-                <div>
-                  <div style={{ fontWeight:700, fontSize:13, color:C.dark }}>{r.user}</div>
-                  <Stars rating={r.rating} size={11}/>
+        {REVIEWS.length > 0 && (
+          <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:80, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>レビュー ({item.reviews}件)</div>
+            {REVIEWS.map((r,i)=>(
+              <div key={i} style={{ marginBottom:12, paddingBottom:12, borderBottom:i<REVIEWS.length-1?`1px solid ${C.border}`:"none" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                  <div style={{ width:30, height:30, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>{r.pet}</div>
+                  <div>
+                    <div style={{ fontWeight:700, fontSize:13, color:C.dark }}>{r.user}</div>
+                    <Stars rating={r.rating} size={11}/>
+                  </div>
+                  <span style={{ marginLeft:"auto", fontSize:11, color:C.warmGray }}>{r.date}</span>
                 </div>
-                <span style={{ marginLeft:"auto", fontSize:11, color:C.warmGray }}>{r.date}</span>
+                <div style={{ fontSize:13, color:"#555", lineHeight:1.6 }}>{r.comment}</div>
               </div>
-              <div style={{ fontSize:13, color:"#555", lineHeight:1.6 }}>{r.comment}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <div style={{ textAlign:"center", marginBottom:80 }}>
           <button onClick={()=>setShowReport(true)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#ccc", textDecoration:"underline", fontFamily:"inherit" }}>🚨 このサービスを通報する</button>
         </div>
