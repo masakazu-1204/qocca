@@ -648,8 +648,15 @@ const Card = ({ item, onClick, liked, onLike }) => (
   </div>
 );
 
-// ── Mobile Navbar ─────────────────────────────────────────────────────────
-const Navbar = ({ setPage, liked, search, setSearch }) => {
+// ── Mobile Navbar (v3.1 準拠 3層構造、PC Sidebar と統一) ──────────────────
+// 「街を歩く」「作品を置く」「暮らしの設定」の3階層、PC Sidebar と完全に同じ認知モデル。
+// - ホーム / さがす はハンバーガーから削除 (ロゴクリックで Home、検索バーは中央常時表示)
+// - "出品する" アイコン: 🐾 (Gallery と重複) → ✎ (識別性向上、PC と統一)
+// - 階層見出し: fontSize 11, weight 400, warmGray, letterSpacing
+// - 区切り線: opacity 0.5
+// - 各リンク: weight 400 (装飾控えめ), タップ可能性 padding 14/20px 維持
+// スマホ第一: タップ可能性・読みやすさは現状維持以上
+const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -659,15 +666,49 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
     return () => window.removeEventListener("scroll", h);
   }, []);
 
-  const menuItems = [
-    { icon:"🏠", label:"ホーム", page:"home" },
-    { icon:"🔍", label:"さがす", page:"search" },
-    { icon:"💬", label:"コミュニティ", page:"communities" },
-    { icon:"🐾", label:"ギャラリー", page:"gallery" },
-    { icon:"🐕", label:"施設マップ", page:"facilities" },
-    { icon:"📝", label:"ブログ", page:"blog" },
-    { icon:"📅", label:"イベント", page:"events" },
-    { icon:"🐾", label:"出品する", page:"sell" },
+  // MyPage の特定タブを開く (「管理する」用、PC Sidebar と共通)
+  const openMyPageTab = (tab: string) => {
+    setPage("mypage");
+    setMenuOpen(false);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab } }));
+    }, 100);
+  };
+
+  const navigate = (page: string) => {
+    setPage(page);
+    setMenuOpen(false);
+  };
+
+  // PC Sidebar と完全に同じ3階層構造
+  const sections: Array<{
+    heading: string;
+    items: Array<{ key: string; icon: string; label: string; onClick: () => void; requireAuth?: boolean }>;
+  }> = [
+    {
+      heading: "街を歩く",
+      items: [
+        { key: "gallery",     icon: "🐾", label: "ギャラリー",      onClick: () => navigate("gallery") },
+        { key: "communities", icon: "💬", label: "広場",            onClick: () => navigate("communities") },
+        { key: "events",      icon: "📅", label: "イベント",        onClick: () => navigate("events") },
+        { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => navigate("facilities") },
+        { key: "blog",        icon: "📝", label: "ブログ",          onClick: () => navigate("blog") },
+      ],
+    },
+    {
+      heading: "作品を置く",
+      items: [
+        { key: "sell",        icon: "✎",  label: "出品する",        onClick: () => navigate("sell") },
+        { key: "manage",      icon: "📦", label: "管理する",        onClick: () => openMyPageTab("sales"), requireAuth: true },
+      ],
+    },
+    {
+      heading: "暮らしの設定",
+      items: [
+        { key: "mypage",      icon: "👤", label: "マイページ",      onClick: () => navigate("mypage"), requireAuth: true },
+        { key: "contact",     icon: "✉️", label: "お問い合わせ",    onClick: () => navigate("contact") },
+      ],
+    },
   ];
 
   return (
@@ -681,10 +722,10 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
         display:"flex", alignItems:"center", justifyContent:"space-between", gap:10,
         transition:"all 0.3s"
       }}>
-        <div onClick={()=>setMenuOpen(!menuOpen)} style={{ cursor:"pointer", fontSize:22, flexShrink:0, width:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div onClick={()=>setMenuOpen(!menuOpen)} style={{ cursor:"pointer", fontSize:22, flexShrink:0, width:32, height:44, display:"flex", alignItems:"center", justifyContent:"center" }}>
           {menuOpen ? "✕" : "☰"}
         </div>
-        <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={30}/></div>
+        <div onClick={()=>setPage("home")} style={{ flexShrink:0, cursor:"pointer" }}><Logo size={30}/></div>
         <div style={{ flex:1, maxWidth:280, position:"relative" }}>
           <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14, color:C.warmGray }}>🔍</span>
           <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
@@ -705,37 +746,65 @@ const Navbar = ({ setPage, liked, search, setSearch }) => {
         </div>
       </nav>
 
-      {/* ハンバーガーメニュー */}
+      {/* ハンバーガーメニュー (3 階層) */}
       {menuOpen && (
         <div style={{ position:"fixed", inset:0, zIndex:199 }} onClick={()=>setMenuOpen(false)}>
           <div style={{
             position:"fixed", top:60, left:0, right:0, background:C.white,
             borderBottom:`1px solid ${C.border}`, boxShadow:"0 8px 24px rgba(0,0,0,0.12)",
-            padding:"8px 0", maxHeight:"70vh", overflow:"auto"
+            padding:"8px 0 12px", maxHeight:"80vh", overflow:"auto"
           }} onClick={e=>e.stopPropagation()}>
-            {menuItems.map(item => (
-              <button key={item.page} onClick={()=>{setPage(item.page);setMenuOpen(false);}} style={{
-                width:"100%", padding:"14px 20px", border:"none", background:"transparent",
-                display:"flex", alignItems:"center", gap:14, cursor:"pointer", fontFamily:"inherit",
-                fontSize:15, fontWeight:700, color:C.dark, textAlign:"left"
-              }}>
-                <span style={{ fontSize:22 }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-            {user && (
-              <>
-                <div style={{ margin:"4px 16px", borderTop:`1px solid ${C.border}` }}/>
-                <button onClick={()=>{setPage("mypage");setMenuOpen(false);}} style={{
-                  width:"100%", padding:"14px 20px", border:"none", background:"transparent",
-                  display:"flex", alignItems:"center", gap:14, cursor:"pointer", fontFamily:"inherit",
-                  fontSize:15, fontWeight:700, color:C.dark, textAlign:"left"
-                }}>
-                  <span style={{ fontSize:22 }}>👤</span>
-                  <span>マイページ</span>
-                </button>
-              </>
-            )}
+            {sections.map((section, sIdx) => {
+              // ログイン必要な項目を非ログイン時にフィルタ
+              const items = section.items.filter(item => !item.requireAuth || !!user);
+              if (items.length === 0) return null;
+              return (
+                <div key={section.heading}>
+                  <div style={{
+                    fontSize: 11,
+                    fontWeight: 400,
+                    color: C.warmGray,
+                    padding: "12px 20px 6px",
+                    letterSpacing: "0.08em",
+                    opacity: 0.85,
+                  }}>
+                    {section.heading}
+                  </div>
+                  {items.map(item => (
+                    <button
+                      key={item.key}
+                      onClick={item.onClick}
+                      style={{
+                        width: "100%",
+                        padding: "14px 20px",
+                        border: "none",
+                        background: "transparent",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: 15,
+                        fontWeight: 400,
+                        color: C.dark,
+                        textAlign: "left",
+                      }}
+                    >
+                      <span style={{ fontSize: 20, opacity: 0.85, width: 24, display: "inline-flex", justifyContent: "center" }}>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                  {sIdx < sections.length - 1 && (
+                    <div style={{
+                      margin: "10px 20px",
+                      height: 1,
+                      background: C.border,
+                      opacity: 0.5,
+                    }} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
