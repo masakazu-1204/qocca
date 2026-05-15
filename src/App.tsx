@@ -1667,8 +1667,10 @@ const QC_REACTIONS: { key: string; label: string }[] = [
 // クリック領域・CTA・煽り装飾・絵文字・カウントダウン・アニメーション 一切なし
 
 const SectionAnnouncement = () => {
+  const navigate = useNavigate();
   const SHOW_UNTIL = new Date('2026-07-01T00:00:00+09:00');
   const [show] = useState(() => new Date() < SHOW_UNTIL);
+  const [linkHover, setLinkHover] = useState(false);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth < 768
   );
@@ -1731,16 +1733,47 @@ const SectionAnnouncement = () => {
 
         <Divider />
 
-        {/* ブロック2: 手数料無料 */}
+        {/* ブロック2: 販売手数料無料 + 出品無料 + 仕組みリンク */}
         <div style={{
           fontSize: isMobile ? 13 : 14,
           fontWeight: 400,
           color: C.dark,
           lineHeight: 1.8,
         }}>
-          はじめて出店する方のために、<br />
-          7月いっぱい、<br />
-          出品手数料を無料にしています。
+          7月の1ヶ月間、<br />
+          販売手数料を無料にしています。
+        </div>
+        <div style={{
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 400,
+          color: C.dark,
+          lineHeight: 1.8,
+          marginTop: 22,
+        }}>
+          出品はいつでも、どなたでも、無料です。
+        </div>
+        <div style={{
+          marginTop: 22,
+          fontSize: isMobile ? 12 : 13,
+          lineHeight: 1.8,
+        }}>
+          <a
+            href="/help/fees"
+            onClick={(e) => { e.preventDefault(); navigate('/help/fees'); }}
+            onMouseEnter={() => setLinkHover(true)}
+            onMouseLeave={() => setLinkHover(false)}
+            style={{
+              color: linkHover ? C.orange : C.warmGray,
+              textDecoration: 'none',
+              fontWeight: 400,
+              letterSpacing: '0.02em',
+              transition: 'color 0.4s ease',
+              cursor: 'pointer',
+              display: 'inline-block',
+            }}
+          >
+            <span style={{ marginRight: 6, fontSize: '0.9em' }}>▷</span>手数料の仕組み
+          </a>
         </div>
 
         <Divider />
