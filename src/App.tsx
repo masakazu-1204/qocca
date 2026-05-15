@@ -370,82 +370,110 @@ const useIsPC = () => {
   return isPC;
 };
 
-// ── PC用サイドバー ────────────────────────────────────────────────────────
-const Sidebar = ({ setPage, activeCat, setActiveCat }) => (
-  <div style={{ width:260, flexShrink:0, alignSelf:"flex-start", position:"sticky", top:92, paddingTop:24 }}>
-    <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:12, padding:"0 8px" }}>カテゴリ</div>
-    {CATS.map(c=>(
-      <button key={c.id} onClick={()=>{ setActiveCat(c.id); setPage("search"); }} style={{
-        width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
-        background: activeCat===c.id ? C.orangePale : "transparent",
-        color: activeCat===c.id ? C.orange : C.dark,
-        fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
-        display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
-        marginBottom:2, transition:"background 0.15s"
-      }}>
-        <span style={{ fontSize:22 }}>{c.icon}</span>
-        <span>{c.label}</span>
-      </button>
-    ))}
-    <div style={{ margin:"20px 8px", borderTop:`1px solid ${C.border}` }}/>
-    <button onClick={()=>setPage("events")} style={{
-      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
-      background: "transparent", color:C.dark,
-      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
-      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
-      marginBottom:2
-    }}>
-      <span style={{ fontSize:22 }}>📅</span>
-      <span>イベント</span>
-    </button>
-    <button onClick={()=>setPage("gallery")} style={{
-      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
-      background: "transparent", color:C.dark,
-      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
-      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
-      marginBottom:2
-    }}>
-      <span style={{ fontSize:22 }}>🐾</span>
-      <span>ギャラリー</span>
-    </button>
-    <button onClick={()=>setPage("facilities")} style={{
-      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
-      background: "transparent", color:C.dark,
-      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
-      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
-      marginBottom:2
-    }}>
-      <span style={{ fontSize:22 }}>🐕</span>
-      <span>施設マップ</span>
-    </button>
-    <button onClick={()=>setPage("blog")} style={{
-      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
-      background: "transparent", color:C.dark,
-      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
-      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
-      marginBottom:2
-    }}>
-      <span style={{ fontSize:22 }}>📝</span>
-      <span>ブログ</span>
-    </button>
-    <button onClick={()=>setPage("communities")} style={{
-      width:"100%", padding:"12px 18px", border:"none", borderRadius:12,
-      background: "transparent", color:C.dark,
-      fontWeight:700, fontSize:15, cursor:"pointer", textAlign:"left",
-      display:"flex", alignItems:"center", gap:12, fontFamily:"inherit",
-      marginBottom:2
-    }}>
-      <span style={{ fontSize:22 }}>💬</span>
-      <span>コミュニティ</span>
-    </button>
-    <div style={{ margin:"12px 8px", borderTop:`1px solid ${C.border}` }}/>
-    <button onClick={()=>setPage("sell")} style={{
-      width:"100%", padding:"14px 18px", border:"none", borderRadius:12,
-      background:C.orange, color:"#fff", fontWeight:800, fontSize:15,
-      cursor:"pointer", fontFamily:"inherit"
-    }}>🐾 出品する</button>
-  </div>
-);
+// ── PC用サイドバー (v3.1 準拠 3層構造) ───────────────────────────────────
+// 「街を歩く」「作品を置く」「暮らしの設定」の3階層で "圧を抜く" 設計。
+// - カテゴリ7つは SearchPage 内チップに統合 (Sidebar からは削除)
+// - "🐾 出品する" 巨大 CTA を「作品を置く」内のテキストリンクに格下げ
+// - hover で C.orange に静かに transition (気配レベル)
+// - 階層見出しは控えめ (warmGray, weight 400, opacity 0.85)
+// 既存呼び出し側との互換性のため activeCat / setActiveCat props は受け取るが未使用
+const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActiveCat }: any) => {
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+
+  // MyPage の特定タブを開く (Sidebar 「管理する」用)
+  const openMyPageTab = (tab: string) => {
+    setPage("mypage");
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab } }));
+    }, 100);
+  };
+
+  const sections: Array<{ heading: string; items: Array<{ key: string; icon: string; label: string; onClick: () => void }> }> = [
+    {
+      heading: "街を歩く",
+      items: [
+        { key: "gallery",     icon: "🐾", label: "ギャラリー",      onClick: () => setPage("gallery") },
+        { key: "communities", icon: "💬", label: "広場",            onClick: () => setPage("communities") },
+        { key: "events",      icon: "📅", label: "イベント",        onClick: () => setPage("events") },
+        { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => setPage("facilities") },
+        { key: "blog",        icon: "📝", label: "ブログ",          onClick: () => setPage("blog") },
+      ],
+    },
+    {
+      heading: "作品を置く",
+      items: [
+        { key: "sell",        icon: "✎",  label: "出品する",        onClick: () => setPage("sell") },
+        { key: "manage",      icon: "📦", label: "管理する",        onClick: () => openMyPageTab("sales") },
+      ],
+    },
+    {
+      heading: "暮らしの設定",
+      items: [
+        { key: "mypage",      icon: "👤", label: "マイページ",      onClick: () => setPage("mypage") },
+        { key: "contact",     icon: "✉️", label: "お問い合わせ",    onClick: () => setPage("contact") },
+      ],
+    },
+  ];
+
+  return (
+    <div style={{ width:260, flexShrink:0, alignSelf:"flex-start", position:"sticky", top:92, paddingTop:24 }}>
+      {sections.map((section, sIdx) => (
+        <div key={section.heading}>
+          <div style={{
+            fontSize: 12,
+            fontWeight: 400,
+            color: C.warmGray,
+            padding: "12px 18px 8px",
+            letterSpacing: "0.08em",
+            opacity: 0.85,
+          }}>
+            {section.heading}
+          </div>
+          {section.items.map(item => {
+            const isHover = hoverKey === item.key;
+            return (
+              <button
+                key={item.key}
+                onClick={item.onClick}
+                onMouseEnter={() => setHoverKey(item.key)}
+                onMouseLeave={() => setHoverKey(null)}
+                style={{
+                  width: "100%",
+                  padding: "10px 18px",
+                  border: "none",
+                  borderRadius: 10,
+                  background: "transparent",
+                  color: isHover ? C.orange : C.dark,
+                  fontWeight: 400,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  fontFamily: "inherit",
+                  marginBottom: 1,
+                  transition: "color 0.4s ease",
+                }}
+              >
+                <span style={{ fontSize: 18, opacity: 0.85, width: 22, display: "inline-flex", justifyContent: "center" }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+          {sIdx < sections.length - 1 && (
+            <div style={{
+              margin: "14px 18px",
+              height: 1,
+              background: C.border,
+              opacity: 0.5,
+            }} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // ── User Menu (ログイン後のアイコンメニュー) ──────────────────────────────
 const UserMenu = ({ setPage }) => {
@@ -3742,12 +3770,13 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC
       <div style={{ padding:"10px 0", background: isPC ? "transparent" : C.white, borderBottom: isPC ? "none" : `1px solid ${C.border}`, display:"flex", gap:8, overflowX:"auto", paddingLeft: isPC ? 0 : 16, paddingRight: isPC ? 0 : 16 }}>
         {CATS.map(c=>(
           <button key={c.id} onClick={()=>setCat(c.id)} style={{
-            flexShrink:0, padding:"6px 14px",
-            background: cat===c.id ? C.orange : C.white,
-            color: cat===c.id ? "#fff" : C.warmGray,
+            flexShrink:0, minHeight:44, padding:"8px 16px",
+            background: cat===c.id ? C.orangePale : C.white,
+            color: cat===c.id ? C.orange : C.warmGray,
             border:`1.5px solid ${cat===c.id ? C.orange : C.border}`,
-            borderRadius:20, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
-            display:"flex", alignItems:"center", gap:4
+            borderRadius:22, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+            display:"flex", alignItems:"center", gap:6,
+            transition:"background 0.3s ease, color 0.3s ease, border-color 0.3s ease"
           }}>
             <span>{c.icon}</span><span style={{ whiteSpace:"nowrap" }}>{c.label}</span>
           </button>
@@ -5275,6 +5304,15 @@ const MyPage = ({ setPage }) => {
     const handleOpenDM = () => setTab("messages");
     window.addEventListener("openDM", handleOpenDM);
     return () => window.removeEventListener("openDM", handleOpenDM);
+  }, []);
+  useEffect(() => {
+    // Sidebar の「管理する」等から特定タブを強制で開く汎用イベント
+    const handleOpenTab = (e: any) => {
+      const t = e?.detail?.tab;
+      if (typeof t === "string" && t.length > 0) setTab(t);
+    };
+    window.addEventListener("openMyPageTab", handleOpenTab);
+    return () => window.removeEventListener("openMyPageTab", handleOpenTab);
   }, []);
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
