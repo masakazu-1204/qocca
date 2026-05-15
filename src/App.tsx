@@ -528,8 +528,8 @@ const UserMenu = ({ setPage }) => {
           </div>
           {[
             { icon:"👤", label:"マイページ", action:()=>{ setPage("mypage"); setOpen(false); }},
-            { icon:"📦", label:"注文履歴", action:()=>{ setPage("mypage"); setOpen(false); }},
-            { icon:"⚙️", label:"設定", action:()=>{ setPage("mypage"); setOpen(false); }},
+            { icon:"📦", label:"注文履歴", action:()=>{ setPage("mypage"); setOpen(false); setTimeout(()=>{ window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab: "orders" } })); }, 100); }},
+            { icon:"⚙️", label:"設定", action:()=>{ setPage("mypage"); setOpen(false); setTimeout(()=>{ window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab: "addresses" } })); }, 100); }},
           ].map(item=>(
             <button key={item.label} onClick={item.action} style={{
               width:"100%", padding:"10px 14px", border:"none", borderRadius:10,
