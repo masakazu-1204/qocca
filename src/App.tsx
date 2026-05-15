@@ -104,9 +104,11 @@ const useListings = () => {
 
   const fetchListings = async () => {
     setDbLoading(true);
+    // Phase B: listing_variants を join で取得 (1:N、has_variants=true の listing のみ持つ)
+    // 単品出品 (has_variants=false) は listing_variants が空配列のままで挙動完全互換
     const { data, error } = await supabase
       .from("listings")
-      .select("*")
+      .select("*, listing_variants(*)")
       .in("status", ["approved", "sold_out"])
       .order("created_at", { ascending: false });
     if (!error && data && data.length > 0) {
@@ -141,6 +143,9 @@ const useListings = () => {
           created_at: l.created_at,
           favorite_count: l.favorite_count || 0,
           options: l.options || [],
+          // Phase B: variant 関連 (DetailPage で参照)
+          has_variants: l.has_variants === true,
+          listing_variants: Array.isArray(l.listing_variants) ? l.listing_variants : [],
         };
       }));
     }
