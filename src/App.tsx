@@ -207,7 +207,12 @@ const useFavorites = (userId) => {
 };
 
 // 出品をSupabaseに保存
-const submitListing = async (userId, form, imageFiles, options = []) => {
+// Phase B: variants 対応版
+// - isDraft 引数バグ修正 (旧: 関数定義に含まれず、L4051 で渡してたが受け取ってなかった)
+// - variants 引数追加 (Phase A の listing_variants テーブルに別途 INSERT)
+// - listings.has_variants フラグを variants の有無で自動設定
+// - variants INSERT 失敗時は listing も削除して整合性保持
+const submitListing = async (userId, form, imageFiles, options = [], isDraft = false, variants = []) => {
   const imageUrls = [];
   for (const file of imageFiles) {
     const ext = file.name.split(".").pop();
@@ -223,7 +228,10 @@ const submitListing = async (userId, form, imageFiles, options = []) => {
     ? parseInt(form.stock)
     : null;
 
-  const { data, error } = await supabase.from("listings").insert({
+  // variants が指定されていれば has_variants = true (Phase A の列を活用)
+  const hasVariants = Array.isArray(variants) && variants.length > 0;
+
+  const { data: listing, error: listingErr } = await supabase.from("listings").insert({
     seller_id: userId,
     title: form.title,
     description: form.desc,
@@ -236,9 +244,42 @@ const submitListing = async (userId, form, imageFiles, options = []) => {
     options: options.filter(o => o.name && o.price > 0),
     stock_quantity: isNaN(stockValue) ? null : stockValue,
     status: isDraft ? "draft" : "pending",
+    has_variants: hasVariants,
   }).select().single();
 
-  return { data, error };
+  if (listingErr || !listing) {
+    return { data: null, error: listingErr };
+  }
+
+  // variants INSERT (hasVariants = true の時のみ)
+  if (hasVariants) {
+    const variantInserts = variants
+      .filter(v => v.variant_name && v.price && parseInt(v.price) > 0)
+      .map((v, idx) => ({
+        listing_id: listing.id,
+        variant_name: v.variant_name,
+        attributes: v.attributes || {},
+        price: parseInt(v.price),
+        stock: parseInt(v.stock) || 0,
+        image_url: v.image_url || null,
+        display_order: idx,
+        is_active: true,
+      }));
+
+    if (variantInserts.length > 0) {
+      const { error: variantErr } = await supabase
+        .from("listing_variants")
+        .insert(variantInserts);
+
+      if (variantErr) {
+        // variant INSERT 失敗時は listing も削除 (整合性保持)
+        await supabase.from("listings").delete().eq("id", listing.id);
+        return { data: null, error: variantErr };
+      }
+    }
+  }
+
+  return { data: listing, error: null };
 };
 
 // ── Colors & Constants ────────────────────────────────────────────────────
