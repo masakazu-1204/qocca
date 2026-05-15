@@ -462,8 +462,7 @@ const FeesGuide: React.FC = () => {
         <li>手数料: 販売価格の <strong>10%</strong></li>
       </ul>
 
-      <P>これに加えて、決済手数料 <strong>3.6%</strong> が販売価格にかかります。<br/>
-      すべての手数料は売上から差し引かれます。</P>
+      <P>決済処理はQoccaが行うため、出品者の追加負担はありません。</P>
 
       <Note color="blue">
         購入者の方が支払う金額は、出品ページに表示されている価格のみです。
@@ -488,9 +487,8 @@ const FeesGuide: React.FC = () => {
       <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, padding: "14px 18px", fontSize: 13, lineHeight: 2, color: "#444", marginBottom: 12 }}>
         販売価格: <strong>¥3,000</strong><br/>
         販売手数料(10%): <span style={{ color: C.warmGray }}>-¥300</span><br/>
-        決済手数料(3.6%): <span style={{ color: C.warmGray }}>-¥108</span><br/>
         <span style={{ display: "inline-block", borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 6, width: "100%" }}>
-          売上(出品者の手取り): <strong>¥2,592</strong>
+          売上(出品者の手取り): <strong>¥2,700</strong>
         </span>
       </div>
       <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 12px" }}>※ 初回取引なら、販売手数料が無料です。</p>
