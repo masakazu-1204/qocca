@@ -3645,16 +3645,56 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [reportType, setReportType] = useState("");
   const [reportDone, setReportDone] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState({});
+  // Phase B: Variant 選択 state
+  // - selectedAttrs: 軸ごとの選択値 (例: { 構図: "マズルアップ", サイズ: "小" })
+  // - selectedVariant: selectedAttrs に完全一致する listing_variants の row
+  const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   if (!item) return null;
+
+  // Phase B: variant 導出ロジック
+  const hasVariants = item.has_variants === true;
+  const variants = Array.isArray(item.listing_variants) ? item.listing_variants : [];
+  // 軸キーを variants から抽出 (例: ["構図", "サイズ"])
+  const variantOptionKeys = hasVariants && variants.length > 0
+    ? Array.from(new Set(variants.flatMap(v => Object.keys(v.attributes || {}))))
+    : [];
+  // 各軸の選択肢一覧
+  const variantOptionValues: Record<string, string[]> = variantOptionKeys.reduce((acc, key) => {
+    acc[key] = Array.from(new Set(variants.map(v => v.attributes?.[key]).filter(Boolean)));
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  // selectedAttrs が変化したら一致する variant を探す
+  useEffect(() => {
+    if (!hasVariants || variantOptionKeys.length === 0) return;
+    const allSelected = variantOptionKeys.every(key => selectedAttrs[key]);
+    if (!allSelected) {
+      setSelectedVariant(null);
+      return;
+    }
+    const matched = variants.find(v =>
+      variantOptionKeys.every(key => v.attributes?.[key] === selectedAttrs[key])
+    );
+    setSelectedVariant(matched || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAttrs, hasVariants]);
 
   const itemOptions = item.options || [];
   const optionsTotal = itemOptions.reduce((sum, o, i) => sum + (selectedOptions[i] ? (o.price||0) : 0), 0);
-  const totalPrice = (item.price || 0) + optionsTotal;
+  // Phase B: variant 優先の価格計算 (variant 未選択時は item.price)
+  const basePrice = hasVariants ? (selectedVariant?.price || 0) : (item.price || 0);
+  const totalPrice = basePrice + optionsTotal;
 
   const toggleOption = (idx) => setSelectedOptions(prev => ({...prev, [idx]: !prev[idx]}));
 
   const handleOrder = async () => {
     if (!user) { setPage("signup"); return; }
+    // Phase B: variant 必須チェック (種類のある商品で未選択時はブロック)
+    if (hasVariants && !selectedVariant) {
+      alert("種類を選んでください");
+      return;
+    }
     if (item.delivery_type === "shipping") {
       const { data } = await supabase
         .from("shipping_addresses")
@@ -3720,11 +3760,15 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         body: JSON.stringify({
           listing_id: item.id,
           listing_title: item.title,
-          price: item.price,
+          // Phase B: variant 選択時はその価格、未選択時 (単品) は listing.price
+          // ⚠️ Edge Function (Phase C) でサーバー側再計算が前提、クライアント値は参考のみ
+          price: hasVariants && selectedVariant ? selectedVariant.price : item.price,
           options: selectedOpts,
           buyer_id: user.id,
           seller_id: item.seller_id,
           shipping_address_id: shippingAddressId,
+          // Phase B: variant_id を Edge Function に渡す (Phase C で受信処理)
+          variant_id: hasVariants && selectedVariant ? selectedVariant.id : null,
         })
       });
 
@@ -3789,6 +3833,88 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:8 }}>サービス詳細</div>
           <div style={{ fontSize:14, color:"#555", lineHeight:1.8 }}>{item.desc}</div>
         </div>
+
+        {/* Phase B: 種類 (Variant) 選択 UI
+            ブランド v3 第7章: "翻訳しすぎない"。「種類を選ぶ」普通の言葉、控えめ。
+            ブランド v3 第6章: NG "在庫切れ" → "売り切れ"、"残り○点" は controlled 表示OK */}
+        {hasVariants && variantOptionKeys.length > 0 && (
+          <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:12 }}>
+              種類を選ぶ
+            </div>
+            {variantOptionKeys.map(key => (
+              <div key={key} style={{ marginBottom:14 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.warmGray, marginBottom:6 }}>
+                  {key}
+                </div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {variantOptionValues[key].map(val => {
+                    // この値を含む variants で、在庫があるものがあるか
+                    const hasStock = variants.some(v =>
+                      v.attributes?.[key] === val && v.stock > 0 && v.is_active
+                    );
+                    const isSelected = selectedAttrs[key] === val;
+                    return (
+                      <button
+                        key={val}
+                        onClick={() => setSelectedAttrs(prev => ({ ...prev, [key]: val }))}
+                        disabled={!hasStock}
+                        style={{
+                          padding:"8px 14px",
+                          borderRadius:10,
+                          border: isSelected
+                            ? `2px solid ${C.orange}`
+                            : `1.5px solid ${hasStock ? C.border : "#E0E0E0"}`,
+                          background: isSelected
+                            ? C.orangePale
+                            : hasStock ? C.white : "#F5F5F5",
+                          color: isSelected
+                            ? C.orange
+                            : hasStock ? C.dark : "#BDBDBD",
+                          cursor: hasStock ? "pointer" : "not-allowed",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          fontFamily: "inherit",
+                          textDecoration: hasStock ? "none" : "line-through",
+                        }}
+                      >
+                        {val}
+                        {!hasStock && "（売り切れ）"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* 選択結果表示 (全軸選択済みで variant が確定した時) */}
+            {selectedVariant && (
+              <div style={{ marginTop:12, padding:"10px 12px", background:C.cream, borderRadius:10 }}>
+                <div style={{ fontSize:12, color:C.warmGray, marginBottom:4 }}>
+                  選んだ種類
+                </div>
+                <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:4 }}>
+                  {selectedVariant.variant_name}
+                </div>
+                <div style={{ fontSize:13, color:C.orange, fontWeight:700 }}>
+                  ¥{(selectedVariant.price || 0).toLocaleString()}
+                  {selectedVariant.stock > 0 && selectedVariant.stock <= 3 && (
+                    <span style={{ fontSize:11, color:C.warmGray, marginLeft:8, fontWeight:500 }}>
+                      （残り{selectedVariant.stock}点）
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 未選択時のヒント */}
+            {!selectedVariant && (
+              <div style={{ marginTop:8, fontSize:11, color:C.warmGray }}>
+                {variantOptionKeys.filter(k => !selectedAttrs[k]).join("、")} を選んでください
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 有料オプション */}
         {itemOptions.length > 0 && (
@@ -4052,14 +4178,33 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           <div style={{ fontSize:11, color:C.warmGray }}>お支払い金額(BP込)</div>
           <div style={{ fontSize:24, fontWeight:900, color:C.orange }}>¥{(totalPrice + Math.floor(totalPrice * 0.04)).toLocaleString()}</div>
           <div style={{ fontSize:10, color:C.warmGray }}>
-            商品 ¥{item.price.toLocaleString()}{optionsTotal > 0 ? ` + オプション ¥${optionsTotal.toLocaleString()}` : ""} + BP ¥{Math.floor(totalPrice * 0.04).toLocaleString()}
+            {/* Phase B: variant 選択時はその価格、未選択時 (単品 or variant 未確定) は item.price */}
+            商品 ¥{(basePrice || item.price || 0).toLocaleString()}{optionsTotal > 0 ? ` + オプション ¥${optionsTotal.toLocaleString()}` : ""} + BP ¥{Math.floor(totalPrice * 0.04).toLocaleString()}
           </div>
         </div>
         {ordered ? (
           <div style={{ flex:2, textAlign:"center", padding:"12px", background:C.green, borderRadius:12, color:"#fff", fontWeight:800 }}>🎉 注文完了！</div>
         ) : (
-          <button onClick={handleOrder} style={{ flex:2, padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>
-            {user ? "🐾 注文する" : "🔒 ログインして注文"}
+          /* Phase B: hasVariants で variant 未選択時は無効化、ラベルも変化 */
+          <button
+            onClick={handleOrder}
+            disabled={hasVariants && !selectedVariant}
+            style={{
+              flex:2,
+              padding:"14px",
+              background: (hasVariants && !selectedVariant) ? C.warmGray : C.orange,
+              border:"none",
+              borderRadius:12,
+              color:"#fff",
+              fontWeight:800,
+              fontSize:16,
+              cursor: (hasVariants && !selectedVariant) ? "not-allowed" : "pointer",
+              fontFamily: "inherit"
+            }}
+          >
+            {hasVariants && !selectedVariant
+              ? "種類を選んでください"
+              : (user ? "🐾 注文する" : "🔒 ログインして注文")}
           </button>
         )}
       </div>
