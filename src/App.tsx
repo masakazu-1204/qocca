@@ -3811,15 +3811,19 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
       <div style={{ padding:"16px" }}>
         {item.tag && <div style={{ marginBottom:8 }}><Tag text={item.tag}/></div>}
         <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.3 }}>{item.title}</h1>
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-          <Stars rating={item.rating} size={14}/>
-          <span style={{ color:C.warmGray, fontSize:13 }}>{item.rating} ({item.reviews}件)</span>
-        </div>
+        {item.reviews > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+            <Stars rating={item.rating} size={14}/>
+            <span style={{ color:C.warmGray, fontSize:13 }}>{item.rating} ({item.reviews}件)</span>
+          </div>
+        )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:12 }}>
           <div style={{ width:44, height:44, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{item.sellerIcon}</div>
           <div>
             <div style={{ fontWeight:800, color:C.dark, fontSize:15 }}>{item.seller}</div>
-            <div style={{ fontSize:12, color:C.warmGray }}>評価 {item.rating} · {item.reviews}件</div>
+            {item.reviews > 0 && (
+              <div style={{ fontSize:12, color:C.warmGray }}>評価 {item.rating} · {item.reviews}件</div>
+            )}
           </div>
         </div>
         {item.seller_id && (
