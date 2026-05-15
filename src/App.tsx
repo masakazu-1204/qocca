@@ -4072,11 +4072,97 @@ const SellPage = ({ setPage }) => {
   const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only", stock:"" });
   const [images, setImages] = useState([]);
   const [options, setOptions] = useState([]);
+  // Phase B: Variant (種類) state
+  // - hasVariants: チェックON で variant モード
+  // - variantOptions: 軸の定義 (例: [{name: "構図", values: ["マズルアップ", "全身"]}]) max 2 項目
+  // - variants: 組合せの実体 [{variant_name, attributes, price, stock, image_url}]
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variantOptions, setVariantOptions] = useState<Array<{ name: string; values: string[] }>>([]);
+  const [variants, setVariants] = useState<Array<any>>([]);
   const up = (k,v) => setForm(p=>({...p,[k]:v}));
   const fileRef = useRef(null);
   const addOption = () => setOptions(prev => [...prev, { name:"", price:"" }]);
   const updateOption = (idx, key, val) => setOptions(prev => prev.map((o,i) => i===idx ? {...o, [key]:val} : o));
   const removeOption = (idx) => setOptions(prev => prev.filter((_,i) => i!==idx));
+
+  // Phase B: Variant 操作関数群
+  const addVariantOption = () => {
+    if (variantOptions.length >= 2) return; // 最大2項目 (例: 色 × サイズ)
+    setVariantOptions(prev => [...prev, { name: "", values: [""] }]);
+  };
+  const removeVariantOption = (idx) => {
+    setVariantOptions(prev => prev.filter((_, i) => i !== idx));
+  };
+  const updateVariantOptionName = (idx, name) => {
+    setVariantOptions(prev => prev.map((o, i) => i === idx ? { ...o, name } : o));
+  };
+  const addVariantOptionValue = (optIdx) => {
+    setVariantOptions(prev => prev.map((o, i) =>
+      i === optIdx ? { ...o, values: [...o.values, ""] } : o
+    ));
+  };
+  const updateVariantOptionValue = (optIdx, valIdx, value) => {
+    setVariantOptions(prev => prev.map((o, i) =>
+      i === optIdx ? { ...o, values: o.values.map((v, j) => j === valIdx ? value : v) } : o
+    ));
+  };
+  const removeVariantOptionValue = (optIdx, valIdx) => {
+    setVariantOptions(prev => prev.map((o, i) =>
+      i === optIdx ? { ...o, values: o.values.filter((_, j) => j !== valIdx) } : o
+    ));
+  };
+
+  // 組合せ自動生成 (variantOptions の値リストからすべての組合せを生成)
+  // 既存 variant の価格・在庫・画像情報は保持 (attributes 完全一致で照合)
+  const regenerateVariants = React.useCallback(() => {
+    if (variantOptions.length === 0) {
+      setVariants([]);
+      return;
+    }
+    const combinations: any[] = [];
+    const generate = (currentIdx: number, currentAttrs: any, currentName: string) => {
+      if (currentIdx >= variantOptions.length) {
+        combinations.push({
+          variant_name: currentName.trim() || "デフォルト",
+          attributes: currentAttrs,
+          price: form.price || "",
+          stock: 1,
+          image_url: null,
+        });
+        return;
+      }
+      const opt = variantOptions[currentIdx];
+      const validValues = opt.values.filter(v => v && v.trim());
+      for (const val of validValues) {
+        const newAttrs = { ...currentAttrs, [opt.name]: val };
+        const separator = currentName ? " × " : "";
+        generate(currentIdx + 1, newAttrs, currentName + separator + val);
+      }
+    };
+    generate(0, {}, "");
+    // 既存の variant 情報を保持
+    setVariants(prev => {
+      return combinations.map(c => {
+        const existing = prev.find(p =>
+          JSON.stringify(p.attributes) === JSON.stringify(c.attributes)
+        );
+        return existing
+          ? { ...c, price: existing.price, stock: existing.stock, image_url: existing.image_url }
+          : c;
+      });
+    });
+  }, [variantOptions, form.price]);
+
+  const updateVariant = (idx, key, value) => {
+    setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [key]: value } : v));
+  };
+
+  // variantOptions が変更されたら variants を再生成
+  useEffect(() => {
+    if (hasVariants) {
+      regenerateVariants();
+    }
+  }, [variantOptions, hasVariants, regenerateVariants]);
 
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []);
