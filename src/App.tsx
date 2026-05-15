@@ -307,20 +307,11 @@ const CATS = [
   { id:"training", icon:"🐕", label:"しつけ" },
 ];
 
-const LISTINGS = [
-  { id:1, title:"愛犬の水彩似顔絵", seller:"みかん工房", sellerIcon:"🎨", price:3800, rating:4.9, reviews:128, tag:"人気", category:"illust", emoji:"🎨", pet:"dog", desc:"大切なわんちゃんの特徴を丁寧に捉えた水彩画。A4サイズ・データ納品も可能です。注文後にお写真をお送りください。通常3〜5日で納品いたします。", delivery:"5日以内", bg:"#FFF3E0" },
-  { id:2, title:"猫ちゃん専用ニット服", seller:"てづくり屋さん", sellerIcon:"🧶", price:5200, rating:4.8, reviews:64, tag:"新着", category:"clothes", emoji:"🧶", pet:"cat", desc:"猫ちゃんのサイズに合わせてオーダーメイドで制作します。素材は柔らかいウール混です。", delivery:"2週間以内", bg:"#F3E5F5" },
-  { id:3, title:"ペットの記念日フォト", seller:"ぽちフォト", sellerIcon:"📸", price:12000, rating:5.0, reviews:42, tag:"人気", category:"photo", emoji:"📸", pet:"dog", desc:"出張撮影対応。大切な記念日を最高の一枚に残します。データ50枚以上お渡し。東京・神奈川エリア対応。", delivery:"要相談", bg:"#E3F2FD" },
-  { id:4, title:"アクリルキーホルダー", seller:"クリエイトパレット", sellerIcon:"✨", price:2200, rating:4.7, reviews:93, tag:"", category:"goods", emoji:"✨", pet:"both", desc:"写真からデザインしたオリジナルキーホルダー。名前入れも対応します。両面印刷・カラビナ付き。", delivery:"1週間以内", bg:"#E8F5E9" },
-  { id:5, title:"デジタル似顔絵（即日）", seller:"イラスト工房ハル", sellerIcon:"💻", price:1500, rating:4.6, reviews:211, tag:"即日", category:"illust", emoji:"💻", pet:"both", desc:"注文当日に納品します。SNSアイコンや年賀状にも最適です。高解像度PNGデータ納品。", delivery:"即日", bg:"#FFF8E1" },
-  { id:6, title:"犬用バースデーケーキ", seller:"わんこベーカリー", sellerIcon:"🎂", price:4800, rating:4.9, reviews:55, tag:"新着", category:"food", emoji:"🎂", pet:"dog", desc:"犬が食べても安心な素材だけで作るバースデーケーキ。写真付きメッセージカード付き。サイズS/M/Lから選択可。", delivery:"3日前要注文", bg:"#FCE4EC" },
-  { id:7, title:"猫の刺繍ポーチ", seller:"ぬい工房まり", sellerIcon:"🪡", price:3200, rating:4.8, reviews:37, tag:"", category:"goods", emoji:"🪡", pet:"cat", desc:"うちの子の顔を刺繍したオリジナルポーチ。プレゼントにも喜ばれます。", delivery:"10日以内", bg:"#E8EAF6" },
-  { id:8, title:"しつけ個別相談60分", seller:"ドッグトレーナー山本", sellerIcon:"🎓", price:6000, rating:4.9, reviews:89, tag:"人気", category:"training", emoji:"🎓", pet:"dog", desc:"プロトレーナーによるオンライン相談。吠え・噛み・トイレトラブルなど何でも。Zoom使用。", delivery:"3日以内", bg:"#E0F7FA" },
-  { id:9, title:"猫用おもちゃセット", seller:"ねこてぃ", sellerIcon:"🐱", price:2800, rating:4.7, reviews:61, tag:"", category:"goods", emoji:"🐱", pet:"cat", desc:"猫が夢中になる手作りおもちゃ5点セット。天然素材のみ使用。猫草付き。", delivery:"5日以内", bg:"#FFF3E0" },
-  { id:10, title:"手作りおやつ定期便", seller:"わんこベーカリー", sellerIcon:"🦴", price:3500, rating:4.8, reviews:44, tag:"", category:"food", emoji:"🦴", pet:"dog", desc:"毎月届く手作りおやつ定期便。国産・無添加素材のみ。アレルギー対応も相談可。", delivery:"毎月発送", bg:"#F9FBE7" },
-  { id:11, title:"ペット用バンダナ刺繍", seller:"てづくり屋さん", sellerIcon:"🎀", price:1800, rating:4.6, reviews:28, tag:"", category:"clothes", emoji:"🎀", pet:"both", desc:"名前刺繍入りのオリジナルバンダナ。綿100%で肌に優しい。サイズS〜XL対応。", delivery:"1週間以内", bg:"#F3E5F5" },
-  { id:12, title:"LINEスタンプ制作", seller:"イラスト工房ハル", sellerIcon:"💬", price:8000, rating:4.7, reviews:33, tag:"", category:"illust", emoji:"💬", pet:"both", desc:"うちの子が主役のオリジナルLINEスタンプを制作。8種類のポーズ込み。申請代行も可能。", delivery:"2週間以内", bg:"#FFF8E1" },
-];
+// listings は useListings hook が DB から取得する。
+// フォールバック先は空配列とする (King 判断: Supabase 障害 / RLS ミス / network エラー時に
+// 架空 seller + 偽 rating/reviews を出すリスクを永続排除)。
+// 詳細: 利用規約 第9条 / ブランド人格 v3 第2章二・第11章・第13章
+const LISTINGS: any[] = [];
 
 // レビューはユーザーの実取引完了後に reviews テーブルから取得する設計。
 // 運営による架空レビューは一切置かない（利用規約 第9条、ブランド人格 v3 第2章二・第11章・第13章）。
