@@ -37,6 +37,12 @@ const HELP_ARTICLES: Record<string, { title: string; emoji: string; description:
     description: "売上を受け取るために必要な Stripe Connect の登録方法を解説します。",
     category: "出品者向け",
   },
+  "fees": {
+    title: "手数料の仕組み",
+    emoji: "💰",
+    description: "出品・販売・振込にかかる手数料を、ひとつずつ静かにご説明します。",
+    category: "出品者向け",
+  },
   "buying": {
     title: "購入ガイド",
     emoji: "🛒",
@@ -417,7 +423,111 @@ const StripeConnectGuide: React.FC = () => (
   </PageWrap>
 );
 
-// ── ③ 購入ガイド ────────────────────────────────────────────
+// ── ③ 手数料の仕組み ────────────────────────────────────────
+const FeesGuide: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <PageWrap>
+      <BackToTop />
+      <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>💰 手数料の仕組み</h1>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>最終更新日: 2026年5月16日</p>
+
+      <H2>はじめに</H2>
+      <P>Qoccaでの出品・販売には、いくつかの手数料があります。<br/>
+      このページで、ひとつずつ静かにご説明します。</P>
+      <P>うちの子との時間を、丁寧に届けたい方にとって、<br/>
+      手数料が予想外の負担にならないように。</P>
+
+      <H2>出品について</H2>
+      <P>出品自体には、いっさい費用がかかりません。</P>
+      <P>掲載料、月額料金、初期費用、どれもありません。<br/>
+      何点出品しても、いつ出品をやめても、無料です。</P>
+      <P>「とりあえず置いてみる」も大歓迎です。</P>
+
+      <H2>販売手数料(売れたとき)</H2>
+      <P>作品が売れたときに、販売価格から手数料がかかります。</P>
+
+      <H3>はじめての取引</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>1件目の取引: 手数料は<strong>無料</strong>です</li>
+      </ul>
+
+      <H3>登録から90日以内</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>手数料: 販売価格の <strong>5%</strong></li>
+      </ul>
+
+      <H3>90日以降の通常時</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>手数料: 販売価格の <strong>10%</strong></li>
+      </ul>
+
+      <P>これに加えて、決済手数料 <strong>3.6%</strong> が販売価格にかかります。<br/>
+      すべての手数料は売上から差し引かれます。</P>
+
+      <Note color="blue">
+        購入者の方が支払う金額は、出品ページに表示されている価格のみです。
+      </Note>
+
+      <H2>売上金の振込</H2>
+      <P>売上金は、月末に登録口座へ自動振込されます。</P>
+
+      <H3>月末自動振込</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>月間売上 <strong>¥30,000以上</strong>: 振込手数料 <strong>無料</strong></li>
+        <li>¥30,000未満: 振込手数料 <strong>¥275(税込)</strong></li>
+      </ul>
+      <P>最低振込申請額は <strong>¥3,000</strong> です。</P>
+
+      <H3>今すぐ受け取る場合</H3>
+      <P>振込タイミングを待たず、いつでも引き出せます。<br/>
+      この場合は手数料 <strong>¥275(税込)</strong> がかかります。</P>
+
+      <H2>一例</H2>
+      <P>販売価格 ¥3,000 の作品が売れた場合(通常時)を、参考までに。</P>
+      <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, padding: "14px 18px", fontSize: 13, lineHeight: 2, color: "#444", marginBottom: 12 }}>
+        販売価格: <strong>¥3,000</strong><br/>
+        販売手数料(10%): <span style={{ color: C.warmGray }}>-¥300</span><br/>
+        決済手数料(3.6%): <span style={{ color: C.warmGray }}>-¥108</span><br/>
+        <span style={{ display: "inline-block", borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 6, width: "100%" }}>
+          売上(出品者の手取り): <strong>¥2,592</strong>
+        </span>
+      </div>
+      <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 12px" }}>※ 初回取引なら、販売手数料が無料です。</p>
+
+      <H2>キャンセル時の扱い</H2>
+      <P>取引途中でキャンセルになった場合の手数料は、<br/>
+      利用規約 第7条にて詳しく記載しています。</P>
+      <div style={{ marginTop: 8, marginBottom: 12 }}>
+        <a
+          href="/terms"
+          onClick={(e) => { e.preventDefault(); navigate("/terms"); }}
+          style={{ color: C.orange, textDecoration: "none", fontWeight: 700, fontSize: 13 }}
+        >
+          <span style={{ marginRight: 6 }}>▷</span>利用規約
+        </a>
+      </div>
+
+      <H2>ご不明な点があれば</H2>
+      <P>このページで分からないところがあれば、<br/>
+      お問い合わせフォームから、いつでもご連絡ください。</P>
+      <div style={{ marginTop: 8, marginBottom: 12 }}>
+        <a
+          href="/contact"
+          onClick={(e) => { e.preventDefault(); navigate("/contact"); }}
+          style={{ color: C.orange, textDecoration: "none", fontWeight: 700, fontSize: 13 }}
+        >
+          <span style={{ marginRight: 6 }}>▷</span>お問い合わせ
+        </a>
+      </div>
+
+      <ContactCard />
+      <BackToTop />
+    </PageWrap>
+  );
+};
+
+// ── ④ 購入ガイド ────────────────────────────────────────────
 const BuyingGuide: React.FC = () => (
   <PageWrap>
     <BackToTop />
@@ -542,6 +652,7 @@ const HelpPage: React.FC = () => {
   if (!slug) return <HelpIndex />;
   if (slug === "getting-started") return <GettingStarted />;
   if (slug === "stripe-connect") return <StripeConnectGuide />;
+  if (slug === "fees") return <FeesGuide />;
   if (slug === "buying") return <BuyingGuide />;
 
   // 不明なslug → トップへリダイレクト相当
