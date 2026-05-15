@@ -4175,7 +4175,18 @@ const SellPage = ({ setPage }) => {
   const handleSubmit = async (isDraft = false) => {
     setSubmitting(true);
     setError("");
-    const { error: err } = await submitListing(user.id, form, images, options.map(o => ({ name:o.name, price:parseInt(o.price)||0 })), isDraft);
+    // Phase B: variants が有効な時のみ price>0 のものを採用 (バリデーション)
+    const validVariants = hasVariants
+      ? variants.filter(v => v.price && parseInt(v.price) > 0)
+      : [];
+    const { error: err } = await submitListing(
+      user.id,
+      form,
+      images,
+      options.map(o => ({ name:o.name, price:parseInt(o.price)||0 })),
+      isDraft,
+      validVariants
+    );
     setSubmitting(false);
     if (err) { setError((isDraft ? "下書き保存" : "出品") + "に失敗しました: " + err.message); return; }
     setDone({ isDraft });
@@ -4203,7 +4214,7 @@ const SellPage = ({ setPage }) => {
           {isDraftDone ? "マイページの「下書き一覧」から、いつでも編集して投稿できます🐾" : "審査後（最大24時間）に公開されます🐾"}
         </p>
         <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-          <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only",stock:""});setImages([]);setOptions([]);}} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>続けて出品する</button>
+          <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only",stock:""});setImages([]);setOptions([]);setHasVariants(false);setVariantOptions([]);setVariants([]);}} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>続けて出品する</button>
           <button onClick={()=>setPage("mypage")} style={{ padding:"12px 24px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>マイページへ</button>
         </div>
       </div>
@@ -4347,6 +4358,128 @@ const SellPage = ({ setPage }) => {
               ))}
               {options.length < 5 && (
                 <button onClick={addOption} style={{ padding:"8px 14px", background:C.orangePale, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit" }}>＋ オプションを追加</button>
+              )}
+            </div>
+
+            {/* Phase B: 種類 (Variant) セクション
+                ブランド v3「翻訳しすぎない」原則: 機能ラベルは普通の言葉でOK
+                NG 語彙 (バリエーション/オプション/選択肢) を回避し「種類」で統一 */}
+            <div style={{ marginTop:16, paddingTop:16, borderTop:`1px dashed ${C.border}` }}>
+              <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, fontWeight:700, color:C.dark, cursor:"pointer", marginBottom:6 }}>
+                <input
+                  type="checkbox"
+                  checked={hasVariants}
+                  onChange={e => {
+                    setHasVariants(e.target.checked);
+                    if (!e.target.checked) {
+                      setVariantOptions([]);
+                      setVariants([]);
+                    } else if (variantOptions.length === 0) {
+                      setVariantOptions([{ name: "", values: [""] }]);
+                    }
+                  }}
+                  style={{ width:16, height:16, accentColor:C.orange }}
+                />
+                <span>種類を増やす（色違い・サイズ違いなど）</span>
+              </label>
+              <p style={{ fontSize:11, color:C.warmGray, marginBottom:10, paddingLeft:24, lineHeight:1.6 }}>
+                1つの作品で、構図やサイズの種類を選んでもらえます。<br/>
+                それぞれに価格と在庫を設定できます。
+              </p>
+
+              {hasVariants && (
+                <div>
+                  {/* 軸 (オプション項目) max 2 */}
+                  {variantOptions.map((opt, optIdx) => (
+                    <div key={optIdx} style={{ marginBottom:12, padding:12, background:C.lightGray, borderRadius:10 }}>
+                      <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:8 }}>
+                        <input
+                          value={opt.name}
+                          onChange={e => updateVariantOptionName(optIdx, e.target.value)}
+                          placeholder={optIdx === 0 ? "例：構図" : "例：サイズ"}
+                          style={{ flex:1, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                        />
+                        <button
+                          onClick={() => removeVariantOption(optIdx)}
+                          style={{ width:28, height:28, borderRadius:"50%", border:`1px solid ${C.border}`, background:C.white, cursor:"pointer", fontSize:14, color:C.warmGray }}
+                        >×</button>
+                      </div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                        {opt.values.map((val, valIdx) => (
+                          <div key={valIdx} style={{ display:"flex", alignItems:"center", gap:4, background:C.white, borderRadius:8, padding:"4px 4px 4px 8px", border:`1px solid ${C.border}` }}>
+                            <input
+                              value={val}
+                              onChange={e => updateVariantOptionValue(optIdx, valIdx, e.target.value)}
+                              placeholder={optIdx === 0 ? "マズルアップ" : "小"}
+                              style={{ width:90, padding:"4px 6px", borderRadius:6, border:"none", fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                            />
+                            {opt.values.length > 1 && (
+                              <button
+                                onClick={() => removeVariantOptionValue(optIdx, valIdx)}
+                                style={{ width:18, height:18, borderRadius:"50%", border:"none", background:C.lightGray, cursor:"pointer", fontSize:10, color:C.warmGray }}
+                              >×</button>
+                            )}
+                          </div>
+                        ))}
+                        {opt.values.length < 10 && (
+                          <button
+                            onClick={() => addVariantOptionValue(optIdx)}
+                            style={{ padding:"4px 10px", background:C.orangePale, border:`1px dashed ${C.orange}`, borderRadius:6, fontSize:11, color:C.orange, cursor:"pointer", fontFamily:"inherit", fontWeight:700 }}
+                          >＋ 追加</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 軸追加ボタン (max 2) */}
+                  {variantOptions.length < 2 && (
+                    <button
+                      onClick={addVariantOption}
+                      style={{ padding:"8px 14px", background:C.white, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit", marginBottom:12 }}
+                    >＋ {variantOptions.length === 0 ? "種類の項目を追加" : "もう1項目（サイズなど）"}</button>
+                  )}
+
+                  {/* 自動生成された variants の価格・在庫入力 */}
+                  {variants.length > 0 && (
+                    <div style={{ marginTop:12 }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:C.dark, marginBottom:8 }}>
+                        それぞれの種類（{variants.length}通り）
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                        {variants.map((v, idx) => (
+                          <div key={idx} style={{ padding:10, background:C.white, border:`1px solid ${C.border}`, borderRadius:10 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:6 }}>
+                              {v.variant_name}
+                            </div>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                              <div style={{ position:"relative" }}>
+                                <input
+                                  type="number"
+                                  value={v.price}
+                                  onChange={e => updateVariant(idx, "price", e.target.value)}
+                                  placeholder="3000"
+                                  style={{ width:"100%", padding:"7px 26px 7px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                                />
+                                <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>円</span>
+                              </div>
+                              <div style={{ position:"relative" }}>
+                                <input
+                                  type="number"
+                                  value={v.stock}
+                                  onChange={e => updateVariant(idx, "stock", e.target.value)}
+                                  placeholder="1"
+                                  min="0"
+                                  style={{ width:"100%", padding:"7px 26px 7px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                                />
+                                <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>個</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </>}
