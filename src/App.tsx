@@ -1656,6 +1656,130 @@ const QC_REACTIONS: { key: string; label: string }[] = [
 ];
 
 // ============================================================================
+// ============================================================================
+// SectionAnnouncement: "街の片隅に貼ってある紙" — 7月開店 + 6月クラファン告知
+// ============================================================================
+// 表示期間: 〜2026/6/30 23:59 JST (7/1 00:00 JST 以降は自動 null return)
+// v3.1 第6章 NG語彙回避 (グランド/キャンペーン/限定 不使用)
+// v3.1 第2章七 "完成させすぎない" → "少しずつ始まります"
+// v3.1 第13章 "風通しを良くして待つ" → 派手装飾ゼロ
+// v3.1 第17章 "置いていく" → 街の掲示板そのもの
+// クリック領域・CTA・煽り装飾・絵文字・カウントダウン・アニメーション 一切なし
+
+const SectionAnnouncement = () => {
+  const SHOW_UNTIL = new Date('2026-07-01T00:00:00+09:00');
+  const [show] = useState(() => new Date() < SHOW_UNTIL);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  if (!show) return null;
+
+  const Divider = () => (
+    <div style={{
+      width: 64,
+      height: 1,
+      background: C.warmGray,
+      opacity: 0.35,
+      margin: '32px auto',
+    }} />
+  );
+
+  return (
+    <section style={{
+      padding: isMobile ? '80px 16px' : '120px 24px',
+      background: 'transparent',
+      display: 'flex',
+      justifyContent: 'center',
+    }}>
+      <div style={{
+        maxWidth: 520,
+        width: '100%',
+        background: C.cream,
+        borderRadius: 12,
+        padding: isMobile ? '44px 24px' : '48px 40px',
+        textAlign: 'center',
+        boxSizing: 'border-box',
+      }}>
+        {/* ブロック1: 7月開店 */}
+        <div style={{
+          fontSize: isMobile ? 18 : 20,
+          fontWeight: 400,
+          color: C.dark,
+          lineHeight: 1.7,
+          letterSpacing: '0.02em',
+        }}>
+          7月から、少しずつ始まります。
+        </div>
+        <div style={{
+          fontSize: isMobile ? 14 : 15,
+          fontWeight: 300,
+          color: C.warmGray,
+          marginTop: 14,
+          letterSpacing: '0.05em',
+        }}>
+          2026年7月1日
+        </div>
+
+        <Divider />
+
+        {/* ブロック2: 手数料無料 */}
+        <div style={{
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 400,
+          color: C.dark,
+          lineHeight: 1.8,
+        }}>
+          はじめて出店する方のために、<br />
+          7月いっぱい、<br />
+          出品手数料を無料にしています。
+        </div>
+
+        <Divider />
+
+        {/* ブロック3: クラファン + 詩的招待 */}
+        <div style={{
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 400,
+          color: C.dark,
+          lineHeight: 1.8,
+        }}>
+          6月、<br />
+          クラウドファンディングを始めます。
+        </div>
+        <div style={{
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 400,
+          color: C.warmGray,
+          lineHeight: 1.8,
+          marginTop: 22,
+        }}>
+          Qoccaを、<br />
+          これからも静かに育てていくために。
+        </div>
+        <div style={{
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 400,
+          color: C.warmGray,
+          lineHeight: 1.8,
+          marginTop: 22,
+        }}>
+          もしこの街を好きだと思ってくれたら、<br />
+          一緒に見守ってもらえたら嬉しいです。
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
 // SectionWhatIsQocca: 機能理解導線 (Hero と TodaysMoments の間)
 // "感情で引き込み、機能で理解させる" - 05-branding-ux.md 準拠
 // ============================================================================
@@ -3538,6 +3662,7 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
       <QoccaNoiseOverlay />
 
       <SectionHero />
+      <SectionAnnouncement />
       <SectionWhatIsQocca setPage={setPage} />
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
       <SectionTodaysMoments setPage={setPage} />
