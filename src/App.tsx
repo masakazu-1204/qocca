@@ -1702,12 +1702,13 @@ const SectionAnnouncement = () => {
       <div style={{
         maxWidth: 520,
         width: '100%',
-        background: C.cream,
-        borderRadius: 12,
-        padding: isMobile ? '44px 24px' : '48px 40px',
+        padding: isMobile ? '0 8px' : '0 16px',
         textAlign: 'center',
         boxSizing: 'border-box',
       }}>
+        {/* 上の区切り線 ("貼り紙" の境界) */}
+        <Divider />
+
         {/* ブロック1: 7月開店 */}
         <div style={{
           fontSize: isMobile ? 18 : 20,
@@ -1774,6 +1775,9 @@ const SectionAnnouncement = () => {
           もしこの街を好きだと思ってくれたら、<br />
           一緒に見守ってもらえたら嬉しいです。
         </div>
+
+        {/* 下の区切り線 ("貼り紙" の境界) */}
+        <Divider />
       </div>
     </section>
   );
