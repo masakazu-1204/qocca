@@ -739,9 +739,13 @@ const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
             <UserMenu setPage={setPage}/>
           ) : (
             <button onClick={()=>setPage("signup")} style={{
-              padding:"7px 14px", background:C.orange, border:"none", borderRadius:10,
-              color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer", whiteSpace:"nowrap"
-            }}>ログイン</button>
+              minHeight:44, padding:"8px 14px", background:"transparent",
+              border:`1.5px solid ${C.orange}`, borderRadius:10,
+              color:C.orange, fontWeight:700, fontSize:12,
+              cursor:"pointer", whiteSpace:"nowrap", fontFamily:"inherit",
+              display:"flex", alignItems:"center", gap:4,
+              transition:"background 0.3s ease, color 0.3s ease",
+            }}>ログイン<span style={{ fontSize: 11, opacity: 0.85 }}>→</span></button>
           )}
         </div>
       </nav>
