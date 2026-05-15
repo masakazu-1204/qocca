@@ -243,8 +243,7 @@ const GettingStarted: React.FC = () => (
       ・登録から3ヶ月以内: <strong>5%</strong>(お得な期間)<br/>
       ・3ヶ月以降: <strong>10%</strong>(標準手数料)<br/>
       <br/>
-      💡 <strong>決済手数料は購入者が負担</strong>(バイヤープロテクション4%)。<br/>
-      出品者の手取りはダイレクト!
+      💡 購入者が支払う金額は、出品ページに表示されている価格のみです。
     </Note>
 
     <H3>配送タイプ</H3>
@@ -389,9 +388,8 @@ const StripeConnectGuide: React.FC = () => (
     </ul>
 
     <Note color="green">
-      <strong>💡 決済手数料は購入者負担(バイヤープロテクション4%)</strong><br/>
-      Qoccaでは決済手数料を購入者にご負担いただいているため、<strong>出品者の手取りはダイレクト</strong>!<br/>
-      他社マーケットプレイスのように決済手数料が天引きされません。
+      <strong>💡 決済処理はQoccaが行うため、出品者の追加負担はありません。</strong><br/>
+      出品者の手取りはわかりやすくシンプルです。
     </Note>
 
     <Note color="blue">
