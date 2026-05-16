@@ -6488,7 +6488,7 @@ const OrdersTab = () => {
                       <span style={{ background:st.bg, color:st.color, fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, flexShrink:0 }}>{st.text}</span>
                     </div>
                     <div style={{ fontSize:11, color:C.warmGray }}>{sellerName} · {formatDate(order.created_at)}</div>
-                    <div style={{ fontSize:15, fontWeight:900, color:C.orange, marginTop:4 }}>¥{Number(order.amount || 0).toLocaleString()}</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.dark, marginTop:4 }}>¥{Number(order.amount || 0).toLocaleString()}</div>
                   </div>
                 </div>
 
@@ -6751,9 +6751,9 @@ const MyListingsTab = ({ setPage }) => {
                   ) : (
                     <button disabled={busy} onClick={()=>handleEnableStock(l)} style={miniBtnStyle(C.white, C.blue, busy)}>📦 在庫管理ON</button>
                   )}
-                  {/* 下書きの公開申請 */}
+                  {/* 下書きの公開申請 (v3.1: 🚀 絵文字 + orange solid → 普通の line CTA) */}
                   {l.status === "draft" && (
-                    <button disabled={busy} onClick={()=>handlePublishDraft(l)} style={miniBtnStyle(C.orange, "#fff", busy)}>🚀 公開申請</button>
+                    <button disabled={busy} onClick={()=>handlePublishDraft(l)} style={miniBtnStyle(C.white, C.orange, busy)}>公開申請</button>
                   )}
                   {/* 編集 */}
                   <button disabled={busy} onClick={()=>setEditTarget(l)} style={miniBtnStyle(C.white, C.blue, busy)}>✏️ 編集</button>
@@ -7023,7 +7023,7 @@ const SalesTab = () => {
                       <span style={{ background:st.bg, color:st.color, fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, flexShrink:0 }}>{st.text}</span>
                     </div>
                     <div style={{ fontSize:11, color:C.warmGray }}>購入者: {buyerName} · {formatDate(sale.created_at)}</div>
-                    <div style={{ fontSize:15, fontWeight:900, color:C.orange, marginTop:4 }}>¥{Number(sale.amount || 0).toLocaleString()}</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.dark, marginTop:4 }}>¥{Number(sale.amount || 0).toLocaleString()}</div>
                   </div>
                 </div>
 
