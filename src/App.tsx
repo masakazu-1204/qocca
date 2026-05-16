@@ -5527,24 +5527,24 @@ const MyPage = ({ setPage }) => {
           <>
             <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:20 }}>
               <div style={{ width:72, height:72, borderRadius:"50%", background: profile?.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>{!profile?.avatar_url && initial}</div>
-              <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4 }}>{displayName}</div>
+              <div style={{ fontSize:18, fontWeight:700, color:C.dark, marginBottom:4 }}>{displayName}</div>
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>
             </div>
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
               )}
-            <div style={{ display:"flex", gap:0, marginTop:16, background:"#FFF9F0", borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
+            <div style={{ display:"flex", gap:0, marginTop:16, background:C.white, borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
                 <button onClick={()=>setActivityModal("listings")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.listings}</div>
+                  <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.listings}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>出品</div>
                 </button>
                 <button onClick={()=>setActivityModal("completed")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.completed}</div>
+                  <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.completed}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>取引完了</div>
                 </button>
                 <button onClick={()=>setActivityModal("reviews")} style={{ flex:1, textAlign:"center", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
+                  <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
                 </button>
               </div>
@@ -5561,32 +5561,32 @@ const MyPage = ({ setPage }) => {
               </button>
             </div>
 
-            {/* マイ活動セクション */}
+            {/* マイ活動セクション (v3.1: 4色違い → C.cream 統一、識別性はアイコン絵文字で維持) */}
             <div style={{ marginTop:20 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:C.warmGray, marginBottom:8, paddingLeft:4 }}>🎯 マイ活動</div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.warmGray, marginBottom:8, paddingLeft:4 }}>マイ活動</div>
               <div style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden" }}>
                 {[
-                  { id:"communities", icon:"💬", label:"参加中のコミュニティ", count:activity.communities, color:"#9C27B0" },
-                  { id:"events", icon:"📅", label:"投稿したイベント", count:activity.events, color:"#2196F3" },
-                  { id:"gallery", icon:"🐾", label:"投稿したギャラリー", count:activity.gallery, color:"#4CAF50" },
-                  { id:"blog", icon:"📝", label:"投稿したブログ", count:activity.blog, color:"#FF9800" },
+                  { id:"communities", icon:"💬", label:"参加中のコミュニティ", count:activity.communities },
+                  { id:"events", icon:"📅", label:"投稿したイベント", count:activity.events },
+                  { id:"gallery", icon:"🐾", label:"投稿したギャラリー", count:activity.gallery },
+                  { id:"blog", icon:"📝", label:"投稿したブログ", count:activity.blog },
                 ].map((item, i) => (
                   <button key={item.id} onClick={()=>setActivityModal(item.id)} style={{
                     width:"100%", padding:"14px 16px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
                     background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:12, fontFamily:"inherit", textAlign:"left"
                   }}>
-                    <div style={{ width:36, height:36, borderRadius:10, background:`${item.color}15`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
+                    <div style={{ width:36, height:36, borderRadius:10, background:C.cream, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{item.label}</div>
+                      <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>{item.label}</div>
                     </div>
-                    <div style={{ fontSize:14, fontWeight:800, color:item.color, marginRight:6 }}>{item.count}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginRight:6 }}>{item.count}</div>
                     <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
                   </button>
                 ))}
               </div>
             </div>
        
-            <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:C.orange, color:C.white, border:"none", borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ プロフィールを編集</button>
+            <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:"transparent", color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"background 0.3s ease, color 0.3s ease" }}>✏️ プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
                 { icon:"❤️", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
