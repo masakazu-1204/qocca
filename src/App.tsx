@@ -6032,12 +6032,12 @@ const handleOpenDashboard = async () => {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-      {/* Stripe Connect 連携状況 */}
+      {/* Stripe Connect 連携状況 (v3.1: 2px ボーダー + orange solid CTA → line CTA に控えめ化) */}
       {!isConnected && (
-        <div style={{ background:"#FFF3E0", border:`2px solid ${C.orange}`, borderRadius:16, padding:20 }}>
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-            <span style={{ fontSize:24 }}>🏦</span>
-            <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:C.orange }}>銀行口座を設定してください</h3>
+            <span style={{ fontSize:20 }}>🏦</span>
+            <h3 style={{ margin:0, fontSize:15, fontWeight:700, color:C.dark }}>銀行口座を設定してください</h3>
           </div>
           <p style={{ margin:"8px 0 12px", fontSize:13, color:C.text, lineHeight:1.6 }}>
             売上を受け取るには、Stripe で銀行口座を連携する必要があります。<br/>
@@ -6046,31 +6046,31 @@ const handleOpenDashboard = async () => {
           <button
             onClick={handleStartOnboarding}
             disabled={actionLoading}
-            style={{ background:C.orange, color:C.white, border:"none", borderRadius:12, padding:"12px 24px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit", opacity: actionLoading ? 0.6 : 1 }}
+            style={{ background:"transparent", color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:12, padding:"12px 24px", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit", opacity: actionLoading ? 0.6 : 1, transition:"background 0.3s ease, color 0.3s ease" }}
           >
-            {actionLoading ? "処理中..." : "🏦 銀行口座を設定する"}
+            {actionLoading ? "処理中..." : "銀行口座を設定する →"}
           </button>
         </div>
       )}
 
-      {/* 残高サマリー */}
+      {/* 残高サマリー (v3.1: 3つ並ぶうち1つだけ強調する EC的設計を排除、統一スタイル) */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
-        <h3 style={{ margin:"0 0 16px", fontSize:14, fontWeight:800, color:C.text }}>💰 残高サマリー</h3>
+        <h3 style={{ margin:"0 0 16px", fontSize:14, fontWeight:700, color:C.text }}>残高サマリー</h3>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
-          <div style={{ background:C.orangePale, padding:14, borderRadius:12, textAlign:"center" }}>
-            <div style={{ fontSize:11, color:C.textMuted, marginBottom:4 }}>取引中</div>
-            <div style={{ fontSize:18, fontWeight:800, color:C.text }}>¥{(balance?.in_escrow || 0).toLocaleString()}</div>
+          <div style={{ background:C.cream, padding:14, borderRadius:12, textAlign:"center", border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, color:C.warmGray, marginBottom:4 }}>取引中</div>
+            <div style={{ fontSize:18, fontWeight:700, color:C.dark }}>¥{(balance?.in_escrow || 0).toLocaleString()}</div>
           </div>
-          <div style={{ background:"#FFF8F0", padding:14, borderRadius:12, textAlign:"center", border:`2px solid ${C.orange}` }}>
-            <div style={{ fontSize:11, color:C.orange, fontWeight:700, marginBottom:4 }}>受取可能</div>
-            <div style={{ fontSize:18, fontWeight:800, color:C.orange }}>¥{(balance?.pending_balance || 0).toLocaleString()}</div>
+          <div style={{ background:C.cream, padding:14, borderRadius:12, textAlign:"center", border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, color:C.warmGray, marginBottom:4 }}>受取可能</div>
+            <div style={{ fontSize:18, fontWeight:700, color:C.dark }}>¥{(balance?.pending_balance || 0).toLocaleString()}</div>
           </div>
-          <div style={{ background:"#F0F9FF", padding:14, borderRadius:12, textAlign:"center" }}>
-            <div style={{ fontSize:11, color:C.textMuted, marginBottom:4 }}>累計売上</div>
-            <div style={{ fontSize:18, fontWeight:800, color:C.text }}>¥{(balance?.total_earned || 0).toLocaleString()}</div>
+          <div style={{ background:C.cream, padding:14, borderRadius:12, textAlign:"center", border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, color:C.warmGray, marginBottom:4 }}>累計売上</div>
+            <div style={{ fontSize:18, fontWeight:700, color:C.dark }}>¥{(balance?.total_earned || 0).toLocaleString()}</div>
           </div>
         </div>
-        <div style={{ marginTop:12, fontSize:11, color:C.textMuted, lineHeight:1.6 }}>
+        <div style={{ marginTop:12, fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
           完了取引数: {balance?.completed_orders_count || 0}件
         </div>
       </div>
@@ -6082,13 +6082,13 @@ const handleOpenDashboard = async () => {
         <div>• <strong>即時受け取り</strong>: 一律¥275(税込) / 数分で着金</div>
       </div>
 
-      {/* 即時受け取りボタン */}
+      {/* 即時受け取りボタン (v3.1: 巨大 orange solid + ⚡絵文字 → line CTA + 矢印) */}
       {isConnected && (balance?.pending_balance || 0) > 0 && (
         <button
           onClick={() => setShowInstantModal(true)}
-          style={{ background:C.orange, color:C.white, border:"none", borderRadius:14, padding:"14px 24px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}
+          style={{ background:"transparent", color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:14, padding:"14px 24px", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"background 0.3s ease, color 0.3s ease" }}
         >
-          ⚡ 今すぐ受け取る（手数料あり）
+          今すぐ受け取る →
         </button>
       )}
 {/* 銀行口座・支払い設定を変更（Stripe Express ダッシュボード） */}
