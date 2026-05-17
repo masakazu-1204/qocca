@@ -297,6 +297,29 @@ const C = {
   red: "#EF5350", redPale: "#FFEBEE",
 };
 
+// ── 暮らしの空気 (v3.2 第23章: "設定" でなく "模様替え") ──────────────────
+// MyPage 内だけ色が変わる。5 プリセット。保存ボタンなし、即タップ反映。
+// "世界観を見せるカスタム" でなく "住む感覚を増やすカスタム"。
+type AtmospherePreset = {
+  id: "asa" | "yuugata" | "yoru" | "kokage" | "atatakai";
+  icon: string;
+  label: string;
+  bg: string;
+  accent: string;
+  cardBorder: string;
+};
+
+const ATMOSPHERE_PRESETS: AtmospherePreset[] = [
+  { id: "asa",      icon: "☀️", label: "朝",        bg: "#FAFAF7", accent: "#FFB47A", cardBorder: "#E8C99A" },
+  { id: "yuugata",  icon: "🌆", label: "夕方",      bg: "#FCF5ED", accent: "#F5A94A", cardBorder: "#D87B5A" },
+  { id: "yoru",     icon: "🌙", label: "夜",        bg: "#ECEFF2", accent: "#4A6FA5", cardBorder: "#8DAEC9" },
+  { id: "kokage",   icon: "🌿", label: "木陰",      bg: "#F2F5EC", accent: "#7A9968", cardBorder: "#A8C09A" },
+  { id: "atatakai", icon: "🕯", label: "あたたかい", bg: "#FAF3E8", accent: "#C9925E", cardBorder: "#E0B788" },
+];
+const DEFAULT_ATMOSPHERE = ATMOSPHERE_PRESETS[4]; // atatakai
+const findAtmosphere = (id?: string | null): AtmospherePreset =>
+  ATMOSPHERE_PRESETS.find(a => a.id === id) || DEFAULT_ATMOSPHERE;
+
 const CATS = [
   { id:"all", icon:"🐾", label:"すべて" },
   { id:"illust", icon:"🎨", label:"似顔絵" },
@@ -5422,6 +5445,28 @@ const MyPage = ({ setPage }) => {
     window.addEventListener("openMyPageTab", handleOpenTab);
     return () => window.removeEventListener("openMyPageTab", handleOpenTab);
   }, []);
+  // 暮らしの空気 (v3.2 第23章): MyPage 内だけの "模様替え"
+  // - 初回ログイン時に DB から読み込み (default: atatakai)
+  // - 切替時に即反映 (保存ボタンなし)、DB は非同期で更新
+  const [atmosphereId, setAtmosphereId] = useState<string>("atatakai");
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("home_atmosphere")
+        .eq("id", user.id)
+        .single();
+      if (data?.home_atmosphere) setAtmosphereId(data.home_atmosphere);
+    })();
+  }, [user?.id]);
+  const atmosphere = findAtmosphere(atmosphereId);
+  const changeAtmosphere = async (id: string) => {
+    setAtmosphereId(id); // 即反映 (optimistic)
+    if (!user?.id) return;
+    // DB は非同期で更新 (失敗してもUIは戻さない、次回ログイン時に正しい値が読まれる)
+    await supabase.from("profiles").update({ home_atmosphere: id }).eq("id", user.id);
+  };
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
@@ -5539,7 +5584,7 @@ const MyPage = ({ setPage }) => {
   ];
 
   return (
-    <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, padding:"80px 16px 40px" }}>
+    <div style={{ paddingTop:60, minHeight:"100vh", background:atmosphere.bg, padding:"80px 16px 40px", transition:"background 0.6s ease" }}>
       <div style={{ maxWidth:600, margin:"0 auto" }}>
         {/* Tab Navigation - レスポンシブ：スマホ2列(4行) / PC4列(2行) */}
         <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap:6, marginBottom:20 }}>
@@ -5645,6 +5690,48 @@ const MyPage = ({ setPage }) => {
                 </button>
               ))}
             </div>
+            {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
+            <div style={{ marginTop:24 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
+                🏠 暮らしの空気
+              </div>
+              <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch" }}>
+                {ATMOSPHERE_PRESETS.map(preset => {
+                  const selected = atmosphereId === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => changeAtmosphere(preset.id)}
+                      style={{
+                        flexShrink: 0,
+                        minHeight: 44,
+                        padding: "8px 14px",
+                        background: selected ? preset.bg : C.white,
+                        color: selected ? C.dark : C.warmGray,
+                        border: `1.5px solid ${selected ? preset.cardBorder : C.border}`,
+                        borderRadius: 22,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        whiteSpace: "nowrap",
+                        transition: "background 0.4s ease, color 0.4s ease, border-color 0.4s ease",
+                      }}
+                    >
+                      <span style={{ fontSize: 15 }}>{preset.icon}</span>
+                      <span>{preset.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize:11, color:C.warmGray, marginTop:8, paddingLeft:4, opacity:0.7 }}>
+                自分の家だけの空気。いつでも気分で。
+              </div>
+            </div>
+
             <button onClick={handleSignOut} style={{ width:"100%", padding:"14px", marginTop:20, background:C.white, border:`1.5px solid ${C.red}`, borderRadius:14, color:C.red, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>🚪 ログアウト</button>
           </>
         )}
