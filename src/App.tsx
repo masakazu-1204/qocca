@@ -602,7 +602,7 @@ const Stars = ({ rating, size=12 }) => (
 );
 
 const Tag = ({ text }) => (
-  <span style={{ background:C.orange, color:"#fff", fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" }}>{text}</span>
+  <span style={{ background:C.orangePale, color:C.orange, border:`1px solid ${C.orange}`, fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" }}>{text}</span>
 );
 
 const Card = ({ item, onClick, liked, onLike }) => (
@@ -636,7 +636,7 @@ const Card = ({ item, onClick, liked, onLike }) => (
         {item.seller}
       </div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:15, fontWeight:900, color:C.orange }}>¥{item.price?.toLocaleString()}</span>
+        <span style={{ fontSize:15, fontWeight:700, color:C.dark }}>¥{item.price?.toLocaleString()}</span>
         {item.rating > 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:3 }}>
             <Stars rating={item.rating} size={11}/>
@@ -3813,29 +3813,50 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
   );
 };
 
-// ── SEARCH ─────────────────────────────────────────────────────────────────
+// ── SEARCH (v3.2 商い街化 Phase 1: 5経路 + ふらっと + 空配列導線) ─────────
 const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC }) => {
   const [cat, setCat] = useState("all");
   const [sort, setSort] = useState("popular");
+  // "ふらっと" は sort 切替時または filter 変化時にシャッフルし直す (毎レンダーでは変わらない)
+  const [randomKey, setRandomKey] = useState(0);
+  useEffect(() => {
+    if (sort === "random") setRandomKey(k => k + 1);
+  }, [sort]);
 
-  let results = listings.filter(l => {
+  const filtered = listings.filter(l => {
     if (cat !== "all" && l.category !== cat) return false;
     if (search && !l.title.includes(search) && !l.seller.includes(search)) return false;
     return true;
   });
-  if (sort === "popular") results = sortByPopularity(results);
-  if (sort === "cheap") results = [...results].sort((a,b) => a.price - b.price);
-  if (sort === "rating") results = [...results].sort((a,b) => b.rating - a.rating);
+
+  // v3.2 第27章: 5 つの発見経路 (人気/新着/評価/価格/ふらっと)
+  const results = React.useMemo(() => {
+    if (sort === "popular") return sortByPopularity(filtered);
+    if (sort === "new")     return [...filtered].sort((a, b) => {
+      const at = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bt = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bt - at;
+    });
+    if (sort === "rating")  return [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (sort === "cheap")   return [...filtered].sort((a, b) => (a.price || 0) - (b.price || 0));
+    if (sort === "random")  return [...filtered].sort(() => Math.random() - 0.5);
+    return filtered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sort, listings, cat, search, randomKey]);
+
+  // 空配列時の "別の入り口" 導線: フィルタが効いてる時のみ表示
+  const hasFilter = cat !== "all" || !!search;
+  const resetFilters = () => { setCat("all"); setSearch(""); };
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       {!isPC && (
         <div style={{ padding:"12px 16px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
           <div style={{ position:"relative" }}>
-            <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14 }}>🔍</span>
+            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:14 }}>🔍</span>
             <input value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="キーワードで検索..."
-              style={{ width:"100%", padding:"10px 10px 10px 32px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", fontFamily:"inherit", background:C.lightGray, boxSizing:"border-box" }}
+              style={{ width:"100%", padding:"12px 12px 12px 34px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", fontFamily:"inherit", background:C.lightGray, boxSizing:"border-box" }}
             />
           </div>
         </div>
@@ -3855,14 +3876,16 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC
           </button>
         ))}
       </div>
-      <div style={{ padding:"10px 0", paddingLeft: isPC ? 0 : 16, paddingRight: isPC ? 0 : 16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <span style={{ fontSize:13, color:C.warmGray }}>{results.length}件</span>
-        <div style={{ display:"flex", gap:6 }}>
-          {[["popular","人気"],["rating","評価"],["cheap","価格"]].map(([v,l])=>(
+      <div style={{ padding:"10px 0", paddingLeft: isPC ? 0 : 16, paddingRight: isPC ? 0 : 16, display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <span style={{ fontSize:13, color:C.warmGray, flexShrink:0 }}>{results.length}件</span>
+        <div style={{ display:"flex", gap:6, overflowX:"auto" }}>
+          {[["popular","人気"],["new","新着"],["rating","評価"],["cheap","価格"],["random","ふらっと"]].map(([v,l])=>(
             <button key={v} onClick={()=>setSort(v)} style={{
-              padding:"5px 12px", border:`1.5px solid ${sort===v?C.orange:C.border}`,
+              flexShrink:0, minHeight:36, padding:"8px 14px",
+              border:`1.5px solid ${sort===v?C.orange:C.border}`,
               borderRadius:16, background: sort===v ? C.orangePale : C.white,
-              color: sort===v ? C.orange : C.warmGray, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+              color: sort===v ? C.orange : C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+              transition:"background 0.3s ease, color 0.3s ease, border-color 0.3s ease"
             }}>{l}</button>
           ))}
         </div>
@@ -3871,7 +3894,19 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC
         {results.length === 0 ? (
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
             <div style={{ fontSize:48, marginBottom:12 }}>🐾</div>
-            <div style={{ fontSize:16, fontWeight:800, color:C.dark }}>見つかりませんでした</div>
+            <div style={{ fontSize:15, fontWeight:600, color:C.dark, marginBottom:16, lineHeight:1.7 }}>
+              まだこの街にいないみたいです。
+            </div>
+            {hasFilter && (
+              <button onClick={resetFilters} style={{
+                minHeight:44, padding:"10px 20px",
+                background:"transparent", color:C.orange, border:`1.5px solid ${C.orange}`,
+                borderRadius:22, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                transition:"background 0.3s ease, color 0.3s ease"
+              }}>
+                別の入り口から覗いてみる →
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(3,1fr)" : "1fr 1fr", gap: isPC ? 16 : 12 }}>
