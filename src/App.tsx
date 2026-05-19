@@ -5422,6 +5422,7 @@ const handleFollow = async () => {
 };
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState("profile");
   const [isPC, setIsPC] = useState(typeof window !== "undefined" ? window.innerWidth >= 768 : false);
 
@@ -5690,6 +5691,30 @@ const MyPage = ({ setPage }) => {
                 </button>
               ))}
             </div>
+            {/* 電話番号認証への導線 (v3.2 第29-30章: 任意機能、出品者推奨) */}
+            <div style={{ marginTop:24 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
+                安心の準備
+              </div>
+              <button
+                onClick={() => navigate("/settings/phone-verification")}
+                style={{
+                  width:"100%", minHeight:44, padding:"14px 16px",
+                  background:C.white, border:`1px solid ${C.border}`, borderRadius:14,
+                  display:"flex", alignItems:"center", gap:12,
+                  cursor:"pointer", fontFamily:"inherit", textAlign:"left",
+                  transition:"border-color 0.3s ease",
+                }}
+              >
+                <div style={{ width:36, height:36, borderRadius:10, background:C.cream, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>📱</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>電話番号の認証</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>出品をはじめる方におすすめ</div>
+                </div>
+                <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
+              </button>
+            </div>
+
             {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
             <div style={{ marginTop:24 }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
@@ -9277,6 +9302,284 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   );
 };
 
+// ============================================================================
+// PhoneVerificationPage (v3.2 第29-30章: 1人=1アカウント、Stripe JCB違反者再登録防止)
+// Twilio Verify API 経由で SMS OTP 認証、住民の任意機能 (出品者推奨)
+// ============================================================================
+const PhoneVerificationPage = ({ setPage }: any) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [phoneNumber, setPhoneNumber] = useState("+81");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+
+  // 既に認証済みかチェック (Step 1 初期表示時)
+  const [alreadyVerified, setAlreadyVerified] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("account_phone_verification")
+        .select("phone_number, verified_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data?.verified_at) {
+        setAlreadyVerified(true);
+        setPhoneNumber(data.phone_number);
+        setStep(3);
+      } else {
+        setAlreadyVerified(false);
+      }
+    })();
+  }, [user?.id]);
+
+  const handleSendCode = async () => {
+    setError(null);
+    if (!/^\+[1-9]\d{6,14}$/.test(phoneNumber)) {
+      setError("国際形式で入力してください (例: +818012345678)");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("send-verification-code", {
+        body: { phone_number: phoneNumber },
+      });
+      if (invokeErr) throw invokeErr;
+      if (data?.error) {
+        if (data.error === "rate_limited" && data.retry_after_seconds) {
+          setRetryAfter(data.retry_after_seconds);
+        }
+        setError(data.message || data.error);
+        return;
+      }
+      setStep(2);
+    } catch (e: any) {
+      setError(e?.message || "送信に失敗しました");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    setError(null);
+    if (!/^\d{4,10}$/.test(code)) {
+      setError("コードは数字のみで入力してください");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("verify-code", {
+        body: { phone_number: phoneNumber, code },
+      });
+      if (invokeErr) throw invokeErr;
+      if (data?.error) {
+        setError(data.message || data.error);
+        return;
+      }
+      if (data?.success && data?.verified) {
+        setStep(3);
+        setAlreadyVerified(true);
+      } else {
+        setError(data?.message || "認証に失敗しました");
+      }
+    } catch (e: any) {
+      setError(e?.message || "認証に失敗しました");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleBackToPhone = () => {
+    setStep(1);
+    setCode("");
+    setError(null);
+  };
+
+  if (!user) {
+    return (
+      <div style={{ paddingTop: isMobile ? 60 : 0, minHeight: "100vh", background: C.cream, padding: "80px 16px 40px" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontSize: 15, color: C.dark, marginBottom: 16 }}>ログインが必要です。</div>
+          <button onClick={() => navigate("/login")} style={{
+            minHeight: 44, padding: "10px 20px", background: "transparent",
+            color: C.orange, border: `1.5px solid ${C.orange}`, borderRadius: 20,
+            fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          }}>ログインへ →</button>
+        </div>
+      </div>
+    );
+  }
+
+  // 共通の input スタイル (スマホ第一原則: minHeight 44)
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    minHeight: 44,
+    padding: "12px 14px",
+    fontSize: 16,
+    fontFamily: "inherit",
+    border: `1.5px solid ${C.border}`,
+    borderRadius: 10,
+    background: C.white,
+    color: C.dark,
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  return (
+    <div style={{ paddingTop: isMobile ? 60 : 0, minHeight: "100vh", background: C.cream, padding: "80px 16px 40px" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto" }}>
+        {/* ヘッダー */}
+        <div style={{ marginBottom: 24 }}>
+          <button onClick={() => navigate("/mypage")} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: C.warmGray, fontSize: 13, padding: 0, fontFamily: "inherit",
+          }}>← マイページへ戻る</button>
+          <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: C.dark, marginTop: 12, marginBottom: 6 }}>
+            電話番号の認証
+          </h1>
+          <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.7, margin: 0 }}>
+            出品をはじめる方には認証をおすすめしています。<br/>
+            安心して使える街のための、ささやかな手続きです。
+          </p>
+        </div>
+
+        {/* Step 1: 電話番号入力 */}
+        {step === 1 && alreadyVerified === false && (
+          <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "20px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.dark, marginBottom: 8 }}>1 / 2 — 電話番号を入力</div>
+            <label style={{ display: "block", fontSize: 12, color: C.warmGray, marginBottom: 6 }}>
+              国際形式で入力してください (例: +818012345678)
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\+0-9]/g, ""))}
+              placeholder="+818012345678"
+              style={inputStyle}
+              disabled={busy}
+            />
+            {error && (
+              <div style={{ fontSize: 12, color: C.red, marginTop: 8, lineHeight: 1.6 }}>
+                {error}
+                {retryAfter !== null && ` (約${retryAfter}秒後に再試行可能)`}
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 12, lineHeight: 1.7 }}>
+              SMS で 6 桁のコードをお送りします。<br/>
+              SMS 受信料金が発生する場合があります。
+            </div>
+            <button
+              onClick={handleSendCode}
+              disabled={busy || !phoneNumber}
+              style={{
+                width: "100%", minHeight: 44, marginTop: 16, padding: "12px 20px",
+                background: "transparent", color: C.orange,
+                border: `1.5px solid ${C.orange}`, borderRadius: 22,
+                fontSize: 14, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer",
+                fontFamily: "inherit", opacity: busy ? 0.5 : 1,
+                transition: "background 0.3s ease, color 0.3s ease",
+              }}
+            >
+              {busy ? "送信中..." : "認証コードを送る →"}
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: コード入力 */}
+        {step === 2 && (
+          <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "20px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.dark, marginBottom: 8 }}>2 / 2 — 受信したコードを入力</div>
+            <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 14, lineHeight: 1.6 }}>
+              <span style={{ color: C.dark }}>{phoneNumber}</span> 宛に送ったコードを入力してください。
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+              placeholder="6桁のコード"
+              style={{ ...inputStyle, fontSize: 18, letterSpacing: "0.2em", textAlign: "center" }}
+              disabled={busy}
+            />
+            {error && (
+              <div style={{ fontSize: 12, color: C.red, marginTop: 8, lineHeight: 1.6 }}>{error}</div>
+            )}
+            <button
+              onClick={handleVerifyCode}
+              disabled={busy || !code}
+              style={{
+                width: "100%", minHeight: 44, marginTop: 16, padding: "12px 20px",
+                background: "transparent", color: C.orange,
+                border: `1.5px solid ${C.orange}`, borderRadius: 22,
+                fontSize: 14, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer",
+                fontFamily: "inherit", opacity: busy ? 0.5 : 1,
+                transition: "background 0.3s ease, color 0.3s ease",
+              }}
+            >
+              {busy ? "確認中..." : "認証する →"}
+            </button>
+            <button
+              onClick={handleBackToPhone}
+              disabled={busy}
+              style={{
+                width: "100%", minHeight: 44, marginTop: 10, padding: "10px 20px",
+                background: "transparent", color: C.warmGray,
+                border: "none", fontSize: 12, cursor: busy ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              ← 電話番号を変更する
+            </button>
+          </div>
+        )}
+
+        {/* Step 3: 完了 */}
+        {step === 3 && (
+          <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "24px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🌿</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: C.dark, marginBottom: 8 }}>
+              {alreadyVerified ? "認証済みです" : "認証が完了しました"}
+            </div>
+            <div style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.7, marginBottom: 20 }}>
+              {phoneNumber}<br/>
+              この街への準備が、ひとつ整いました。
+            </div>
+            <button
+              onClick={() => navigate("/mypage")}
+              style={{
+                minHeight: 44, padding: "10px 24px",
+                background: "transparent", color: C.orange,
+                border: `1.5px solid ${C.orange}`, borderRadius: 22,
+                fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                transition: "background 0.3s ease, color 0.3s ease",
+              }}
+            >
+              マイページへ戻る →
+            </button>
+          </div>
+        )}
+
+        {/* loading 表示 (alreadyVerified === null) */}
+        {alreadyVerified === null && step !== 3 && (
+          <div style={{ textAlign: "center", padding: 24, color: C.warmGray, fontSize: 13 }}>読み込み中…</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -10442,6 +10745,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/settings/phone-verification" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <PhoneVerificationPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/user/:userId" element={
             <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
               <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -10506,6 +10817,7 @@ function QoccaAppInner() {
             <Route path="/sell" element={<SellPage setPage={setPage}/>}/>
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
+            <Route path="/settings/phone-verification" element={<PhoneVerificationPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
