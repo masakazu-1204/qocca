@@ -5983,7 +5983,7 @@ const MyPage = ({ setPage }) => {
     birthday?: string | null; bio?: string | null; avatar_url?: string | null;
     gender?: string | null; status: string;
   }>>([]);
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null } | null>(null);
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
 
   useEffect(() => {
@@ -5991,7 +5991,7 @@ const MyPage = ({ setPage }) => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio, created_at")
+        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at")
         .eq("id", user.id)
         .single();
       if (data) setProfile(data);
@@ -6198,6 +6198,33 @@ const MyPage = ({ setPage }) => {
                 </button>
               </div>
             </div>
+            {/* 創業期出品者バッジ (King 哲学: 本人のみ見える、公開プロフィールには出さない) */}
+            {profile?.early_supporter_expires_at && (() => {
+              const expiresAt = new Date(profile.early_supporter_expires_at!);
+              const now = new Date();
+              if (expiresAt <= now) return null;
+              const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              return (
+                <div style={{
+                  marginTop: 16,
+                  padding: "12px 16px",
+                  background: "linear-gradient(135deg, #FFF3E0 0%, #FFE8D6 100%)",
+                  borderRadius: 12,
+                  border: `1px solid ${C.orange}`,
+                  fontSize: 13,
+                  color: C.dark,
+                  textAlign: "center",
+                  lineHeight: 1.7,
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.orange, marginBottom: 4 }}>
+                    ⭐ 創業期出品者
+                  </div>
+                  <div style={{ fontSize: 12, color: C.warmGray }}>
+                    手数料 5%・残り {daysLeft} 日 (〜{expiresAt.toLocaleDateString("ja-JP")})
+                  </div>
+                </div>
+              );
+            })()}
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
               )}

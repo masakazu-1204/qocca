@@ -423,14 +423,14 @@ const StripeConnectGuide: React.FC = () => (
 );
 
 // ── ③ 手数料の仕組み ────────────────────────────────────────
-// ガイドライン v1.0 (2026/5/21 確定・弁護士第11条に基づく機動性重視運用)
+// ガイドライン v1.1 (2026/5/22 更新・クラファン¥5,000枠「創業期出品者」追加)
 const FeesGuide: React.FC = () => {
   const navigate = useNavigate();
   return (
     <PageWrap>
       <BackToTop />
       <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>💰 手数料の仕組み</h1>
-      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>最終更新日: 2026年5月21日</p>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>最終更新日: 2026年5月22日</p>
 
       <H2>はじめに</H2>
       <P>Qoccaをご利用いただきありがとうございます。</P>
@@ -491,6 +491,39 @@ const FeesGuide: React.FC = () => {
         <li>開始: <strong>2026年6月1日</strong>(クラウドファンディング開始日)</li>
         <li>終了: <strong>2026年7月31日</strong></li>
       </ul>
+
+      <H2>⭐ 創業期出品者枠 (クラウドファンディング特典)</H2>
+      <P>Qoccaのクラウドファンディングで<br/>
+      「創業期出品者枠」を獲得された方には、<br/>
+      特別な手数料優遇を適用します。</P>
+
+      <H3>適用内容</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>期間: ご購入日から <strong>2027年7月31日まで</strong></li>
+        <li>販売手数料: <strong>5%</strong>(通常 10% → 半額)</li>
+        <li>枠数: <strong>50枠 限定</strong></li>
+      </ul>
+
+      <H3>適用イメージ (2026年6月1日にご購入の場合)</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>2026年6月1日 〜 7月31日: <strong>0%</strong> (ウェルカムキャンペーンが優先)</li>
+        <li>2026年8月1日 〜 2027年7月31日: <strong>5%</strong> (創業期出品者特典)</li>
+        <li>2027年8月1日以降: <strong>10%</strong> (通常)</li>
+      </ul>
+      <P>ウェルカムキャンペーンと併せて、<br/>
+      実質 <strong>14ヶ月の手数料優遇</strong> となります。</P>
+
+      <Note color="blue">
+        ⭐ 創業期出品者の方は、マイページに<br/>
+        「創業期出品者 (残り◯日)」と表示されます。
+      </Note>
+
+      <Note color="blue">
+        <strong>適用条件:</strong><br/>
+        クラウドファンディング (CAMPFIRE) で<br/>
+        「創業期出品者枠 ¥5,000」リターンをご支援いただいた方<br/>
+        ※ Qocca のメールアドレスでの紐付けが必要です
+      </Note>
 
       <H2>売上金の振込について</H2>
       <P>売上金は、月末に登録口座へ自動振込されます。</P>
