@@ -5724,6 +5724,29 @@ const MyPage = ({ setPage }) => {
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:atmosphere.bg, padding:"80px 16px 40px", transition:"background 0.6s ease" }}>
       <div style={{ maxWidth:600, margin:"0 auto" }}>
+        {/* Phase D Phase 2: 公開プロフィール導線 (King 判断: ヘッダー + Profile タブ両方) */}
+        <div style={{ marginBottom: 16, textAlign: "right" }}>
+          <button
+            onClick={() => navigate("/profile/me")}
+            style={{
+              padding: "10px 18px",
+              background: C.white,
+              border: `1.5px solid ${C.orange}`,
+              borderRadius: 22,
+              color: C.orange,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              minHeight: 44,
+            }}
+          >
+            👁️ 公開プロフィールを見る →
+          </button>
+        </div>
         {/* Tab Navigation - レスポンシブ：スマホ2列(4行) / PC4列(2行) */}
         <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(4, 1fr)" : "repeat(2, 1fr)", gap:6, marginBottom:20 }}>
           {tabs.map(t=>(
@@ -5748,6 +5771,43 @@ const MyPage = ({ setPage }) => {
               <div style={{ fontSize:18, fontWeight:700, color:C.dark, marginBottom:4 }}>{displayName}</div>
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>
+              {/* Phase D Phase 2: プロフィール情報セクション「編集」+「公開で見る」 */}
+              <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  style={{
+                    padding: "8px 16px",
+                    background: C.orange,
+                    border: "none",
+                    borderRadius: 18,
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    minHeight: 36,
+                  }}
+                >
+                  ✏️ 編集
+                </button>
+                <button
+                  onClick={() => navigate("/profile/me")}
+                  style={{
+                    padding: "8px 16px",
+                    background: C.white,
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: 18,
+                    color: C.dark,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    minHeight: 36,
+                  }}
+                >
+                  👁️ 公開で見る
+                </button>
+              </div>
             </div>
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>

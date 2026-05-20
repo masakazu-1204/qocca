@@ -32,6 +32,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
+  const [location, setLocation] = useState("");
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +43,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
       setError("");
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, bio, avatar_url")
+        .select("display_name, bio, avatar_url, location")
         .eq("id", userId)
         .single();
       if (error) {
@@ -52,6 +53,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
         setBio(data.bio || "");
         setAvatarUrl(data.avatar_url || "");
         setAvatarPreview(data.avatar_url || "");
+        setLocation(data.location || "");
       }
       setLoading(false);
     })();
@@ -103,6 +105,10 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
       setError("自己紹介は200文字以内にしてください");
       return;
     }
+    if (location.length > 50) {
+      setError("場所は50文字以内にしてください");
+      return;
+    }
     setError("");
     setSaving(true);
     const { error: updateError } = await supabase
@@ -111,6 +117,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
         display_name: displayName.trim(),
         bio: bio.trim(),
         avatar_url: avatarUrl || null,
+        location: location.trim(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
@@ -159,6 +166,13 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
                 <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 6 }}>自己紹介</label>
                 <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={200} placeholder="ペットのことや、得意なことなどを書いてみましょう🐾" rows={4} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", resize: "vertical", minHeight: 80, boxSizing: "border-box", outline: "none" }} />
                 <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{bio.length} / 200</div>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 6 }}>
+                  場所 <span style={{ color: C.warmGray, fontWeight: 400, fontSize: 11 }}>(任意)</span>
+                </label>
+                <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={50} placeholder="例: 東京・中野区 / 朝の散歩は新宿御苑" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }} />
+                <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{location.length} / 50</div>
               </div>
               {error && (
                 <div style={{ background: "#FFEBEE", color: C.danger, padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 16 }}>⚠️ {error}</div>
