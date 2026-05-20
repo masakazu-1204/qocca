@@ -5280,6 +5280,23 @@ const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
   const [reviews, setReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
   const [isFollowing, setIsFollowing] = useState(false);
 const [followCount, setFollowCount] = useState(0);
+// Phase D: 認証ガード + うちの子 state
+const [authChecked, setAuthChecked] = useState(false);
+const [pets, setPets] = useState<Array<{ id: string; name: string; species: string; breed?: string | null; birthday?: string | null; bio?: string | null; avatar_url?: string | null; gender?: string | null; status: string; display_order: number }>>([]);
+const [petPhotos, setPetPhotos] = useState<Record<string, Array<{ id: string; photo_url: string; caption?: string | null }>>>({});
+
+  // Phase D: 認証ガード (King 判断: ログイン必要)
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        navigate(`/login?returnTo=${returnTo}`, { replace: true });
+        return;
+      }
+      setAuthChecked(true);
+    })();
+  }, [navigate]);
 
   useEffect(()=>{
   if (!userId) return;
@@ -5345,6 +5362,33 @@ const handleFollow = async () => {
       setUserListings(data || []);
     })();
   }, [userId]);
+  // Phase D: pets + pet_photos 取得 (active 優先 → memorial)
+  useEffect(()=>{
+    if (!userId) return;
+    (async ()=>{
+      const { data: petData } = await supabase
+        .from("pets")
+        .select("id, name, species, breed, birthday, bio, avatar_url, gender, status, display_order")
+        .eq("owner_id", userId)
+        .order("status", { ascending: true })
+        .order("display_order", { ascending: true });
+      setPets(petData || []);
+      if (petData && petData.length > 0) {
+        const petIds = petData.map((p: { id: string }) => p.id);
+        const { data: photoData } = await supabase
+          .from("pet_photos")
+          .select("id, pet_id, photo_url, caption")
+          .in("pet_id", petIds)
+          .order("display_order", { ascending: true });
+        const grouped: Record<string, Array<{ id: string; photo_url: string; caption?: string | null }>> = {};
+        (photoData || []).forEach((ph: { id: string; pet_id: string; photo_url: string; caption?: string | null }) => {
+          if (!grouped[ph.pet_id]) grouped[ph.pet_id] = [];
+          grouped[ph.pet_id].push({ id: ph.id, photo_url: ph.photo_url, caption: ph.caption });
+        });
+        setPetPhotos(grouped);
+      }
+    })();
+  }, [userId]);
   useEffect(()=>{
     if (!userId) return;
     (async ()=>{
@@ -5361,7 +5405,7 @@ const handleFollow = async () => {
     })();
   }, [userId]);
 
-  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
+  if (!authChecked || loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
   if (!profile) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>ユーザーが見つかりません</div>;
 
   const displayName = profile.display_name || "ユーザー";
@@ -5401,6 +5445,81 @@ const handleFollow = async () => {
             </button>
           )}
         </div>
+      {/* Phase D: 🐾 うちの子セクション (pets + pet_photos) */}
+      {pets.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12, paddingLeft: 4 }}>
+            🐾 うちの子 ({pets.length})
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
+            {pets.map((p) => {
+              const isMemorial = p.status === "memorial";
+              const genderIcon = p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "";
+              const speciesEmoji = p.species === "dog" ? "🐕" : p.species === "cat" ? "🐈" : "🐾";
+              const photos = petPhotos[p.id] || [];
+              const firstPhoto = photos[0]?.photo_url || p.avatar_url || "";
+              const showBio = !!p.bio && !p.bio.startsWith("(Phase D サンプル");
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    background: isMemorial ? "#F8F6F2" : C.white,
+                    borderRadius: 14,
+                    border: `1px solid ${C.border}`,
+                    overflow: "hidden",
+                    opacity: isMemorial ? 0.85 : 1,
+                  }}
+                >
+                  <div style={{
+                    width: "100%",
+                    aspectRatio: "1",
+                    background: firstPhoto ? `url(${firstPhoto}) center/cover` : "#FFF5EB",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 48,
+                    position: "relative",
+                  }}>
+                    {!firstPhoto && speciesEmoji}
+                    {isMemorial && (
+                      <div style={{
+                        position: "absolute",
+                        top: 6,
+                        right: 6,
+                        background: "rgba(255,255,255,0.92)",
+                        color: "#8B6F4E",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "3px 8px",
+                        borderRadius: 10,
+                      }}>
+                        🌈 虹の橋
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: "10px 12px" }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 4 }}>
+                      {p.name}
+                      {genderIcon && <span style={{ color: C.warmGray, fontSize: 12, fontWeight: 600, marginLeft: 6 }}>{genderIcon}</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.5 }}>
+                      {speciesEmoji} {p.breed || (p.species === "dog" ? "犬" : p.species === "cat" ? "猫" : "そのほか")}
+                      {p.birthday && (
+                        <><br/>{new Date(p.birthday).getFullYear()}年生まれ</>
+                      )}
+                    </div>
+                    {showBio && (
+                      <div style={{ fontSize: 11, color: "#666", marginTop: 6, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {p.bio}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
@@ -5420,6 +5539,24 @@ const handleFollow = async () => {
     </div>
   );
 };
+
+// Phase D: /profile/me — ログイン中ユーザの公開プロフィールへリダイレクト
+const ProfileMeRedirect: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        navigate(`/profile/${user.id}`, { replace: true });
+      } else {
+        const returnTo = encodeURIComponent("/profile/me");
+        navigate(`/login?returnTo=${returnTo}`, { replace: true });
+      }
+    })();
+  }, [navigate]);
+  return <div style={{ padding: 40, textAlign: "center", color: C.warmGray, fontSize: 13 }}>読み込み中...</div>;
+};
+
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -10761,6 +10898,16 @@ function QoccaAppInner() {
               </div>
             </div>
           }/>
+            {/* Phase D: 公開プロフィール (King 哲学: 管理ページとは別、みんなに見てもらうページ) */}
+            <Route path="/profile/me" element={<ProfileMeRedirect/>}/>
+            <Route path="/profile/:userId" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <UserProfilePage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/favorites" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -10822,6 +10969,9 @@ function QoccaAppInner() {
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
             <Route path="/user/:userId" element={<UserProfilePage setPage={setPage}/>}/>
+            {/* Phase D: 公開プロフィール (mobile) */}
+            <Route path="/profile/me" element={<ProfileMeRedirect/>}/>
+            <Route path="/profile/:userId" element={<UserProfilePage setPage={setPage}/>}/>
             <Route path="/favorites" element={<LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}/>
             {["terms","privacy","tokusho","contact"].map(t => (
               <Route key={t} path={`/${t}`} element={<LegalPage type={t} setPage={setPage}/>}/>
