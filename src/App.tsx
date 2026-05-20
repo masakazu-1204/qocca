@@ -9,6 +9,7 @@ import CommunityShowcase from "./components/CommunityShowcase";
 import FacilityMapPromo from "./components/FacilityMapPromo";
 import CommentModal from "./components/CommentModal";
 import ProfileEditModal from "./components/ProfileEditModal";
+import PetEditModal from "./components/PetEditModal";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
@@ -5974,6 +5975,14 @@ const MyPage = ({ setPage }) => {
   };
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Phase D Phase 2 (5/22): うちの子セクション state
+  const [petEditOpen, setPetEditOpen] = useState(false);
+  const [editingPetId, setEditingPetId] = useState<string | null>(null);
+  const [myPets, setMyPets] = useState<Array<{
+    id: string; name: string; species: string; breed?: string | null;
+    birthday?: string | null; bio?: string | null; avatar_url?: string | null;
+    gender?: string | null; status: string;
+  }>>([]);
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
 
@@ -5988,6 +5997,19 @@ const MyPage = ({ setPage }) => {
       if (data) setProfile(data);
     })();
   }, [user?.id, refreshKey]);
+  // Phase D Phase 2 (5/22): 自分の pets を取得 (active → memorial 順)
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("pets")
+        .select("id, name, species, breed, birthday, bio, avatar_url, gender, status, display_order")
+        .eq("owner_id", user.id)
+        .order("status", { ascending: true })
+        .order("display_order", { ascending: true });
+      setMyPets(data || []);
+    })();
+  }, [user?.id, refreshKey, petEditOpen]);
   useEffect(()=>{
     if (!user?.id) return;
     (async ()=>{
@@ -6179,6 +6201,126 @@ const MyPage = ({ setPage }) => {
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
               )}
+              {/* Phase D Phase 2 (5/22): 🐾 うちの子セクション */}
+              <div style={{ marginTop: 20, background: C.white, borderRadius: 16, padding: "16px 16px 14px", border: `1px solid ${C.border}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>
+                    🐾 うちの子 ({myPets.length})
+                  </div>
+                  <button
+                    onClick={() => { setEditingPetId(null); setPetEditOpen(true); }}
+                    style={{
+                      padding: "6px 14px",
+                      background: C.orange,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 16,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      minHeight: 32,
+                    }}
+                  >
+                    + 追加
+                  </button>
+                </div>
+                {myPets.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "24px 12px", color: C.warmGray, fontSize: 12, lineHeight: 1.8, border: `1px dashed ${C.border}`, borderRadius: 10, background: "#FAFAFA" }}>
+                    まだ うちの子 を追加していません。<br/>
+                    「+ 追加」から、ペットの情報を残せます。
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+                    {myPets.map((p) => {
+                      const isMemorial = p.status === "memorial";
+                      const genderIcon = p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "";
+                      const speciesEmoji = p.species === "dog" ? "🐕" : p.species === "cat" ? "🐈" : "🐾";
+                      const heroPhoto = p.avatar_url || "";
+                      return (
+                        <div
+                          key={p.id}
+                          style={{
+                            background: isMemorial ? "#F8F6F2" : C.white,
+                            borderRadius: 12,
+                            border: `1px solid ${C.border}`,
+                            overflow: "hidden",
+                            opacity: isMemorial ? 0.92 : 1,
+                          }}
+                        >
+                          <div style={{
+                            width: "100%",
+                            aspectRatio: "1",
+                            background: "#FFF5EB",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 40,
+                            position: "relative",
+                            overflow: "hidden",
+                          }}>
+                            {heroPhoto ? (
+                              <img src={heroPhoto} alt={p.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                            ) : speciesEmoji}
+                            {isMemorial && (
+                              <div style={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                background: "rgba(255,255,255,0.92)",
+                                color: "#8B6F4E",
+                                fontSize: 9,
+                                fontWeight: 700,
+                                padding: "2px 6px",
+                                borderRadius: 8,
+                              }}>
+                                🌈 虹の橋
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ padding: "8px 10px" }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: C.dark, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                              {genderIcon && <span style={{ color: C.warmGray, fontSize: 11, fontWeight: 600 }}>{genderIcon}</span>}
+                            </div>
+                            <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 8, lineHeight: 1.4, height: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {speciesEmoji} {p.breed || (p.species === "dog" ? "犬" : p.species === "cat" ? "猫" : "そのほか")}
+                            </div>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <button
+                                onClick={() => { setEditingPetId(p.id); setPetEditOpen(true); }}
+                                style={{
+                                  flex: 1, padding: "5px 8px",
+                                  background: C.orangePale, color: C.orange,
+                                  border: "none", borderRadius: 6,
+                                  fontSize: 10, fontWeight: 700,
+                                  cursor: "pointer", fontFamily: "inherit",
+                                  minHeight: 28,
+                                }}
+                              >
+                                ✏️ 編集
+                              </button>
+                              <button
+                                onClick={() => navigate(`/pet/${p.id}`)}
+                                style={{
+                                  flex: 1, padding: "5px 8px",
+                                  background: C.white, color: C.dark,
+                                  border: `1px solid ${C.border}`, borderRadius: 6,
+                                  fontSize: 10, fontWeight: 700,
+                                  cursor: "pointer", fontFamily: "inherit",
+                                  minHeight: 28,
+                                }}
+                              >
+                                👁️ 公開で見る
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             <div style={{ display:"flex", gap:0, marginTop:16, background:C.white, borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
                 <button onClick={()=>setActivityModal("listings")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.listings}</div>
@@ -6355,6 +6497,16 @@ const MyPage = ({ setPage }) => {
         userId={user?.id}
         onSaved={()=>setRefreshKey(k=>k+1)}
       />
+      {/* Phase D Phase 2 (5/22): PetEditModal (追加/編集モード、petId=null で追加) */}
+      {user?.id && (
+        <PetEditModal
+          open={petEditOpen}
+          onClose={() => { setPetEditOpen(false); setEditingPetId(null); }}
+          userId={user.id}
+          petId={editingPetId}
+          onSaved={() => setRefreshKey(k => k + 1)}
+        />
+      )}
       {activityModal && <ActivityDetailModal type={activityModal} userId={user?.id} onClose={()=>setActivityModal(null)} setPage={setPage}/>}
     </div>
   );
