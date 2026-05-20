@@ -423,51 +423,76 @@ const StripeConnectGuide: React.FC = () => (
 );
 
 // ── ③ 手数料の仕組み ────────────────────────────────────────
+// ガイドライン v1.0 (2026/5/21 確定・弁護士第11条に基づく機動性重視運用)
 const FeesGuide: React.FC = () => {
   const navigate = useNavigate();
   return (
     <PageWrap>
       <BackToTop />
       <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>💰 手数料の仕組み</h1>
-      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>最終更新日: 2026年5月16日</p>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>最終更新日: 2026年5月21日</p>
 
       <H2>はじめに</H2>
-      <P>Qoccaでの出品・販売には、いくつかの手数料があります。<br/>
-      このページで、ひとつずつ静かにご説明します。</P>
-      <P>うちの子との時間を、丁寧に届けたい方にとって、<br/>
-      手数料が予想外の負担にならないように。</P>
+      <P>Qoccaをご利用いただきありがとうございます。</P>
+      <P>このページでは、サービスをご利用いただく際の<br/>
+      手数料について、わかりやすくご案内します。</P>
 
-      <H2>出品について</H2>
-      <P>出品自体には、いっさい費用がかかりません。</P>
-      <P>掲載料、月額料金、初期費用、どれもありません。<br/>
-      何点出品しても、いつ出品をやめても、無料です。</P>
-      <P>「とりあえず置いてみる」も大歓迎です。</P>
+      <H2>出品される方へ</H2>
+      <P>Qoccaでは、ペットへの想いを込めた作品を<br/>
+      出品いただく方をサポートするため、<br/>
+      やさしい手数料設定にしています。</P>
 
-      <H2>販売手数料(売れたとき)</H2>
-      <P>作品が売れたときに、販売価格から手数料がかかります。</P>
-
-      <H3>はじめての取引</H3>
+      <H3>出品時の費用</H3>
       <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
-        <li>1件目の取引: 手数料は<strong>無料</strong>です</li>
+        <li>出品料: <strong>無料</strong></li>
+        <li>月額利用料: <strong>無料</strong></li>
+        <li>写真掲載料: <strong>無料</strong></li>
       </ul>
+      <P>ペットへの想いを形にした作品を、<br/>
+      気軽に出品いただけます。</P>
 
-      <H3>登録から90日以内</H3>
+      <H3>取引が成立したときの手数料</H3>
       <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
-        <li>手数料: 販売価格の <strong>5%</strong></li>
+        <li>初回取引: <strong>無料(0%)</strong></li>
+        <li>登録から3ヶ月以内: <strong>5%</strong></li>
+        <li>通常(3ヶ月経過後): <strong>10%</strong></li>
       </ul>
-
-      <H3>90日以降の通常時</H3>
-      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
-        <li>手数料: 販売価格の <strong>10%</strong></li>
-      </ul>
-
-      <P>決済処理はQoccaが行うため、出品者の追加負担はありません。</P>
 
       <Note color="blue">
-        購入者の方が支払う金額は、出品ページに表示されている価格のみです。
+        <strong>「初回取引」とは:</strong><br/>
+        出品者として初めて成立した取引のことです。<br/>
+        出品開始から何ヶ月経っていても、<br/>
+        一度も取引が成立していない方は<br/>
+        「初回取引」として <strong>0%</strong>(無料)で<br/>
+        販売いただけます。
       </Note>
 
-      <H2>売上金の振込</H2>
+      <Note color="blue">
+        <strong>「登録から3ヶ月以内」とは:</strong><br/>
+        出品者として登録した日から90日以内に<br/>
+        成立した取引です。
+      </Note>
+
+      <H2>⭐ ウェルカムキャンペーン実施中</H2>
+      <P><strong>2026年7月31日まで、すべての取引手数料を0%にします。</strong></P>
+      <P>Qoccaのグランドオープン(2026年7月1日)に向けて、<br/>
+      創業期にご参加いただく出品者の皆様への<br/>
+      感謝のキャンペーンです。</P>
+
+      <H3>キャンペーン期間中の取り扱い</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>期間中の取引: <strong>すべて0%</strong></li>
+        <li>キャンペーン期間中に取引が成立した場合、「初回取引(0%)」の権利は消費されます</li>
+        <li>キャンペーン終了後は、出品者登録日から3ヶ月以内かどうかに応じて、5% または 10% が適用されます</li>
+      </ul>
+
+      <H3>キャンペーン期間</H3>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>開始: <strong>2026年6月1日</strong>(クラウドファンディング開始日)</li>
+        <li>終了: <strong>2026年7月31日</strong></li>
+      </ul>
+
+      <H2>売上金の振込について</H2>
       <P>売上金は、月末に登録口座へ自動振込されます。</P>
 
       <H3>月末自動振込</H3>
@@ -481,20 +506,29 @@ const FeesGuide: React.FC = () => {
       <P>振込タイミングを待たず、いつでも引き出せます。<br/>
       この場合は手数料 <strong>¥275(税込)</strong> がかかります。</P>
 
-      <H2>一例</H2>
-      <P>販売価格 ¥3,000 の作品が売れた場合(通常時)を、参考までに。</P>
-      <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, padding: "14px 18px", fontSize: 13, lineHeight: 2, color: "#444", marginBottom: 12 }}>
-        販売価格: <strong>¥3,000</strong><br/>
-        販売手数料(10%): <span style={{ color: C.warmGray }}>-¥300</span><br/>
-        <span style={{ display: "inline-block", borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 6, width: "100%" }}>
-          売上(出品者の手取り): <strong>¥2,700</strong>
-        </span>
-      </div>
-      <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 12px" }}>※ 初回取引なら、販売手数料が無料です。</p>
+      <H2>ご購入される方へ</H2>
 
-      <H2>キャンセル時の扱い</H2>
-      <P>取引途中でキャンセルになった場合の手数料は、<br/>
-      利用規約 第7条にて詳しく記載しています。</P>
+      <H3>お支払いの仕組み</H3>
+      <P>商品ページに表示されている価格が、<br/>
+      お支払いの基本となります。<br/>
+      購入手続きの際に、決済処理に必要な金額が<br/>
+      明示され、最終的なお支払金額として<br/>
+      ご確認いただけます。</P>
+
+      <H3>安心して取引できる仕組み</H3>
+      <P>Qoccaでは、Stripe Payments Japan株式会社による<br/>
+      エスクロー方式を採用しています。</P>
+      <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22, marginBottom: 12 }}>
+        <li>ご購入時にお支払いいただいた代金は、Stripe社が一時的にお預かりします</li>
+        <li>出品者が作品を発送し、購入者が受取確認をされた時点で、出品者へお支払いします</li>
+        <li>これにより、取引の安全性が確保されています</li>
+      </ul>
+
+      <H2>手数料の変更について</H2>
+      <P>事業展開や運営状況に応じて、<br/>
+      手数料を変更する場合があります。</P>
+      <P>変更する際は、利用規約第12条に定める手続に従い、<br/>
+      事前に皆様にご通知させていただきます。</P>
       <div style={{ marginTop: 8, marginBottom: 12 }}>
         <a
           href="/terms"
@@ -505,9 +539,9 @@ const FeesGuide: React.FC = () => {
         </a>
       </div>
 
-      <H2>ご不明な点があれば</H2>
-      <P>このページで分からないところがあれば、<br/>
-      お問い合わせフォームから、いつでもご連絡ください。</P>
+      <H2>ご質問・お問い合わせ</H2>
+      <P>手数料に関するご質問は、<br/>
+      お問い合わせフォームよりご連絡ください。</P>
       <div style={{ marginTop: 8, marginBottom: 12 }}>
         <a
           href="/contact"
@@ -517,6 +551,11 @@ const FeesGuide: React.FC = () => {
           <span style={{ marginRight: 6 }}>▷</span>お問い合わせ
         </a>
       </div>
+
+      <p style={{ fontSize: 13, color: C.warmGray, textAlign: "center", marginTop: 32, marginBottom: 8, lineHeight: 1.9 }}>
+        🌷 ペットへの想いを、形に。<br/>
+        ふたりをつなぐ場所を、一緒に育てていきましょう。
+      </p>
 
       <ContactCard />
       <BackToTop />
