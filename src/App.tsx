@@ -5505,14 +5505,17 @@ const handleFollow = async () => {
                   <div style={{
                     width: "100%",
                     aspectRatio: "1",
-                    background: firstPhoto ? `url(${firstPhoto}) center/cover` : "#FFF5EB",
+                    background: "#FFF5EB",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: 48,
                     position: "relative",
+                    overflow: "hidden",
                   }}>
-                    {!firstPhoto && speciesEmoji}
+                    {firstPhoto ? (
+                      <img src={firstPhoto} alt={p.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    ) : speciesEmoji}
                     {isMemorial && (
                       <div style={{
                         position: "absolute",
@@ -5571,15 +5574,26 @@ const handleFollow = async () => {
                   width: 120,
                   height: 120,
                   borderRadius: 10,
-                  background: `url(${g.image_url}) center/cover`,
+                  overflow: "hidden",
+                  background: C.orangePale,
                   cursor: "pointer",
                   border: `1px solid ${C.border}`,
                   transition: "transform 0.15s ease",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.03)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
-                aria-label={g.caption || "ギャラリー画像"}
-              />
+              >
+                {g.image_url ? (
+                  <img
+                    src={g.image_url}
+                    alt={g.caption || "ギャラリー画像"}
+                    loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🖼️</div>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -5616,13 +5630,16 @@ const handleFollow = async () => {
                   width: 72,
                   height: 72,
                   borderRadius: 8,
-                  background: b.cover_image_url ? `url(${b.cover_image_url}) center/cover` : C.orangePale,
+                  overflow: "hidden",
+                  background: C.orangePale,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 28,
                 }}>
-                  {!b.cover_image_url && "📝"}
+                  {b.cover_image_url ? (
+                    <img src={b.cover_image_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  ) : "📝"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, lineHeight: 1.4, marginBottom: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -5769,7 +5786,7 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
       <div style={{
         width: "100%",
         aspectRatio: "4 / 3",
-        background: heroPhoto ? `url(${heroPhoto}) center/cover` : "#FFF5EB",
+        background: "#FFF5EB",
         borderRadius: 16,
         marginBottom: photos.length > 1 ? 12 : 16,
         display: "flex",
@@ -5778,8 +5795,11 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
         fontSize: 96,
         position: "relative",
         opacity: isMemorial ? 0.94 : 1,
+        overflow: "hidden",
       }}>
-        {!heroPhoto && speciesEmoji}
+        {heroPhoto ? (
+          <img src={heroPhoto} alt={pet.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        ) : speciesEmoji}
         {isMemorial && (
           <div style={{
             position: "absolute",
@@ -5810,7 +5830,8 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
                 width: 64,
                 height: 64,
                 borderRadius: 10,
-                background: `url(${ph.photo_url}) center/cover`,
+                overflow: "hidden",
+                background: C.orangePale,
                 cursor: "pointer",
                 border: `2px solid ${i === selectedPhotoIdx ? C.orange : "transparent"}`,
                 transition: "border 0.2s",
@@ -5818,7 +5839,9 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
                 fontFamily: "inherit",
               }}
               aria-label={`写真 ${i + 1}`}
-            />
+            >
+              <img src={ph.photo_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            </button>
           ))}
         </div>
       )}
