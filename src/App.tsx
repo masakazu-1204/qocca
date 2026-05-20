@@ -5284,6 +5284,9 @@ const [followCount, setFollowCount] = useState(0);
 const [authChecked, setAuthChecked] = useState(false);
 const [pets, setPets] = useState<Array<{ id: string; name: string; species: string; breed?: string | null; birthday?: string | null; bio?: string | null; avatar_url?: string | null; gender?: string | null; status: string; display_order: number }>>([]);
 const [petPhotos, setPetPhotos] = useState<Record<string, Array<{ id: string; photo_url: string; caption?: string | null }>>>({});
+// Phase D Phase 2 (5/22 夜): 公開プロフィールにギャラリー + ブログ表示
+const [userGallery, setUserGallery] = useState<Array<{ id: string; image_url: string; caption?: string | null }>>([]);
+const [userBlogPosts, setUserBlogPosts] = useState<Array<{ id: string; title: string; cover_image_url?: string | null; category?: string | null; created_at: string }>>([]);
 
   // Phase D: 認証ガード (King 判断: ログイン必要)
   useEffect(() => {
@@ -5360,6 +5363,27 @@ const handleFollow = async () => {
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
       setUserListings(data || []);
+    })();
+  }, [userId]);
+  // Phase D Phase 2 (5/22 夜): ギャラリー + ブログ取得 (公開プロフィール用)
+  useEffect(()=>{
+    if (!userId) return;
+    (async ()=>{
+      const [galRes, blogRes] = await Promise.all([
+        supabase.from("gallery_posts")
+          .select("id, image_url, caption")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(6),
+        supabase.from("blog_posts")
+          .select("id, title, cover_image_url, category, created_at")
+          .eq("author_id", userId)
+          .eq("published", true)
+          .order("created_at", { ascending: false })
+          .limit(3),
+      ]);
+      setUserGallery(galRes.data || []);
+      setUserBlogPosts(blogRes.data || []);
     })();
   }, [userId]);
   // Phase D: pets + pet_photos 取得 (active 優先 → memorial)
@@ -5462,13 +5486,21 @@ const handleFollow = async () => {
               return (
                 <div
                   key={p.id}
+                  onClick={() => navigate(`/pet/${p.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/pet/${p.id}`); } }}
                   style={{
                     background: isMemorial ? "#F8F6F2" : C.white,
                     borderRadius: 14,
                     border: `1px solid ${C.border}`,
                     overflow: "hidden",
                     opacity: isMemorial ? 0.85 : 1,
+                    cursor: "pointer",
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
                 >
                   <div style={{
                     width: "100%",
@@ -5520,6 +5552,92 @@ const handleFollow = async () => {
           </div>
         </div>
       )}
+      {/* Phase D Phase 2 (5/22 夜): 🖼️ ギャラリー (最新6件) */}
+      {userGallery.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12, paddingLeft: 4 }}>
+            🖼️ ギャラリー ({userGallery.length})
+          </div>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16, scrollbarWidth: "thin" }}>
+            {userGallery.map((g) => (
+              <div
+                key={g.id}
+                onClick={() => navigate(`/gallery/${g.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/gallery/${g.id}`); } }}
+                style={{
+                  flexShrink: 0,
+                  width: 120,
+                  height: 120,
+                  borderRadius: 10,
+                  background: `url(${g.image_url}) center/cover`,
+                  cursor: "pointer",
+                  border: `1px solid ${C.border}`,
+                  transition: "transform 0.15s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+                aria-label={g.caption || "ギャラリー画像"}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Phase D Phase 2 (5/22 夜): 📝 ブログ (公開済 最新3件) */}
+      {userBlogPosts.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12, paddingLeft: 4 }}>
+            📝 ブログ ({userBlogPosts.length})
+          </div>
+          <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+            {userBlogPosts.map((b) => (
+              <div
+                key={b.id}
+                onClick={() => navigate(`/blog/${b.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/blog/${b.id}`); } }}
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  background: C.white,
+                  borderRadius: 12,
+                  border: `1px solid ${C.border}`,
+                  padding: 10,
+                  cursor: "pointer",
+                  transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
+              >
+                <div style={{
+                  flexShrink: 0,
+                  width: 72,
+                  height: 72,
+                  borderRadius: 8,
+                  background: b.cover_image_url ? `url(${b.cover_image_url}) center/cover` : C.orangePale,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 28,
+                }}>
+                  {!b.cover_image_url && "📝"}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, lineHeight: 1.4, marginBottom: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {b.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.warmGray }}>
+                    {b.category && <span style={{ background: C.orangePale, color: C.orange, padding: "2px 8px", borderRadius: 8, marginRight: 8, fontSize: 10, fontWeight: 700 }}>{b.category}</span>}
+                    {new Date(b.created_at).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {userListings.length > 0 && (
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:12, paddingLeft:4 }}>出品中の商品 ({userListings.length})</div>
@@ -5536,6 +5654,232 @@ const handleFollow = async () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Phase D Phase 2 (5/22 夜): /pet/:petId — 個別ペット詳細ページ (King 推奨A案)
+const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
+  const { petId } = useParams();
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pet, setPet] = useState<{
+    id: string; owner_id: string; name: string; species: string;
+    breed?: string | null; birthday?: string | null; bio?: string | null;
+    avatar_url?: string | null; gender?: string | null; status: string;
+  } | null>(null);
+  const [photos, setPhotos] = useState<Array<{ id: string; photo_url: string; caption?: string | null; taken_at?: string | null }>>([]);
+  const [owner, setOwner] = useState<{ id: string; display_name: string; avatar_url?: string | null } | null>(null);
+  const [selectedPhotoIdx, setSelectedPhotoIdx] = useState(0);
+
+  // 認証ガード (King 判断: ログイン必要)
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const returnTo = encodeURIComponent(window.location.pathname);
+        navigate(`/login?returnTo=${returnTo}`, { replace: true });
+        return;
+      }
+      setAuthChecked(true);
+    })();
+  }, [navigate]);
+
+  // pet + photos + owner 取得
+  useEffect(() => {
+    if (!petId) return;
+    (async () => {
+      setLoading(true);
+      const { data: petData } = await supabase
+        .from("pets")
+        .select("id, owner_id, name, species, breed, birthday, bio, avatar_url, gender, status")
+        .eq("id", petId)
+        .single();
+      setPet(petData || null);
+
+      if (petData) {
+        const { data: photoData } = await supabase
+          .from("pet_photos")
+          .select("id, photo_url, caption, taken_at")
+          .eq("pet_id", petId)
+          .order("display_order", { ascending: true });
+        setPhotos(photoData || []);
+
+        const { data: ownerData } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .eq("id", petData.owner_id)
+          .single();
+        setOwner(ownerData || null);
+      }
+      setLoading(false);
+    })();
+  }, [petId]);
+
+  if (!authChecked || loading) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>読み込み中...</div>;
+  if (!pet) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>うちの子が見つかりません</div>;
+
+  const isMemorial = pet.status === "memorial";
+  const speciesEmoji = pet.species === "dog" ? "🐕" : pet.species === "cat" ? "🐈" : "🐾";
+  const genderIcon = pet.gender === "male" ? "♂" : pet.gender === "female" ? "♀" : "";
+  const speciesLabel = pet.species === "dog" ? "犬" : pet.species === "cat" ? "猫" : "そのほか";
+  const heroPhoto = photos[selectedPhotoIdx]?.photo_url || pet.avatar_url || "";
+  const showBio = !!pet.bio && !pet.bio.startsWith("(Phase D サンプル");
+
+  // 年齢計算
+  let ageText = "";
+  if (pet.birthday) {
+    const bd = new Date(pet.birthday);
+    const now = new Date();
+    const years = now.getFullYear() - bd.getFullYear();
+    const m = now.getMonth() - bd.getMonth();
+    const isBeforeBirthday = m < 0 || (m === 0 && now.getDate() < bd.getDate());
+    const ageYears = isBeforeBirthday ? years - 1 : years;
+    if (ageYears > 0) ageText = `${ageYears}歳`;
+  }
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto" }}>
+      {/* 戻るボタン (owner のプロフィールへ) */}
+      {owner && (
+        <button
+          onClick={() => navigate(`/profile/${owner.id}`)}
+          style={{
+            background: "none",
+            border: "none",
+            color: C.warmGray,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: "10px 0",
+            marginBottom: 8,
+            fontFamily: "inherit",
+            minHeight: 40,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          ← {owner.display_name} のプロフィールへ
+        </button>
+      )}
+
+      {/* ヒーロー写真 */}
+      <div style={{
+        width: "100%",
+        aspectRatio: "4 / 3",
+        background: heroPhoto ? `url(${heroPhoto}) center/cover` : "#FFF5EB",
+        borderRadius: 16,
+        marginBottom: photos.length > 1 ? 12 : 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 96,
+        position: "relative",
+        opacity: isMemorial ? 0.94 : 1,
+      }}>
+        {!heroPhoto && speciesEmoji}
+        {isMemorial && (
+          <div style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            background: "rgba(255,255,255,0.95)",
+            color: "#8B6F4E",
+            fontSize: 12,
+            fontWeight: 700,
+            padding: "6px 14px",
+            borderRadius: 14,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          }}>
+            🌈 虹の橋を渡った子
+          </div>
+        )}
+      </div>
+
+      {/* サムネイル列 (2枚以上ある場合のみ) */}
+      {photos.length > 1 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "thin" }}>
+          {photos.map((ph, i) => (
+            <button
+              key={ph.id}
+              onClick={() => setSelectedPhotoIdx(i)}
+              style={{
+                flexShrink: 0,
+                width: 64,
+                height: 64,
+                borderRadius: 10,
+                background: `url(${ph.photo_url}) center/cover`,
+                cursor: "pointer",
+                border: `2px solid ${i === selectedPhotoIdx ? C.orange : "transparent"}`,
+                transition: "border 0.2s",
+                padding: 0,
+                fontFamily: "inherit",
+              }}
+              aria-label={`写真 ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 基本情報カード */}
+      <div style={{
+        background: C.white,
+        borderRadius: 16,
+        padding: "20px",
+        border: `1px solid ${C.border}`,
+        marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: C.dark, marginBottom: 6, lineHeight: 1.3 }}>
+          {pet.name}
+          {genderIcon && (
+            <span style={{ color: C.warmGray, fontSize: 18, fontWeight: 600, marginLeft: 10 }}>{genderIcon}</span>
+          )}
+        </div>
+        <div style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.8 }}>
+          {speciesEmoji} {pet.breed || speciesLabel}
+          {pet.birthday && (
+            <> ・ {new Date(pet.birthday).getFullYear()}年生まれ{ageText && ` (${ageText})`}</>
+          )}
+        </div>
+      </div>
+
+      {/* 自己紹介 (うちの子の物語) */}
+      {showBio && (
+        <div style={{
+          background: C.orangePale,
+          borderRadius: 14,
+          padding: "16px 20px",
+          marginBottom: 16,
+          fontSize: 14,
+          color: C.dark,
+          lineHeight: 1.8,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}>
+          {pet.bio}
+        </div>
+      )}
+
+      {/* 軌跡セクション (Phase D Phase 2 後半で taken_at タイムライン詳細実装) */}
+      <div style={{
+        background: C.white,
+        borderRadius: 14,
+        padding: "24px 20px",
+        border: `1px dashed ${C.border}`,
+        marginBottom: 16,
+        textAlign: "center",
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 8 }}>
+          📜 うちの子の軌跡
+        </div>
+        <div style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.7 }}>
+          {photos.length > 0
+            ? `これまでの ${photos.length} 枚の記録を、もうすぐここに。`
+            : "写真とともに、これまでの記録をここに残せるようになります。"}
+        </div>
+      </div>
     </div>
   );
 };
@@ -10968,6 +11312,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* Phase D Phase 2 (5/22 夜): /pet/:petId — 個別ペット詳細 (King 推奨A案) */}
+            <Route path="/pet/:petId" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <PetDetailPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/favorites" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -11032,6 +11385,8 @@ function QoccaAppInner() {
             {/* Phase D: 公開プロフィール (mobile) */}
             <Route path="/profile/me" element={<ProfileMeRedirect/>}/>
             <Route path="/profile/:userId" element={<UserProfilePage setPage={setPage}/>}/>
+            {/* Phase D Phase 2 (5/22 夜): /pet/:petId (mobile) */}
+            <Route path="/pet/:petId" element={<PetDetailPage setPage={setPage}/>}/>
             <Route path="/favorites" element={<LikedPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} isPC={false}/>}/>
             {["terms","privacy","tokusho","contact"].map(t => (
               <Route key={t} path={`/${t}`} element={<LegalPage type={t} setPage={setPage}/>}/>
