@@ -6448,6 +6448,30 @@ const MyPage = ({ setPage }) => {
               </button>
             </div>
 
+            {/* Phase Crowdfunding (5/23): クラファン特典コード入力 */}
+            <div style={{ marginTop:24 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
+                🎁 クラウドファンディング
+              </div>
+              <button
+                onClick={() => navigate("/redeem")}
+                style={{
+                  width:"100%", minHeight:44, padding:"14px 16px",
+                  background:C.white, border:`1px solid ${C.border}`, borderRadius:14,
+                  display:"flex", alignItems:"center", gap:12,
+                  cursor:"pointer", fontFamily:"inherit", textAlign:"left",
+                  transition:"border-color 0.3s ease",
+                }}
+              >
+                <div style={{ width:36, height:36, borderRadius:10, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🎁</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>特典コードを入力</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>CAMPFIRE で受け取ったコードはこちらから</div>
+                </div>
+                <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
+              </button>
+            </div>
+
             {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
             <div style={{ marginTop:24 }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
@@ -10323,6 +10347,139 @@ const PhoneVerificationPage = ({ setPage }: any) => {
   );
 };
 
+// ── クラファン特典コード引き換え (Phase Crowdfunding, 2026/5/23) ───────────
+const RedeemPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!user) {
+      const returnTo = encodeURIComponent("/redeem");
+      navigate(`/login?returnTo=${returnTo}`, { replace: true });
+    }
+  }, [user, navigate]);
+
+  const handleRedeem = async () => {
+    if (!code.trim()) { setError("コードを入力してください"); return; }
+    setLoading(true);
+    setError("");
+    setResult(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setError("認証エラー"); setLoading(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/redeem-crowdfunding-code",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ code: code.trim() }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setResult(data);
+        setCode("");
+      } else {
+        setError(data.message || data.error || "コードの引き換えに失敗しました");
+      }
+    } catch (e: any) {
+      setError(e?.message || "エラーが発生しました");
+    }
+    setLoading(false);
+  };
+
+  if (!user) return null;
+
+  const benefitLabels: Record<string, string> = {
+    cheer_supporter:   "🌷 応援サポーター",
+    founding_resident: "⭐ 創業期住民",
+    ark_donor:         "🐾 ARK 募金者",
+    early_supporter:   "✨ 創業期出品者 (手数料 5% 1年間)",
+    limited_avatar:    "🎨 限定アバター",
+    sponsor:           "🏛️ スポンサー",
+    founding_partner:  "🌟 創業パートナー",
+  };
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 0" }}>
+      <button onClick={() => navigate("/mypage")} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0", fontFamily: "inherit", minHeight: 40 }}>
+        ← マイページに戻る
+      </button>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginTop: 8, marginBottom: 8 }}>
+        🎁 クラウドファンディング特典の引き換え
+      </h1>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24, lineHeight: 1.7 }}>
+        CAMPFIRE で受け取った特典コードを入力してください。<br/>
+        コードはどんなアカウントからでも引き換えできます。
+      </p>
+
+      {result?.success ? (
+        <div style={{ background: "linear-gradient(135deg, #FFF3E0 0%, #FFE8D6 100%)", border: `2px solid ${C.orange}`, borderRadius: 16, padding: "24px 20px" }}>
+          <div style={{ fontSize: 48, textAlign: "center", marginBottom: 8 }}>🎊</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: C.dark, textAlign: "center", marginBottom: 16 }}>
+            特典を受け取りました!
+          </div>
+          <div style={{ background: C.white, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 4 }}>受け取ったリターン</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.dark, marginBottom: 12 }}>
+              {result.reward_name} (¥{Number(result.reward_price_jpy).toLocaleString()})
+            </div>
+            <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 6 }}>付与された特典</div>
+            <ul style={{ paddingLeft: 0, listStyle: "none", margin: 0 }}>
+              {(result.benefits || []).map((b: string) => (
+                <li key={b} style={{ fontSize: 14, color: C.dark, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>
+                  {benefitLabels[b] || b}
+                </li>
+              ))}
+            </ul>
+            {result.already_have_benefits?.length > 0 && (
+              <div style={{ fontSize: 11, color: C.warmGray, marginTop: 10, lineHeight: 1.7 }}>
+                ※ 一部の特典は既にお持ちでした (重複付与なし)
+              </div>
+            )}
+          </div>
+          <button onClick={() => navigate("/mypage")} style={{ padding: "12px 24px", width: "100%", background: C.orange, color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", minHeight: 48 }}>
+            マイページで確認する →
+          </button>
+        </div>
+      ) : (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 8 }}>
+            特典コード
+          </label>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="例: QOCCA-A8F3-K2P9"
+            maxLength={64}
+            disabled={loading}
+            style={{ width: "100%", padding: "12px 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 16, fontFamily: "monospace", boxSizing: "border-box", outline: "none", letterSpacing: "0.06em", textTransform: "uppercase" }}
+            onKeyDown={(e) => { if (e.key === "Enter") handleRedeem(); }}
+          />
+          {error && (
+            <div style={{ marginTop: 12, padding: "10px 12px", background: "#FFEBEE", color: "#E57373", borderRadius: 8, fontSize: 13, lineHeight: 1.6 }}>
+              ⚠️ {error}
+            </div>
+          )}
+          <button onClick={handleRedeem} disabled={loading || !code.trim()} style={{ marginTop: 16, padding: "14px 24px", width: "100%", background: loading || !code.trim() ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: loading || !code.trim() ? "wait" : "pointer", fontFamily: "inherit", minHeight: 48 }}>
+            {loading ? "確認中..." : "🎁 特典を受け取る"}
+          </button>
+          <div style={{ fontSize: 11, color: C.warmGray, marginTop: 16, lineHeight: 1.7 }}>
+            ℹ️ コードは CAMPFIRE のメッセージ機能で順次お送りしています。<br/>
+            届かない場合はお問い合わせください。
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -11496,6 +11653,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* Phase Crowdfunding (5/23): /redeem クーポンコード引き換え */}
+            <Route path="/redeem" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <RedeemPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/user/:userId" element={
             <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
               <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -11580,6 +11746,7 @@ function QoccaAppInner() {
             <Route path="/login" element={<SignupPage setPage={setPage}/>}/>
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
             <Route path="/settings/phone-verification" element={<PhoneVerificationPage setPage={setPage}/>}/>
+            <Route path="/redeem" element={<RedeemPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
