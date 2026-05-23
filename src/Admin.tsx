@@ -534,13 +534,15 @@ const SalesPage = () => {
 };
 
 // ── メインアプリ ────────────────────────────────────────────────────────────
-const MENU = [
+const MENU: Array<{ id: string; icon: string; label: string; external?: string }> = [
   { id: "dashboard", icon: "📊", label: "ダッシュボード" },
   { id: "events", icon: "🎪", label: "イベント管理" },
   { id: "listings", icon: "📦", label: "出品管理" },
   { id: "members", icon: "👥", label: "会員管理" },
   { id: "reports", icon: "🚨", label: "通報管理" },
   { id: "sales", icon: "💰", label: "売上管理" },
+  // Phase Blog (5/24): 別ルート /admin/blog への外部リンク
+  { id: "blog", icon: "📝", label: "ブログ管理", external: "/admin/blog" },
 ];
 
 export default function AdminDashboard() {
@@ -661,7 +663,13 @@ export default function AdminDashboard() {
 
         <div style={{ flex: 1, padding: "16px 0" }}>
           {MENU.map(m => (
-            <button key={m.id} onClick={() => setPage(m.id)} style={{
+            <button key={m.id} onClick={() => {
+              if (m.external) {
+                window.location.href = m.external;
+              } else {
+                setPage(m.id);
+              }
+            }} style={{
               width: "100%", padding: "12px 20px", border: "none", cursor: "pointer",
               background: page === m.id ? "rgba(245,169,74,0.15)" : "transparent",
               borderLeft: page === m.id ? `3px solid ${C.orange}` : "3px solid transparent",
@@ -669,6 +677,7 @@ export default function AdminDashboard() {
             }}>
               <span style={{ fontSize: 18 }}>{m.icon}</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: page === m.id ? C.orange : "rgba(255,255,255,0.7)" }}>{m.label}</span>
+              {m.external && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginLeft: "auto" }}>↗</span>}
             </button>
           ))}
         </div>
