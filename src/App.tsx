@@ -10323,6 +10323,278 @@ const PhoneVerificationPage = ({ setPage }: any) => {
   );
 };
 
+// ── ブログ管理画面 (Phase Blog, 2026/5/25) ────────────────────────────────
+// admin role 限定 (/admin/blog)、5 テーマローテーション対応、draft → published
+const BLOG_CATEGORIES: Array<{ id: string; icon: string; label: string }> = [
+  { id: "petcare",    icon: "🐾", label: "ペットケア" },
+  { id: "philosophy", icon: "🌷", label: "Qocca 哲学" },
+  { id: "ark",        icon: "🤝", label: "ARK 連携" },
+  { id: "creator",    icon: "🎨", label: "クリエイター紹介" },
+  { id: "industry",   icon: "📊", label: "業界動向" },
+  { id: "general",    icon: "📝", label: "一般" },
+];
+const categoryLabel = (id: string) => {
+  const c = BLOG_CATEGORIES.find(x => x.id === id);
+  return c ? `${c.icon} ${c.label}` : id;
+};
+
+const BlogAdminPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [filter, setFilter] = useState<"all" | "draft" | "published">("all");
+  const [editingPost, setEditingPost] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editCategory, setEditCategory] = useState<string>("philosophy");
+  const [editTagsStr, setEditTagsStr] = useState("");
+  const [editCoverUrl, setEditCoverUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // 認証 + admin role ガード
+  useEffect(() => {
+    if (!user) {
+      const returnTo = encodeURIComponent("/admin/blog");
+      navigate(`/login?returnTo=${returnTo}`, { replace: true });
+      return;
+    }
+    (async () => {
+      const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      if (data?.role === "admin") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+        navigate("/", { replace: true });
+      }
+    })();
+  }, [user, navigate]);
+
+  const loadPosts = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("id, title, content, category, tags, cover_image_url, published, likes_count, views_count, created_at, updated_at, author_id")
+      .eq("author_id", user.id)
+      .order("created_at", { ascending: false });
+    setPosts(data || []);
+    setLoading(false);
+  };
+  useEffect(() => { if (isAdmin) loadPosts(); }, [isAdmin, user?.id]);
+
+  const startNew = () => {
+    setEditingPost({ id: null });
+    setEditTitle("");
+    setEditContent("");
+    setEditCategory("philosophy");
+    setEditTagsStr("");
+    setEditCoverUrl("");
+    setError("");
+  };
+
+  const startEdit = (post: any) => {
+    setEditingPost(post);
+    setEditTitle(post.title || "");
+    setEditContent(post.content || "");
+    setEditCategory(post.category || "philosophy");
+    setEditTagsStr((post.tags || []).join(", "));
+    setEditCoverUrl(post.cover_image_url || "");
+    setError("");
+  };
+
+  const closeEditor = () => { setEditingPost(null); setError(""); };
+
+  const handleSave = async (publishedFlag: boolean) => {
+    if (!editTitle.trim()) { setError("タイトルを入力してください"); return; }
+    if (editTitle.length > 200) { setError("タイトルは200文字以内にしてください"); return; }
+    if (!editContent.trim() || editContent.length < 100) { setError("本文は100文字以上にしてください"); return; }
+    setSaving(true); setError("");
+
+    const tagsArr = editTagsStr.split(",").map(s => s.trim()).filter(s => s);
+    const data: any = {
+      title: editTitle.trim(),
+      content: editContent.trim(),
+      category: editCategory,
+      tags: tagsArr,
+      cover_image_url: editCoverUrl.trim() || null,
+      published: publishedFlag,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (editingPost?.id) {
+      const { error: updErr } = await supabase.from("blog_posts").update(data).eq("id", editingPost.id);
+      if (updErr) { setError(updErr.message); setSaving(false); return; }
+    } else {
+      data.author_id = user!.id;
+      const { error: insErr } = await supabase.from("blog_posts").insert(data);
+      if (insErr) { setError(insErr.message); setSaving(false); return; }
+    }
+    setSaving(false);
+    closeEditor();
+    await loadPosts();
+  };
+
+  const togglePublished = async (post: any) => {
+    if (!window.confirm(`「${post.title}」を${post.published ? "下書きに戻し" : "公開し"}ますか?`)) return;
+    const { error: err } = await supabase
+      .from("blog_posts")
+      .update({ published: !post.published, updated_at: new Date().toISOString() })
+      .eq("id", post.id);
+    if (!err) await loadPosts();
+  };
+
+  const handleDelete = async (post: any) => {
+    if (!window.confirm(`「${post.title}」を完全に削除しますか?\nこの操作は取り消せません。`)) return;
+    const { error: err } = await supabase.from("blog_posts").delete().eq("id", post.id);
+    if (!err) await loadPosts();
+  };
+
+  if (!user || isAdmin === null) {
+    return <div style={{ maxWidth: 700, margin: "0 auto", padding: 24, textAlign: "center", color: C.warmGray }}>読み込み中...</div>;
+  }
+  if (!isAdmin) return null;
+
+  const filteredPosts = filter === "all" ? posts : posts.filter(p => filter === "draft" ? !p.published : p.published);
+  const draftCount = posts.filter(p => !p.published).length;
+  const publishedCount = posts.filter(p => p.published).length;
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 0" }}>
+      <button onClick={() => navigate("/admin")} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0", fontFamily: "inherit", minHeight: 40 }}>
+        ← 管理画面に戻る
+      </button>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginTop: 8, marginBottom: 8 }}>📝 ブログ管理</h1>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+        5 テーマローテーション (5日に1記事) で運用。下書きは <strong>King 承認</strong> 後に公開。
+      </p>
+
+      {/* 統計 */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{ background: C.white, borderRadius: 12, padding: "12px 16px", border: `1px solid ${C.border}`, flex: "1 1 100px" }}>
+          <div style={{ fontSize: 11, color: C.warmGray }}>全記事</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: C.dark }}>{posts.length}</div>
+        </div>
+        <div style={{ background: C.white, borderRadius: 12, padding: "12px 16px", border: `1px solid ${C.border}`, flex: "1 1 100px" }}>
+          <div style={{ fontSize: 11, color: C.warmGray }}>公開中</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#4CAF50" }}>{publishedCount}</div>
+        </div>
+        <div style={{ background: C.white, borderRadius: 12, padding: "12px 16px", border: `1px solid ${C.border}`, flex: "1 1 100px" }}>
+          <div style={{ fontSize: 11, color: C.warmGray }}>下書き</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: C.orange }}>{draftCount}</div>
+        </div>
+      </div>
+
+      {/* フィルター + 新規 */}
+      {!editingPost && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {(["all", "published", "draft"] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)} style={{
+              padding: "8px 14px", background: filter === f ? C.orange : C.white,
+              color: filter === f ? "#fff" : C.warmGray, border: `1px solid ${filter === f ? C.orange : C.border}`,
+              borderRadius: 18, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit"
+            }}>
+              {f === "all" ? "すべて" : f === "published" ? "公開中" : "下書き"}
+            </button>
+          ))}
+          <button onClick={startNew} style={{
+            marginLeft: "auto", padding: "8px 18px", background: C.orange, color: "#fff",
+            border: "none", borderRadius: 18, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit"
+          }}>
+            + 新規下書き
+          </button>
+        </div>
+      )}
+
+      {/* 編集 UI */}
+      {editingPost && (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 16 }}>
+            {editingPost.id ? "✏️ 記事を編集" : "🆕 新規下書き"}
+          </h2>
+
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.dark, marginBottom: 6 }}>タイトル <span style={{ color: "#E57373" }}>*</span></label>
+          <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={200} placeholder="例: 梅雨時期のペットの健康管理" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
+          <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: -10, marginBottom: 12 }}>{editTitle.length} / 200</div>
+
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.dark, marginBottom: 6 }}>カテゴリ (5 テーマローテ)</label>
+          <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", outline: "none", marginBottom: 12, background: C.white }}>
+            {BLOG_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+          </select>
+
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.dark, marginBottom: 6 }}>タグ (カンマ区切り、任意)</label>
+          <input value={editTagsStr} onChange={(e) => setEditTagsStr(e.target.value)} placeholder="例: 梅雨, 健康管理, 散歩" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
+
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.dark, marginBottom: 6 }}>カバー画像 URL (任意)</label>
+          <input value={editCoverUrl} onChange={(e) => setEditCoverUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none", marginBottom: 12 }} />
+
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.dark, marginBottom: 6 }}>本文 <span style={{ color: "#E57373" }}>*</span> (100文字以上)</label>
+          <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} placeholder="本文をここに書きます。改行は改行のまま反映されます。" rows={18} style={{ width: "100%", padding: "12px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", outline: "none", lineHeight: 1.8, resize: "vertical", minHeight: 300 }} />
+          <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4, marginBottom: 12 }}>{editContent.length} 文字</div>
+
+          {error && <div style={{ marginBottom: 12, padding: "10px 12px", background: "#FFEBEE", color: "#E57373", borderRadius: 8, fontSize: 13 }}>⚠️ {error}</div>}
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={closeEditor} disabled={saving} style={{ padding: "12px 20px", background: C.white, border: `1px solid ${C.border}`, borderRadius: 22, color: C.warmGray, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flex: "1 1 100px" }}>キャンセル</button>
+            <button onClick={() => handleSave(false)} disabled={saving} style={{ padding: "12px 20px", background: saving ? C.warmGray : C.white, border: `1.5px solid ${C.orange}`, borderRadius: 22, color: C.orange, fontSize: 13, fontWeight: 700, cursor: saving ? "wait" : "pointer", fontFamily: "inherit", flex: "1 1 120px" }}>{saving ? "..." : "📥 下書き保存"}</button>
+            <button onClick={() => handleSave(true)} disabled={saving} style={{ padding: "12px 20px", background: saving ? C.warmGray : C.orange, border: "none", borderRadius: 22, color: "#fff", fontSize: 13, fontWeight: 800, cursor: saving ? "wait" : "pointer", fontFamily: "inherit", flex: "1 1 120px" }}>{saving ? "..." : "📤 公開する"}</button>
+          </div>
+        </div>
+      )}
+
+      {/* 一覧 */}
+      {!editingPost && (
+        loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>読み込み中...</div>
+        ) : filteredPosts.length === 0 ? (
+          <div style={{ background: C.white, borderRadius: 16, border: `1px dashed ${C.border}`, padding: 40, textAlign: "center", color: C.warmGray }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📝</div>
+            <div style={{ fontSize: 13 }}>{filter === "draft" ? "下書きはありません" : filter === "published" ? "公開記事はありません" : "記事はまだありません"}</div>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 8 }}>「+ 新規下書き」から書き始めましょう</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filteredPosts.map(post => (
+              <div key={post.id} style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                  <span style={{ background: post.published ? "#E8F5E9" : "#FFF3E0", color: post.published ? "#2E7D32" : "#F57C00", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 12 }}>
+                    {post.published ? "公開中" : "下書き"}
+                  </span>
+                  <span style={{ fontSize: 11, color: C.warmGray }}>{categoryLabel(post.category)}</span>
+                  <span style={{ fontSize: 11, color: C.warmGray, marginLeft: "auto" }}>
+                    {new Date(post.created_at).toLocaleDateString("ja-JP")}
+                  </span>
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 800, color: C.dark, marginBottom: 6, lineHeight: 1.4 }}>{post.title}</h3>
+                <p style={{ fontSize: 12, color: "#666", lineHeight: 1.7, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{post.content}</p>
+                {post.tags?.length > 0 && (
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
+                    {post.tags.map((t: string) => (
+                      <span key={t} style={{ background: C.cream, color: C.warmGray, fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>#{t}</span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button onClick={() => startEdit(post)} style={{ padding: "6px 14px", background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, fontSize: 12, fontWeight: 700, color: C.dark, cursor: "pointer", fontFamily: "inherit", minHeight: 32 }}>✏️ 編集</button>
+                  <button onClick={() => togglePublished(post)} style={{ padding: "6px 14px", background: post.published ? C.white : C.orange, border: post.published ? `1px solid ${C.border}` : "none", borderRadius: 16, fontSize: 12, fontWeight: 700, color: post.published ? C.dark : "#fff", cursor: "pointer", fontFamily: "inherit", minHeight: 32 }}>
+                    {post.published ? "📥 下書きに戻す" : "📤 公開"}
+                  </button>
+                  {post.published && (
+                    <button onClick={() => navigate(`/blog/${post.id}`)} style={{ padding: "6px 14px", background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, fontSize: 12, fontWeight: 700, color: C.dark, cursor: "pointer", fontFamily: "inherit", minHeight: 32 }}>👁️ プレビュー</button>
+                  )}
+                  <button onClick={() => handleDelete(post)} style={{ padding: "6px 14px", background: C.white, border: `1px solid #E57373`, borderRadius: 16, fontSize: 12, fontWeight: 700, color: "#E57373", cursor: "pointer", fontFamily: "inherit", minHeight: 32, marginLeft: "auto" }}>🗑️ 削除</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -11552,6 +11824,15 @@ function QoccaAppInner() {
               </div>
             }/>
             <Route path="/admin" element={<AdminDashboard/>}/>
+            {/* Phase Blog (5/25): /admin/blog */}
+            <Route path="/admin/blog" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <BlogAdminPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
           </Routes>
@@ -11581,6 +11862,7 @@ function QoccaAppInner() {
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
             <Route path="/settings/phone-verification" element={<PhoneVerificationPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
+            <Route path="/admin/blog" element={<BlogAdminPage setPage={setPage}/>}/>
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
             <Route path="/user/:userId" element={<UserProfilePage setPage={setPage}/>}/>
