@@ -5288,6 +5288,8 @@ const [petPhotos, setPetPhotos] = useState<Record<string, Array<{ id: string; ph
 // Phase D Phase 2 (5/22 夜): 公開プロフィールにギャラリー + ブログ表示
 const [userGallery, setUserGallery] = useState<Array<{ id: string; image_url: string; caption?: string | null }>>([]);
 const [userBlogPosts, setUserBlogPosts] = useState<Array<{ id: string; title: string; cover_image_url?: string | null; category?: string | null; created_at: string }>>([]);
+// Phase Crowdfunding (5/24): 公開可能な特典バッジ (founding_partner / sponsor / ark_donor / founding_resident)
+const [userBenefits, setUserBenefits] = useState<string[]>([]);
 
   // Phase D: 認証ガード (King 判断: ログイン必要)
   useEffect(() => {
@@ -5387,6 +5389,19 @@ const handleFollow = async () => {
       setUserBlogPosts(blogRes.data || []);
     })();
   }, [userId]);
+  // Phase Crowdfunding (5/24): 公開バッジ取得 (founding_resident/ark_donor/sponsor/founding_partner)
+  // early_supporter / limited_avatar は本人のみなので除外 (MyPage で別途表示済)
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("user_crowdfunding_benefits")
+        .select("benefit")
+        .eq("user_id", userId)
+        .in("benefit", ["founding_resident", "ark_donor", "sponsor", "founding_partner"]);
+      setUserBenefits((data || []).map((d: { benefit: string }) => d.benefit));
+    })();
+  }, [userId]);
   // Phase D: pets + pet_photos 取得 (active 優先 → memorial)
   useEffect(()=>{
     if (!userId) return;
@@ -5441,6 +5456,23 @@ const handleFollow = async () => {
       <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:16 }}>
         <div style={{ width:72, height:72, borderRadius:"50%", background: profile.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:800, color:"#fff" }}>{!profile.avatar_url && initial}</div>
         <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4 }}>{displayName}</div>
+        {/* Phase Crowdfunding (5/24): 公開バッジ (上位リターンから順に表示) */}
+        {userBenefits.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, marginBottom: 4, justifyContent: "center" }}>
+            {userBenefits.includes("founding_partner") && (
+              <span title="¥100,000 創業パートナー" style={{ background: "linear-gradient(135deg, #FFF3E0 0%, #FFE8D6 100%)", border: `1px solid ${C.orange}`, borderRadius: 14, padding: "4px 12px", fontSize: 11, fontWeight: 800, color: C.dark }}>🌟 創業パートナー</span>
+            )}
+            {userBenefits.includes("sponsor") && (
+              <span title="¥30,000 スポンサー" style={{ background: "linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%)", border: `1px solid #FFA726`, borderRadius: 14, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: C.dark }}>🏛️ スポンサー</span>
+            )}
+            {userBenefits.includes("ark_donor") && (
+              <span title="¥3,000 ARK 募金者" style={{ background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)", border: `1px solid #4CAF50`, borderRadius: 14, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: C.dark }}>🐾 ARK 募金者</span>
+            )}
+            {userBenefits.includes("founding_resident") && (
+              <span title="クラファン期間中の創業期住民" style={{ background: C.orangePale, border: `1px solid ${C.orange}`, borderRadius: 14, padding: "4px 12px", fontSize: 11, fontWeight: 700, color: C.orange }}>⭐ 創業期住民</span>
+            )}
+          </div>
+        )}
         {profile.bio && (
           <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
         )}
