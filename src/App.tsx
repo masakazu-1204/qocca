@@ -10323,6 +10323,56 @@ const PhoneVerificationPage = ({ setPage }: any) => {
   );
 };
 
+// ── データ削除リクエスト確認ページ (Phase Threads, 2026/5/24) ────────────────
+// Meta threads-deletion-callback が返す url の確認ページ
+// 認証不要、シンプル静的、?id=<confirmation_code> クエリで表示
+const DeletionStatusPage: React.FC = () => {
+  const navigate = useNavigate();
+  const params = new URLSearchParams(window.location.search);
+  const confirmationId = params.get("id") || "";
+
+  return (
+    <div style={{ minHeight: "70vh", maxWidth: 600, margin: "0 auto", padding: "60px 20px 40px" }}>
+      <div style={{ fontSize: 56, textAlign: "center", marginBottom: 16 }}>🗑️</div>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, textAlign: "center", marginBottom: 16 }}>
+        データ削除リクエストを受け付けました
+      </h1>
+      <p style={{ fontSize: 14, color: "#444", lineHeight: 1.9, textAlign: "center", marginBottom: 24 }}>
+        Threads (Meta) 経由でのデータ削除リクエストを受け付けました。<br/>
+        Qocca に保存されている Threads 連携情報は順次削除されます。
+      </p>
+
+      {confirmationId && (
+        <div style={{ background: C.cream, borderRadius: 14, padding: "20px 24px", border: `1px solid ${C.border}`, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6, textAlign: "center" }}>確認 ID</div>
+          <div style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 700, color: C.dark, textAlign: "center", letterSpacing: "0.08em", wordBreak: "break-all" }}>
+            {confirmationId}
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: "#F8F6F2", borderRadius: 12, padding: "16px 20px", fontSize: 12, color: "#666", lineHeight: 1.8, marginBottom: 24 }}>
+        <strong style={{ color: C.dark }}>削除される情報:</strong><br/>
+        ・Threads アクセストークン<br/>
+        ・Threads ユーザー ID<br/>
+        ・Threads プロフィール情報のキャッシュ<br/>
+        <br/>
+        <strong style={{ color: C.dark }}>削除されない情報:</strong><br/>
+        ・Qocca アカウント本体 (継続利用可能)<br/>
+        ・ペット情報・出品作品・取引履歴等<br/>
+        <br/>
+        ご質問は <a href="/contact" onClick={(e) => { e.preventDefault(); navigate("/contact"); }} style={{ color: C.orange, fontWeight: 700, textDecoration: "none" }}>お問い合わせフォーム</a> までお願いします。
+      </div>
+
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <button onClick={() => navigate("/")} style={{ padding: "12px 28px", background: C.orange, color: "#fff", border: "none", borderRadius: 22, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>
+          ホームに戻る
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -11552,6 +11602,8 @@ function QoccaAppInner() {
               </div>
             }/>
             <Route path="/admin" element={<AdminDashboard/>}/>
+            {/* Phase Threads (5/24): /deletion-status — Meta deletion-callback の確認ページ */}
+            <Route path="/deletion-status" element={<DeletionStatusPage/>}/>
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
           </Routes>
@@ -11581,6 +11633,7 @@ function QoccaAppInner() {
             <Route path="/mypage" element={<MyPage setPage={setPage}/>}/>
             <Route path="/settings/phone-verification" element={<PhoneVerificationPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
+            <Route path="/deletion-status" element={<DeletionStatusPage/>}/>
             <Route path="/help" element={<HelpPage/>}/>
             <Route path="/help/:slug" element={<HelpPage/>}/>
             <Route path="/user/:userId" element={<UserProfilePage setPage={setPage}/>}/>
