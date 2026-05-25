@@ -5983,7 +5983,10 @@ const MyPage = ({ setPage }) => {
     birthday?: string | null; bio?: string | null; avatar_url?: string | null;
     gender?: string | null; status: string;
   }>>([]);
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null; is_founding_creator?: boolean; is_founding_mayor?: boolean; founding_creator_fee_rate?: number | null } | null>(null);
+  // 依頼書 #7 Phase A.2: クラファン引き換え済みコード + 未受け取りバッカー
+  const [crowdfundCodes, setCrowdfundCodes] = useState<any[]>([]);
+  const [crowdfundPendingBackers, setCrowdfundPendingBackers] = useState<any[]>([]);
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
 
   useEffect(() => {
@@ -5991,10 +5994,32 @@ const MyPage = ({ setPage }) => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at")
+        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at, is_founding_creator, is_founding_mayor, founding_creator_fee_rate")
         .eq("id", user.id)
         .single();
       if (data) setProfile(data);
+    })();
+  }, [user?.id, refreshKey]);
+  // 依頼書 #7 Phase A.2 (5/25): クラファン引き換え済みコード + 未受け取り backers 取得
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const [codesRes, pendingRes] = await Promise.all([
+        // 引き換え済み: redeemed_by_user_id = user.id
+        supabase
+          .from("crowdfunding_codes")
+          .select("id, code, reward_id, redeemed_at, backer_id, crowdfunding_rewards (id, name, price_jpy, benefits)")
+          .eq("redeemed_by_user_id", user.id)
+          .order("redeemed_at", { ascending: false }),
+        // 未受け取り: backers.user_id = user.id AND status='pending' (Admin が紐付け済の場合のみ)
+        supabase
+          .from("crowdfunding_backers")
+          .select("id, tier, amount, status, email")
+          .eq("user_id", user.id)
+          .eq("status", "pending"),
+      ]);
+      setCrowdfundCodes(codesRes.data || []);
+      setCrowdfundPendingBackers(pendingRes.data || []);
     })();
   }, [user?.id, refreshKey]);
   // Phase D Phase 2 (5/22): 自分の pets を取得 (active → memorial 順)
@@ -6227,6 +6252,98 @@ const MyPage = ({ setPage }) => {
             })()}
             {profile?.bio && (
                 <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
+              )}
+              {/* 依頼書 #7 Phase A.2 (5/25): 👑 Founding Mayor 2026 称号バッジ */}
+              {profile?.is_founding_mayor && (
+                <div style={{
+                  marginTop: 16, padding: "14px 18px",
+                  background: "linear-gradient(135deg, #FFF8E1 0%, #FFE082 100%)",
+                  borderRadius: 14, border: `2px solid #FFA000`,
+                  textAlign: "center", boxShadow: "0 4px 12px rgba(255,160,0,0.15)",
+                }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#E65100", marginBottom: 2, letterSpacing: 0.5 }}>
+                    👑 Founding Mayor 2026
+                  </div>
+                  <div style={{ fontSize: 11, color: "#8B6F00", lineHeight: 1.6 }}>
+                    Qocca 街の永久首長として、創業期から街を支える方
+                  </div>
+                </div>
+              )}
+              {/* 依頼書 #7 Phase A.2 (5/25): 🎨 Founding Creator バッジ + 永久3% 手数料 */}
+              {profile?.is_founding_creator && (
+                <div style={{
+                  marginTop: 12, padding: "14px 18px",
+                  background: "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+                  borderRadius: 14, border: `2px solid #AB47BC`,
+                  textAlign: "center", boxShadow: "0 4px 12px rgba(171,71,188,0.12)",
+                }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#6A1B9A", marginBottom: 2 }}>
+                    🎨 Founding Creator
+                  </div>
+                  <div style={{ fontSize: 11, color: "#7B1FA2", lineHeight: 1.6 }}>
+                    永久手数料 <strong style={{ fontSize: 14 }}>{profile.founding_creator_fee_rate ?? 3}%</strong> (通常10% → 創業特典)
+                  </div>
+                </div>
+              )}
+              {/* 依頼書 #7 Phase A.2 (5/25): 🎁 未受け取り特典あり → /redeem 誘導 */}
+              {crowdfundPendingBackers.length > 0 && (
+                <div
+                  onClick={() => navigate("/redeem")}
+                  style={{
+                    marginTop: 16, padding: "14px 18px", cursor: "pointer",
+                    background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)",
+                    borderRadius: 14, border: `2px dashed #4CAF50`,
+                    textAlign: "left", display: "flex", alignItems: "center", gap: 12,
+                  }}
+                >
+                  <div style={{ fontSize: 28 }}>🎁</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#2E7D32", marginBottom: 2 }}>
+                      未受け取りの特典が {crowdfundPendingBackers.length} 件あります
+                    </div>
+                    <div style={{ fontSize: 11, color: "#388E3C" }}>
+                      タップして引き換えコードを入力してや 🌅
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 18, color: "#2E7D32" }}>→</div>
+                </div>
+              )}
+              {/* 依頼書 #7 Phase A.2 (5/25): 🎁 私の特典 (引き換え済みコード一覧) */}
+              {crowdfundCodes.length > 0 && (
+                <div style={{ marginTop: 20, background: C.white, borderRadius: 16, padding: "16px 16px 14px", border: `1px solid ${C.border}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <span style={{ fontSize: 18 }}>🎁</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: C.dark }}>私のクラファン特典</span>
+                    <span style={{ fontSize: 10, color: C.warmGray, marginLeft: "auto" }}>{crowdfundCodes.length} 件</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {crowdfundCodes.map((c: any) => {
+                      const tierId = c.reward_id || c.crowdfunding_rewards?.id;
+                      const theme = REDEEM_TIER_THEME[tierId] || { color: C.orange, bg: C.orangePale, icon: "🎁", label: c.crowdfunding_rewards?.name || tierId };
+                      const redeemedDate = c.redeemed_at ? new Date(c.redeemed_at).toLocaleDateString("ja-JP") : "-";
+                      return (
+                        <div key={c.id} style={{
+                          display: "flex", alignItems: "center", gap: 12,
+                          padding: "10px 12px", background: theme.bg, borderRadius: 12, border: `1px solid ${theme.color}40`,
+                        }}>
+                          <div style={{ fontSize: 22 }}>{theme.icon}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 800, color: theme.color, marginBottom: 2 }}>
+                              {theme.label}
+                            </div>
+                            <div style={{ fontSize: 10, color: C.warmGray }}>
+                              受け取り日 {redeemedDate}
+                              {c.crowdfunding_rewards?.price_jpy ? ` ・ ¥${c.crowdfunding_rewards.price_jpy.toLocaleString()}` : ""}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.warmGray, marginTop: 10, textAlign: "center", lineHeight: 1.6 }}>
+                    ありがとうございます。Qocca の街は、あなたの想いで一歩深くなりました🌅
+                  </div>
+                </div>
               )}
               {/* Phase D Phase 2 (5/22): 🐾 うちの子セクション */}
               <div style={{ marginTop: 20, background: C.white, borderRadius: 16, padding: "16px 16px 14px", border: `1px solid ${C.border}` }}>
@@ -6782,6 +6899,8 @@ const EarningsTab = () => {
   const [showInstantModal, setShowInstantModal] = useState(false);
   const [instantAmount, setInstantAmount] = useState("");
   const [settings, setSettings] = useState<Record<string, string>>({});
+  // 依頼書 #7 Phase A.2 (5/25): 創業クリエイター永久3%手数料表示用
+  const [foundingCreatorFeeRate, setFoundingCreatorFeeRate] = useState<number | null>(null);
 
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qufrqkuipzuqeqkvuhkx.supabase.co";
   const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
@@ -6817,6 +6936,18 @@ const EarningsTab = () => {
       const settingsMap: Record<string, string> = {};
       for (const s of settingsData || []) settingsMap[s.key] = s.value;
       setSettings(settingsMap);
+
+      // 依頼書 #7 Phase A.2: 創業クリエイター情報取得 (永久3%手数料表示用)
+      const { data: prof } = await sb
+        .from("profiles")
+        .select("is_founding_creator, founding_creator_fee_rate")
+        .eq("id", user.id)
+        .single();
+      if (prof?.is_founding_creator) {
+        setFoundingCreatorFeeRate(prof.founding_creator_fee_rate ?? 3);
+      } else {
+        setFoundingCreatorFeeRate(null);
+      }
 
       // Stripe Connect ステータス確認
       const statusRes = await fetch(`${SUPABASE_URL}/functions/v1/stripe-connect-status`, {
@@ -6940,6 +7071,28 @@ const handleOpenDashboard = async () => {
           >
             {actionLoading ? "処理中..." : "銀行口座を設定する →"}
           </button>
+        </div>
+      )}
+
+      {/* 依頼書 #7 Phase A.2 (5/25): 🎨 創業クリエイター永久3%手数料バナー */}
+      {foundingCreatorFeeRate !== null && (
+        <div style={{
+          background: "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+          border: `2px solid #AB47BC`,
+          borderRadius: 16,
+          padding: "16px 20px",
+          display: "flex", alignItems: "center", gap: 14,
+          boxShadow: "0 4px 12px rgba(171,71,188,0.12)",
+        }}>
+          <div style={{ fontSize: 32 }}>🎨</div>
+          <div style={{ flex: 1, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#6A1B9A", marginBottom: 2 }}>
+              あなたは創業クリエイター
+            </div>
+            <div style={{ fontSize: 12, color: "#7B1FA2" }}>
+              永久販売手数料 <strong style={{ fontSize: 16 }}>{foundingCreatorFeeRate}%</strong> (通常 10% → 創業特典)
+            </div>
+          </div>
         </div>
       )}
 
