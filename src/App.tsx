@@ -4547,6 +4547,11 @@ const SellPage = ({ setPage }) => {
   const [hasVariants, setHasVariants] = useState(false);
   const [variantOptions, setVariantOptions] = useState<Array<{ name: string; values: string[] }>>([]);
   const [variants, setVariants] = useState<Array<any>>([]);
+  // 依頼書 #9 (5/25): 創業クリエイターフラグ + カテゴリ別価格統計
+  const [isFoundingCreator, setIsFoundingCreator] = useState(false);
+  const [foundingFeeRate, setFoundingFeeRate] = useState<number | null>(null);
+  const [categoryPriceStats, setCategoryPriceStats] = useState<Record<string, { avg: number; min: number; max: number; count: number }>>({});
+  const [priceHelpOpen, setPriceHelpOpen] = useState(false);
   const up = (k,v) => setForm(p=>({...p,[k]:v}));
   const fileRef = useRef(null);
   const addOption = () => setOptions(prev => [...prev, { name:"", price:"" }]);
@@ -4632,6 +4637,50 @@ const SellPage = ({ setPage }) => {
     }
   }, [variantOptions, hasVariants, regenerateVariants]);
 
+  // 依頼書 #9 (5/25): 創業クリエイター情報取得 (永久3% バナー表示用)
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("is_founding_creator, founding_creator_fee_rate")
+        .eq("id", user.id)
+        .single();
+      if (data?.is_founding_creator) {
+        setIsFoundingCreator(true);
+        setFoundingFeeRate(data.founding_creator_fee_rate ?? 3);
+      }
+    })();
+  }, [user?.id]);
+
+  // 依頼書 #9 (5/25): カテゴリ別価格統計 (1 回のみ取得)
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("listings")
+        .select("category, price")
+        .eq("status", "approved");
+      if (!data) return;
+      const stats: Record<string, { avg: number; min: number; max: number; count: number; sum: number }> = {};
+      data.forEach((r: { category: string; price: number }) => {
+        if (!r.category || typeof r.price !== "number") return;
+        if (!stats[r.category]) stats[r.category] = { avg: 0, min: r.price, max: r.price, count: 0, sum: 0 };
+        stats[r.category].sum += r.price;
+        stats[r.category].count++;
+        if (r.price < stats[r.category].min) stats[r.category].min = r.price;
+        if (r.price > stats[r.category].max) stats[r.category].max = r.price;
+      });
+      const result: Record<string, { avg: number; min: number; max: number; count: number }> = {};
+      for (const k of Object.keys(stats)) {
+        result[k] = {
+          avg: Math.round(stats[k].sum / stats[k].count),
+          min: stats[k].min, max: stats[k].max, count: stats[k].count,
+        };
+      }
+      setCategoryPriceStats(result);
+    })();
+  }, []);
+
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 5) { setError("画像は最大5枚までです"); return; }
@@ -4660,39 +4709,158 @@ const SellPage = ({ setPage }) => {
     setDone({ isDraft });
   };
 
+  // 依頼書 #9 (5/25) P1 改善: ログイン未済画面に温度感 + クラファン期間の特典告知
   if (!user) return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div style={{ textAlign:"center", padding:32, maxWidth:360 }}>
-        <div style={{ fontSize:64, marginBottom:16 }}>🔒</div>
-        <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:10 }}>ログインが必要です</h2>
-        <p style={{ color:C.warmGray, fontSize:14, lineHeight:1.7, marginBottom:24 }}>出品するにはアカウントが必要です。</p>
-        <button onClick={()=>setPage("signup")} style={{ padding:"14px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>ログイン / 新規登録</button>
+      <div style={{ textAlign:"center", padding:32, maxWidth:420 }}>
+        <div style={{ fontSize:56, marginBottom:12 }}>🐾</div>
+        <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:8 }}>あなたの想いを、街に置きにきませんか</h2>
+        <p style={{ color:C.warmGray, fontSize:13, lineHeight:1.8, marginBottom:20 }}>
+          Qocca は、ペット作家さんの作品を<br />
+          「想いごと」街に置く場所です🌅
+        </p>
+        <div style={{
+          background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+          border:`2px solid ${C.orange}`,
+          borderRadius:14, padding:"14px 16px", marginBottom:20,
+          textAlign:"left", lineHeight:1.7,
+        }}>
+          <div style={{ fontSize:13, fontWeight:800, color:"#D84315", marginBottom:4 }}>
+            ⭐ 今だけ：テスマケ期間中は出品手数料 0%
+          </div>
+          <div style={{ fontSize:11, color:"#BF360C" }}>
+            2026/7/31 までに出品 → 通常 10% の手数料が無料に🌸
+          </div>
+        </div>
+        <button onClick={()=>setPage("signup")} style={{ width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", marginBottom:8 }}>ログイン / 新規登録して出品する</button>
+        <div style={{ fontSize:10, color:C.warmGray, lineHeight:1.7 }}>
+          30 秒で街の住民になれます · 機械的な事務処理なし
+        </div>
       </div>
     </div>
   );
 
+  // 依頼書 #9 (5/25) P5 改善: 完了画面の温度感アップ + SNS シェア
   if (done) {
     const isDraftDone = done && done.isDraft;
+    const productTitle = form.title || "あなたの作品";
+    const shareText = encodeURIComponent(`🐾 「${productTitle}」を Qocca の街に置いてきました🌅\n#Qocca #ペットクリエイター`);
+    const shareUrl = encodeURIComponent("https://qocca.pet");
     return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div style={{ textAlign:"center", padding:32, maxWidth:400 }}>
-        <div style={{ fontSize:64, marginBottom:16 }}>{isDraftDone ? "💾" : "🎉"}</div>
-        <h2 style={{ fontSize:24, fontWeight:900, color:C.dark, marginBottom:10 }}>{isDraftDone ? "下書き保存しました！" : "出品完了！"}</h2>
-        <p style={{ color:C.warmGray, fontSize:14, lineHeight:1.7, marginBottom:24 }}>
-          {isDraftDone ? "マイページの「下書き一覧」から、いつでも編集して投稿できます🐾" : "審査後（最大24時間）に公開されます🐾"}
-        </p>
+      <div style={{ textAlign:"center", padding:32, maxWidth:440 }}>
+        <div style={{ fontSize:56, marginBottom:12, animation:"qoccaSellFloat 1.4s ease infinite" }}>{isDraftDone ? "💾" : "🐾"}</div>
+        <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:10 }}>
+          {isDraftDone ? "下書き保存しました！" : "ありがとうございます！"}
+        </h2>
+        {!isDraftDone && (
+          <p style={{ color:C.dark, fontSize:14, lineHeight:1.9, marginBottom:16 }}>
+            「<strong style={{ color:C.orange }}>{productTitle}</strong>」が<br />
+            Qocca の街に届きました。<br />
+            <span style={{ fontSize:12, color:C.warmGray }}>今、運営事務局がやさしく確認しています。</span>
+          </p>
+        )}
+        {isDraftDone && (
+          <p style={{ color:C.warmGray, fontSize:13, lineHeight:1.8, marginBottom:20 }}>
+            マイページの「下書き一覧」から、いつでも編集して投稿できます🐾
+          </p>
+        )}
+        {!isDraftDone && (
+          <>
+            <div style={{ background:"#FFF8E1", border:`1px solid #FFC107`, borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:11, color:"#7B5E00", lineHeight:1.7 }}>
+              ⏱ テスマケ期間中は <strong>通常数時間以内</strong> に公開されます<br />
+              <span style={{ opacity:0.7 }}>(最大24時間以内。審査基準: ① ペットの安全 ② 著作権 ③ 価格妥当性)</span>
+            </div>
+            <p style={{ color:C.warmGray, fontSize:12, lineHeight:1.8, marginBottom:20 }}>
+              ✨ 街であなたの想いが届きますように
+            </p>
+            <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap", justifyContent:"center" }}>
+              <a href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`} target="_blank" rel="noopener noreferrer"
+                 style={{ flex:1, minWidth:130, padding:"10px 14px", background:"#000", color:"#fff", border:"none", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", textDecoration:"none", display:"inline-block" }}>
+                𝕏 でシェア
+              </a>
+              <a href={`https://www.threads.net/intent/post?text=${shareText}`} target="_blank" rel="noopener noreferrer"
+                 style={{ flex:1, minWidth:130, padding:"10px 14px", background:"#101010", color:"#fff", border:"none", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", textDecoration:"none", display:"inline-block" }}>
+                @ Threads でシェア
+              </a>
+            </div>
+          </>
+        )}
         <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-          <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only",stock:""});setImages([]);setOptions([]);setHasVariants(false);setVariantOptions([]);setVariants([]);}} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>続けて出品する</button>
-          <button onClick={()=>setPage("mypage")} style={{ padding:"12px 24px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>マイページへ</button>
+          <button onClick={()=>setPage("mypage")} style={{ flex:1, minWidth:140, padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>マイページで確認</button>
+          <button onClick={()=>{setDone(false);setStep(1);setForm({cat:"",pet:"both",title:"",desc:"",price:"",delivery:"",delivery_type:"data_only",stock:""});setImages([]);setOptions([]);setHasVariants(false);setVariantOptions([]);setVariants([]);}} style={{ flex:1, minWidth:140, padding:"12px 24px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>続けて出品</button>
         </div>
+        <style>{`@keyframes qoccaSellFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }`}</style>
       </div>
     </div>
     );
   }
 
+  // 依頼書 #9 (5/25) P1: テスマケ期間カウントダウン
+  const testmakeEndDate = new Date("2026-07-31T23:59:59+09:00");
+  const testmakeDaysLeft = Math.max(0, Math.ceil((testmakeEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+  const testmakeActive = testmakeDaysLeft > 0;
+
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream }}>
       <div style={{ maxWidth:500, margin:"0 auto", padding:"20px 16px" }}>
+        {/* 依頼書 #9 (5/25) P1: ウェルカムバナー (テスマケ期間 0% + 創業者特典) */}
+        {step === 1 && (
+          <>
+            {testmakeActive && !isFoundingCreator && (
+              <div style={{
+                background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+                border:`2px solid ${C.orange}`, borderRadius:14,
+                padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12,
+              }}>
+                <div style={{ fontSize:28 }}>🌅</div>
+                <div style={{ flex:1, lineHeight:1.6 }}>
+                  <div style={{ fontSize:13, fontWeight:800, color:"#D84315" }}>
+                    テスマケ期間中 — 出品手数料 <strong style={{ fontSize:16 }}>0%</strong>
+                  </div>
+                  <div style={{ fontSize:11, color:"#BF360C" }}>
+                    残り <strong>{testmakeDaysLeft}日</strong> (〜2026/7/31 まで)
+                  </div>
+                </div>
+              </div>
+            )}
+            {isFoundingCreator && (
+              <div style={{
+                background:"linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
+                border:`2px solid #AB47BC`, borderRadius:14,
+                padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12,
+              }}>
+                <div style={{ fontSize:28 }}>🎨</div>
+                <div style={{ flex:1, lineHeight:1.6 }}>
+                  <div style={{ fontSize:13, fontWeight:800, color:"#6A1B9A" }}>
+                    創業クリエイター永久 {foundingFeeRate ?? 3}% 手数料
+                  </div>
+                  <div style={{ fontSize:11, color:"#7B1FA2" }}>
+                    出品し続けても永久に優遇率で支えますで🌸
+                  </div>
+                </div>
+              </div>
+            )}
+            {testmakeActive && !isFoundingCreator && (
+              <div onClick={()=>{ window.location.href = "/redeem"; }} style={{
+                background:"#E8F5E9", border:`1px dashed #66BB6A`, borderRadius:12,
+                padding:"10px 14px", marginBottom:14, cursor:"pointer",
+                display:"flex", alignItems:"center", gap:10,
+              }}>
+                <div style={{ fontSize:18 }}>🎁</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:"#2E7D32" }}>
+                    クラファン参加で 永久 3% 手数料に
+                  </div>
+                  <div style={{ fontSize:10, color:"#388E3C" }}>
+                    創業クリエイター枠 (¥8,000) → 引換コードを入力
+                  </div>
+                </div>
+                <div style={{ fontSize:14, color:"#2E7D32" }}>→</div>
+              </div>
+            )}
+          </>
+        )}
         <div style={{ display:"flex", gap:6, marginBottom:6 }}>
           {[1,2,3].map(s=>(<div key={s} style={{ flex:1, height:4, borderRadius:2, background:step>=s?C.orange:C.border }}/>))}
         </div>
@@ -4743,6 +4911,22 @@ const SellPage = ({ setPage }) => {
                 <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>料金（円）</label>
                 <input type="number" value={form.price} onChange={e=>up("price",e.target.value)} placeholder="3000"
                   style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                {/* 依頼書 #9 (5/25) P2: カテゴリ別価格レンジ */}
+                {form.cat && (() => {
+                  const s = categoryPriceStats[form.cat];
+                  if (!s || s.count < 3) {
+                    return (
+                      <div style={{ marginTop:6, padding:"6px 8px", background:C.cream, borderRadius:6, fontSize:10, color:C.warmGray, lineHeight:1.5 }}>
+                        💭 このカテゴリはまだ出品が少ない。<strong style={{ color:C.dark }}>自由に価格を決めてや</strong>🌸
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ marginTop:6, padding:"6px 8px", background:"#FFF8E1", borderRadius:6, fontSize:10, color:"#6D4C00", lineHeight:1.5 }}>
+                      📊 このカテゴリの相場: 平均 <strong>¥{s.avg.toLocaleString()}</strong> ({s.min.toLocaleString()}〜{s.max.toLocaleString()}円 · {s.count}件)
+                    </div>
+                  );
+                })()}
               </div>
               <div>
                 <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>納期</label>
@@ -4759,21 +4943,34 @@ const SellPage = ({ setPage }) => {
               <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>サービスの提供方法を選択してください（プライバシー保護のため正確に選んでください）</p>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {[
-                  { v:"data_only", icon:"💻", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要）" },
-                  { v:"shipping", icon:"📦", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送" },
-                  { v:"visit", icon:"📍", label:"訪問あり", desc:"しつけ・撮影など、対面で提供（場所はDMで調整）" },
+                  { v:"data_only", icon:"💻", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要・ペット情報も渡さず安心）", recommend:"🌸 初心者おすすめ", example:"例: ペット似顔絵 / 写真加工 / 動画編集" },
+                  { v:"shipping", icon:"📦", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送", safety:"🔒 住所は 30 日で自動削除・購入者と出品者のみ閲覧・Qoccaが守ります", example:"例: ハンドメイド服 / オーダー耳タグ / おやつ" },
+                  { v:"visit", icon:"📍", label:"訪問あり", desc:"しつけ・撮影など、対面で提供", safety:"📍 場所は取引メッセージで個別調整・公開されません", example:"例: しつけ教室 / 出張撮影 / 訪問トリミング" },
                 ].map(opt => (
                   <button key={opt.v} type="button" onClick={()=>up("delivery_type", opt.v)} style={{
                     padding:"12px 14px", border:`2px solid ${form.delivery_type===opt.v ? C.orange : C.border}`,
                     borderRadius:10, background:form.delivery_type===opt.v ? C.orangePale : C.white,
-                    cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:12, alignItems:"center"
+                    cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:12, alignItems:"flex-start"
                   }}>
-                    <span style={{ fontSize:24, flexShrink:0 }}>{opt.icon}</span>
+                    <span style={{ fontSize:24, flexShrink:0, marginTop:2 }}>{opt.icon}</span>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:2 }}>{opt.label}</div>
-                      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.4 }}>{opt.desc}</div>
+                      <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:2, display:"flex", alignItems:"center", gap:6 }}>
+                        {opt.label}
+                        {(opt as any).recommend && <span style={{ fontSize:10, fontWeight:700, color:"#2E7D32", background:"#E8F5E9", padding:"2px 6px", borderRadius:10 }}>{(opt as any).recommend}</span>}
+                      </div>
+                      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5, marginBottom:4 }}>{opt.desc}</div>
+                      {(opt as any).safety && (
+                        <div style={{ fontSize:10, color:"#1565C0", background:"#E3F2FD", padding:"4px 8px", borderRadius:6, marginBottom:3, lineHeight:1.5 }}>
+                          {(opt as any).safety}
+                        </div>
+                      )}
+                      {(opt as any).example && (
+                        <div style={{ fontSize:10, color:C.warmGray, fontStyle:"italic", lineHeight:1.5 }}>
+                          {(opt as any).example}
+                        </div>
+                      )}
                     </div>
-                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18 }}>✓</span>}
+                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18, marginTop:2 }}>✓</span>}
                   </button>
                 ))}
               </div>
@@ -4979,6 +5176,29 @@ const SellPage = ({ setPage }) => {
                   ))}
                 </div>
               )}
+            </div>
+            {/* 依頼書 #9 (5/25) P4: 公開までの流れ・審査基準明示 */}
+            <div style={{ background:"#FFF8E1", border:`1px solid #FFC107`, borderRadius:14, padding:"14px 16px", marginBottom:16, lineHeight:1.7 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:"#7B5E00", marginBottom:6 }}>
+                ⏱ 公開までの流れ
+              </div>
+              <div style={{ fontSize:11, color:"#6D4C00", marginBottom:8 }}>
+                {testmakeActive
+                  ? "テスマケ期間中は通常 数時間以内 に公開されます (最大24時間)。"
+                  : "投稿後、最大24時間以内に運営事務局が確認して公開します。"}
+              </div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#7B5E00", marginBottom:4 }}>
+                審査では以下の3点だけ見ています:
+              </div>
+              <div style={{ fontSize:11, color:"#6D4C00", lineHeight:1.8 }}>
+                ① <strong>ペットの安全</strong> (健康・年齢に無理がない内容か)<br />
+                ② <strong>著作権</strong> (オリジナル作品か / 引用が適切か)<br />
+                ③ <strong>価格妥当性</strong> (相場と極端に離れていないか)
+              </div>
+              <div style={{ fontSize:10, color:C.warmGray, marginTop:8, lineHeight:1.6 }}>
+                🚫 NG 例: 不安を煽る表現 / 医療診断を断定する内容 / 第三者作品の無断使用<br />
+                ➡️ 詳しい審査基準は <a href="/help/fees" style={{ color:"#7B5E00", textDecoration:"underline" }}>/help/fees</a> に書いてあるで
+              </div>
             </div>
             {form.price && Number(form.price) > 0 && (
               <div style={{ background:C.orangePale, borderRadius:14, padding:"14px", marginBottom:16, border:`1px solid ${C.orange}` }}>
