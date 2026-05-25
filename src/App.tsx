@@ -7149,6 +7149,30 @@ const MyPage = ({ setPage }) => {
               </button>
             </div>
 
+            {/* Phase X (5/24, 案C 移植 5/26): 外部サービス連携 — X */}
+            <div style={{ marginTop:24 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
+                外部サービス連携
+              </div>
+              <button
+                onClick={() => navigate("/settings/x")}
+                style={{
+                  width:"100%", minHeight:44, padding:"14px 16px",
+                  background:C.white, border:`1px solid ${C.border}`, borderRadius:14,
+                  display:"flex", alignItems:"center", gap:12,
+                  cursor:"pointer", fontFamily:"inherit", textAlign:"left",
+                  transition:"border-color 0.3s ease",
+                }}
+              >
+                <div style={{ width:36, height:36, borderRadius:10, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}>🐦</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>X 連携</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>Qocca から X (Twitter) に投稿できます</div>
+                </div>
+                <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
+              </button>
+            </div>
+
             {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
             <div style={{ marginTop:24 }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
@@ -11158,6 +11182,238 @@ const DeletionStatusPage: React.FC = () => {
   );
 };
 
+// ── X (Twitter) 連携ページ (Phase X, 2026/5/24, 案C 移植 5/26) ───────────────
+// X API v2 OAuth 2.0 (PKCE) + 投稿テスト + プロフィール + 連携解除
+const XConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [connection, setConnection] = useState<any>(null);
+  const [postText, setPostText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postResult, setPostResult] = useState<any>(null);
+  const [postError, setPostError] = useState<string>("");
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [initLoading, setInitLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      const returnTo = encodeURIComponent("/settings/x");
+      navigate(`/login?returnTo=${returnTo}`, { replace: true });
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("x") === "connected") {
+      setShowSuccess(true);
+      window.history.replaceState(null, "", "/settings/x");
+    }
+  }, []);
+
+  const loadConnection = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setLoading(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/x-profile",
+        { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      setConnection(data);
+    } catch (e) {
+      console.error("Failed to load X profile:", e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { if (user?.id) loadConnection(); }, [user?.id]);
+
+  const startOAuth = async () => {
+    if (!user?.id) return;
+    setInitLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setInitLoading(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/x-init-oauth",
+        { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (data.success && data.authorize_url) {
+        window.location.href = data.authorize_url;
+      } else {
+        alert(data.message || data.error || "OAuth 開始に失敗しました");
+        setInitLoading(false);
+      }
+    } catch (e: any) {
+      alert(e?.message || "エラー");
+      setInitLoading(false);
+    }
+  };
+
+  const handlePost = async () => {
+    if (!postText.trim()) { setPostError("投稿内容を入力してください"); return; }
+    setPosting(true); setPostError(""); setPostResult(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setPostError("認証エラー"); setPosting(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/x-post",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ text: postText.trim() }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPostResult(data); setPostText("");
+      } else {
+        setPostError(data.message || data.error || "投稿に失敗しました");
+      }
+    } catch (e: any) {
+      setPostError(e?.message || "投稿エラー");
+    }
+    setPosting(false);
+  };
+
+  const handleDisconnect = async () => {
+    if (!user?.id) return;
+    if (!window.confirm("X との連携を解除しますか?")) return;
+    setDisconnecting(true);
+    try {
+      await supabase.from("social_connections").delete().eq("user_id", user.id).eq("platform", "x");
+      setConnection({ connected: false });
+      setShowSuccess(false);
+    } catch (e) {
+      console.error("Failed to disconnect:", e);
+    }
+    setDisconnecting(false);
+  };
+
+  if (!user || loading) {
+    return (<div style={{ maxWidth: 600, margin: "0 auto", padding: 24, textAlign: "center", color: C.warmGray }}>読み込み中...</div>);
+  }
+
+  const isConnected = connection?.connected === true && !connection?.expired;
+  const isExpired = connection?.connected === true && connection?.expired;
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 0" }}>
+      <button onClick={() => navigate("/mypage")} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0", fontFamily: "inherit", minHeight: 40 }}>
+        ← マイページに戻る
+      </button>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginTop: 8, marginBottom: 8 }}>🐦 X 連携</h1>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24, lineHeight: 1.7 }}>
+        X (旧 Twitter) と連携すると、Qocca から直接 X に投稿できるようになります。<br/>連携はいつでも解除できます。
+      </p>
+
+      {showSuccess && (
+        <div style={{ background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)", border: "1px solid #4CAF50", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: C.dark }}>
+          ✅ X との連携が完了しました!
+        </div>
+      )}
+
+      {!isConnected && !isExpired && (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 60, marginBottom: 12 }}>🐦</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 8 }}>まだ連携されていません</div>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 20, lineHeight: 1.7 }}>
+            「X と連携」ボタンを押すと X の認証画面が開きます。<br/>ご自身の X アカウントで承認してください。
+          </div>
+          <button onClick={startOAuth} disabled={initLoading} style={{ padding: "14px 24px", background: "#000", color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: initLoading ? "wait" : "pointer", fontFamily: "inherit", minHeight: 48, width: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+            {initLoading ? "認証画面へ移動中..." : "🐦 X と連携する"}
+          </button>
+        </div>
+      )}
+
+      {isExpired && (
+        <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+          ⚠️ X のトークンが期限切れです。再連携してください。
+          <button onClick={startOAuth} disabled={initLoading} style={{ marginTop: 12, padding: "12px 20px", background: "#000", color: "#fff", border: "none", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: initLoading ? "wait" : "pointer", fontFamily: "inherit", display: "block", width: "100%", minHeight: 40 }}>
+            {initLoading ? "..." : "🐦 再連携する"}
+          </button>
+        </div>
+      )}
+
+      {isConnected && (
+        <>
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, color: "#fff", flexShrink: 0 }}>
+                {connection.profile?.profile_image_url ? (
+                  <img src={connection.profile.profile_image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : "🐦"}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.dark }}>@{connection.platform_username || connection.profile?.username || "X"}</div>
+                {connection.profile?.name && (<div style={{ fontSize: 12, color: C.warmGray }}>{connection.profile.name}</div>)}
+              </div>
+            </div>
+            {connection.profile?.description && (
+              <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`, whiteSpace: "pre-wrap" }}>
+                {connection.profile.description}
+              </div>
+            )}
+            {connection.public_metrics && (
+              <div style={{ display: "flex", gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+                {Object.entries(connection.public_metrics).map(([k, v]) => (
+                  <div key={k} style={{ flex: "1 1 60px", textAlign: "center", minWidth: 60 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: C.orange }}>{String(v ?? "-")}</div>
+                    <div style={{ fontSize: 10, color: C.warmGray, marginTop: 2 }}>{k.replace(/_/g, " ").replace(" count", "")}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 12 }}>
+              連携日: {connection.connected_at ? new Date(connection.connected_at).toLocaleDateString("ja-JP") : "-"}
+              {connection.token_expires_at && (<> ・ トークン期限: {new Date(connection.token_expires_at).toLocaleString("ja-JP")}</>)}
+            </div>
+          </div>
+
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>📝 X 投稿テスト</div>
+            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} maxLength={280} placeholder="ツイートする内容を入力してください..." rows={4} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", resize: "vertical", minHeight: 100, boxSizing: "border-box", outline: "none" }} />
+            <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{postText.length} / 280</div>
+            {postError && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "#FFEBEE", color: "#E57373", borderRadius: 8, fontSize: 13 }}>⚠️ {postError}</div>
+            )}
+            {postResult?.success && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "#E8F5E9", color: "#2E7D32", borderRadius: 8, fontSize: 13 }}>
+                ✅ 投稿成功! Tweet ID: {postResult.tweet_id}
+                {postResult.permalink && (<> ・ <a href={postResult.permalink} target="_blank" rel="noopener noreferrer" style={{ color: "#2E7D32", textDecoration: "underline" }}>X で見る</a></>)}
+              </div>
+            )}
+            <button onClick={handlePost} disabled={posting || !postText.trim()} style={{ marginTop: 12, padding: "12px 24px", width: "100%", background: posting || !postText.trim() ? C.warmGray : "#000", color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: posting || !postText.trim() ? "wait" : "pointer", fontFamily: "inherit", minHeight: 48 }}>
+              {posting ? "投稿中..." : "📤 X に投稿"}
+            </button>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 8, lineHeight: 1.6 }}>
+              ℹ️ X API は Pay-Per-Use 課金です (テキスト投稿 約 $0.015/件)
+            </div>
+          </div>
+
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>連携を解除</div>
+            <p style={{ fontSize: 12, color: C.warmGray, marginBottom: 14, lineHeight: 1.7 }}>
+              連携解除すると、Qocca から X への投稿はできなくなります。<br/>いつでも再連携できます。
+            </p>
+            <button onClick={handleDisconnect} disabled={disconnecting} style={{ padding: "10px 20px", background: C.white, color: "#E57373", border: "1.5px solid #E57373", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: disconnecting ? "wait" : "pointer", fontFamily: "inherit", width: "100%", minHeight: 40 }}>
+              {disconnecting ? "解除中..." : "🔓 連携を解除する"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -12340,6 +12596,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* Phase X (5/24, 案C 移植 5/26): /settings/x — X 連携 (PC) */}
+            <Route path="/settings/x" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <XConnectionPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/user/:userId" element={
             <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
               <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -12428,6 +12693,8 @@ function QoccaAppInner() {
             {/* 依頼書 #7 Phase A (5/25): /redeem - クラファン引き換え (Mobile) */}
             <Route path="/redeem" element={<RedeemPage setPage={setPage}/>}/>
             <Route path="/settings/phone-verification" element={<PhoneVerificationPage setPage={setPage}/>}/>
+            {/* Phase X (5/24, 案C 移植 5/26): /settings/x — X 連携 (Mobile) */}
+            <Route path="/settings/x" element={<XConnectionPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
             <Route path="/deletion-status" element={<DeletionStatusPage/>}/>
             <Route path="/help" element={<HelpPage/>}/>
