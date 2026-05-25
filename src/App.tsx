@@ -7381,9 +7381,14 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
       );
     }
     if (type === "gallery") {
+      // 依頼書 #12 (5/26): CSS background:url() のカッコ問題 → img タグ統一 (タスク #23 同様のリグレッション修正)
       return (
         <button key={item.id} onClick={()=>handleNavigate(`gallery/${item.id}`)} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", cursor:"pointer", padding:0, fontFamily:"inherit", textAlign:"left" }}>
-          <div style={{ width:"100%", aspectRatio:"1", background: `url(${item.image_url}) center/cover` }}/>
+          <div style={{ width:"100%", aspectRatio:"1", overflow:"hidden", background:C.cream }}>
+            {item.image_url && (
+              <img src={item.image_url} alt={item.caption || ""} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+            )}
+          </div>
           {item.caption && <div style={{ padding:"8px 12px", fontSize:11, color:C.dark, lineHeight:1.5, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{item.caption}</div>}
         </button>
       );
