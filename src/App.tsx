@@ -10023,19 +10023,44 @@ const FacilitiesPage = ({ setPage, isPC }) => {
         </div>
       )}
 
+      {/* 依頼書 #11 #2 (5/25): CrowdfundingBanner 再利用 (FacilitiesPage 版) */}
+      <CrowdfundingBanner />
+
       <div style={{ padding:"16px" }}>
         {loading ? (
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign:"center", padding:60 }}>
-            <div style={{ fontSize:64, marginBottom:12 }}>🐕</div>
-            <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>
-              {facilities.length === 0 ? "まだ施設が登録されていません" : "該当する施設がありません"}
+          /* 依頼書 #11 #5 (5/25): 空状態 温度感UP - 「住民が見つけた場所」温度 */
+          <div style={{ textAlign:"center", padding:"60px 24px" }}>
+            <div style={{ fontSize:56, marginBottom:14, opacity:0.85 }}>🐕</div>
+            <div style={{ fontSize:17, fontWeight:700, color:C.dark, marginBottom:10, letterSpacing:0.2 }}>
+              {facilities.length === 0
+                ? "街の住民が見つけた場所が、ここに集まります"
+                : "該当する施設がまだ見つかりません"}
             </div>
-            <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>
-              {facilities.length === 0 ? "最初の投稿者になりませんか？" : "フィルターを変更してみてください"}
+            <p style={{ fontSize:12.5, color:C.warmGray, lineHeight:1.9, marginBottom:24, maxWidth:400, margin:"0 auto 24px" }}>
+              {facilities.length === 0 ? (
+                <>
+                  ドッグラン、動物病院、ペット同伴カフェ、トリミング——<br/>
+                  あなたが「ここよかったよ」と思った場所を、そっと共有してや🌅
+                </>
+              ) : (
+                <>
+                  フィルターを変えてみるか、<br/>
+                  別の場所も覗いてみてくださいね。
+                </>
+              )}
             </p>
-            {user && facilities.length === 0 && <button onClick={()=>setShowAdd(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}>＋ 施設を追加</button>}
+            {user && facilities.length === 0 && (
+              <button
+                onClick={()=>setShowAdd(true)}
+                style={{ padding:"11px 26px", background:"transparent", border:`1.5px solid ${C.orange}`, borderRadius:22, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}
+                onMouseEnter={(e)=>{(e.target as HTMLButtonElement).style.background = C.orangePale;}}
+                onMouseLeave={(e)=>{(e.target as HTMLButtonElement).style.background = "transparent";}}
+              >
+                ＋ 場所をそっと置く →
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:12 }}>
@@ -10723,16 +10748,34 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
         </div>
       )}
 
+      {/* 依頼書 #11 #2 (5/25): CrowdfundingBanner 再利用 (期限制御内蔵・7/1 自動非表示) */}
+      <CrowdfundingBanner />
+
       {/* 投稿グリッド */}
       <div style={{ padding:"16px" }}>
         {loading ? (
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
         ) : posts.length === 0 ? (
-          <div style={{ textAlign:"center", padding:60 }}>
-            <div style={{ fontSize:64, marginBottom:12 }}>🐾</div>
-            <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>まだ投稿がありません</div>
-            <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>最初の投稿者になりませんか？</p>
-            {user && <button onClick={()=>setShowUpload(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}>📸 投稿する</button>}
+          /* 依頼書 #11 #1 (5/25): 空状態 温度感UP - 「住める速度」哲学準拠 */
+          <div style={{ textAlign:"center", padding:"60px 24px" }}>
+            <div style={{ fontSize:56, marginBottom:14, opacity:0.85 }}>🐾</div>
+            <div style={{ fontSize:17, fontWeight:700, color:C.dark, marginBottom:10, letterSpacing:0.2 }}>
+              街の最初の写真を、そっと置いてみませんか
+            </div>
+            <p style={{ fontSize:12.5, color:C.warmGray, lineHeight:1.9, marginBottom:24, maxWidth:380, margin:"0 auto 24px" }}>
+              急がなくて大丈夫。<br/>
+              うちの子の小さな一枚から、街は少しずつ深くなっていきます。
+            </p>
+            {user && (
+              <button
+                onClick={()=>setShowUpload(true)}
+                style={{ padding:"11px 26px", background:"transparent", border:`1.5px solid ${C.orange}`, borderRadius:22, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}
+                onMouseEnter={(e)=>{(e.target as HTMLButtonElement).style.background = C.orangePale;}}
+                onMouseLeave={(e)=>{(e.target as HTMLButtonElement).style.background = "transparent";}}
+              >
+                📸 写真を置く →
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns:gridCols, gap:12 }}>
