@@ -246,6 +246,7 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
     pet_type: form.pet,
     delivery_days: form.delivery,
     delivery_type: form.delivery_type || 'data_only',
+    creation_story: form.creation_story?.trim() || null,
     image_urls: imageUrls,
     options: options.filter(o => o.name && o.price > 0),
     stock_quantity: isNaN(stockValue) ? null : stockValue,
@@ -4269,6 +4270,38 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           <div style={{ fontSize:14, color:"#555", lineHeight:1.8 }}>{item.desc}</div>
         </div>
 
+        {/* 依頼書 #8 Phase E (5/25) 機能 #2: 💝 この作品が生まれたストーリー */}
+        {item.creation_story && (
+          <div style={{
+            background: "linear-gradient(135deg, #FFF9F0 0%, #FFF4E1 100%)",
+            borderRadius: 14,
+            padding: "18px 18px 16px",
+            marginBottom: 14,
+            border: "1px solid #F0E0C0",
+          }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+              <span style={{ fontSize: 16 }}>💝</span>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#7A5A2E", letterSpacing: 0.3 }}>
+                この作品が生まれたストーリー
+              </div>
+            </div>
+            <div style={{
+              fontSize: 13.5,
+              color: "#5A4A2C",
+              lineHeight: 2,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontFamily: "inherit",
+              fontStyle: "normal",
+              paddingLeft: 6,
+              borderLeft: "2px solid #E8C089",
+              marginLeft: 4,
+            }}>
+              {item.creation_story}
+            </div>
+          </div>
+        )}
+
         {/* Phase B: 種類 (Variant) 選択 UI
             ブランド v3 第7章: "翻訳しすぎない"。「種類を選ぶ」普通の言葉、控えめ。
             ブランド v3 第6章: NG "在庫切れ" → "売り切れ"、"残り○点" は controlled 表示OK */}
@@ -4656,7 +4689,7 @@ const SellPage = ({ setPage }) => {
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only", stock:"" });
+  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only", stock:"", creation_story:"" });
   const [images, setImages] = useState([]);
   const [options, setOptions] = useState([]);
   // Phase B: Variant (種類) state
@@ -5024,6 +5057,27 @@ const SellPage = ({ setPage }) => {
               <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>詳細説明</label>
               <textarea value={form.desc} onChange={e=>up("desc",e.target.value)} rows={4} placeholder="サービスの内容、こだわり、注意事項など..."
                 style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box" }}/>
+            </div>
+            {/* 依頼書 #8 Phase E (5/25) 機能 #2: 💝 この作品が生まれたストーリー (任意) */}
+            <div style={{ marginBottom:14, padding:"14px 14px 12px", background:"#FFF9F0", borderRadius:12, border:`1px dashed #E8C089` }}>
+              <label style={{ fontSize:13, fontWeight:700, color:"#7A5A2E", display:"block", marginBottom:4 }}>
+                💝 この作品が生まれたストーリー <span style={{ fontSize:11, color:C.warmGray, fontWeight:500 }}>(任意)</span>
+              </label>
+              <div style={{ fontSize:11, color:"#8B7355", lineHeight:1.6, marginBottom:8 }}>
+                作品を生んだきっかけ・想い・温度感を、自由に書いてや🌸<br/>
+                <span style={{ fontSize:10, opacity:0.8 }}>記入は任意。書かれた言葉はそのまま街に残り、購入者だけでなく未来の住民にも伝わります。</span>
+              </div>
+              <textarea
+                value={form.creation_story || ""}
+                onChange={e=>up("creation_story", e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="例: お散歩で見つけた風景がきっかけで描き始めた。うちの子の表情に近づけたくて..."
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid #F0E0C0`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", background:"#FFFDF8" }}
+              />
+              <div style={{ textAlign:"right", fontSize:10, color:C.warmGray, marginTop:4 }}>
+                {(form.creation_story || "").length} / 500
+              </div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
               <div>
