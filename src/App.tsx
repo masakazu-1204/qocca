@@ -345,9 +345,55 @@ const REVIEWS: any[] = [];
 const EVENTS: any[] = [];
 const EVENT_PREFS = ["すべて","北海道","東京都","大阪府","愛知県","福岡県"];
 const EVENT_CATS = ["すべて","フェスタ","交流会","撮影会","マーケット","体験会","健康"];
-const evPetLabel = (p) => p==="dog"?"🐕 犬":p==="cat"?"🐈 猫":"🐾 両方";
-const evPetColor = (p) => p==="dog"?C.orange:p==="cat"?"#9C27B0":C.green;
-const evPetBg = (p) => p==="dog"?C.orangePale:p==="cat"?"#F3E5F5":C.greenPale;
+// ── 依頼書 #19 (5/27): 動物カテゴリ 16種拡張 共通定数 ──────────────────
+// Qocca ビジョン「動物を飼った時に当たり前のアプリ」体現
+// id (英) / label (日) / icon (emoji) / color (主色) / bg (背景色)
+const PET_CATEGORIES: Array<{ id: string; label: string; icon: string; color: string; bg: string }> = [
+  { id: "dog",         label: "犬",         icon: "🐕", color: "#F5A94A", bg: "#FFF3E0" }, // orange
+  { id: "cat",         label: "猫",         icon: "🐈", color: "#9C27B0", bg: "#F3E5F5" }, // purple
+  { id: "rabbit",      label: "うさぎ",     icon: "🐰", color: "#EC407A", bg: "#FCE4EC" }, // pink
+  { id: "hamster",     label: "ハムスター", icon: "🐹", color: "#FFA726", bg: "#FFF8E1" }, // amber
+  { id: "guinea_pig",  label: "モルモット", icon: "🐭", color: "#A1887F", bg: "#EFEBE9" }, // brown
+  { id: "ferret",      label: "フェレット", icon: "🦦", color: "#8D6E63", bg: "#EFEBE9" }, // brown
+  { id: "chinchilla",  label: "チンチラ",   icon: "🐭", color: "#90A4AE", bg: "#ECEFF1" }, // bluegrey
+  { id: "hedgehog",    label: "ハリネズミ", icon: "🦔", color: "#A1887F", bg: "#EFEBE9" }, // brown
+  { id: "squirrel",    label: "リス",       icon: "🐿️", color: "#FF7043", bg: "#FBE9E7" }, // deeporange
+  { id: "bird",        label: "鳥",         icon: "🐦", color: "#42A5F5", bg: "#E3F2FD" }, // blue (小鳥・インコ・オウム・文鳥等)
+  { id: "reptile",     label: "爬虫類",     icon: "🦎", color: "#66BB6A", bg: "#E8F5E9" }, // green (カメ・ヘビ・トカゲ等)
+  { id: "amphibian",   label: "両生類",     icon: "🐸", color: "#26A69A", bg: "#E0F2F1" }, // teal (カエル・サンショウウオ等)
+  { id: "fish",        label: "魚",         icon: "🐠", color: "#29B6F6", bg: "#E1F5FE" }, // lightblue (金魚・熱帯魚・メダカ等)
+  { id: "crustacean",  label: "甲殻類",     icon: "🦀", color: "#EF5350", bg: "#FFEBEE" }, // red (エビ・カニ等)
+  { id: "insect",      label: "昆虫",       icon: "🐛", color: "#9CCC65", bg: "#F1F8E9" }, // lightgreen (カブトムシ・クワガタ等)
+  { id: "other",       label: "その他",     icon: "🐾", color: "#9E9B95", bg: "#FAFAF7" }, // warmgray
+];
+const PET_CAT_BY_ID: Record<string, typeof PET_CATEGORIES[number]> =
+  Object.fromEntries(PET_CATEGORIES.map(c => [c.id, c]));
+// ヘルパー (既存 dog/cat/both API 後方互換)
+const petLabel = (id: string): string => {
+  if (id === "both") return "🐾 両方";
+  const c = PET_CAT_BY_ID[id];
+  return c ? `${c.icon} ${c.label}` : `🐾 ${id || "その他"}`;
+};
+const petLabelShort = (id: string): string => {
+  if (id === "both") return "両方";
+  return PET_CAT_BY_ID[id]?.label || id || "その他";
+};
+const petIcon = (id: string): string => {
+  if (id === "both") return "🐾";
+  return PET_CAT_BY_ID[id]?.icon || "🐾";
+};
+const petColor = (id: string): string => {
+  if (id === "both") return "#4CAF50";  // green
+  return PET_CAT_BY_ID[id]?.color || "#9E9B95";
+};
+const petBg = (id: string): string => {
+  if (id === "both") return "#E8F5E9";  // greenpale
+  return PET_CAT_BY_ID[id]?.bg || "#FAFAF7";
+};
+// 既存 API 後方互換 (event 系)
+const evPetLabel = (p: string) => p === "dog" ? "🐕 犬" : p === "cat" ? "🐈 猫" : p === "both" ? "🐾 両方" : petLabel(p);
+const evPetColor = (p: string) => p === "dog" ? "#F5A94A" : p === "cat" ? "#9C27B0" : p === "both" ? "#4CAF50" : petColor(p);
+const evPetBg = (p: string) => p === "dog" ? "#FFF3E0" : p === "cat" ? "#F3E5F5" : p === "both" ? "#E8F5E9" : petBg(p);
 
 // ── Mock Orders ───────────────────────────────────────────────────────────
 const ORDER_STEPS = [
@@ -4410,7 +4456,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           </div>
         )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
-          {[["⏱️ 納期", item.delivery],["📬 受け渡し", item.delivery_type==="shipping"?"📦 配送":item.delivery_type==="visit"?"📍 訪問":"💻 データ"],["🐾 対象", item.pet==="dog"?"🐕 犬向け":item.pet==="cat"?"🐈 猫向け":"🐾 両対応"],["🔒 保証","エスクロー決済"]].map(([k,v])=>(
+          {[["⏱️ 納期", item.delivery],["📬 受け渡し", item.delivery_type==="shipping"?"📦 配送":item.delivery_type==="visit"?"📍 訪問":"💻 データ"],["🐾 対象", item.pet==="both"?"🐾 両対応":`${petIcon(item.pet)} ${petLabelShort(item.pet)}向け`],["🔒 保証","エスクロー決済"]].map(([k,v])=>(
             <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
               <span style={{ fontSize:13, color:C.warmGray }}>{k}</span>
               <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{v}</span>
@@ -5035,14 +5081,23 @@ const SellPage = ({ setPage }) => {
             </div>
             <div>
               <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:10 }}>対象ペット</div>
-              <div style={{ display:"flex", gap:8 }}>
-                {[["dog","🐕 犬"],["cat","🐈 猫"],["both","🐾 両方"]].map(([v,l])=>(
-                  <button key={v} onClick={()=>up("pet",v)} style={{
-                    flex:1, padding:"10px 6px", border:`2px solid ${form.pet===v?C.orange:C.border}`,
-                    borderRadius:10, background:form.pet===v?C.orangePale:C.white,
-                    cursor:"pointer", fontSize:13, fontWeight:700, color:form.pet===v?C.orange:C.warmGray, fontFamily:"inherit"
-                  }}>{l}</button>
+              {/* 依頼書 #19 (5/27): 動物カテゴリ 17種 (16 動物 + 両方) - グリッド表示 */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(86px, 1fr))", gap:6 }}>
+                {/* 両方を先頭に (汎用商品用) */}
+                {[{id:"both", icon:"🐾", label:"両方"}, ...PET_CATEGORIES].map(c=>(
+                  <button key={c.id} onClick={()=>up("pet",c.id)} style={{
+                    padding:"10px 4px", border:`2px solid ${form.pet===c.id?C.orange:C.border}`,
+                    borderRadius:10, background:form.pet===c.id?C.orangePale:C.white,
+                    cursor:"pointer", fontSize:11, fontWeight:700, color:form.pet===c.id?C.orange:C.warmGray, fontFamily:"inherit",
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:2, minHeight:54
+                  }}>
+                    <span style={{ fontSize:18 }}>{c.icon}</span>
+                    <span>{c.label}</span>
+                  </button>
                 ))}
+              </div>
+              <div style={{ fontSize:10, color:C.warmGray, marginTop:6, lineHeight:1.5 }}>
+                💡 「両方」は犬猫どちらにも使える汎用商品 / 該当する種類が見当たらない場合は「その他」を選択してや
               </div>
             </div>
           </>}
@@ -5873,7 +5928,7 @@ const handleFollow = async () => {
             {pets.map((p) => {
               const isMemorial = p.status === "memorial";
               const genderIcon = p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "";
-              const speciesEmoji = p.species === "dog" ? "🐕" : p.species === "cat" ? "🐈" : "🐾";
+              const speciesEmoji = petIcon(p.species);
               const photos = petPhotos[p.id] || [];
               const firstPhoto = photos[0]?.photo_url || p.avatar_url || "";
               const showBio = !!p.bio && !p.bio.startsWith("(Phase D サンプル");
@@ -5932,7 +5987,7 @@ const handleFollow = async () => {
                       {genderIcon && <span style={{ color: C.warmGray, fontSize: 12, fontWeight: 600, marginLeft: 6 }}>{genderIcon}</span>}
                     </div>
                     <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.5 }}>
-                      {speciesEmoji} {p.breed || (p.species === "dog" ? "犬" : p.species === "cat" ? "猫" : "そのほか")}
+                      {speciesEmoji} {p.breed || petLabelShort(p.species)}
                       {p.birthday && (
                         <><br/>{new Date(p.birthday).getFullYear()}年生まれ</>
                       )}
@@ -6132,9 +6187,9 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
   if (!pet) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>うちの子が見つかりません</div>;
 
   const isMemorial = pet.status === "memorial";
-  const speciesEmoji = pet.species === "dog" ? "🐕" : pet.species === "cat" ? "🐈" : "🐾";
+  const speciesEmoji = petIcon(pet.species);
   const genderIcon = pet.gender === "male" ? "♂" : pet.gender === "female" ? "♀" : "";
-  const speciesLabel = pet.species === "dog" ? "犬" : pet.species === "cat" ? "猫" : "そのほか";
+  const speciesLabel = petLabelShort(pet.species);
   const heroPhoto = photos[selectedPhotoIdx]?.photo_url || pet.avatar_url || "";
   const showBio = !!pet.bio && !pet.bio.startsWith("(Phase D サンプル");
 
@@ -6963,7 +7018,7 @@ const MyPage = ({ setPage }) => {
                     {myPets.map((p) => {
                       const isMemorial = p.status === "memorial";
                       const genderIcon = p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "";
-                      const speciesEmoji = p.species === "dog" ? "🐕" : p.species === "cat" ? "🐈" : "🐾";
+                      const speciesEmoji = petIcon(p.species);
                       const heroPhoto = p.avatar_url || "";
                       return (
                         <div
@@ -7012,7 +7067,7 @@ const MyPage = ({ setPage }) => {
                               {genderIcon && <span style={{ color: C.warmGray, fontSize: 11, fontWeight: 600 }}>{genderIcon}</span>}
                             </div>
                             <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 8, lineHeight: 1.4, height: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {speciesEmoji} {p.breed || (p.species === "dog" ? "犬" : p.species === "cat" ? "猫" : "そのほか")}
+                              {speciesEmoji} {p.breed || petLabelShort(p.species)}
                             </div>
                             <div style={{ display: "flex", gap: 4 }}>
                               <button
@@ -11732,7 +11787,8 @@ const EventsPage = ({ isPC, setPage }) => {
         </div>
         <div style={{ fontSize:12, fontWeight:700, color:C.warmGray, margin:"10px 0 8px" }}>対象ペット</div>
         <div style={{ display:"flex", gap:6 }}>
-          {[["すべて","🐾 すべて"],["dog","🐕 犬"],["cat","🐈 猫"],["both","🐾 両方"]].map(([v,l])=>(
+          {/* 依頼書 #19 (5/27): 動物カテゴリ 17種フィルター (横スクロール) */}
+          {[["すべて","🐾 すべて"],["both","🐾 両方"],...PET_CATEGORIES.map(c=>[c.id, `${c.icon} ${c.label}`] as [string,string])].map(([v,l])=>(
             <button key={v} onClick={()=>setPet(v)} style={{ flexShrink:0, padding:"6px 14px", border:`1.5px solid ${pet===v?C.orange:C.border}`, borderRadius:20, background:pet===v?C.orangePale:C.white, color:pet===v?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
           ))}
         </div>
@@ -11820,7 +11876,8 @@ const EventsPage = ({ isPC, setPage }) => {
             <div style={{ marginBottom:12 }}>
               <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>対象ペット</label>
               <div style={{ display:"flex", gap:8 }}>
-                {[["dog","🐕 犬"],["cat","🐈 猫"],["both","🐾 両方"]].map(([v,l])=>(
+                {/* 依頼書 #19 (5/27): イベント投稿フォーム 動物カテゴリ 17種 */}
+                {[["both","🐾 両方"],...PET_CATEGORIES.map(c=>[c.id, `${c.icon} ${c.label}`] as [string,string])].map(([v,l])=>(
                   <button key={v} onClick={()=>setForm(p=>({...p,pet_type:v}))} style={{ flex:1, padding:"10px", border:`2px solid ${form.pet_type===v?C.orange:C.border}`, borderRadius:10, background:form.pet_type===v?C.orangePale:C.white, color:form.pet_type===v?C.orange:C.warmGray, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
                 ))}
               </div>

@@ -21,7 +21,27 @@ const C = {
   memorial: "#8B6F4E",
 };
 
-type Species = "dog" | "cat" | "other";
+// 依頼書 #19 (5/27): 動物カテゴリ 16種拡張 (Qocca ビジョン体現)
+const PET_SPECIES: Array<{ id: string; label: string; icon: string }> = [
+  { id: "dog", label: "犬", icon: "🐕" },
+  { id: "cat", label: "猫", icon: "🐈" },
+  { id: "rabbit", label: "うさぎ", icon: "🐰" },
+  { id: "hamster", label: "ハムスター", icon: "🐹" },
+  { id: "guinea_pig", label: "モルモット", icon: "🐭" },
+  { id: "ferret", label: "フェレット", icon: "🦦" },
+  { id: "chinchilla", label: "チンチラ", icon: "🐭" },
+  { id: "hedgehog", label: "ハリネズミ", icon: "🦔" },
+  { id: "squirrel", label: "リス", icon: "🐿️" },
+  { id: "bird", label: "鳥", icon: "🐦" },
+  { id: "reptile", label: "爬虫類", icon: "🦎" },
+  { id: "amphibian", label: "両生類", icon: "🐸" },
+  { id: "fish", label: "魚", icon: "🐠" },
+  { id: "crustacean", label: "甲殻類", icon: "🦀" },
+  { id: "insect", label: "昆虫", icon: "🐛" },
+  { id: "other", label: "そのほか", icon: "🐾" },
+];
+const PET_SPECIES_IDS = PET_SPECIES.map(s => s.id);
+type Species = string; // 16カテゴリのいずれか
 type Gender = "male" | "female" | "unknown";
 type Status = "active" | "memorial";
 
@@ -290,7 +310,7 @@ export default function PetEditModal({ open, onClose, userId, petId, onSaved }: 
       setError("名前は30文字以内にしてください");
       return;
     }
-    if (!["dog", "cat", "other"].includes(species)) {
+    if (!PET_SPECIES_IDS.includes(species)) {
       setError("種類が不正です");
       return;
     }
@@ -383,7 +403,7 @@ export default function PetEditModal({ open, onClose, userId, petId, onSaved }: 
 
   if (!open) return null;
 
-  const speciesEmoji = species === "dog" ? "🐕" : species === "cat" ? "🐈" : "🐾";
+  const speciesEmoji = PET_SPECIES.find(s => s.id === species)?.icon || "🐾";
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: 16 }}>
@@ -429,28 +449,33 @@ export default function PetEditModal({ open, onClose, userId, petId, onSaved }: 
                 <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{name.length} / 30</div>
               </div>
 
-              {/* Species */}
+              {/* 依頼書 #19 (5/27): 動物カテゴリ 16種グリッド (Qocca ビジョン体現) */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 6 }}>
                   種類 <span style={{ color: C.danger }}>*</span>
                 </label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {(["dog", "cat", "other"] as const).map((s) => (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(82px, 1fr))", gap: 6 }}>
+                  {PET_SPECIES.map((s) => (
                     <button
-                      key={s}
-                      onClick={() => setSpecies(s)}
+                      key={s.id}
+                      onClick={() => setSpecies(s.id)}
                       style={{
-                        flex: 1, padding: "10px 8px",
-                        background: species === s ? C.orange : C.white,
-                        color: species === s ? "#fff" : C.dark,
-                        border: `1.5px solid ${species === s ? C.orange : C.border}`,
-                        borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        padding: "8px 4px",
+                        background: species === s.id ? C.orange : C.white,
+                        color: species === s.id ? "#fff" : C.dark,
+                        border: `1.5px solid ${species === s.id ? C.orange : C.border}`,
+                        borderRadius: 8, fontSize: 11, fontWeight: 600,
                         cursor: "pointer", fontFamily: "inherit",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 2, minHeight: 48
                       }}
                     >
-                      {s === "dog" ? "🐕 犬" : s === "cat" ? "🐈 猫" : "🐾 そのほか"}
+                      <span style={{ fontSize: 18 }}>{s.icon}</span>
+                      <span>{s.label}</span>
                     </button>
                   ))}
+                </div>
+                <div style={{ fontSize: 10, color: C.warmGray, marginTop: 6, lineHeight: 1.5 }}>
+                  💡 該当する種類が見当たらない場合は「そのほか」を選択してや
                 </div>
               </div>
 
