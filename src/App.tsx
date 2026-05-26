@@ -7226,6 +7226,24 @@ const MyPage = ({ setPage }) => {
                 </div>
                 <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
               </button>
+              {/* Phase Threads (5/23, 案C 移植 5/27): Threads 連携ボタン */}
+              <button
+                onClick={() => navigate("/settings/threads")}
+                style={{
+                  width:"100%", minHeight:44, padding:"14px 16px", marginTop:8,
+                  background:C.white, border:`1px solid ${C.border}`, borderRadius:14,
+                  display:"flex", alignItems:"center", gap:12,
+                  cursor:"pointer", fontFamily:"inherit", textAlign:"left",
+                  transition:"border-color 0.3s ease",
+                }}
+              >
+                <div style={{ width:36, height:36, borderRadius:10, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}>🧵</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>Threads 連携</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>Qocca から Threads に投稿できます</div>
+                </div>
+                <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
+              </button>
             </div>
 
             {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
@@ -11469,6 +11487,230 @@ const XConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => void }
   );
 };
 
+// ── Threads 連携ページ (Phase Threads, 2026/5/23, 案C 移植 5/27) ───────────
+// Meta Threads API OAuth + 投稿テスト + 連携情報 + 連携解除
+// App Review 申請の動画デモ用 UI
+const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [connection, setConnection] = useState<any>(null);
+  const [postText, setPostText] = useState("");
+  const [postImageUrl, setPostImageUrl] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postResult, setPostResult] = useState<any>(null);
+  const [postError, setPostError] = useState<string>("");
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      const returnTo = encodeURIComponent("/settings/threads");
+      navigate(`/login?returnTo=${returnTo}`, { replace: true });
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("threads") === "connected") {
+      setShowSuccess(true);
+      window.history.replaceState(null, "", "/settings/threads");
+    }
+  }, []);
+
+  const loadConnection = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setLoading(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/threads-profile",
+        { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      setConnection(data);
+    } catch (e) {
+      console.error("Failed to load Threads profile:", e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { if (user?.id) loadConnection(); }, [user?.id]);
+
+  const startOAuth = () => {
+    if (!user?.id) return;
+    const META_APP_ID = "1524294909111459"; // 公開情報
+    const REDIRECT_URI = "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/threads-oauth-callback";
+    const url = new URL("https://threads.net/oauth/authorize");
+    url.searchParams.append("client_id", META_APP_ID);
+    url.searchParams.append("redirect_uri", REDIRECT_URI);
+    url.searchParams.append("scope", "threads_basic,threads_content_publish");
+    url.searchParams.append("response_type", "code");
+    url.searchParams.append("state", user.id);
+    window.location.href = url.toString();
+  };
+
+  const handlePost = async () => {
+    if (!postText.trim()) { setPostError("投稿内容を入力してください"); return; }
+    setPosting(true); setPostError(""); setPostResult(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setPostError("認証エラー"); setPosting(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/threads-post",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ text: postText.trim(), image_url: postImageUrl.trim() || undefined }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPostResult(data); setPostText(""); setPostImageUrl("");
+      } else {
+        setPostError(data.message || data.error || "投稿に失敗しました");
+      }
+    } catch (e: any) {
+      setPostError(e?.message || "投稿エラー");
+    }
+    setPosting(false);
+  };
+
+  const handleDisconnect = async () => {
+    if (!user?.id) return;
+    if (!window.confirm("Threads との連携を解除しますか?")) return;
+    setDisconnecting(true);
+    try {
+      await supabase.from("social_connections").delete().eq("user_id", user.id).eq("platform", "threads");
+      setConnection({ connected: false });
+      setShowSuccess(false);
+    } catch (e) {
+      console.error("Failed to disconnect:", e);
+    }
+    setDisconnecting(false);
+  };
+
+  if (!user || loading) {
+    return (<div style={{ maxWidth: 600, margin: "0 auto", padding: 24, textAlign: "center", color: C.warmGray }}>読み込み中...</div>);
+  }
+
+  const isConnected = connection?.connected === true && !connection?.expired;
+  const isExpired = connection?.connected === true && connection?.expired;
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 0" }}>
+      <button onClick={() => navigate("/mypage")} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0", fontFamily: "inherit", minHeight: 40 }}>
+        ← マイページに戻る
+      </button>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginTop: 8, marginBottom: 8 }}>🧵 Threads 連携</h1>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24, lineHeight: 1.7 }}>
+        Threads と連携すると、Qocca から直接 Threads に投稿できるようになります。<br/>連携はいつでも解除できます。
+      </p>
+
+      {showSuccess && (
+        <div style={{ background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)", border: "1px solid #4CAF50", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: C.dark }}>
+          ✅ Threads との連携が完了しました!
+        </div>
+      )}
+
+      {!isConnected && !isExpired && (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 60, marginBottom: 12 }}>🧵</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 8 }}>まだ連携されていません</div>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 20, lineHeight: 1.7 }}>
+            「Threads と連携」ボタンを押すと Meta の認証画面が開きます。<br/>ご自身の Threads アカウントで承認してください。
+          </div>
+          <button onClick={startOAuth} style={{ padding: "14px 24px", background: "#000", color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", minHeight: 48, width: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+            🧵 Threads と連携する
+          </button>
+        </div>
+      )}
+
+      {isExpired && (
+        <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+          ⚠️ Threads のトークンが期限切れです。再連携してください。
+          <button onClick={startOAuth} style={{ marginTop: 12, padding: "12px 20px", background: "#000", color: "#fff", border: "none", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "block", width: "100%", minHeight: 40 }}>
+            🧵 再連携する
+          </button>
+        </div>
+      )}
+
+      {isConnected && (
+        <>
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, color: "#fff", flexShrink: 0 }}>
+                {connection.profile?.profile_picture_url ? (
+                  <img src={connection.profile.profile_picture_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : "🧵"}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.dark }}>@{connection.platform_username || connection.profile?.username || "Threads"}</div>
+                {connection.profile?.name && (<div style={{ fontSize: 12, color: C.warmGray }}>{connection.profile.name}</div>)}
+              </div>
+            </div>
+            {connection.profile?.biography && (
+              <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`, whiteSpace: "pre-wrap" }}>
+                {connection.profile.biography}
+              </div>
+            )}
+            {connection.insights && (
+              <div style={{ display: "flex", gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+                {Object.entries(connection.insights).map(([k, v]) => (
+                  <div key={k} style={{ flex: "1 1 60px", textAlign: "center", minWidth: 60 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: C.orange }}>{String(v ?? "-")}</div>
+                    <div style={{ fontSize: 10, color: C.warmGray, marginTop: 2 }}>{k.replace(/_/g, " ")}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 12 }}>
+              連携日: {connection.connected_at ? new Date(connection.connected_at).toLocaleDateString("ja-JP") : "-"}
+              {connection.token_expires_at && (<> ・ トークン期限: {new Date(connection.token_expires_at).toLocaleDateString("ja-JP")}</>)}
+            </div>
+          </div>
+
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>📝 Threads 投稿テスト</div>
+            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} maxLength={500} placeholder="投稿したい内容を入力してください..." rows={4} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", resize: "vertical", minHeight: 100, boxSizing: "border-box", outline: "none" }} />
+            <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{postText.length} / 500</div>
+            <input type="url" value={postImageUrl} onChange={(e) => setPostImageUrl(e.target.value)} placeholder="画像 URL (任意・公開アクセス可能なもの)" style={{ width: "100%", padding: "10px 12px", marginTop: 8, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }} />
+            {postError && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "#FFEBEE", color: "#E57373", borderRadius: 8, fontSize: 13 }}>⚠️ {postError}</div>
+            )}
+            {postResult?.success && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "#E8F5E9", color: "#2E7D32", borderRadius: 8, fontSize: 13 }}>
+                ✅ 投稿成功! Thread ID: {postResult.thread_id}
+              </div>
+            )}
+            <button onClick={handlePost} disabled={posting || !postText.trim()} style={{ marginTop: 12, padding: "12px 24px", width: "100%", background: posting || !postText.trim() ? C.warmGray : "#000", color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: posting || !postText.trim() ? "wait" : "pointer", fontFamily: "inherit", minHeight: 48 }}>
+              {posting ? "投稿中... (画像ありは最大30秒)" : "📤 Threads に投稿"}
+            </button>
+            {postImageUrl && (
+              <div style={{ fontSize: 11, color: C.warmGray, marginTop: 8, lineHeight: 1.6 }}>
+                ℹ️ 画像付き投稿は Meta 仕様により 30 秒待機が必要です
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>連携を解除</div>
+            <p style={{ fontSize: 12, color: C.warmGray, marginBottom: 14, lineHeight: 1.7 }}>
+              連携解除すると、Qocca から Threads への投稿はできなくなります。<br/>いつでも再連携できます。
+            </p>
+            <button onClick={handleDisconnect} disabled={disconnecting} style={{ padding: "10px 20px", background: C.white, color: "#E57373", border: "1.5px solid #E57373", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: disconnecting ? "wait" : "pointer", fontFamily: "inherit", width: "100%", minHeight: 40 }}>
+              {disconnecting ? "解除中..." : "🔓 連携を解除する"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -12662,6 +12904,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* Phase Threads (5/23, 案C 移植 5/27): /settings/threads — Threads 連携 (PC) */}
+            <Route path="/settings/threads" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <ThreadsConnectionPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/user/:userId" element={
             <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
               <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -12752,6 +13003,8 @@ function QoccaAppInner() {
             <Route path="/settings/phone-verification" element={<PhoneVerificationPage setPage={setPage}/>}/>
             {/* Phase X (5/24, 案C 移植 5/26): /settings/x — X 連携 (Mobile) */}
             <Route path="/settings/x" element={<XConnectionPage setPage={setPage}/>}/>
+            {/* Phase Threads (5/23, 案C 移植 5/27): /settings/threads — Threads 連携 (Mobile) */}
+            <Route path="/settings/threads" element={<ThreadsConnectionPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
             <Route path="/deletion-status" element={<DeletionStatusPage/>}/>
             <Route path="/help" element={<HelpPage/>}/>
