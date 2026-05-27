@@ -53,6 +53,18 @@
       }
     }
     </script>
+
+    <!-- Google Analytics 4 (依頼書 #24 v2 Phase 0, 2026/5/27) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CPYH7DKWFO"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-CPYH7DKWFO', {
+        anonymize_ip: true,
+        cookie_flags: 'SameSite=None;Secure'
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

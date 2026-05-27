@@ -12708,6 +12708,17 @@ function QoccaAppInner() {
   const { setPage } = useNav();
   const location = useLocation();
 
+  // 依頼書 #24 v2 Phase 0 (2026/5/27): GA4 pageview tracking (React Router SPA 対応)
+  // index.html の gtag('config', 'G-CPYH7DKWFO') が初回 pageview を発火、
+  // 以降の SPA ルート遷移はこの useEffect が page_path を更新して発火
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag('config', 'G-CPYH7DKWFO', {
+        page_path: location.pathname + location.search,
+      });
+    }
+  }, [location.pathname, location.search]);
+
   // Supabase data hooks
   const { listings: dbListings, dbLoading, refetch } = useListings();
   const { liked, toggleLike } = useFavorites(user?.id);
