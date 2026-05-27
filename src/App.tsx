@@ -10005,6 +10005,38 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const [submitted, setSubmitted] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
 
+  // 依頼書 #28 Phase 1 UI: 検索バー state
+  const [searchInput, setSearchInput] = useState("");          // ユーザー入力中
+  const [searchQuery, setSearchQuery] = useState("");          // デバウンス後の実行クエリ
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [searchInProgress, setSearchInProgress] = useState(false);
+
+  // localStorage から検索履歴ロード
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("qocca_facility_search_history");
+      if (raw) setSearchHistory(JSON.parse(raw).slice(0, 8));
+    } catch (_) {}
+  }, []);
+
+  // デバウンス 300ms
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // 履歴に追加 (実行時)
+  const pushHistory = (q: string) => {
+    if (!q || q.length < 1) return;
+    setSearchHistory(prev => {
+      const next = [q, ...prev.filter(x => x !== q)].slice(0, 8);
+      try { localStorage.setItem("qocca_facility_search_history", JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+  };
+
+  // 通常取得 (検索なし)
   const fetchFacilities = async () => {
     setLoading(true);
     let query = supabase.from("pet_facilities").select("*").eq("approved", true).order("review_count", { ascending: false });
@@ -10013,11 +10045,39 @@ const FacilitiesPage = ({ setPage, isPC }) => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchFacilities(); }, []);
+  // 依頼書 #28 Phase 1 UI: search_facilities RPC 呼び出し
+  const runSearch = async (q: string) => {
+    setSearchInProgress(true);
+    const { data, error } = await supabase.rpc("search_facilities", {
+      query_text: q || null,
+      filter_category: null,
+      filter_prefecture: pref || null,
+      filter_pet_type: null,
+      filter_pet_size: null,
+      filter_region: null,
+      sort_mode: "relevance",
+      result_limit: 50,
+    });
+    if (!error) {
+      setFacilities(data || []);
+      if (q) pushHistory(q);
+    }
+    setSearchInProgress(false);
+    setLoading(false);
+  };
+
+  // searchQuery 変動時に検索 / 空なら通常取得
+  useEffect(() => {
+    if (searchQuery) {
+      runSearch(searchQuery);
+    } else {
+      fetchFacilities();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, pref]);
 
   const filtered = facilities.filter(f => {
     if (cat !== "all" && f.category !== cat) return false;
-    if (pref && f.prefecture !== pref) return false;
     return true;
   });
 
@@ -10057,6 +10117,85 @@ const FacilitiesPage = ({ setPage, isPC }) => {
             }}>＋ 施設を追加</button>
           )}
         </div>
+
+        {/* 依頼書 #28 Phase 1 UI: 検索バー (TSVECTOR + pg_trgm 連動) */}
+        <div style={{ marginTop:12, position:"relative" }}>
+          <div style={{
+            display:"flex", alignItems:"center", gap:8,
+            padding:"10px 14px", background:C.cream, borderRadius:14,
+            border:`1.5px solid ${searchInput ? C.orange : C.border}`,
+            transition:"border-color 0.2s"
+          }}>
+            <span style={{ fontSize:16, color:C.warmGray, flexShrink:0 }}>🔍</span>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onFocus={() => setShowHistory(true)}
+              onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+              placeholder={'「梅田 カフェ」「東京 ドッグラン」で検索...'}
+              style={{
+                flex:1, border:"none", outline:"none", background:"transparent",
+                fontSize:14, fontFamily:"inherit", color:C.dark, minWidth:0
+              }}
+            />
+            {searchInput && (
+              <button
+                onClick={() => { setSearchInput(""); setSearchQuery(""); }}
+                style={{
+                  background:"none", border:"none", cursor:"pointer", color:C.warmGray,
+                  fontSize:16, padding:"0 4px", lineHeight:1, fontFamily:"inherit"
+                }}
+                aria-label="クリア"
+              >✕</button>
+            )}
+            {searchInProgress && (
+              <span style={{ fontSize:11, color:C.warmGray }}>検索中…</span>
+            )}
+          </div>
+
+          {/* 検索履歴ドロップダウン */}
+          {showHistory && !searchInput && searchHistory.length > 0 && (
+            <div style={{
+              position:"absolute", top:"100%", left:0, right:0, marginTop:6,
+              background:C.white, borderRadius:12, border:`1px solid ${C.border}`,
+              boxShadow:"0 4px 16px rgba(0,0,0,0.08)", zIndex:50,
+              padding:"6px 0", maxHeight:240, overflowY:"auto"
+            }}>
+              <div style={{ padding:"4px 14px", fontSize:11, color:C.warmGray, fontWeight:700 }}>
+                最近の検索
+              </div>
+              {searchHistory.map((h) => (
+                <button
+                  key={h}
+                  onMouseDown={(e) => { e.preventDefault(); setSearchInput(h); }}
+                  style={{
+                    width:"100%", padding:"8px 14px", background:"transparent", border:"none",
+                    textAlign:"left", cursor:"pointer", fontSize:13, color:C.dark,
+                    fontFamily:"inherit", display:"flex", alignItems:"center", gap:8
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = C.cream)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ color:C.warmGray, fontSize:12 }}>🕐</span>
+                  <span>{h}</span>
+                </button>
+              ))}
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setSearchHistory([]);
+                  try { localStorage.removeItem("qocca_facility_search_history"); } catch (_) {}
+                }}
+                style={{
+                  width:"100%", padding:"8px 14px", background:"transparent", border:"none",
+                  textAlign:"left", cursor:"pointer", fontSize:11, color:C.warmGray,
+                  fontFamily:"inherit", borderTop:`1px solid ${C.border}`, marginTop:4
+                }}
+              >履歴をクリア</button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ padding:"10px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", gap:8, overflowX:"auto" }}>
@@ -10077,7 +10216,11 @@ const FacilitiesPage = ({ setPage, isPC }) => {
           <option value="">📍 全国</option>
           {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <span style={{ marginLeft:12, fontSize:12, color:C.warmGray }}>{filtered.length}件の施設</span>
+        <span style={{ marginLeft:12, fontSize:12, color:C.warmGray }}>
+          {searchQuery
+            ? <>🔎 「{searchQuery}」: <b style={{ color:C.dark }}>{filtered.length}</b>件</>
+            : <>{filtered.length}件の施設</>}
+        </span>
       </div>
 
       {showAdd && (
