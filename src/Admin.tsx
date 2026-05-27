@@ -935,6 +935,494 @@ const CrowdfundingPage = () => {
   );
 };
 
+// ── Meta 広告 AI 完全自動運用 (依頼書 #26 v2) ────────────────────────────────
+// 8 tables: meta_campaigns / ad_sets / creatives / ab_tests / budget_adjustments
+//           / landing_pages / monthly_budgets / daily_reports
+// RLS: admin_only + service_role 超厳格 / 一般ユーザー完全禁止
+// 目標 ROAS: 5x〜10x / 3段階予算ガード (5万/10万)
+// ────────────────────────────────────────────────────────────────────────────
+const META_TABS = [
+  { id: 0, icon: "📊", label: "ダッシュボード" },
+  { id: 1, icon: "🎯", label: "キャンペーン" },
+  { id: 2, icon: "🎨", label: "クリエイティブ" },
+  { id: 3, icon: "🧪", label: "A/Bテスト" },
+  { id: 4, icon: "🤖", label: "AI生成" },
+  { id: 5, icon: "💴", label: "予算管理 v2.0" },
+  { id: 6, icon: "🌐", label: "LP A/B" },
+  { id: 7, icon: "📅", label: "日次レポート" },
+  { id: 8, icon: "💡", label: "AI 戦略提案" },
+  { id: 9, icon: "🛑", label: "Kill Switch" },
+];
+
+const fmtJPY = (n: number | null | undefined) =>
+  n == null ? "—" : "¥" + Math.round(Number(n)).toLocaleString("ja-JP");
+const fmtNum = (n: number | null | undefined) =>
+  n == null ? "—" : Number(n).toLocaleString("ja-JP");
+const fmtPct = (n: number | null | undefined, digits = 2) =>
+  n == null ? "—" : (Number(n) * 100).toFixed(digits) + "%";
+const fmtRoas = (n: number | null | undefined) =>
+  n == null ? "—" : Number(n).toFixed(2) + "x";
+
+const currentMonthKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const MetaAdsPage = () => {
+  const [tab, setTab] = useState(0);
+  const [budget, setBudget] = useState<any | null>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [creatives, setCreatives] = useState<any[]>([]);
+  const [abTests, setAbTests] = useState<any[]>([]);
+  const [adjustments, setAdjustments] = useState<any[]>([]);
+  const [landings, setLandings] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [killBusy, setKillBusy] = useState(false);
+
+  const monthKey = currentMonthKey();
+
+  const loadAll = async () => {
+    setLoading(true);
+    const [b, c, cr, ab, adj, lp, rp] = await Promise.all([
+      supabase.from("meta_monthly_budgets").select("*").eq("month", monthKey).maybeSingle(),
+      supabase.from("meta_campaigns").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("meta_creatives").select("*").order("roas", { ascending: false, nullsFirst: false }).limit(50),
+      supabase.from("meta_ab_tests").select("*").order("start_date", { ascending: false }).limit(20),
+      supabase.from("meta_budget_adjustments").select("*").order("applied_at", { ascending: false }).limit(20),
+      supabase.from("meta_landing_pages").select("*").order("created_at", { ascending: false }).limit(20),
+      supabase.from("meta_daily_reports").select("*").order("date", { ascending: false }).limit(14),
+    ]);
+    setBudget(b.data);
+    setCampaigns(c.data || []);
+    setCreatives(cr.data || []);
+    setAbTests(ab.data || []);
+    setAdjustments(adj.data || []);
+    setLandings(lp.data || []);
+    setReports(rp.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, []);
+
+  // ── 予算 mode の色 ─────────────────────────────────────────────
+  const modeColor = (m: string | null | undefined) => {
+    switch (m) {
+      case "normal":    return { color: C.green,  bg: C.greenPale, label: "通常" };
+      case "expansion": return { color: C.blue,   bg: C.bluePale,  label: "拡大" };
+      case "careful":   return { color: "#F57C00", bg: "#FFF3E0",  label: "慎重" };
+      case "paused":    return { color: C.red,    bg: C.redPale,   label: "停止中" };
+      default:          return { color: C.warmGray, bg: C.cream,   label: m || "—" };
+    }
+  };
+
+  // ── Kill Switch ──────────────────────────────────────────────
+  const handleKillSwitch = async () => {
+    if (!confirm("⚠️ 緊急 Kill Switch を実行しますか?\n\n全広告が即座に pause され、当月の mode が 'paused' になります。\nこの操作は AI による自動再開を阻止します。")) return;
+    setKillBusy(true);
+    try {
+      // 1. 当月予算を paused に
+      await supabase.from("meta_monthly_budgets")
+        .update({ mode: "paused", notes: `緊急 Kill Switch 実行: ${new Date().toISOString()}`, updated_at: new Date().toISOString() })
+        .eq("month", monthKey);
+      // 2. 全 ad_sets を inactive に
+      await supabase.from("meta_ad_sets").update({ is_active: false }).eq("is_active", true);
+      // 3. 全 creatives を inactive に
+      await supabase.from("meta_creatives").update({ is_active: false }).eq("is_active", true);
+      alert("✅ Kill Switch 実行完了\n\n全広告を pause しました。\nMeta 広告 API への反映は Phase 3 Edge Function 完成後に同期されます。");
+      await loadAll();
+    } catch (e: any) {
+      alert("❌ エラー: " + (e?.message || e));
+    } finally {
+      setKillBusy(false);
+    }
+  };
+
+  // ── 共通スタイル ─────────────────────────────────────────────
+  const card: React.CSSProperties = { background: C.white, borderRadius: 16, padding: 20, border: `1px solid ${C.border}` };
+  const empty = (text: string) => (
+    <div style={{ ...card, textAlign: "center", color: C.warmGray, fontSize: 13, padding: 32 }}>
+      {text}
+      <div style={{ fontSize: 11, marginTop: 8, color: C.warmGray }}>※ Edge Function (Phase 3 / 6月着手) 稼働後にデータが入ります</div>
+    </div>
+  );
+  const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", fontSize: 11, color: C.warmGray, fontWeight: 700, borderBottom: `1px solid ${C.border}`, background: C.cream };
+  const td: React.CSSProperties = { padding: "10px", fontSize: 12, color: C.dark, borderBottom: `1px solid ${C.border}` };
+
+  // ── 0. ダッシュボード ────────────────────────────────────────
+  const renderDashboard = () => {
+    const spend  = Number(budget?.current_spend || 0);
+    const base   = Number(budget?.base_budget || 50000);
+    const max    = Number(budget?.max_budget || 100000);
+    const remain = max - spend;
+    const m = modeColor(budget?.mode);
+    const todayReport = reports[0];
+    const totalRevenue = reports.reduce((s, r) => s + Number(r.total_revenue || 0), 0);
+    const totalSpend = reports.reduce((s, r) => s + Number(r.total_spend || 0), 0);
+    const cumRoas = totalSpend > 0 ? totalRevenue / totalSpend : null;
+
+    return (
+      <div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 14 }}>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>当月 spend</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.dark }}>{fmtJPY(spend)}</div>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 4 }}>/ {fmtJPY(max)} (上限)</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>当月 revenue (集計)</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.green }}>{fmtJPY(totalRevenue)}</div>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 4 }}>直近14日合算</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>累計 ROAS</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: (cumRoas || 0) >= 5 ? C.green : C.dark }}>{fmtRoas(cumRoas)}</div>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 4 }}>目標 5x〜10x</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>現在の mode</div>
+            <div style={{ display: "inline-block", padding: "4px 14px", borderRadius: 20, background: m.bg, color: m.color, fontWeight: 800, fontSize: 14 }}>{m.label}</div>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 8 }}>残額 {fmtJPY(remain)}</div>
+          </div>
+        </div>
+
+        <div style={{ ...card, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>📊 3段階予算ガード</div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200, background: C.bluePale, borderRadius: 10, padding: 12 }}>
+              <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, marginBottom: 4 }}>🎚️ Lv1: Meta 側絶対上限</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: C.dark }}>{fmtJPY(max)}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: 200, background: C.greenPale, borderRadius: 10, padding: 12 }}>
+              <div style={{ fontSize: 11, color: C.green, fontWeight: 700, marginBottom: 4 }}>🎚️ Lv2: AI 通常運用</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: C.dark }}>{fmtJPY(base)}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: 200, background: C.orangePale, borderRadius: 10, padding: 12 }}>
+              <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, marginBottom: 4 }}>🎚️ Lv3: 柔軟調整レンジ</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: C.dark }}>{fmtJPY(base)} 〜 {fmtJPY(max)}</div>
+            </div>
+          </div>
+        </div>
+
+        {todayReport ? (
+          <div style={card}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 10 }}>📅 直近の日次レポート ({todayReport.date})</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, fontSize: 13 }}>
+              <div><span style={{ color: C.warmGray }}>Spend: </span><b>{fmtJPY(todayReport.total_spend)}</b></div>
+              <div><span style={{ color: C.warmGray }}>Revenue: </span><b>{fmtJPY(todayReport.total_revenue)}</b></div>
+              <div><span style={{ color: C.warmGray }}>ROAS: </span><b>{fmtRoas(todayReport.total_roas)}</b></div>
+            </div>
+            {todayReport.ai_recommendations && (
+              <div style={{ marginTop: 12, padding: 10, background: C.cream, borderRadius: 8, fontSize: 12, color: C.dark }}>
+                💡 {todayReport.ai_recommendations}
+              </div>
+            )}
+          </div>
+        ) : empty("日次レポートはまだありません。")}
+      </div>
+    );
+  };
+
+  // ── 1. キャンペーン管理 ───────────────────────────────────────
+  const renderCampaigns = () => {
+    if (campaigns.length === 0) return empty("キャンペーン未登録。");
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>名前</th><th style={th}>目的</th><th style={th}>Status</th><th style={th}>日予算</th><th style={th}>累計</th><th style={th}>作成</th>
+          </tr></thead>
+          <tbody>
+            {campaigns.map((c) => (
+              <tr key={c.id}>
+                <td style={td}>{c.name}</td>
+                <td style={td}>{c.objective || "—"}</td>
+                <td style={td}>{c.status || "—"}</td>
+                <td style={td}>{fmtJPY(c.daily_budget)}</td>
+                <td style={td}>{fmtJPY(c.total_spend)}</td>
+                <td style={td}>{c.created_at ? new Date(c.created_at).toLocaleDateString("ja-JP") : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // ── 2. クリエイティブ一覧 (ROAS 順) ─────────────────────────
+  const renderCreatives = () => {
+    if (creatives.length === 0) return empty("クリエイティブ未登録。");
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>Headline</th><th style={th}>Type</th><th style={th}>生成元</th>
+            <th style={th}>Impr</th><th style={th}>CTR</th><th style={th}>CPC</th><th style={th}>ROAS</th><th style={th}>Active</th>
+          </tr></thead>
+          <tbody>
+            {creatives.map((c) => (
+              <tr key={c.id}>
+                <td style={{ ...td, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.headline || "—"}</td>
+                <td style={td}>{c.type || "—"}</td>
+                <td style={td}>{c.generated_by || "—"}</td>
+                <td style={td}>{fmtNum(c.impressions)}</td>
+                <td style={td}>{fmtPct(c.ctr)}</td>
+                <td style={td}>{fmtJPY(c.cpc)}</td>
+                <td style={{ ...td, fontWeight: 800, color: (Number(c.roas) || 0) >= 5 ? C.green : C.dark }}>{fmtRoas(c.roas)}</td>
+                <td style={td}>{c.is_active ? "✅" : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // ── 3. A/B テスト履歴 ───────────────────────────────────────
+  const renderAbTests = () => {
+    if (abTests.length === 0) return empty("A/B テスト履歴なし。");
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>テスト名</th><th style={th}>期間</th><th style={th}>勝者</th><th style={th}>信頼度</th><th style={th}>サマリ</th>
+          </tr></thead>
+          <tbody>
+            {abTests.map((t) => (
+              <tr key={t.id}>
+                <td style={td}>{t.test_name || "—"}</td>
+                <td style={td}>{t.start_date ? new Date(t.start_date).toLocaleDateString("ja-JP") : "—"} 〜 {t.end_date ? new Date(t.end_date).toLocaleDateString("ja-JP") : "進行中"}</td>
+                <td style={td}>{t.winner_id ? "✅" : "—"}</td>
+                <td style={td}>{t.confidence != null ? fmtPct(t.confidence, 1) : "—"}</td>
+                <td style={td}>{t.test_summary || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // ── 4. AI クリエイティブ生成 ──────────────────────────────
+  const renderAiGen = () => (
+    <div style={card}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🤖 AI クリエイティブ生成 (Phase 3 で稼働予定)</div>
+      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+        Phase 3 Edge Function <code>generate-ad-creative</code> 完成後に稼働。<br />
+        gpt-4o でコピー (Headline / Body / CTA) を生成し、gpt-image-1 で画像を生成。<br />
+        生成されたクリエイティブは <code>meta_creatives</code> テーブルに登録され、A/B テスト枠に投入される。
+      </div>
+      <div style={{ display: "grid", gap: 10 }}>
+        <label style={{ fontSize: 12, color: C.warmGray, fontWeight: 700 }}>ターゲット (例: 30代女性 / 犬オーナー)</label>
+        <input disabled placeholder="Phase 3 で有効化" style={{ padding: 10, borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.cream }} />
+        <label style={{ fontSize: 12, color: C.warmGray, fontWeight: 700, marginTop: 4 }}>訴求軸 (例: 似顔絵 / クラファン)</label>
+        <input disabled placeholder="Phase 3 で有効化" style={{ padding: 10, borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.cream }} />
+        <button disabled style={{ marginTop: 10, padding: 12, background: C.warmGray, color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "not-allowed", fontFamily: "inherit", opacity: 0.6 }}>
+          🚧 生成する (Phase 3 で有効化)
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── 5. 予算管理 v2.0 ──────────────────────────────────────
+  const renderBudget = () => (
+    <div>
+      <div style={{ ...card, marginBottom: 14 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>💴 当月 ({monthKey}) 予算</div>
+        {budget ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, fontSize: 13 }}>
+            <div><div style={{ color: C.warmGray, fontSize: 11 }}>base_budget</div><b>{fmtJPY(budget.base_budget)}</b></div>
+            <div><div style={{ color: C.warmGray, fontSize: 11 }}>max_budget</div><b>{fmtJPY(budget.max_budget)}</b></div>
+            <div><div style={{ color: C.warmGray, fontSize: 11 }}>current_spend</div><b>{fmtJPY(budget.current_spend)}</b></div>
+            <div><div style={{ color: C.warmGray, fontSize: 11 }}>mode</div><b style={{ color: modeColor(budget.mode).color }}>{modeColor(budget.mode).label}</b></div>
+          </div>
+        ) : (
+          <div style={{ color: C.warmGray, fontSize: 13 }}>当月の budget レコード未登録。</div>
+        )}
+      </div>
+      <div style={card}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 10 }}>🤖 AI 予算調整履歴</div>
+        {adjustments.length === 0 ? (
+          <div style={{ color: C.warmGray, fontSize: 13, textAlign: "center", padding: 20 }}>調整履歴なし</div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={th}>適用日時</th><th style={th}>Before</th><th style={th}>After</th><th style={th}>変化</th><th style={th}>理由</th><th style={th}>AI 信頼度</th>
+            </tr></thead>
+            <tbody>
+              {adjustments.map((a) => {
+                const delta = Number(a.after_budget) - Number(a.before_budget);
+                return (
+                  <tr key={a.id}>
+                    <td style={td}>{a.applied_at ? new Date(a.applied_at).toLocaleString("ja-JP") : "—"}</td>
+                    <td style={td}>{fmtJPY(a.before_budget)}</td>
+                    <td style={td}>{fmtJPY(a.after_budget)}</td>
+                    <td style={{ ...td, color: delta >= 0 ? C.green : C.red, fontWeight: 800 }}>{delta >= 0 ? "+" : ""}{fmtJPY(delta)}</td>
+                    <td style={td}>{a.reason || "—"}</td>
+                    <td style={td}>{a.ai_confidence != null ? fmtPct(a.ai_confidence, 1) : "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── 6. LP A/B テスト ────────────────────────────────────
+  const renderLandings = () => {
+    if (landings.length === 0) return empty("LP 未登録。");
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>Variant</th><th style={th}>URL</th><th style={th}>Visits</th><th style={th}>Conversions</th><th style={th}>CVR</th><th style={th}>Active</th>
+          </tr></thead>
+          <tbody>
+            {landings.map((l) => (
+              <tr key={l.id}>
+                <td style={td}>{l.variant_name || "—"}</td>
+                <td style={{ ...td, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.url}</td>
+                <td style={td}>{fmtNum(l.visits)}</td>
+                <td style={td}>{fmtNum(l.conversions)}</td>
+                <td style={td}>{fmtPct(l.conversion_rate)}</td>
+                <td style={td}>{l.is_active ? "✅" : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // ── 7. 日次レポート ─────────────────────────────────────
+  const renderReports = () => {
+    if (reports.length === 0) return empty("日次レポートなし。");
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>日付</th><th style={th}>Spend</th><th style={th}>Revenue</th><th style={th}>ROAS</th><th style={th}>Mode</th><th style={th}>AI 推奨</th>
+          </tr></thead>
+          <tbody>
+            {reports.map((r) => (
+              <tr key={r.id}>
+                <td style={td}>{r.date}</td>
+                <td style={td}>{fmtJPY(r.total_spend)}</td>
+                <td style={td}>{fmtJPY(r.total_revenue)}</td>
+                <td style={{ ...td, fontWeight: 800 }}>{fmtRoas(r.total_roas)}</td>
+                <td style={td}>{r.current_mode || "—"}</td>
+                <td style={{ ...td, maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.ai_recommendations || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // ── 8. AI 戦略提案 ──────────────────────────────────────
+  const renderAiStrategy = () => {
+    const withRecs = reports.filter((r) => r.ai_recommendations);
+    if (withRecs.length === 0) return empty("AI 戦略提案はまだありません。");
+    return (
+      <div style={{ display: "grid", gap: 10 }}>
+        {withRecs.map((r) => (
+          <div key={r.id} style={card}>
+            <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 6 }}>{r.date} / mode: <b>{r.current_mode}</b> / ROAS: <b>{fmtRoas(r.total_roas)}</b></div>
+            <div style={{ fontSize: 13, color: C.dark, lineHeight: 1.7 }}>💡 {r.ai_recommendations}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // ── 9. 緊急 Kill Switch ─────────────────────────────────
+  const renderKillSwitch = () => {
+    const m = modeColor(budget?.mode);
+    const isPaused = budget?.mode === "paused";
+    return (
+      <div>
+        <div style={{ ...card, marginBottom: 14, background: isPaused ? C.redPale : C.white, border: `2px solid ${isPaused ? C.red : C.border}` }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🛑 緊急 Kill Switch</div>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+            異常検知時・規約違反疑い時・King 判断で全広告を即座に pause します。<br />
+            実行内容:<br />
+            ① <code>meta_monthly_budgets.mode = 'paused'</code> (当月)<br />
+            ② <code>meta_ad_sets.is_active = false</code> (全件)<br />
+            ③ <code>meta_creatives.is_active = false</code> (全件)<br />
+            <br />
+            ※ Meta 広告 API への反映は Phase 3 Edge Function 完成後に同期されます。
+          </div>
+          <div style={{ marginBottom: 16, padding: 12, background: m.bg, borderRadius: 10 }}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 4 }}>現在の mode</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: m.color }}>{m.label}</div>
+          </div>
+          <button
+            onClick={handleKillSwitch}
+            disabled={killBusy || isPaused}
+            style={{
+              width: "100%", padding: 14, background: isPaused ? C.warmGray : C.red, color: "#fff",
+              border: "none", borderRadius: 12, fontWeight: 900, fontSize: 14, cursor: (killBusy || isPaused) ? "not-allowed" : "pointer",
+              fontFamily: "inherit", opacity: (killBusy || isPaused) ? 0.6 : 1,
+            }}
+          >
+            {killBusy ? "実行中..." : isPaused ? "既に停止中" : "🛑 緊急 Kill Switch 実行"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ── タブ切替 ─────────────────────────────────────────────
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 6 }}>💰 Meta 広告 AI 完全自動運用</h2>
+      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16 }}>
+        Phase 1 DDL 8テーブル 完了 ✅ / Phase 3 Edge Function 10本 (6月着手予定) / 目標 ROAS 5x〜10x
+      </div>
+
+      {/* タブナビ */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16, borderBottom: `2px solid ${C.border}` }}>
+        {META_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: "10px 14px", background: tab === t.id ? C.orange : "transparent",
+              color: tab === t.id ? "#fff" : C.warmGray, border: "none",
+              borderRadius: "10px 10px 0 0", cursor: "pointer",
+              fontWeight: 700, fontSize: 12, fontFamily: "inherit",
+              borderBottom: tab === t.id ? `3px solid ${C.orange}` : "none",
+              marginBottom: -2,
+            }}
+          >
+            <span style={{ marginRight: 4 }}>{t.icon}</span>{t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ ...card, textAlign: "center", color: C.warmGray, padding: 32 }}>読み込み中…</div>
+      ) : (
+        <>
+          {tab === 0 && renderDashboard()}
+          {tab === 1 && renderCampaigns()}
+          {tab === 2 && renderCreatives()}
+          {tab === 3 && renderAbTests()}
+          {tab === 4 && renderAiGen()}
+          {tab === 5 && renderBudget()}
+          {tab === 6 && renderLandings()}
+          {tab === 7 && renderReports()}
+          {tab === 8 && renderAiStrategy()}
+          {tab === 9 && renderKillSwitch()}
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── メインアプリ ────────────────────────────────────────────────────────────
 const MENU = [
   { id: "dashboard", icon: "📊", label: "ダッシュボード" },
@@ -944,6 +1432,7 @@ const MENU = [
   { id: "reports", icon: "🚨", label: "通報管理" },
   { id: "sales", icon: "💰", label: "売上管理" },
   { id: "crowdfunding", icon: "🎁", label: "クラファン管理" },
+  { id: "meta-ads", icon: "💰", label: "Meta 広告" },
 ];
 
 export default function AdminDashboard() {
@@ -1091,6 +1580,7 @@ export default function AdminDashboard() {
         {page === "reports" && <ReportsPage />}
         {page === "sales" && <SalesPage />}
         {page === "crowdfunding" && <CrowdfundingPage />}
+        {page === "meta-ads" && <MetaAdsPage />}
       </div>
 
       <style>{`
