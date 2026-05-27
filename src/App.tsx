@@ -7244,6 +7244,24 @@ const MyPage = ({ setPage }) => {
                 </div>
                 <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
               </button>
+              {/* Phase Instagram (5/28 #25 Step 2): Instagram 連携ボタン */}
+              <button
+                onClick={() => navigate("/settings/instagram")}
+                style={{
+                  width:"100%", minHeight:44, padding:"14px 16px", marginTop:8,
+                  background:C.white, border:`1px solid ${C.border}`, borderRadius:14,
+                  display:"flex", alignItems:"center", gap:12,
+                  cursor:"pointer", fontFamily:"inherit", textAlign:"left",
+                  transition:"border-color 0.3s ease",
+                }}
+              >
+                <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}>📷</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>Instagram 連携</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>Qocca から Instagram に投稿できます (Business Account 必須)</div>
+                </div>
+                <span style={{ color:C.warmGray, fontSize:12 }}>→</span>
+              </button>
             </div>
 
             {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
@@ -11711,6 +11729,273 @@ const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => 
   );
 };
 
+// ── Instagram 連携ページ (5/28 #25 Step 2 UI 追加 / X・Threads と同パターン) ─
+// Edge Functions (instagram-init-oauth / instagram-oauth-callback / instagram-post / instagram-profile)
+// は別 commit でデプロイ予定。UI 側は同パターンで先に main 反映する。
+// Instagram Business Account 必須 (Personal は Graph API 非対応)。
+const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [connection, setConnection] = useState<any>(null);
+  const [postCaption, setPostCaption] = useState("");
+  const [postImageUrl, setPostImageUrl] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postResult, setPostResult] = useState<any>(null);
+  const [postError, setPostError] = useState<string>("");
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      const returnTo = encodeURIComponent("/settings/instagram");
+      navigate(`/login?returnTo=${returnTo}`, { replace: true });
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("instagram") === "connected") {
+      setShowSuccess(true);
+      window.history.replaceState(null, "", "/settings/instagram");
+    }
+  }, []);
+
+  // social_connections から platform='instagram' の連携情報を取得
+  // Edge Function instagram-profile が未deploy の場合は DB 直読みでフォールバック
+  const loadConnection = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setLoading(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/instagram-profile",
+        { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setConnection(data);
+      } else {
+        // Edge Function 未deploy のフォールバック: DB 直読み
+        const { data: row } = await supabase
+          .from("social_connections")
+          .select("platform_username, connected_at, token_expires_at")
+          .eq("user_id", user.id)
+          .eq("platform", "instagram")
+          .maybeSingle();
+        if (row) {
+          setConnection({
+            connected: true,
+            expired: row.token_expires_at ? new Date(row.token_expires_at) < new Date() : false,
+            platform_username: row.platform_username,
+            connected_at: row.connected_at,
+            token_expires_at: row.token_expires_at,
+          });
+        } else {
+          setConnection({ connected: false });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load Instagram profile:", e);
+      setConnection({ connected: false });
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { if (user?.id) loadConnection(); }, [user?.id]);
+
+  // OAuth 開始: Instagram は Meta 系で Threads と同じ "Qocca SNS Integration" App を流用想定
+  // Instagram Graph API は Facebook OAuth 経由 (Business Account のみ)
+  const startOAuth = () => {
+    if (!user?.id) return;
+    // ※ Meta App ID は Threads と同じものを共有 (Edge Function 側で scope 分岐)
+    const META_APP_ID = "1524294909111459"; // 公開情報 / "Qocca SNS Integration"
+    const REDIRECT_URI = "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/instagram-oauth-callback";
+    const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
+    url.searchParams.append("client_id", META_APP_ID);
+    url.searchParams.append("redirect_uri", REDIRECT_URI);
+    // Instagram Graph API に必要な scope (Business Account)
+    url.searchParams.append("scope", "instagram_basic,instagram_content_publish,pages_show_list,business_management");
+    url.searchParams.append("response_type", "code");
+    url.searchParams.append("state", user.id);
+    window.location.href = url.toString();
+  };
+
+  const handlePost = async () => {
+    if (!postCaption.trim()) { setPostError("キャプションを入力してください"); return; }
+    if (!postImageUrl.trim()) { setPostError("画像 URL は必須です (Instagram は画像なし投稿不可)"); return; }
+    setPosting(true); setPostError(""); setPostResult(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { setPostError("認証エラー"); setPosting(false); return; }
+    try {
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/instagram-post",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ caption: postCaption.trim(), image_url: postImageUrl.trim() }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPostResult(data); setPostCaption(""); setPostImageUrl("");
+      } else {
+        setPostError(data.message || data.error || "投稿に失敗しました (Edge Function 未deploy の可能性あり)");
+      }
+    } catch (e: any) {
+      setPostError(e?.message || "投稿エラー");
+    }
+    setPosting(false);
+  };
+
+  const handleDisconnect = async () => {
+    if (!user?.id) return;
+    if (!window.confirm("Instagram との連携を解除しますか?")) return;
+    setDisconnecting(true);
+    try {
+      await supabase.from("social_connections").delete().eq("user_id", user.id).eq("platform", "instagram");
+      setConnection({ connected: false });
+      setShowSuccess(false);
+    } catch (e) {
+      console.error("Failed to disconnect:", e);
+    }
+    setDisconnecting(false);
+  };
+
+  if (!user || loading) {
+    return (<div style={{ maxWidth: 600, margin: "0 auto", padding: 24, textAlign: "center", color: C.warmGray }}>読み込み中...</div>);
+  }
+
+  const isConnected = connection?.connected === true && !connection?.expired;
+  const isExpired = connection?.connected === true && connection?.expired;
+
+  // Instagram ブランドカラー (ピンク→オレンジ→パープルのグラデ)
+  const IG_GRADIENT = "linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%)";
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 0" }}>
+      <button onClick={() => navigate("/mypage")} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0", fontFamily: "inherit", minHeight: 40 }}>
+        ← マイページに戻る
+      </button>
+      <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginTop: 8, marginBottom: 8 }}>📷 Instagram 連携</h1>
+      <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+        Instagram と連携すると、Qocca から直接 Instagram に投稿できるようになります。<br/>連携はいつでも解除できます。
+      </p>
+
+      {/* Business Account 必須注意 */}
+      <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: C.dark, lineHeight: 1.7 }}>
+        ⚠️ <b>Instagram Business Account 必須</b><br/>
+        Personal アカウントでは Graph API 経由の投稿ができません。<br/>
+        Instagram アプリの「プロフェッショナルアカウントに切り替える」から Business 化してから連携してください。
+      </div>
+
+      {showSuccess && (
+        <div style={{ background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)", border: "1px solid #4CAF50", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: C.dark }}>
+          ✅ Instagram との連携が完了しました!
+        </div>
+      )}
+
+      {!isConnected && !isExpired && (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 60, marginBottom: 12 }}>📷</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 8 }}>まだ連携されていません</div>
+          <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 20, lineHeight: 1.7 }}>
+            「Instagram と連携」ボタンを押すと Meta の認証画面が開きます。<br/>Business Account でログインして承認してください。
+          </div>
+          <button onClick={startOAuth} style={{ padding: "14px 24px", background: IG_GRADIENT, color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", minHeight: 48, width: "100%", boxShadow: "0 2px 8px rgba(221,42,123,0.3)" }}>
+            📷 Instagram と連携する
+          </button>
+        </div>
+      )}
+
+      {isExpired && (
+        <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+          ⚠️ Instagram のトークンが期限切れです。再連携してください。
+          <button onClick={startOAuth} style={{ marginTop: 12, padding: "12px 20px", background: IG_GRADIENT, color: "#fff", border: "none", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "block", width: "100%", minHeight: 40 }}>
+            📷 再連携する
+          </button>
+        </div>
+      )}
+
+      {isConnected && (
+        <>
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: IG_GRADIENT, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, color: "#fff", flexShrink: 0 }}>
+                {connection.profile?.profile_picture_url ? (
+                  <img src={connection.profile.profile_picture_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : "📷"}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.dark }}>@{connection.platform_username || connection.profile?.username || "Instagram"}</div>
+                {connection.profile?.name && (<div style={{ fontSize: 12, color: C.warmGray }}>{connection.profile.name}</div>)}
+                {connection.profile?.account_type && (
+                  <div style={{ fontSize: 10, color: "#DD2A7B", fontWeight: 700, marginTop: 2 }}>{connection.profile.account_type}</div>
+                )}
+              </div>
+            </div>
+            {connection.profile?.biography && (
+              <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`, whiteSpace: "pre-wrap" }}>
+                {connection.profile.biography}
+              </div>
+            )}
+            {connection.insights && (
+              <div style={{ display: "flex", gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+                {Object.entries(connection.insights).map(([k, v]) => (
+                  <div key={k} style={{ flex: "1 1 60px", textAlign: "center", minWidth: 60 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#DD2A7B" }}>{String(v ?? "-")}</div>
+                    <div style={{ fontSize: 10, color: C.warmGray, marginTop: 2 }}>{k.replace(/_/g, " ")}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 12 }}>
+              連携日: {connection.connected_at ? new Date(connection.connected_at).toLocaleDateString("ja-JP") : "-"}
+              {connection.token_expires_at && (<> ・ トークン期限: {new Date(connection.token_expires_at).toLocaleDateString("ja-JP")}</>)}
+            </div>
+          </div>
+
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>📝 Instagram 投稿テスト</div>
+            <input type="url" value={postImageUrl} onChange={(e) => setPostImageUrl(e.target.value)} placeholder="画像 URL (必須・公開アクセス可能な JPG/PNG)" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }} />
+            <textarea value={postCaption} onChange={(e) => setPostCaption(e.target.value)} maxLength={2200} placeholder="キャプションを入力してください (最大2200文字)..." rows={4} style={{ width: "100%", padding: "10px 12px", marginTop: 8, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", resize: "vertical", minHeight: 100, boxSizing: "border-box", outline: "none" }} />
+            <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{postCaption.length} / 2200</div>
+            {postError && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "#FFEBEE", color: "#E57373", borderRadius: 8, fontSize: 13 }}>⚠️ {postError}</div>
+            )}
+            {postResult?.success && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "#E8F5E9", color: "#2E7D32", borderRadius: 8, fontSize: 13 }}>
+                ✅ 投稿成功! Media ID: {postResult.media_id || postResult.id}
+                {postResult.permalink && (<><br/><a href={postResult.permalink} target="_blank" rel="noopener" style={{ color: "#2E7D32", fontWeight: 700 }}>投稿を Instagram で見る →</a></>)}
+              </div>
+            )}
+            <button onClick={handlePost} disabled={posting || !postCaption.trim() || !postImageUrl.trim()} style={{ marginTop: 12, padding: "12px 24px", width: "100%", background: posting || !postCaption.trim() || !postImageUrl.trim() ? C.warmGray : IG_GRADIENT, color: "#fff", border: "none", borderRadius: 22, fontSize: 14, fontWeight: 800, cursor: posting || !postCaption.trim() || !postImageUrl.trim() ? "wait" : "pointer", fontFamily: "inherit", minHeight: 48 }}>
+              {posting ? "投稿中... (Instagram は 2段階フローで最大30秒)" : "📤 Instagram に投稿"}
+            </button>
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 8, lineHeight: 1.6 }}>
+              ℹ️ Instagram Graph API は 2段階フロー (media container 作成 → publish)<br/>
+              ℹ️ 画像なし投稿は不可。最低 1枚の画像必須。
+            </div>
+          </div>
+
+          <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>連携を解除</div>
+            <p style={{ fontSize: 12, color: C.warmGray, marginBottom: 14, lineHeight: 1.7 }}>
+              連携解除すると、Qocca から Instagram への投稿はできなくなります。<br/>いつでも再連携できます。
+            </p>
+            <button onClick={handleDisconnect} disabled={disconnecting} style={{ padding: "10px 20px", background: C.white, color: "#E57373", border: "1.5px solid #E57373", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: disconnecting ? "wait" : "pointer", fontFamily: "inherit", width: "100%", minHeight: 40 }}>
+              {disconnecting ? "解除中..." : "🔓 連携を解除する"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -12924,6 +13209,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* Phase Instagram (5/28 #25 Step 2): /settings/instagram — Instagram 連携 (PC) */}
+            <Route path="/settings/instagram" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <InstagramConnectionPage setPage={setPage}/>
+                </div>
+              </div>
+            }/>
             <Route path="/user/:userId" element={
             <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
               <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -13016,6 +13310,8 @@ function QoccaAppInner() {
             <Route path="/settings/x" element={<XConnectionPage setPage={setPage}/>}/>
             {/* Phase Threads (5/23, 案C 移植 5/27): /settings/threads — Threads 連携 (Mobile) */}
             <Route path="/settings/threads" element={<ThreadsConnectionPage setPage={setPage}/>}/>
+            {/* Phase Instagram (5/28 #25 Step 2): /settings/instagram — Instagram 連携 (Mobile) */}
+            <Route path="/settings/instagram" element={<InstagramConnectionPage setPage={setPage}/>}/>
             <Route path="/admin" element={<AdminDashboard/>}/>
             <Route path="/deletion-status" element={<DeletionStatusPage/>}/>
             <Route path="/help" element={<HelpPage/>}/>
