@@ -1423,6 +1423,677 @@ const MetaAdsPage = () => {
   );
 };
 
+// ── AI イベント収集 管理 (依頼書 #27 v2 Phase 3) ────────────────────────────
+// 8 tables: events 拡張 + event_sources / event_scrape_logs / event_dedup_hashes
+// Edge Function は 6/5 までに別 commit 予定 (Phase 2)
+// 著作権安全運用: official_url 必須 / AI 要約 100字以内 / 公式画像 collection しない
+// ────────────────────────────────────────────────────────────────────────────
+const EVENTS_AI_TABS = [
+  { id: 0, icon: "📊", label: "ダッシュボード" },
+  { id: 1, icon: "⏳", label: "承認待ち" },
+  { id: 2, icon: "🤖", label: "自動承認済" },
+  { id: 3, icon: "📅", label: "公開中" },
+  { id: 4, icon: "✍️", label: "手動追加" },
+  { id: 5, icon: "🌐", label: "情報源" },
+  { id: 6, icon: "📜", label: "収集ログ" },
+  { id: 7, icon: "🎚️", label: "AI 信頼度" },
+  { id: 8, icon: "🛑", label: "Kill Switch" },
+];
+
+// AI 信頼度の閾値 (LocalStorage 保存 / Phase 2 Edge Function でも参照)
+const DEFAULT_AI_THRESHOLDS = {
+  auto_approve: 0.70,   // ≧0.70 で auto_approved
+  pending: 0.50,        // 0.50-0.70 は pending (admin 確認)
+  reject: 0.50,         // <0.50 は rejected
+};
+
+const EVENT_CATEGORY_LABELS: Record<string, string> = {
+  adoption: "🐶 譲渡会",
+  expo: "🏛 展示会",
+  market: "🛍 マルシェ",
+  seminar: "🎓 セミナー",
+  training: "🐕‍🦺 しつけ",
+  cafe_event: "☕ カフェイベント",
+  shopping_dog_ok: "🛒 犬連れ商店街",
+  medical_check: "🩺 健康診断",
+  photo_session: "📷 撮影会",
+  fundraising: "🤝 チャリティ",
+  welfare: "🌱 福祉啓発",
+  other: "✨ その他",
+};
+
+const REGION_LABELS: Record<string, string> = {
+  hokkaido: "北海道", tohoku: "東北", kanto: "関東", chubu: "中部",
+  kinki: "近畿", chugoku: "中国", shikoku: "四国", kyushu: "九州", okinawa: "沖縄",
+  nationwide: "全国", online: "オンライン",
+};
+
+const EventsAiManagementPage = () => {
+  const [tab, setTab] = useState(0);
+  const [events, setEvents] = useState<any[]>([]);
+  const [sources, setSources] = useState<any[]>([]);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // AI 信頼度閾値 (LocalStorage)
+  const [thresholds, setThresholds] = useState(() => {
+    try {
+      const raw = localStorage.getItem("qocca_events_ai_thresholds");
+      return raw ? JSON.parse(raw) : DEFAULT_AI_THRESHOLDS;
+    } catch {
+      return DEFAULT_AI_THRESHOLDS;
+    }
+  });
+
+  // 手動追加フォーム
+  const [addForm, setAddForm] = useState({
+    title: "", description: "", event_date: "", event_time: "",
+    place: "", prefecture: "大阪府", city: "",
+    event_category: "adoption", region: "kinki",
+    official_url: "", fee: "無料",
+  });
+
+  // 新規 source フォーム
+  const [sourceForm, setSourceForm] = useState({
+    name: "", url: "", source_type: "aggregator",
+    prefecture: "", city: "", scrape_frequency: "weekly",
+  });
+
+  const loadAll = async () => {
+    setLoading(true);
+    const [evRes, srcRes, logRes] = await Promise.all([
+      supabase.from("events").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("event_sources").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("event_scrape_logs").select("*, event_sources(name, url)").order("scraped_at", { ascending: false }).limit(50),
+    ]);
+    setEvents(evRes.data || []);
+    setSources(srcRes.data || []);
+    setLogs(logRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, []);
+
+  // === 分析データ ===
+  const counts = {
+    total:       events.length,
+    pending:     events.filter(e => e.approval_status === "pending").length,
+    auto:        events.filter(e => e.approval_status === "auto_approved").length,
+    manual:      events.filter(e => e.approval_status === "manual_approved").length,
+    rejected:    events.filter(e => e.approval_status === "rejected").length,
+    expired:     events.filter(e => e.approval_status === "expired").length,
+  };
+  const published = events.filter(e =>
+    e.approval_status === "auto_approved" || e.approval_status === "manual_approved"
+  );
+
+  // カテゴリ別 / 都道府県別分布
+  const byCategory = published.reduce((acc, e) => {
+    const k = e.event_category || "other";
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const byPrefecture = published.reduce((acc, e) => {
+    const k = e.prefecture || "未指定";
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // === Actions ===
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkApprove = async () => {
+    if (selectedIds.size === 0) return alert("対象を選択してください");
+    if (!confirm(`${selectedIds.size}件を一括承認 (manual_approved) しますか?`)) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("events")
+      .update({ approval_status: "manual_approved", status: "approved" })
+      .in("id", Array.from(selectedIds));
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    setSelectedIds(new Set());
+    loadAll();
+  };
+
+  const bulkReject = async () => {
+    if (selectedIds.size === 0) return alert("対象を選択してください");
+    if (!confirm(`${selectedIds.size}件を一括却下 (rejected) しますか?`)) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("events")
+      .update({ approval_status: "rejected", status: "rejected" })
+      .in("id", Array.from(selectedIds));
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    setSelectedIds(new Set());
+    loadAll();
+  };
+
+  const individualUpdate = async (id: string, newStatus: string) => {
+    setBusy(true);
+    await supabase
+      .from("events")
+      .update({ approval_status: newStatus, status: newStatus === "rejected" ? "rejected" : newStatus === "expired" ? "ended" : "approved" })
+      .eq("id", id);
+    setBusy(false);
+    loadAll();
+  };
+
+  const handleManualAdd = async () => {
+    if (!addForm.title || !addForm.event_date || !addForm.place) {
+      return alert("タイトル / 日時 / 場所は必須です");
+    }
+    setBusy(true);
+    const { error } = await supabase.from("events").insert({
+      title: addForm.title,
+      description: addForm.description || "",
+      event_date: addForm.event_date,
+      event_time: addForm.event_time,
+      place: addForm.place,
+      prefecture: addForm.prefecture,
+      city: addForm.city,
+      event_category: addForm.event_category,
+      region: addForm.region,
+      official_url: addForm.official_url,
+      fee: addForm.fee,
+      status: "approved",
+      approval_status: "manual_approved",
+      source_type: "admin_manual",
+    });
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    alert("✅ イベント追加完了");
+    setAddForm({ ...addForm, title: "", description: "", event_date: "", event_time: "", place: "", official_url: "" });
+    loadAll();
+  };
+
+  const handleAddSource = async () => {
+    if (!sourceForm.name || !sourceForm.url) return alert("名前と URL は必須です");
+    setBusy(true);
+    const { error } = await supabase.from("event_sources").insert(sourceForm);
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    setSourceForm({ name: "", url: "", source_type: "aggregator", prefecture: "", city: "", scrape_frequency: "weekly" });
+    loadAll();
+  };
+
+  const toggleSourceActive = async (id: string, isActive: boolean) => {
+    setBusy(true);
+    await supabase.from("event_sources").update({ is_active: !isActive }).eq("id", id);
+    setBusy(false);
+    loadAll();
+  };
+
+  const saveThresholds = () => {
+    try {
+      localStorage.setItem("qocca_events_ai_thresholds", JSON.stringify(thresholds));
+      alert("✅ AI 信頼度閾値を保存しました\n(Phase 2 Edge Function で参照されます)");
+    } catch (e: any) {
+      alert("エラー: " + e?.message);
+    }
+  };
+
+  const handleKillSwitch = async () => {
+    if (!confirm("⚠️ AI イベント収集の Kill Switch を実行しますか?\n\n全 event_sources を is_active=false にして、AI 自動収集を停止します。\n再開は「情報源管理」タブで個別に is_active=true に戻してください。")) return;
+    setBusy(true);
+    const { error } = await supabase.from("event_sources").update({ is_active: false }).eq("is_active", true);
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    alert("✅ Kill Switch 実行完了\n全 event_sources を停止しました。");
+    loadAll();
+  };
+
+  // === 共通スタイル ===
+  const card: React.CSSProperties = { background: C.white, borderRadius: 16, padding: 20, border: `1px solid ${C.border}` };
+  const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", fontSize: 11, color: C.warmGray, fontWeight: 700, borderBottom: `1px solid ${C.border}`, background: C.cream };
+  const td: React.CSSProperties = { padding: "10px", fontSize: 12, color: C.dark, borderBottom: `1px solid ${C.border}`, verticalAlign: "top" };
+  const empty = (text: string) => (
+    <div style={{ ...card, textAlign: "center", color: C.warmGray, fontSize: 13, padding: 32 }}>
+      {text}
+      <div style={{ fontSize: 11, marginTop: 8, color: C.warmGray }}>※ Phase 2 Edge Function (6/5 予定) 稼働後にデータが入ります</div>
+    </div>
+  );
+
+  const statusBadgeFor = (s: string) => {
+    const map: Record<string, { color: string; bg: string; label: string }> = {
+      pending:         { color: "#F57C00", bg: "#FFF3E0", label: "承認待ち" },
+      auto_approved:   { color: C.blue,    bg: C.bluePale, label: "自動承認" },
+      manual_approved: { color: C.green,   bg: C.greenPale, label: "手動承認" },
+      rejected:        { color: C.red,     bg: C.redPale, label: "却下" },
+      expired:         { color: C.warmGray, bg: C.cream, label: "終了" },
+    };
+    const sm = map[s] || { color: C.warmGray, bg: C.cream, label: s };
+    return <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: sm.bg, color: sm.color, fontWeight: 700 }}>{sm.label}</span>;
+  };
+
+  // === 0. ダッシュボード ===
+  const renderDashboard = () => (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 14 }}>
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>📅 全イベント</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: C.dark }}>{counts.total}</div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>⏳ 承認待ち</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#F57C00" }}>{counts.pending}</div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>🤖 自動承認</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: C.blue }}>{counts.auto}</div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>✅ 手動承認</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: C.green }}>{counts.manual}</div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div style={card}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 10 }}>🏷 カテゴリ別分布 (公開中)</div>
+          {Object.keys(byCategory).length === 0 ? (
+            <div style={{ fontSize: 12, color: C.warmGray, textAlign: "center", padding: 20 }}>データなし</div>
+          ) : (
+            Object.entries(byCategory).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 12, color: C.dark }}>{EVENT_CATEGORY_LABELS[k] || k}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: C.orange }}>{v}</span>
+              </div>
+            ))
+          )}
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 10 }}>🗾 都道府県別分布 (公開中)</div>
+          {Object.keys(byPrefecture).length === 0 ? (
+            <div style={{ fontSize: 12, color: C.warmGray, textAlign: "center", padding: 20 }}>データなし</div>
+          ) : (
+            Object.entries(byPrefecture).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 12, color: C.dark }}>{k}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: C.orange }}>{v}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div style={card}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 10 }}>📈 状態サマリ</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, fontSize: 12 }}>
+          <div><div style={{ color: C.warmGray, fontSize: 10 }}>承認待ち</div><b>{counts.pending}</b></div>
+          <div><div style={{ color: C.warmGray, fontSize: 10 }}>自動承認</div><b>{counts.auto}</b></div>
+          <div><div style={{ color: C.warmGray, fontSize: 10 }}>手動承認</div><b>{counts.manual}</b></div>
+          <div><div style={{ color: C.warmGray, fontSize: 10 }}>却下</div><b>{counts.rejected}</b></div>
+          <div><div style={{ color: C.warmGray, fontSize: 10 }}>終了</div><b>{counts.expired}</b></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // === Events テーブル汎用レンダー (承認待ち/自動承認/公開中 共通) ===
+  const renderEventsTable = (rows: any[], showCheckbox: boolean, actions: (e: any) => React.ReactNode) => {
+    if (rows.length === 0) return empty("該当イベントなし");
+    return (
+      <div style={card}>
+        {showCheckbox && (
+          <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "center" }}>
+            <span style={{ fontSize: 12, color: C.warmGray }}>{selectedIds.size}件選択中</span>
+            <button onClick={bulkApprove} disabled={busy || selectedIds.size === 0} style={{ padding: "8px 14px", background: selectedIds.size === 0 ? C.warmGray : C.green, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: selectedIds.size === 0 ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+              一括承認
+            </button>
+            <button onClick={bulkReject} disabled={busy || selectedIds.size === 0} style={{ padding: "8px 14px", background: selectedIds.size === 0 ? C.warmGray : C.red, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: selectedIds.size === 0 ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+              一括却下
+            </button>
+          </div>
+        )}
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            {showCheckbox && <th style={th}></th>}
+            <th style={th}>タイトル</th>
+            <th style={th}>日付</th>
+            <th style={th}>場所</th>
+            <th style={th}>カテゴリ</th>
+            <th style={th}>状態</th>
+            <th style={th}>AI</th>
+            <th style={th}>操作</th>
+          </tr></thead>
+          <tbody>
+            {rows.map((e) => (
+              <tr key={e.id}>
+                {showCheckbox && (
+                  <td style={td}>
+                    <input type="checkbox" checked={selectedIds.has(e.id)} onChange={() => toggleSelect(e.id)} />
+                  </td>
+                )}
+                <td style={{ ...td, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div style={{ fontWeight: 700 }}>{e.title}</div>
+                  {e.official_url && (
+                    <a href={e.official_url} target="_blank" rel="noopener" style={{ fontSize: 10, color: C.blue, textDecoration: "underline" }}>公式 →</a>
+                  )}
+                </td>
+                <td style={td}>{e.event_date}{e.event_time && <div style={{ fontSize: 10, color: C.warmGray }}>{e.event_time}</div>}</td>
+                <td style={{ ...td, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.prefecture}{e.city ? ` ${e.city}` : ""}<div style={{ fontSize: 10, color: C.warmGray }}>{e.place}</div></td>
+                <td style={td}>{EVENT_CATEGORY_LABELS[e.event_category] || e.event_category || "—"}</td>
+                <td style={td}>{statusBadgeFor(e.approval_status)}</td>
+                <td style={td}>{e.ai_confidence != null ? `${(Number(e.ai_confidence) * 100).toFixed(0)}%` : "—"}</td>
+                <td style={td}>{actions(e)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // === 1. 承認待ち ===
+  const renderPending = () => {
+    const rows = events.filter(e => e.approval_status === "pending");
+    return renderEventsTable(rows, true, (e) => (
+      <div style={{ display: "flex", gap: 4 }}>
+        <button onClick={() => individualUpdate(e.id, "manual_approved")} disabled={busy} style={{ padding: "4px 8px", background: C.green, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>承認</button>
+        <button onClick={() => individualUpdate(e.id, "rejected")} disabled={busy} style={{ padding: "4px 8px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>却下</button>
+      </div>
+    ));
+  };
+
+  // === 2. 自動承認済み (監視) ===
+  const renderAuto = () => {
+    const rows = events.filter(e => e.approval_status === "auto_approved");
+    return renderEventsTable(rows, false, (e) => (
+      <div style={{ display: "flex", gap: 4 }}>
+        <button onClick={() => individualUpdate(e.id, "manual_approved")} disabled={busy} style={{ padding: "4px 8px", background: C.green, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>確認OK</button>
+        <button onClick={() => individualUpdate(e.id, "rejected")} disabled={busy} style={{ padding: "4px 8px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>取り下げ</button>
+      </div>
+    ));
+  };
+
+  // === 3. 公開中 ===
+  const renderPublished = () => {
+    return renderEventsTable(published, false, (e) => (
+      <button onClick={() => individualUpdate(e.id, "expired")} disabled={busy} style={{ padding: "4px 8px", background: C.warmGray, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>終了化</button>
+    ));
+  };
+
+  // === 4. 手動追加 ===
+  const renderManualAdd = () => {
+    const field = (label: string, key: keyof typeof addForm, type: string = "text", placeholder = "") => (
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontSize: 11, color: C.warmGray, fontWeight: 700, display: "block", marginBottom: 4 }}>{label}</label>
+        <input
+          type={type}
+          value={addForm[key] as string}
+          onChange={(e) => setAddForm({ ...addForm, [key]: e.target.value })}
+          placeholder={placeholder}
+          style={{ width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }}
+        />
+      </div>
+    );
+    return (
+      <div style={card}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 12 }}>✍️ 新規イベント手動追加 (即時 manual_approved 公開)</div>
+        {field("タイトル*", "title", "text", "例: 春の保護犬譲渡会 in 大阪")}
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 11, color: C.warmGray, fontWeight: 700, display: "block", marginBottom: 4 }}>説明 (任意 / 100字以内推奨)</label>
+          <textarea value={addForm.description} onChange={(e) => setAddForm({ ...addForm, description: e.target.value })} rows={3} maxLength={300}
+            style={{ width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" }}/>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {field("開催日*", "event_date", "date")}
+          {field("時刻 (任意)", "event_time", "text", "例: 10:00-15:00")}
+        </div>
+        {field("場所*", "place", "text", "例: 大阪城公園")}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {field("都道府県", "prefecture", "text")}
+          {field("市区町村 (任意)", "city", "text")}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ fontSize: 11, color: C.warmGray, fontWeight: 700, display: "block", marginBottom: 4 }}>カテゴリ</label>
+            <select value={addForm.event_category} onChange={(e) => setAddForm({ ...addForm, event_category: e.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.white, boxSizing: "border-box" }}>
+              {Object.entries(EVENT_CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ fontSize: 11, color: C.warmGray, fontWeight: 700, display: "block", marginBottom: 4 }}>地方</label>
+            <select value={addForm.region} onChange={(e) => setAddForm({ ...addForm, region: e.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.white, boxSizing: "border-box" }}>
+              {Object.entries(REGION_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+        </div>
+        {field("公式 URL (詳細へ誘導)", "official_url", "url", "https://...")}
+        {field("料金", "fee", "text", "例: 無料 / 1,000円")}
+        <button onClick={handleManualAdd} disabled={busy} style={{ marginTop: 10, padding: 12, width: "100%", background: busy ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 14, cursor: busy ? "wait" : "pointer", fontFamily: "inherit" }}>
+          {busy ? "追加中…" : "✅ 追加 (即時公開)"}
+        </button>
+      </div>
+    );
+  };
+
+  // === 5. 情報源管理 ===
+  const renderSources = () => (
+    <div>
+      <div style={{ ...card, marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🌐 新規 情報源 登録</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <input value={sourceForm.name} onChange={(e) => setSourceForm({ ...sourceForm, name: e.target.value })} placeholder="名前 (例: 大阪府公式観光協会)"
+            style={{ padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit" }}/>
+          <input value={sourceForm.url} onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })} placeholder="URL"
+            style={{ padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit" }}/>
+          <select value={sourceForm.source_type} onChange={(e) => setSourceForm({ ...sourceForm, source_type: e.target.value })}
+            style={{ padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.white }}>
+            <option value="prefecture_official">都道府県公式</option>
+            <option value="city_official">市町村公式</option>
+            <option value="npo">NPO</option>
+            <option value="pet_shop">ペットショップ</option>
+            <option value="cafe">動物カフェ</option>
+            <option value="vet">動物病院</option>
+            <option value="aggregator">アグリゲータ</option>
+            <option value="social">SNS</option>
+            <option value="rss">RSS</option>
+          </select>
+          <select value={sourceForm.scrape_frequency} onChange={(e) => setSourceForm({ ...sourceForm, scrape_frequency: e.target.value })}
+            style={{ padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.white }}>
+            <option value="daily">毎日</option>
+            <option value="weekly">毎週</option>
+            <option value="monthly">毎月</option>
+          </select>
+          <input value={sourceForm.prefecture} onChange={(e) => setSourceForm({ ...sourceForm, prefecture: e.target.value })} placeholder="都道府県 (任意)"
+            style={{ padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit" }}/>
+          <input value={sourceForm.city} onChange={(e) => setSourceForm({ ...sourceForm, city: e.target.value })} placeholder="市区町村 (任意)"
+            style={{ padding: 10, borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit" }}/>
+        </div>
+        <button onClick={handleAddSource} disabled={busy} style={{ marginTop: 10, padding: 10, width: "100%", background: busy ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: busy ? "wait" : "pointer", fontFamily: "inherit" }}>
+          ＋ 情報源を追加
+        </button>
+      </div>
+
+      {sources.length === 0 ? empty("情報源 未登録 (Phase 2 で AI 自動発見予定)") : (
+        <div style={card}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={th}>名前</th><th style={th}>種類</th><th style={th}>地域</th>
+              <th style={th}>頻度</th><th style={th}>収集</th><th style={th}>成功率</th><th style={th}>状態</th>
+            </tr></thead>
+            <tbody>
+              {sources.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ ...td, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <a href={s.url} target="_blank" rel="noopener" style={{ color: C.dark, fontWeight: 700, textDecoration: "none" }}>{s.name}</a>
+                  </td>
+                  <td style={td}>{s.source_type}</td>
+                  <td style={td}>{s.prefecture || "—"}{s.city ? ` / ${s.city}` : ""}</td>
+                  <td style={td}>{s.scrape_frequency}</td>
+                  <td style={td}>{s.events_collected || 0}件</td>
+                  <td style={td}>{s.success_rate != null ? `${(Number(s.success_rate) * 100).toFixed(0)}%` : "—"}</td>
+                  <td style={td}>
+                    <button onClick={() => toggleSourceActive(s.id, s.is_active)} style={{ padding: "4px 10px", background: s.is_active ? C.green : C.warmGray, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      {s.is_active ? "✅ 稼働中" : "⏸ 停止中"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  // === 6. 収集ログ ===
+  const renderLogs = () => {
+    if (logs.length === 0) return empty("収集ログなし");
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>日時</th><th style={th}>情報源</th>
+            <th style={th}>発見</th><th style={th}>新規</th><th style={th}>重複</th>
+            <th style={th}>コスト</th><th style={th}>エラー</th>
+          </tr></thead>
+          <tbody>
+            {logs.map((l) => (
+              <tr key={l.id}>
+                <td style={td}>{l.scraped_at ? new Date(l.scraped_at).toLocaleString("ja-JP") : "—"}</td>
+                <td style={{ ...td, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.event_sources?.name || "—"}</td>
+                <td style={td}>{l.events_found ?? 0}</td>
+                <td style={{ ...td, color: C.green, fontWeight: 700 }}>{l.events_new ?? 0}</td>
+                <td style={td}>{l.events_duplicate ?? 0}</td>
+                <td style={td}>${Number(l.ai_cost_usd || 0).toFixed(4)}</td>
+                <td style={{ ...td, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: l.errors ? C.red : C.warmGray }}>{l.errors || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // === 7. AI 信頼度調整 ===
+  const renderThresholds = () => (
+    <div style={card}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🎚️ AI 信頼度 閾値調整</div>
+      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+        Phase 2 Edge Function (event-scraper) で参照される閾値。<br />
+        AI が出した信頼度 (ai_confidence 0.00-1.00) に応じて自動分岐:
+      </div>
+      <div style={{ display: "grid", gap: 14 }}>
+        <div>
+          <label style={{ fontSize: 12, color: C.dark, fontWeight: 700, display: "block", marginBottom: 6 }}>
+            🟢 auto_approved 閾値: <b>{(thresholds.auto_approve * 100).toFixed(0)}%</b> 以上で自動公開
+          </label>
+          <input type="range" min="0.50" max="1.00" step="0.05"
+            value={thresholds.auto_approve}
+            onChange={(e) => setThresholds({ ...thresholds, auto_approve: Number(e.target.value) })}
+            style={{ width: "100%" }}/>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, color: C.dark, fontWeight: 700, display: "block", marginBottom: 6 }}>
+            🟡 pending 閾値: <b>{(thresholds.pending * 100).toFixed(0)}%</b> 以上で admin 確認待ち (それ未満は rejected)
+          </label>
+          <input type="range" min="0.30" max="0.80" step="0.05"
+            value={thresholds.pending}
+            onChange={(e) => setThresholds({ ...thresholds, pending: Number(e.target.value) })}
+            style={{ width: "100%" }}/>
+        </div>
+        <div style={{ padding: 12, background: C.cream, borderRadius: 10, fontSize: 12, color: C.dark, lineHeight: 1.7 }}>
+          <b>動作イメージ:</b><br />
+          • AI 信頼度 ≥ {(thresholds.auto_approve * 100).toFixed(0)}% → 🟢 auto_approved (即公開)<br />
+          • {(thresholds.pending * 100).toFixed(0)}% ≤ AI 信頼度 &lt; {(thresholds.auto_approve * 100).toFixed(0)}% → 🟡 pending (admin 確認)<br />
+          • AI 信頼度 &lt; {(thresholds.pending * 100).toFixed(0)}% → 🔴 rejected
+        </div>
+        <button onClick={saveThresholds} style={{ padding: 12, background: C.orange, color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+          💾 閾値を保存 (LocalStorage / Phase 2 で同期予定)
+        </button>
+      </div>
+    </div>
+  );
+
+  // === 8. Kill Switch ===
+  const renderKill = () => {
+    const activeSources = sources.filter(s => s.is_active).length;
+    return (
+      <div style={{ ...card, border: `2px solid ${C.red}` }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🛑 緊急 Kill Switch — AI イベント収集</div>
+        <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+          実行内容:<br />
+          ① <code>event_sources.is_active = false</code> (全件 / 現在 {activeSources}件稼働中)<br />
+          ② AI 自動収集 cron は次回起動時に空振り (no source = no scrape)<br />
+          <br />
+          ※ Phase 2 Edge Function 未deploy の現状では実害なし (preventive control)
+        </div>
+        <button
+          onClick={handleKillSwitch}
+          disabled={busy || activeSources === 0}
+          style={{
+            width: "100%", padding: 14, background: activeSources === 0 ? C.warmGray : C.red, color: "#fff",
+            border: "none", borderRadius: 12, fontWeight: 900, fontSize: 14,
+            cursor: (busy || activeSources === 0) ? "not-allowed" : "pointer", fontFamily: "inherit",
+            opacity: (busy || activeSources === 0) ? 0.6 : 1,
+          }}
+        >
+          {busy ? "実行中..." : activeSources === 0 ? "既に全停止中" : `🛑 Kill Switch (${activeSources}件停止)`}
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 6 }}>📅 AI イベント収集 管理</h2>
+      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16 }}>
+        全国小規模動物イベント自動収集 (依頼書 #27 v2) / Phase 1 DDL ✅ / Phase 2 Edge Function 6/5 予定
+      </div>
+
+      {/* タブナビ */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16, borderBottom: `2px solid ${C.border}` }}>
+        {EVENTS_AI_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: "10px 14px", background: tab === t.id ? C.orange : "transparent",
+              color: tab === t.id ? "#fff" : C.warmGray, border: "none",
+              borderRadius: "10px 10px 0 0", cursor: "pointer",
+              fontWeight: 700, fontSize: 12, fontFamily: "inherit",
+              borderBottom: tab === t.id ? `3px solid ${C.orange}` : "none",
+              marginBottom: -2,
+            }}
+          >
+            <span style={{ marginRight: 4 }}>{t.icon}</span>{t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ ...card, textAlign: "center", color: C.warmGray, padding: 32 }}>読み込み中…</div>
+      ) : (
+        <>
+          {tab === 0 && renderDashboard()}
+          {tab === 1 && renderPending()}
+          {tab === 2 && renderAuto()}
+          {tab === 3 && renderPublished()}
+          {tab === 4 && renderManualAdd()}
+          {tab === 5 && renderSources()}
+          {tab === 6 && renderLogs()}
+          {tab === 7 && renderThresholds()}
+          {tab === 8 && renderKill()}
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── メインアプリ ────────────────────────────────────────────────────────────
 const MENU = [
   { id: "dashboard", icon: "📊", label: "ダッシュボード" },
@@ -1433,6 +2104,7 @@ const MENU = [
   { id: "sales", icon: "💰", label: "売上管理" },
   { id: "crowdfunding", icon: "🎁", label: "クラファン管理" },
   { id: "meta-ads", icon: "💰", label: "Meta 広告" },
+  { id: "events-ai", icon: "📅", label: "AI イベント収集" },
 ];
 
 export default function AdminDashboard() {
@@ -1581,6 +2253,7 @@ export default function AdminDashboard() {
         {page === "sales" && <SalesPage />}
         {page === "crowdfunding" && <CrowdfundingPage />}
         {page === "meta-ads" && <MetaAdsPage />}
+        {page === "events-ai" && <EventsAiManagementPage />}
       </div>
 
       <style>{`
