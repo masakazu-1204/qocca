@@ -10874,13 +10874,111 @@ const GalleryPage = ({ setPage, isPC }) => {
   const [commentOpen, setCommentOpen] = useState(false);
 const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
 
+  // 依頼書 #30: Instagram ライクグリッド + 検索バー
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [petTypeFilter, setPetTypeFilter] = useState<string[]>([]);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  // 画面幅で列数判定 (3 / 4 / 5 / 6)
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const gridColumns = viewportWidth >= 1440 ? 6 : viewportWidth >= 1024 ? 5 : viewportWidth >= 640 ? 4 : 3;
+
+  // localStorage から検索履歴ロード
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("qocca_gallery_search_history");
+      if (raw) setSearchHistory(JSON.parse(raw).slice(0, 8));
+    } catch (_) {}
+  }, []);
+
+  // デバウンス 300ms
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const pushHistory = (q: string) => {
+    if (!q) return;
+    setSearchHistory(prev => {
+      const next = [q, ...prev.filter(x => x !== q)].slice(0, 8);
+      try { localStorage.setItem("qocca_gallery_search_history", JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+  };
+
+  // 依頼書 #30: search_gallery RPC を活用 (検索クエリ or pet_type フィルタある時)
+  const runRpcSearch = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.rpc("search_gallery", {
+      query_text: searchQuery || null,
+      filter_pet_type: petTypeFilter.length > 0 ? petTypeFilter : null,
+      sort_mode: "newest",
+      result_limit: 200,
+    });
+    if (!error && data) {
+      const userIds = [...new Set(data.map((p: any) => p.user_id).filter(Boolean))];
+      const { data: profiles } = userIds.length > 0
+        ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds)
+        : { data: [] };
+      const profMap: any = {};
+      (profiles || []).forEach((p: any) => { profMap[p.id] = p; });
+
+      const petIds = [...new Set(data.filter((p: any) => p.pet_id).map((p: any) => p.pet_id))];
+      let petMap: any = {};
+      if (petIds.length > 0) {
+        const { data: pets } = await supabase.from("pets").select("id, name, species").in("id", petIds);
+        (pets || []).forEach((p: any) => { petMap[p.id] = p; });
+      }
+
+      setPosts(data.map((p: any) => ({
+        ...p,
+        userName: profMap[p.user_id]?.display_name || "ユーザー",
+        userAvatar: profMap[p.user_id]?.avatar_url || "",
+        petName: petMap[p.pet_id]?.name || "",
+        petSpecies: petMap[p.pet_id]?.species || "",
+      })));
+      if (searchQuery) pushHistory(searchQuery);
+    }
+    if (user) {
+      const { data: likes } = await supabase.from("gallery_likes").select("post_id").eq("user_id", user.id);
+      const likeMap: any = {};
+      (likes || []).forEach((l: any) => { likeMap[l.post_id] = true; });
+      setLikedPosts(likeMap);
+    }
+    setLoading(false);
+  };
+
+  // フィルタ・検索 state 変動時に検索 / 何も無ければ通常 fetch
+  useEffect(() => {
+    if (searchQuery || petTypeFilter.length > 0) {
+      runRpcSearch();
+    } else {
+      fetchPosts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, petTypeFilter.join(",")]);
+
+  // pet_type のユニーク値を抽出 (chip 表示用)
+  const petTypes = Array.from(new Set(posts.map((p: any) => p.pet_type).filter(Boolean))).sort() as string[];
+
+  const togglePetType = (t: string) => {
+    setPetTypeFilter(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  };
+
   const fetchPosts = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("gallery_posts")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
     if (!error && data) {
       const userIds = [...new Set(data.map(p => p.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds);
@@ -10911,8 +11009,6 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     }
     setLoading(false);
   };
-
-  useEffect(() => { fetchPosts(); }, []);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -10958,7 +11054,12 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     }
   };
 
-  const gridCols = isPC ? "repeat(3, 1fr)" : "repeat(2, 1fr)";
+  // 依頼書 #30: 大判タイル判定 (display_priority>0 || 7投稿に1回パターン or top-liked)
+  const isBigTile = (post: any, index: number) => {
+    if (post.display_priority && post.display_priority > 0) return true;
+    // 0番目と7番目 (index % 7 === 0 で index !== 0) を大判に / トップは大判で目を引く
+    return index === 0 || (index > 0 && index % 7 === 0);
+  };
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
@@ -10967,7 +11068,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
             <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>🐾 うちの子ギャラリー</h1>
-            <p style={{ fontSize:12, color:C.warmGray }}>みんなの「うちの子」自慢を見てみよう</p>
+            <p style={{ fontSize:12, color:C.warmGray }}>街の住民の景色がぎっしり集まる場所</p>
           </div>
           {user && (
             <button onClick={()=>setShowUpload(true)} style={{
@@ -10976,6 +11077,89 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             }}>📸 投稿する</button>
           )}
         </div>
+
+        {/* 依頼書 #30 Phase 2: 検索バー */}
+        <div style={{ marginTop:12, position:"relative" }}>
+          <div style={{
+            display:"flex", alignItems:"center", gap:8,
+            padding:"10px 14px", background:C.cream, borderRadius:14,
+            border:`1.5px solid ${searchInput ? C.orange : C.border}`,
+            transition:"border-color 0.2s"
+          }}>
+            <span style={{ fontSize:16, color:C.warmGray, flexShrink:0 }}>🔍</span>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onFocus={() => setShowHistory(true)}
+              onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+              placeholder={'うちの子・キャプション・種類で検索...'}
+              style={{
+                flex:1, border:"none", outline:"none", background:"transparent",
+                fontSize:14, fontFamily:"inherit", color:C.dark, minWidth:0
+              }}
+            />
+            {searchInput && (
+              <button
+                onClick={() => { setSearchInput(""); setSearchQuery(""); }}
+                style={{ background:"none", border:"none", cursor:"pointer", color:C.warmGray, fontSize:16, padding:"0 4px", lineHeight:1, fontFamily:"inherit" }}
+                aria-label="クリア"
+              >✕</button>
+            )}
+          </div>
+
+          {/* 検索履歴 dropdown */}
+          {showHistory && !searchInput && searchHistory.length > 0 && (
+            <div style={{
+              position:"absolute", top:"100%", left:0, right:0, marginTop:6,
+              background:C.white, borderRadius:12, border:`1px solid ${C.border}`,
+              boxShadow:"0 4px 16px rgba(0,0,0,0.08)", zIndex:50,
+              padding:"6px 0", maxHeight:240, overflowY:"auto"
+            }}>
+              <div style={{ padding:"4px 14px", fontSize:11, color:C.warmGray, fontWeight:700 }}>最近の検索</div>
+              {searchHistory.map((h) => (
+                <button
+                  key={h}
+                  onMouseDown={(e) => { e.preventDefault(); setSearchInput(h); }}
+                  style={{ width:"100%", padding:"8px 14px", background:"transparent", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, color:C.dark, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = C.cream)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ color:C.warmGray, fontSize:12 }}>🕐</span><span>{h}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 依頼書 #30 Phase 2: pet_type フィルタ chip */}
+        {petTypes.length > 0 && (
+          <div style={{ marginTop:10, display:"flex", gap:6, overflowX:"auto", paddingBottom:2 }}>
+            <button
+              onClick={() => setPetTypeFilter([])}
+              style={{
+                flexShrink:0, padding:"5px 12px", borderRadius:16,
+                background: petTypeFilter.length === 0 ? C.orange : C.white,
+                color: petTypeFilter.length === 0 ? "#fff" : C.warmGray,
+                border:`1.5px solid ${petTypeFilter.length === 0 ? C.orange : C.border}`,
+                fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap"
+              }}
+            >すべて</button>
+            {petTypes.map((t) => (
+              <button
+                key={t}
+                onClick={() => togglePetType(t)}
+                style={{
+                  flexShrink:0, padding:"5px 12px", borderRadius:16,
+                  background: petTypeFilter.includes(t) ? C.orange : C.white,
+                  color: petTypeFilter.includes(t) ? "#fff" : C.warmGray,
+                  border:`1.5px solid ${petTypeFilter.includes(t) ? C.orange : C.border}`,
+                  fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap"
+                }}
+              >{t}</button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 投稿モーダル */}
@@ -11041,34 +11225,135 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             )}
           </div>
         ) : (
-          <div style={{ display:"grid", gridTemplateColumns:gridCols, gap:12 }}>
-            {posts.map(post => (
-              <div key={post.id} style={{ background:C.white, borderRadius:16, overflow:"hidden", border:`1px solid ${C.border}`, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
-                <div style={{ width:"100%", aspectRatio:"1", overflow:"hidden" }}>
-                  <img src={post.image_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-                </div>
-                <div style={{ padding:"10px 12px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-                    <div style={{ width:24, height:24, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, overflow:"hidden", flexShrink:0 }}>
-                      {post.userAvatar ? <img src={post.userAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+          /* 依頼書 #30: Instagram ライクグリッド (3/4/5/6 cols + 2x2 大判) */
+          <div style={{
+            display:"grid",
+            gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
+            gap: gridColumns <= 3 ? 2 : gridColumns === 4 ? 3 : 4,
+            gridAutoFlow: "dense",
+          }}>
+            {posts.map((post, index) => {
+              const big = isBigTile(post, index);
+              return (
+                <button
+                  key={post.id}
+                  onClick={() => setSelectedPost(post)}
+                  style={{
+                    position:"relative",
+                    aspectRatio:"1",
+                    gridColumn: big ? "span 2" : undefined,
+                    gridRow: big ? "span 2" : undefined,
+                    background:C.cream, border:"none", padding:0, cursor:"pointer",
+                    overflow:"hidden", borderRadius: 2,
+                    fontFamily:"inherit", display:"block",
+                  }}
+                  aria-label={`${post.userName || "投稿"} - ${post.petName || ""}`}
+                  onMouseEnter={(e) => {
+                    const overlay = e.currentTarget.querySelector("[data-overlay]") as HTMLElement | null;
+                    if (overlay) overlay.style.opacity = "1";
+                  }}
+                  onMouseLeave={(e) => {
+                    const overlay = e.currentTarget.querySelector("[data-overlay]") as HTMLElement | null;
+                    if (overlay) overlay.style.opacity = "0";
+                  }}
+                >
+                  <img
+                    src={post.image_url} alt=""
+                    style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+                  />
+                  {/* ホバーで lighten + メタ情報 */}
+                  <div
+                    data-overlay
+                    style={{
+                      position:"absolute", inset:0,
+                      background:"linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(245,169,74,0.75) 100%)",
+                      opacity:0, transition:"opacity 0.2s",
+                      display:"flex", flexDirection:"column", justifyContent:"flex-end",
+                      padding: big ? "12px 14px" : "8px 10px", color:"#fff",
+                      textAlign:"left", pointerEvents:"none",
+                    }}
+                  >
+                    {post.petName && (
+                      <div style={{ fontSize: big ? 14 : 11, fontWeight:800, marginBottom:2, textShadow:"0 1px 2px rgba(0,0,0,0.3)" }}>
+                        🐾 {post.petName}
+                      </div>
+                    )}
+                    <div style={{ fontSize: big ? 12 : 10, opacity:0.95, display:"flex", alignItems:"center", gap:6 }}>
+                      <span>❤️ {post.likes_count || 0}</span>
+                      {post.pet_type && <span style={{ opacity:0.85 }}>· {post.pet_type}</span>}
                     </div>
-                    <span style={{ fontSize:11, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{post.userName}</span>
-                    {post.petName && <span style={{ fontSize:10, color:C.warmGray }}>· {post.petName}</span>}
                   </div>
-                  {post.caption && <div style={{ fontSize:12, color:"#555", lineHeight:1.5, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.caption}</div>}
-                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                    <button onClick={()=>toggleLike(post.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0 }}>
-                      {likedPosts[post.id] ? "❤️" : "🤍"}
-                    </button>
-                    <span style={{ fontSize:11, color:C.warmGray }}>{post.likes_count || 0}</span>
-                    <button onClick={()=>{ setCommentTarget({ type:"gallery", id: post.id, ownerId: post.user_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, padding:0, marginLeft:12 }}>
-            💬
-          </button>
-          <span style={{ fontSize:11, color:C.warmGray }}>コメント</span>
+                  {/* 大判タイルには「特集」リボン */}
+                  {big && (post.display_priority && post.display_priority > 0) && (
+                    <div style={{
+                      position:"absolute", top:8, left:8,
+                      background:C.orange, color:"#fff", fontSize:10, fontWeight:800,
+                      padding:"3px 8px", borderRadius:8, boxShadow:"0 1px 4px rgba(0,0,0,0.2)"
+                    }}>✨ 特集</div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 依頼書 #30: 投稿詳細モーダル (画像クリック時) */}
+        {selectedPost && (
+          <div
+            onClick={() => setSelectedPost(null)}
+            style={{
+              position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:400,
+              display:"flex", alignItems:"center", justifyContent:"center", padding:16,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background:C.white, borderRadius:20, maxWidth:540, width:"100%",
+                maxHeight:"92vh", overflow:"auto", boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
+              }}
+            >
+              <div style={{ position:"relative" }}>
+                <img src={selectedPost.image_url} alt="" style={{ width:"100%", display:"block", maxHeight:"60vh", objectFit:"contain", background:"#000" }}/>
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  style={{
+                    position:"absolute", top:12, right:12,
+                    width:36, height:36, borderRadius:"50%",
+                    background:"rgba(0,0,0,0.6)", color:"#fff", border:"none",
+                    fontSize:18, cursor:"pointer", fontFamily:"inherit",
+                  }}
+                  aria-label="閉じる"
+                >✕</button>
+              </div>
+              <div style={{ padding:"16px 20px 20px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                  <div style={{ width:36, height:36, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexShrink:0 }}>
+                    {selectedPost.userAvatar ? <img src={selectedPost.userAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:16 }}>🐾</span>}
                   </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{selectedPost.userName}</div>
+                    {selectedPost.petName && <div style={{ fontSize:11, color:C.warmGray }}>🐾 {selectedPost.petName}{selectedPost.pet_type ? ` · ${selectedPost.pet_type}` : ""}</div>}
+                  </div>
+                </div>
+                {selectedPost.caption && (
+                  <div style={{ fontSize:13, color:"#444", lineHeight:1.7, marginBottom:14, whiteSpace:"pre-wrap" }}>
+                    {selectedPost.caption}
+                  </div>
+                )}
+                <div style={{ display:"flex", alignItems:"center", gap:14, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+                  <button
+                    onClick={() => { toggleLike(selectedPost.id); setSelectedPost({ ...selectedPost, likes_count: (selectedPost.likes_count || 0) + (likedPosts[selectedPost.id] ? -1 : 1) }); }}
+                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, padding:0, lineHeight:1 }}
+                  >{likedPosts[selectedPost.id] ? "❤️" : "🤍"}</button>
+                  <span style={{ fontSize:13, color:C.warmGray }}>{selectedPost.likes_count || 0} いいね</span>
+                  <button
+                    onClick={() => { setCommentTarget({ type:"gallery", id: selectedPost.id, ownerId: selectedPost.user_id }); setCommentOpen(true); setSelectedPost(null); }}
+                    style={{ marginLeft:"auto", padding:"8px 14px", background:C.cream, border:`1px solid ${C.border}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.dark, cursor:"pointer", fontFamily:"inherit" }}
+                  >💬 コメントを見る</button>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         )}
         {commentTarget && (
