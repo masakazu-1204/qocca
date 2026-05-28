@@ -10916,14 +10916,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   const [showHistory, setShowHistory] = useState(false);
   const [petTypeFilter, setPetTypeFilter] = useState<string[]>([]);
   const [selectedPost, setSelectedPost] = useState<any>(null);
-  // 画面幅で列数判定 (3 / 4 / 5 / 6)
-  const [viewportWidth, setViewportWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  const gridColumns = viewportWidth >= 1440 ? 6 : viewportWidth >= 1024 ? 5 : viewportWidth >= 640 ? 4 : 3;
+  // 依頼書 #34 緊急修正: viewportWidth JS 計算を撤去し CSS @media に切替
+  // 理由: PWA / CSR 初期 render / iOS Safari standalone 等で window.innerWidth
+  //      ベース判定が反映されないケースを完全回避するため、ブラウザネイティブ
+  //      の @media query で直接判定する (CSS は SSR/CSR/PWA 全環境で確実動作)
+  // 大判タイル判定は index のみに依存 (display_priority + 7投稿に1回)
 
   // localStorage から検索履歴ロード
   useEffect(() => {
@@ -11260,13 +11257,37 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             )}
           </div>
         ) : (
-          /* 依頼書 #30: Instagram ライクグリッド (3/4/5/6 cols + 2x2 大判) */
-          <div style={{
-            display:"grid",
-            gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
-            gap: gridColumns <= 3 ? 2 : gridColumns === 4 ? 3 : 4,
-            gridAutoFlow: "dense",
-          }}>
+          /* 依頼書 #30 + #34: Instagram ライクグリッド (CSS @media による確実なレスポンシブ)
+             モバイル <640px = 3列 / タブレット 640-1023 = 4列 /
+             PC 1024-1439 = 5列 / 超ワイド 1440+ = 6列 */
+          <>
+            <style>{`
+              .qocca-gallery-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2px;
+                grid-auto-flow: dense;
+              }
+              @media (min-width: 640px) {
+                .qocca-gallery-grid {
+                  grid-template-columns: repeat(4, 1fr);
+                  gap: 3px;
+                }
+              }
+              @media (min-width: 1024px) {
+                .qocca-gallery-grid {
+                  grid-template-columns: repeat(5, 1fr);
+                  gap: 4px;
+                }
+              }
+              @media (min-width: 1440px) {
+                .qocca-gallery-grid {
+                  grid-template-columns: repeat(6, 1fr);
+                  gap: 4px;
+                }
+              }
+            `}</style>
+            <div className="qocca-gallery-grid">
             {posts.map((post, index) => {
               const big = isBigTile(post, index);
               return (
@@ -11329,7 +11350,8 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 </button>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
 
         {/* 依頼書 #30: 投稿詳細モーダル (画像クリック時) */}
