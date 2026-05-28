@@ -2094,6 +2094,393 @@ const EventsAiManagementPage = () => {
   );
 };
 
+// ── 🌌 Qocca メタエージェント 管理 (依頼書 #31 / 憲法 v1.0) ─────────────────
+// 7専門 Agent + meta_agent 自身 = 8体制を一元管理
+// Phase 1 DDL ✅ / Phase 3 UI ✅ / Phase 2 Edge Function = 8月稼働予定
+// ────────────────────────────────────────────────────────────────────────────
+const META_AGENT_TABS = [
+  { id: 0, icon: "📊", label: "ダッシュボード" },
+  { id: 1, icon: "🤖", label: "個別 Agent" },
+  { id: 2, icon: "✉️", label: "メッセージ" },
+  { id: 3, icon: "🔔", label: "通知" },
+  { id: 4, icon: "💴", label: "コスト管理" },
+  { id: 5, icon: "🛑", label: "Kill Switch" },
+];
+
+const AGENT_LABELS: Record<string, { icon: string; jp: string }> = {
+  events_collection: { icon: "📅", jp: "イベント収集" },
+  facility_info:     { icon: "🏢", jp: "施設情報" },
+  x_post:            { icon: "🐦", jp: "X 投稿" },
+  threads_post:      { icon: "🧵", jp: "Threads 投稿" },
+  instagram_post:    { icon: "📷", jp: "Instagram 投稿" },
+  blog_seo:          { icon: "📰", jp: "ブログ SEO" },
+  meta_ads:          { icon: "💰", jp: "Meta 広告" },
+  meta_agent:        { icon: "🌌", jp: "メタエージェント" },
+};
+
+const SEVERITY_STYLE = (s: string) => {
+  switch (s) {
+    case "critical": return { color: C.red, bg: C.redPale, label: "🚨 緊急" };
+    case "error":    return { color: C.red, bg: C.redPale, label: "❌ エラー" };
+    case "warning":  return { color: "#F57C00", bg: "#FFF3E0", label: "⚠️ 警告" };
+    case "info":     return { color: C.blue, bg: C.bluePale, label: "ℹ️ 情報" };
+    default:         return { color: C.warmGray, bg: C.cream, label: s };
+  }
+};
+
+const STATUS_STYLE = (s: string) => {
+  switch (s) {
+    case "healthy": return { color: C.green, bg: C.greenPale, label: "✅ 正常" };
+    case "warning": return { color: "#F57C00", bg: "#FFF3E0", label: "⚠️ 警告" };
+    case "error":   return { color: C.red, bg: C.redPale, label: "❌ エラー" };
+    case "paused":  return { color: C.warmGray, bg: C.cream, label: "⏸ 停止" };
+    default:        return { color: C.warmGray, bg: C.cream, label: s };
+  }
+};
+
+const MetaAgentManagementPage = () => {
+  const [tab, setTab] = useState(0);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const loadAll = async () => {
+    setLoading(true);
+    const [agRes, msgRes, ntRes] = await Promise.all([
+      supabase.from("meta_agent_state").select("*").order("agent_name", { ascending: true }),
+      supabase.from("meta_agent_messages").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("meta_agent_notifications").select("*").order("created_at", { ascending: false }).limit(50),
+    ]);
+    setAgents(agRes.data || []);
+    setMessages(msgRes.data || []);
+    setNotifications(ntRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, []);
+
+  // === Actions ===
+  const markNotificationRead = async (id: string) => {
+    setBusy(true);
+    await supabase.from("meta_agent_notifications").update({ read: true, read_at: new Date().toISOString() }).eq("id", id);
+    setBusy(false);
+    loadAll();
+  };
+
+  const pauseAgent = async (agentName: string, newStatus: string) => {
+    if (!confirm(`${AGENT_LABELS[agentName]?.jp || agentName} を ${newStatus === "paused" ? "停止" : "再開"} しますか?`)) return;
+    setBusy(true);
+    await supabase.from("meta_agent_state").update({
+      agent_status: newStatus,
+      updated_at: new Date().toISOString(),
+    }).eq("agent_name", agentName);
+    setBusy(false);
+    loadAll();
+  };
+
+  const killAllAgents = async () => {
+    if (!confirm("⚠️ 🛑 Kill Switch — 全 Agent を一斉停止します。\n\nmeta_agent_state.agent_status を全件 'paused' に更新します。\n各 Agent の固有 kill_switch (x_post_settings 等) は別途必要です。\n\n本当に実行しますか?")) return;
+    setBusy(true);
+    const { error } = await supabase.from("meta_agent_state")
+      .update({ agent_status: "paused", updated_at: new Date().toISOString() })
+      .neq("agent_status", "paused");
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    alert("✅ 全 Agent 停止完了 (meta_agent_state レベル)");
+    loadAll();
+  };
+
+  // === スタイル ===
+  const card: React.CSSProperties = { background: C.white, borderRadius: 16, padding: 20, border: `1px solid ${C.border}` };
+  const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", fontSize: 11, color: C.warmGray, fontWeight: 700, borderBottom: `1px solid ${C.border}`, background: C.cream };
+  const td: React.CSSProperties = { padding: "10px", fontSize: 12, color: C.dark, borderBottom: `1px solid ${C.border}` };
+
+  // === 0. ダッシュボード ===
+  const renderDashboard = () => {
+    const healthyCount = agents.filter(a => a.agent_status === "healthy").length;
+    const warningCount = agents.filter(a => a.agent_status === "warning").length;
+    const errorCount = agents.filter(a => a.agent_status === "error").length;
+    const pausedCount = agents.filter(a => a.agent_status === "paused").length;
+    const totalCostToday = agents.reduce((s, a) => s + Number(a.cost_today || 0), 0);
+    const totalCostMonth = agents.reduce((s, a) => s + Number(a.cost_month || 0), 0);
+    const unreadCount = notifications.filter(n => !n.read).length;
+    return (
+      <div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 14 }}>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>✅ 正常稼働</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: C.green }}>{healthyCount}<span style={{ fontSize: 12, color: C.warmGray, fontWeight: 500 }}> / {agents.length}</span></div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>⚠️ 警告</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: "#F57C00" }}>{warningCount}</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>❌ エラー</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: C.red }}>{errorCount}</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>⏸ 停止中</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: C.warmGray }}>{pausedCount}</div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>💴 AI コスト (今日)</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.dark }}>${totalCostToday.toFixed(4)}</div>
+            <div style={{ fontSize: 10, color: C.warmGray, marginTop: 4 }}>≈ ¥{Math.round(totalCostToday * 150)}</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>📅 AI コスト (月)</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.dark }}>${totalCostMonth.toFixed(4)}</div>
+            <div style={{ fontSize: 10, color: C.warmGray, marginTop: 4 }}>≈ ¥{Math.round(totalCostMonth * 150)} / 上限 ¥1,000</div>
+          </div>
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>🔔 未読通知</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: unreadCount > 0 ? C.orange : C.warmGray }}>{unreadCount}</div>
+          </div>
+        </div>
+
+        <div style={card}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🤖 8 Agent 稼働状態サマリ</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
+            {agents.map((a) => {
+              const meta = AGENT_LABELS[a.agent_name] || { icon: "🤖", jp: a.agent_name };
+              const st = STATUS_STYLE(a.agent_status);
+              return (
+                <div key={a.id} style={{ padding: 12, border: `1px solid ${C.border}`, borderRadius: 12, background: C.cream }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: C.dark }}>{meta.icon} {meta.jp}</div>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: st.bg, color: st.color, fontWeight: 700 }}>{st.label}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: C.warmGray, lineHeight: 1.6 }}>
+                    {a.metrics?.description || "(説明なし)"}
+                    {a.last_run_at && <><br/>最終稼働: {new Date(a.last_run_at).toLocaleString("ja-JP")}</>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // === 1. 個別 Agent ===
+  const renderAgents = () => (
+    <div style={card}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead><tr>
+          <th style={th}>Agent</th><th style={th}>状態</th><th style={th}>最終稼働</th>
+          <th style={th}>最終成功</th><th style={th}>今日 $</th><th style={th}>今月 $</th>
+          <th style={th}>最終エラー</th><th style={th}>操作</th>
+        </tr></thead>
+        <tbody>
+          {agents.map((a) => {
+            const meta = AGENT_LABELS[a.agent_name] || { icon: "🤖", jp: a.agent_name };
+            const st = STATUS_STYLE(a.agent_status);
+            return (
+              <tr key={a.id}>
+                <td style={td}><b>{meta.icon} {meta.jp}</b><div style={{ fontSize: 10, color: C.warmGray }}>{a.agent_name}</div></td>
+                <td style={td}><span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: st.bg, color: st.color, fontWeight: 700 }}>{st.label}</span></td>
+                <td style={td}>{a.last_run_at ? new Date(a.last_run_at).toLocaleString("ja-JP") : "—"}</td>
+                <td style={td}>{a.last_success_at ? new Date(a.last_success_at).toLocaleString("ja-JP") : "—"}</td>
+                <td style={td}>${Number(a.cost_today || 0).toFixed(4)}</td>
+                <td style={td}>${Number(a.cost_month || 0).toFixed(4)}</td>
+                <td style={{ ...td, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: a.last_error ? C.red : C.warmGray }}>
+                  {a.last_error || "—"}
+                </td>
+                <td style={td}>
+                  {a.agent_status === "paused" ? (
+                    <button onClick={() => pauseAgent(a.agent_name, "healthy")} disabled={busy} style={{ padding: "4px 8px", background: C.green, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>▶ 再開</button>
+                  ) : (
+                    <button onClick={() => pauseAgent(a.agent_name, "paused")} disabled={busy} style={{ padding: "4px 8px", background: C.warmGray, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>⏸ 停止</button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // === 2. メッセージング ===
+  const renderMessages = () => {
+    if (messages.length === 0) return (
+      <div style={{ ...card, textAlign: "center", color: C.warmGray, fontSize: 13, padding: 32 }}>
+        メッセージなし
+        <div style={{ fontSize: 11, marginTop: 8 }}>※ Phase 2 Edge Function (meta-agent-dispatcher / 8月稼働) で生成されます</div>
+      </div>
+    );
+    return (
+      <div style={card}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr>
+            <th style={th}>日時</th><th style={th}>from</th><th style={th}>to</th>
+            <th style={th}>種別</th><th style={th}>優先度</th><th style={th}>処理</th>
+          </tr></thead>
+          <tbody>
+            {messages.map((m) => (
+              <tr key={m.id}>
+                <td style={td}>{m.created_at ? new Date(m.created_at).toLocaleString("ja-JP") : "—"}</td>
+                <td style={td}>{AGENT_LABELS[m.from_agent]?.icon || ""}{m.from_agent || "—"}</td>
+                <td style={td}>{AGENT_LABELS[m.to_agent]?.icon || ""}{m.to_agent || "—"}</td>
+                <td style={td}>{m.message_type || "—"}</td>
+                <td style={td}>{m.priority || "—"}</td>
+                <td style={td}>{m.processed ? "✅" : "⏳"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // === 3. 通知 ===
+  const renderNotifications = () => {
+    if (notifications.length === 0) return (
+      <div style={{ ...card, textAlign: "center", color: C.warmGray, fontSize: 13, padding: 32 }}>
+        通知なし
+        <div style={{ fontSize: 11, marginTop: 8 }}>※ Phase 2 Edge Function (meta-agent-monitor / 8月稼働) で生成されます</div>
+      </div>
+    );
+    return (
+      <div style={{ display: "grid", gap: 8 }}>
+        {notifications.map((n) => {
+          const sev = SEVERITY_STYLE(n.severity);
+          return (
+            <div key={n.id} style={{ ...card, padding: 14, opacity: n.read ? 0.6 : 1, borderLeft: `4px solid ${sev.color}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: sev.color }}>{sev.label} · {AGENT_LABELS[n.agent_name]?.icon}{AGENT_LABELS[n.agent_name]?.jp || n.agent_name}</span>
+                <span style={{ fontSize: 10, color: C.warmGray }}>{n.created_at ? new Date(n.created_at).toLocaleString("ja-JP") : ""}</span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 4 }}>{n.title || "(タイトルなし)"}</div>
+              {n.body && <div style={{ fontSize: 12, color: "#555", lineHeight: 1.6, marginBottom: 6 }}>{n.body}</div>}
+              {!n.read && (
+                <button onClick={() => markNotificationRead(n.id)} disabled={busy} style={{ padding: "4px 10px", background: C.cream, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: C.dark, cursor: "pointer", fontFamily: "inherit" }}>既読にする</button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // === 4. コスト管理 ===
+  const renderCost = () => (
+    <div style={card}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>💴 AI コスト 一元管理</div>
+      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+        メタエージェント月予算上限: <b>¥1,000</b> (依頼書 #31 規定)<br />
+        各 Agent の AI コストを集計表示。Phase 2 Edge Function 稼働後に更新。
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead><tr>
+          <th style={th}>Agent</th><th style={th}>今日 $</th><th style={th}>今日 ¥</th>
+          <th style={th}>今月 $</th><th style={th}>今月 ¥</th>
+        </tr></thead>
+        <tbody>
+          {agents.map((a) => {
+            const meta = AGENT_LABELS[a.agent_name] || { icon: "🤖", jp: a.agent_name };
+            return (
+              <tr key={a.id}>
+                <td style={td}>{meta.icon} {meta.jp}</td>
+                <td style={td}>${Number(a.cost_today || 0).toFixed(4)}</td>
+                <td style={td}>¥{Math.round(Number(a.cost_today || 0) * 150)}</td>
+                <td style={td}>${Number(a.cost_month || 0).toFixed(4)}</td>
+                <td style={td}>¥{Math.round(Number(a.cost_month || 0) * 150)}</td>
+              </tr>
+            );
+          })}
+          <tr style={{ background: C.cream }}>
+            <td style={{ ...td, fontWeight: 800 }}>合計</td>
+            <td style={{ ...td, fontWeight: 800 }}>${agents.reduce((s, a) => s + Number(a.cost_today || 0), 0).toFixed(4)}</td>
+            <td style={{ ...td, fontWeight: 800 }}>¥{Math.round(agents.reduce((s, a) => s + Number(a.cost_today || 0), 0) * 150)}</td>
+            <td style={{ ...td, fontWeight: 800 }}>${agents.reduce((s, a) => s + Number(a.cost_month || 0), 0).toFixed(4)}</td>
+            <td style={{ ...td, fontWeight: 800 }}>¥{Math.round(agents.reduce((s, a) => s + Number(a.cost_month || 0), 0) * 150)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // === 5. Kill Switch ===
+  const renderKillSwitch = () => {
+    const nonPausedCount = agents.filter(a => a.agent_status !== "paused").length;
+    return (
+      <div style={{ ...card, border: `2px solid ${C.red}` }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🛑 緊急 Kill Switch — 全 Agent 一斉停止</div>
+        <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16, lineHeight: 1.7 }}>
+          実行内容:<br />
+          ① <code>meta_agent_state.agent_status = 'paused'</code> (全件 / 現在 {nonPausedCount}件 稼働中)<br />
+          ② Phase 2 Edge Function (meta-agent-dispatcher) が status='paused' を見て一斉停止<br />
+          <br />
+          ※ 各 Agent の固有 Kill Switch (x_post_settings / threads_post_settings 等) は別途必要。<br />
+          ※ Phase 2 Edge Function 未deploy のため preventive control (8月以降本格動作)。
+        </div>
+        <button
+          onClick={killAllAgents}
+          disabled={busy || nonPausedCount === 0}
+          style={{
+            width: "100%", padding: 14, background: nonPausedCount === 0 ? C.warmGray : C.red, color: "#fff",
+            border: "none", borderRadius: 12, fontWeight: 900, fontSize: 14,
+            cursor: (busy || nonPausedCount === 0) ? "not-allowed" : "pointer", fontFamily: "inherit",
+            opacity: (busy || nonPausedCount === 0) ? 0.6 : 1,
+          }}
+        >
+          {busy ? "実行中..." : nonPausedCount === 0 ? "既に全停止中" : `🛑 全 Agent 停止 (${nonPausedCount}件 → paused)`}
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 6 }}>🌌 Qocca メタエージェント 管理</h2>
+      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 16 }}>
+        AI エージェントチーム憲法 v1.0 準拠 / 8 Agent 一元監視 / Phase 1 DDL ✅ + Phase 3 UI ✅ / Phase 2 Edge Function = 8月稼働
+      </div>
+
+      {/* タブナビ */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16, borderBottom: `2px solid ${C.border}` }}>
+        {META_AGENT_TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: "10px 14px", background: tab === t.id ? C.orange : "transparent",
+              color: tab === t.id ? "#fff" : C.warmGray, border: "none",
+              borderRadius: "10px 10px 0 0", cursor: "pointer",
+              fontWeight: 700, fontSize: 12, fontFamily: "inherit",
+              borderBottom: tab === t.id ? `3px solid ${C.orange}` : "none",
+              marginBottom: -2,
+            }}
+          >
+            <span style={{ marginRight: 4 }}>{t.icon}</span>{t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ ...card, textAlign: "center", color: C.warmGray, padding: 32 }}>読み込み中…</div>
+      ) : (
+        <>
+          {tab === 0 && renderDashboard()}
+          {tab === 1 && renderAgents()}
+          {tab === 2 && renderMessages()}
+          {tab === 3 && renderNotifications()}
+          {tab === 4 && renderCost()}
+          {tab === 5 && renderKillSwitch()}
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── メインアプリ ────────────────────────────────────────────────────────────
 const MENU = [
   { id: "dashboard", icon: "📊", label: "ダッシュボード" },
@@ -2105,6 +2492,7 @@ const MENU = [
   { id: "crowdfunding", icon: "🎁", label: "クラファン管理" },
   { id: "meta-ads", icon: "💰", label: "Meta 広告" },
   { id: "events-ai", icon: "📅", label: "AI イベント収集" },
+  { id: "meta-agent", icon: "🌌", label: "エージェントチーム" },
 ];
 
 export default function AdminDashboard() {
@@ -2254,6 +2642,7 @@ export default function AdminDashboard() {
         {page === "crowdfunding" && <CrowdfundingPage />}
         {page === "meta-ads" && <MetaAdsPage />}
         {page === "events-ai" && <EventsAiManagementPage />}
+        {page === "meta-agent" && <MetaAgentManagementPage />}
       </div>
 
       <style>{`
