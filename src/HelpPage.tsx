@@ -832,7 +832,11 @@ const CampfireFaqGuide: React.FC = () => {
           そしてただ静かに見守ってくださる方も、<br/>
           私たちはみなさん一人ひとりに心から感謝しています。
         </p>
-        <p style={{ fontSize: 14, color: C.dark, fontWeight: 800, marginTop: 18, marginBottom: 0, lineHeight: 1.8 }}>
+        {/* 依頼書 #33 / マーケ・ブランド戦略書 v1.0 §1: 英語メインスローガン */}
+        <p style={{ fontFamily: "Georgia, serif", fontSize: 18, fontStyle: "italic", color: C.dark, marginTop: 18, marginBottom: 6, letterSpacing: "0.04em" }}>
+          Live with pets.
+        </p>
+        <p style={{ fontSize: 14, color: C.dark, fontWeight: 800, marginTop: 0, marginBottom: 0, lineHeight: 1.8, opacity: 0.88 }}>
           想いを形にして、ふたりをつなぐ。<br/>
           Qocca、はじまります。
         </p>

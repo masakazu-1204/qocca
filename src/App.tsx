@@ -1781,23 +1781,58 @@ const SectionHero = () => {
         )}
       </div>
 
-      {/* 右上ロゴ (フェードイン 0.5s遅延 + 2s) */}
+      {/* 右上ロゴ + ブランドスローガン (フェードイン 0.5s遅延 + 2s)
+          依頼書 #33 / マーケ・ブランド戦略書 v1.0 §1:
+            英語メイン (ロゴ下): Live with pets.
+            日本語サブ: 動物を飼ったら、当たり前に入れる街。
+      */}
       <div style={{
         position: "absolute",
         top: 32,
         right: 32,
-        fontFamily: QC_FONT_EN,
-        fontSize: 20,
-        color: QC.warmWhite,
+        textAlign: "right",
         opacity: 0,
-        letterSpacing: 0.8,
         zIndex: 20,
-        fontWeight: 300,
-        fontStyle: "italic",
-        textShadow: "0 1px 6px rgba(44, 41, 38, 0.4)",
         animation: "qocca-fadeInSlow 2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards",
       }}>
-        Qocca
+        <div style={{
+          fontFamily: QC_FONT_EN,
+          fontSize: 20,
+          color: QC.warmWhite,
+          letterSpacing: 0.8,
+          fontWeight: 300,
+          fontStyle: "italic",
+          textShadow: "0 1px 6px rgba(44, 41, 38, 0.4)",
+          lineHeight: 1,
+        }}>
+          Qocca
+        </div>
+        <div style={{
+          fontFamily: QC_FONT_EN,
+          fontSize: 13,
+          color: QC.warmWhite,
+          letterSpacing: "0.12em",
+          fontWeight: 300,
+          opacity: 0.82,
+          marginTop: 4,
+          textShadow: "0 1px 6px rgba(44, 41, 38, 0.4)",
+          lineHeight: 1,
+        }}>
+          Live with pets.
+        </div>
+        <div style={{
+          fontFamily: QC_FONT_JP,
+          fontSize: 10,
+          color: QC.warmWhite,
+          letterSpacing: "0.08em",
+          fontWeight: 300,
+          opacity: 0.6,
+          marginTop: 6,
+          textShadow: "0 1px 4px rgba(44, 41, 38, 0.4)",
+          lineHeight: 1.3,
+        }}>
+          動物を飼ったら、<br/>当たり前に入れる街。
+        </div>
       </div>
 
       {/* 下中央スクロール誘導 (呼吸4秒) */}

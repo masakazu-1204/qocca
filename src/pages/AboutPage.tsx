@@ -75,15 +75,32 @@ export default function AboutPage() {
           }}
         />
         <div style={badgeLabel}>ABOUT QOCCA</div>
+        {/* 依頼書 #33 / マーケ・ブランド戦略書 v1.0 §1: 英語メインスローガン */}
+        <h2
+          style={{
+            fontFamily: "Georgia, serif",
+            fontSize: 36,
+            fontWeight: 400,
+            fontStyle: "italic",
+            lineHeight: 1.3,
+            margin: 0,
+            marginBottom: 12,
+            color: TEXT_DARK,
+            letterSpacing: "0.04em",
+          }}
+        >
+          Live with pets.
+        </h2>
         <h1
           style={{
             fontFamily: "Georgia, serif",
-            fontSize: 32,
+            fontSize: 24,
             fontWeight: 400,
-            lineHeight: 1.4,
+            lineHeight: 1.5,
             margin: 0,
             marginBottom: 16,
             color: TEXT_DARK,
+            opacity: 0.85,
           }}
         >
           想いを形にして、
@@ -602,13 +619,27 @@ export default function AboutPage() {
             display: "block",
           }}
         />
+        {/* 依頼書 #33 / マーケ・ブランド戦略書 v1.0 §1: 英語メインスローガン */}
         <p
           style={{
             fontFamily: "Georgia, serif",
-            fontSize: 20,
+            fontSize: 24,
+            fontStyle: "italic",
+            color: TEXT_DARK,
+            margin: "0 0 8px",
+            letterSpacing: "0.04em",
+          }}
+        >
+          Live with pets.
+        </p>
+        <p
+          style={{
+            fontFamily: "Georgia, serif",
+            fontSize: 18,
             fontStyle: "italic",
             color: TEXT_DARK,
             margin: "0 0 24px",
+            opacity: 0.85,
           }}
         >
           想いを形にして、ふたりをつなぐ。

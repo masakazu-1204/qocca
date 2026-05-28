@@ -81,6 +81,21 @@ export default function AboutSection() {
               borderTop: `1px solid ${BORDER_WARM}`,
             }}
           >
+            {/* 依頼書 #33 / マーケ・ブランド戦略書 v1.0 §1: 英語メインスローガン */}
+            <p
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: 22,
+                fontStyle: "italic",
+                color: TEXT_DARK,
+                margin: 0,
+                marginBottom: 12,
+                letterSpacing: "0.04em",
+                lineHeight: 1.4,
+              }}
+            >
+              Live with pets.
+            </p>
             <p
               style={{
                 fontFamily: "Georgia, serif",
@@ -91,6 +106,7 @@ export default function AboutSection() {
                 lineHeight: 1.7,
                 wordBreak: "keep-all",
                 overflowWrap: "break-word",
+                opacity: 0.85,
               }}
             >
               「想いを形にして、
