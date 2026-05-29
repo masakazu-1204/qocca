@@ -161,3 +161,14 @@ code {
     gap: 4px !important;
   }
 }
+
+/* 依頼書 #37 緊急修正: Grid item に min-width: 0 を強制
+   これがないと CSS Grid item が子要素 (img の natural size 等) に引きずられて
+   1fr 計算が壊れ、モバイルで縦 1 列になるケースがある。
+   button → div 変更と組み合わせて完全防御。 */
+.qocca-gallery-grid > *,
+.qocca-home-gallery-grid > * {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+}

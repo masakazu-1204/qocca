@@ -11265,17 +11265,29 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             {posts.map((post, index) => {
               const big = isBigTile(post, index);
               return (
-                <button
+                /* 依頼書 #37 緊急修正:
+                   <button> をやめて <div role="button"> に変更
+                   理由: <button> のデフォルトスタイル (min-width: max-content + UA stylesheet) が
+                   CSS Grid item の min-content sizing と競合して、Mobile で 1列縦並びになる
+                   既知のバグ。div + role="button" + tabIndex=0 で a11y 確保しつつ
+                   grid item として正しくふるまう。
+                   width:100% + minWidth:0 を inline で明示 (Grid item の古典的 fix) */
+                <div
                   key={post.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedPost(post)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedPost(post); } }}
                   style={{
                     position:"relative",
+                    width:"100%",
+                    minWidth:0,
                     aspectRatio:"1",
                     gridColumn: big ? "span 2" : undefined,
                     gridRow: big ? "span 2" : undefined,
-                    background:C.cream, border:"none", padding:0, cursor:"pointer",
+                    background:C.cream, cursor:"pointer",
                     overflow:"hidden", borderRadius: 2,
-                    fontFamily:"inherit", display:"block",
+                    display:"block",
                   }}
                   aria-label={`${post.userName || "投稿"} - ${post.petName || ""}`}
                   onMouseEnter={(e) => {
@@ -11290,6 +11302,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                   <img
                     src={post.image_url} alt=""
                     style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+                    loading="lazy"
                   />
                   {/* ホバーで lighten + メタ情報 */}
                   <div
@@ -11321,7 +11334,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                       padding:"3px 8px", borderRadius:8, boxShadow:"0 1px 4px rgba(0,0,0,0.2)"
                     }}>✨ 特集</div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
