@@ -218,14 +218,12 @@ export default function HomeNewsSection() {
     color: '#999',
   };
 
+  // 依頼書 #35 (緊急修正): 横スクロール 1行 → Instagram ライクグリッド
+  // 関連 .qocca-home-gallery-grid CSS は下部 <style> で定義
   const galleryCard: React.CSSProperties = {
-    flexShrink: 0,
-    width: '140px',
-    height: '140px',
-    scrollSnapAlign: 'start',
-    borderRadius: '12px',
+    aspectRatio: '1',
+    borderRadius: 4,
     overflow: 'hidden',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     cursor: 'pointer',
     position: 'relative',
     backgroundColor: '#F5A94A20',
@@ -352,7 +350,7 @@ export default function HomeNewsSection() {
         </div>
       )}
 
-      {/* ===== ギャラリー ===== */}
+      {/* ===== 📸 みんなのギャラリー (依頼書 #35: Instagram グリッド化) ===== */}
       {gallery.length > 0 && (
         <div style={subsection}>
           <div style={subsectionHeader}>
@@ -364,7 +362,31 @@ export default function HomeNewsSection() {
               すべて見る →
             </button>
           </div>
-          <div style={scrollContainer} className="qocca-scroll-x">
+          {/* 依頼書 #35: CSS @media query で 3/4/5 列レスポンシブ
+              - <640px: 3列 (モバイル)
+              - 640-1023: 4列 (タブレット)
+              - 1024+: 5列 (PC)
+              ブラウザネイティブ判定で SSR/CSR/PWA 全環境で確実動作 */}
+          <style>{`
+            .qocca-home-gallery-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 2px;
+            }
+            @media (min-width: 640px) {
+              .qocca-home-gallery-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 3px;
+              }
+            }
+            @media (min-width: 1024px) {
+              .qocca-home-gallery-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 4px;
+              }
+            }
+          `}</style>
+          <div className="qocca-home-gallery-grid">
             {gallery.map((item) => (
               <div
                 key={item.id}
