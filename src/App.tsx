@@ -11257,86 +11257,86 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             )}
           </div>
         ) : (
-          /* 依頼書 #30 + #34 + #36 Phase A:
-             Instagram ライクグリッド (CSS は index.css に集約 - PWA SW キャッシュ問題回避)
-             モバイル <640px = 3列 / タブレット 640-1023 = 4列 /
-             PC 1024-1439 = 5列 / 超ワイド 1440+ = 6列 */
-          <div className="qocca-gallery-grid">
-            {posts.map((post, index) => {
-              const big = isBigTile(post, index);
-              return (
-                /* 依頼書 #37 緊急修正:
-                   <button> をやめて <div role="button"> に変更
-                   理由: <button> のデフォルトスタイル (min-width: max-content + UA stylesheet) が
-                   CSS Grid item の min-content sizing と競合して、Mobile で 1列縦並びになる
-                   既知のバグ。div + role="button" + tabIndex=0 で a11y 確保しつつ
-                   grid item として正しくふるまう。
-                   width:100% + minWidth:0 を inline で明示 (Grid item の古典的 fix) */
-                <div
-                  key={post.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedPost(post)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedPost(post); } }}
+          // 依頼書 #38 Phase A: Instagram Explore 完全再現
+          // - inline style に display:grid + gridTemplateColumns を直書き (CSS class より確実)
+          // - PC は index.css の !important media query で 4列/5列に上書き
+          // - 大判タイル機能 OFF (まず 3列均一)
+          // - 各タイル: div role=button + width:100% + minWidth:0 + aspectRatio:1
+          // - img: width/height 100% + object-fit:cover
+          <div
+            className="qocca-gallery-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 2,
+              width: "100%",
+              margin: 0,
+              padding: 0,
+            }}
+          >
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedPost(post)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedPost(post); } }}
+                aria-label={`${post.userName || "投稿"} - ${post.petName || ""}`}
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  minWidth: 0,
+                  aspectRatio: "1 / 1",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  margin: 0,
+                  padding: 0,
+                  background: C.cream,
+                  display: "block",
+                }}
+                onMouseEnter={(e) => {
+                  const overlay = e.currentTarget.querySelector("[data-overlay]") as HTMLElement | null;
+                  if (overlay) overlay.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  const overlay = e.currentTarget.querySelector("[data-overlay]") as HTMLElement | null;
+                  if (overlay) overlay.style.opacity = "0";
+                }}
+              >
+                <img
+                  src={post.image_url}
+                  alt=""
+                  loading="lazy"
                   style={{
-                    position:"relative",
-                    width:"100%",
-                    minWidth:0,
-                    aspectRatio:"1",
-                    gridColumn: big ? "span 2" : undefined,
-                    gridRow: big ? "span 2" : undefined,
-                    background:C.cream, cursor:"pointer",
-                    overflow:"hidden", borderRadius: 2,
-                    display:"block",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
                   }}
-                  aria-label={`${post.userName || "投稿"} - ${post.petName || ""}`}
-                  onMouseEnter={(e) => {
-                    const overlay = e.currentTarget.querySelector("[data-overlay]") as HTMLElement | null;
-                    if (overlay) overlay.style.opacity = "1";
-                  }}
-                  onMouseLeave={(e) => {
-                    const overlay = e.currentTarget.querySelector("[data-overlay]") as HTMLElement | null;
-                    if (overlay) overlay.style.opacity = "0";
+                />
+                {/* ホバーで lighten + メタ情報 (オーバーレイ) */}
+                <div
+                  data-overlay
+                  style={{
+                    position: "absolute", inset: 0,
+                    background: "linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(245,169,74,0.7) 100%)",
+                    opacity: 0, transition: "opacity 0.2s",
+                    display: "flex", flexDirection: "column", justifyContent: "flex-end",
+                    padding: "6px 8px", color: "#fff",
+                    textAlign: "left", pointerEvents: "none",
                   }}
                 >
-                  <img
-                    src={post.image_url} alt=""
-                    style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
-                    loading="lazy"
-                  />
-                  {/* ホバーで lighten + メタ情報 */}
-                  <div
-                    data-overlay
-                    style={{
-                      position:"absolute", inset:0,
-                      background:"linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(245,169,74,0.75) 100%)",
-                      opacity:0, transition:"opacity 0.2s",
-                      display:"flex", flexDirection:"column", justifyContent:"flex-end",
-                      padding: big ? "12px 14px" : "8px 10px", color:"#fff",
-                      textAlign:"left", pointerEvents:"none",
-                    }}
-                  >
-                    {post.petName && (
-                      <div style={{ fontSize: big ? 14 : 11, fontWeight:800, marginBottom:2, textShadow:"0 1px 2px rgba(0,0,0,0.3)" }}>
-                        🐾 {post.petName}
-                      </div>
-                    )}
-                    <div style={{ fontSize: big ? 12 : 10, opacity:0.95, display:"flex", alignItems:"center", gap:6 }}>
-                      <span>❤️ {post.likes_count || 0}</span>
-                      {post.pet_type && <span style={{ opacity:0.85 }}>· {post.pet_type}</span>}
+                  {post.petName && (
+                    <div style={{ fontSize: 10, fontWeight: 800, marginBottom: 2, textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
+                      🐾 {post.petName}
                     </div>
-                  </div>
-                  {/* 大判タイルには「特集」リボン */}
-                  {big && (post.display_priority && post.display_priority > 0) && (
-                    <div style={{
-                      position:"absolute", top:8, left:8,
-                      background:C.orange, color:"#fff", fontSize:10, fontWeight:800,
-                      padding:"3px 8px", borderRadius:8, boxShadow:"0 1px 4px rgba(0,0,0,0.2)"
-                    }}>✨ 特集</div>
                   )}
+                  <div style={{ fontSize: 9, opacity: 0.95 }}>
+                    ❤️ {post.likes_count || 0}
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
 

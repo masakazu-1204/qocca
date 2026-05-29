@@ -218,15 +218,21 @@ export default function HomeNewsSection() {
     color: '#999',
   };
 
-  // 依頼書 #35 (緊急修正): 横スクロール 1行 → Instagram ライクグリッド
-  // 関連 .qocca-home-gallery-grid CSS は下部 <style> で定義
+  // 依頼書 #38 Phase A: Instagram Explore 完全再現
+  // - width:100% + minWidth:0 で Grid item として確実に grid 計算に乗る
+  // - aspectRatio: 1/1 で正方形タイル
+  // - margin/padding 0 で隙間 gap だけ
   const galleryCard: React.CSSProperties = {
-    aspectRatio: '1',
-    borderRadius: 4,
+    width: '100%',
+    minWidth: 0,
+    aspectRatio: '1 / 1',
     overflow: 'hidden',
     cursor: 'pointer',
     position: 'relative',
     backgroundColor: '#F5A94A20',
+    margin: 0,
+    padding: 0,
+    display: 'block',
   };
 
   const galleryImage: React.CSSProperties = {
@@ -362,11 +368,19 @@ export default function HomeNewsSection() {
               すべて見る →
             </button>
           </div>
-          {/* 依頼書 #35 + #36 Phase A: CSS は index.css に集約
-              - <640px: 3列 / 640-1023: 4列 / 1024+: 5列
-              - !important で他 CSS との競合を回避
-              - PWA Service Worker キャッシュ問題回避 (Vite ハッシュ付き CSS バンドル) */}
-          <div className="qocca-home-gallery-grid">
+          {/* 依頼書 #38 Phase A: inline grid 直書きで確実に 3列保証
+              PC オーバーライドは index.css の !important media query */}
+          <div
+            className="qocca-home-gallery-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 2,
+              width: "100%",
+              margin: 0,
+              padding: 0,
+            }}
+          >
             {gallery.map((item) => (
               <div
                 key={item.id}
