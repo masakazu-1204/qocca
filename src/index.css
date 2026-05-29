@@ -108,3 +108,56 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ==========================================================================
+   依頼書 #36 Phase A: Gallery Grid - 確実な CSS @media (Vite バンドル経由)
+   ==========================================================================
+   #34 で React <style> inline 挿入したが PWA Service Worker キャッシュや
+   レンダリング順問題でスマホ反映されないケースあり。
+   index.css に直接書くことで Vite が常に最新ハッシュ付き CSS バンドルとして
+   配信する。
+*/
+
+.qocca-gallery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 2px !important;
+  grid-auto-flow: dense !important;
+}
+@media (min-width: 640px) {
+  .qocca-gallery-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+  }
+}
+@media (min-width: 1024px) {
+  .qocca-gallery-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+}
+@media (min-width: 1440px) {
+  .qocca-gallery-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+}
+
+/* HomeNewsSection の "📸 みんなのギャラリー" 抜粋セクション (#35) */
+.qocca-home-gallery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 2px !important;
+}
+@media (min-width: 640px) {
+  .qocca-home-gallery-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+  }
+}
+@media (min-width: 1024px) {
+  .qocca-home-gallery-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+}

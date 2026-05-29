@@ -362,30 +362,10 @@ export default function HomeNewsSection() {
               すべて見る →
             </button>
           </div>
-          {/* 依頼書 #35: CSS @media query で 3/4/5 列レスポンシブ
-              - <640px: 3列 (モバイル)
-              - 640-1023: 4列 (タブレット)
-              - 1024+: 5列 (PC)
-              ブラウザネイティブ判定で SSR/CSR/PWA 全環境で確実動作 */}
-          <style>{`
-            .qocca-home-gallery-grid {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 2px;
-            }
-            @media (min-width: 640px) {
-              .qocca-home-gallery-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 3px;
-              }
-            }
-            @media (min-width: 1024px) {
-              .qocca-home-gallery-grid {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 4px;
-              }
-            }
-          `}</style>
+          {/* 依頼書 #35 + #36 Phase A: CSS は index.css に集約
+              - <640px: 3列 / 640-1023: 4列 / 1024+: 5列
+              - !important で他 CSS との競合を回避
+              - PWA Service Worker キャッシュ問題回避 (Vite ハッシュ付き CSS バンドル) */}
           <div className="qocca-home-gallery-grid">
             {gallery.map((item) => (
               <div

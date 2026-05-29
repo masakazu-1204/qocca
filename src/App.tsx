@@ -11257,37 +11257,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             )}
           </div>
         ) : (
-          /* 依頼書 #30 + #34: Instagram ライクグリッド (CSS @media による確実なレスポンシブ)
+          /* 依頼書 #30 + #34 + #36 Phase A:
+             Instagram ライクグリッド (CSS は index.css に集約 - PWA SW キャッシュ問題回避)
              モバイル <640px = 3列 / タブレット 640-1023 = 4列 /
              PC 1024-1439 = 5列 / 超ワイド 1440+ = 6列 */
-          <>
-            <style>{`
-              .qocca-gallery-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 2px;
-                grid-auto-flow: dense;
-              }
-              @media (min-width: 640px) {
-                .qocca-gallery-grid {
-                  grid-template-columns: repeat(4, 1fr);
-                  gap: 3px;
-                }
-              }
-              @media (min-width: 1024px) {
-                .qocca-gallery-grid {
-                  grid-template-columns: repeat(5, 1fr);
-                  gap: 4px;
-                }
-              }
-              @media (min-width: 1440px) {
-                .qocca-gallery-grid {
-                  grid-template-columns: repeat(6, 1fr);
-                  gap: 4px;
-                }
-              }
-            `}</style>
-            <div className="qocca-gallery-grid">
+          <div className="qocca-gallery-grid">
             {posts.map((post, index) => {
               const big = isBigTile(post, index);
               return (
@@ -11350,8 +11324,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 </button>
               );
             })}
-            </div>
-          </>
+          </div>
         )}
 
         {/* 依頼書 #30: 投稿詳細モーダル (画像クリック時) */}
