@@ -6599,6 +6599,436 @@ const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
   );
 };
 
+// ============================================================================
+// PostsTab (依頼書 #38 Phase C-E)
+// ギャラリー / ブログ 投稿の新規作成・編集・削除
+// 戦略書 §1.3 多様性: pet_categories マスター (13カテゴリ) からセレクト
+// "住める速度を超えない" UX: 急かさない・キャンセル可能・削除確認
+// ============================================================================
+type PetCategory = { slug: string; label_jp: string; icon: string };
+
+const PostsTab = () => {
+  const { user } = useAuth();
+  const [myGallery, setMyGallery] = useState<any[]>([]);
+  const [myBlog, setMyBlog] = useState<any[]>([]);
+  const [petCategories, setPetCategories] = useState<PetCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState<"list" | "compose-gallery" | "compose-blog" | "edit-gallery" | "edit-blog">("list");
+  const [editing, setEditing] = useState<any | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "gallery" | "blog"; id: string; title: string } | null>(null);
+  const [activeSection, setActiveSection] = useState<"gallery" | "blog">("gallery");
+
+  const loadAll = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    const [galRes, blogRes, catRes] = await Promise.all([
+      supabase.from("gallery_posts").select("*").eq("user_id", user.id).eq("is_deleted", false).order("created_at", { ascending: false }),
+      supabase.from("blog_posts").select("*").eq("author_id", user.id).eq("is_deleted", false).order("created_at", { ascending: false }),
+      supabase.from("pet_categories").select("slug, label_jp, icon").eq("is_active", true).order("display_order"),
+    ]);
+    setMyGallery(galRes.data || []);
+    setMyBlog(blogRes.data || []);
+    setPetCategories(catRes.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  const handleSoftDelete = async () => {
+    if (!confirmDelete) return;
+    const table = confirmDelete.type === "gallery" ? "gallery_posts" : "blog_posts";
+    await supabase.from(table).update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq("id", confirmDelete.id);
+    setConfirmDelete(null);
+    loadAll();
+  };
+
+  const startEdit = (post: any, type: "gallery" | "blog") => {
+    setEditing(post);
+    setMode(type === "gallery" ? "edit-gallery" : "edit-blog");
+  };
+
+  if (!user) {
+    return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>ログインしてください</div>;
+  }
+
+  // ── 投稿モーダル / 編集モーダル ──
+  if (mode === "compose-gallery" || mode === "edit-gallery") {
+    return (
+      <GalleryComposeForm
+        user={user}
+        petCategories={petCategories}
+        editing={mode === "edit-gallery" ? editing : null}
+        onClose={() => { setMode("list"); setEditing(null); loadAll(); }}
+      />
+    );
+  }
+  if (mode === "compose-blog" || mode === "edit-blog") {
+    return (
+      <BlogComposeForm
+        user={user}
+        editing={mode === "edit-blog" ? editing : null}
+        onClose={() => { setMode("list"); setEditing(null); loadAll(); }}
+      />
+    );
+  }
+
+  // ── 一覧画面 ──
+  const card: React.CSSProperties = { background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}`, marginBottom: 12 };
+  const btn = (bg: string, color = "#fff"): React.CSSProperties => ({
+    padding: "10px 16px", background: bg, color, border: "none", borderRadius: 10,
+    fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 40,
+  });
+
+  return (
+    <div>
+      {/* 投稿ボタン 2列 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+        <button onClick={() => setMode("compose-gallery")} style={{ ...btn(C.orange), display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          📸 ギャラリー投稿
+        </button>
+        <button onClick={() => setMode("compose-blog")} style={{ ...btn("#4A90E2"), display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          📝 ブログ投稿
+        </button>
+      </div>
+
+      {/* セクション切替 */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 14, borderBottom: `2px solid ${C.border}` }}>
+        {[
+          { id: "gallery" as const, label: `📸 ギャラリー (${myGallery.length})` },
+          { id: "blog" as const,    label: `📝 ブログ (${myBlog.length})` },
+        ].map(s => (
+          <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
+            padding: "10px 14px", background: activeSection === s.id ? C.orange : "transparent",
+            color: activeSection === s.id ? "#fff" : C.warmGray, border: "none",
+            borderRadius: "10px 10px 0 0", fontWeight: 700, fontSize: 12, fontFamily: "inherit",
+            cursor: "pointer", borderBottom: activeSection === s.id ? `3px solid ${C.orange}` : "none", marginBottom: -2,
+          }}>{s.label}</button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>読み込み中…</div>
+      ) : activeSection === "gallery" ? (
+        myGallery.length === 0 ? (
+          <div style={{ ...card, textAlign: "center", padding: 32, color: C.warmGray, fontSize: 13 }}>
+            まだギャラリーへの投稿はありません<br/>
+            <span style={{ fontSize: 11 }}>上の「📸 ギャラリー投稿」から、うちの子の一枚を置いてください</span>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {myGallery.map(g => (
+              <div key={g.id} style={card}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  {g.image_url && (
+                    <img src={g.image_url} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}/>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 2 }}>
+                      {g.pet_type && <>🐾 {g.pet_type}</>}
+                      {g.pet_name && <> · {g.pet_name}</>}
+                      {" "}· {new Date(g.created_at).toLocaleDateString("ja-JP")}
+                    </div>
+                    <div style={{ fontSize: 13, color: C.dark, lineHeight: 1.5, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {g.caption || <span style={{ color: C.warmGray }}>(キャプションなし)</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => startEdit(g, "gallery")} style={btn(C.cream, C.dark)}>✏️ 編集</button>
+                      <button onClick={() => setConfirmDelete({ type: "gallery", id: g.id, title: g.pet_name || "投稿" })}
+                        style={btn("#FFEBEE", C.red)}>🗑️ 削除</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        myBlog.length === 0 ? (
+          <div style={{ ...card, textAlign: "center", padding: 32, color: C.warmGray, fontSize: 13 }}>
+            まだブログへの投稿はありません<br/>
+            <span style={{ fontSize: 11 }}>上の「📝 ブログ投稿」から、書きはじめてください</span>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {myBlog.map(b => (
+              <div key={b.id} style={card}>
+                {b.cover_image_url && (
+                  <img src={b.cover_image_url} alt="" style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 8, marginBottom: 10 }}/>
+                )}
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 4 }}>
+                  {b.title || "(タイトルなし)"}
+                </div>
+                <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 8 }}>
+                  {b.published ? "🌅 公開中" : "📝 下書き"}
+                  {b.category && <> · {b.category}</>}
+                  {" "}· {new Date(b.created_at).toLocaleDateString("ja-JP")}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => startEdit(b, "blog")} style={btn(C.cream, C.dark)}>✏️ 編集</button>
+                  <button onClick={() => setConfirmDelete({ type: "blog", id: b.id, title: b.title || "ブログ" })}
+                    style={btn("#FFEBEE", C.red)}>🗑️ 削除</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* 削除確認ダイアログ (急かさない・取り消せない旨を明示) */}
+      {confirmDelete && (
+        <div onClick={() => setConfirmDelete(null)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: C.white, borderRadius: 18, padding: 24, maxWidth: 380, width: "100%",
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: C.dark, marginBottom: 10 }}>
+              本当に削除しますか?
+            </div>
+            <div style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 20 }}>
+              「{confirmDelete.title}」を削除します。<br/>
+              <span style={{ color: C.red, fontWeight: 700 }}>削除すると元に戻せません。</span><br/>
+              <span style={{ fontSize: 11, color: C.warmGray }}>急ぐ必要はないので、もう一度ゆっくり考えてください。</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmDelete(null)} style={{ ...btn(C.cream, C.dark), flex: 1 }}>キャンセル</button>
+              <button onClick={handleSoftDelete} style={{ ...btn(C.red), flex: 1 }}>削除する</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// === ギャラリー投稿/編集フォーム ===
+const GalleryComposeForm = ({ user, petCategories, editing, onClose }: any) => {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>(editing?.image_url || "");
+  const [caption, setCaption] = useState<string>(editing?.caption || "");
+  const [petType, setPetType] = useState<string>(editing?.pet_type || "");
+  const [petName, setPetName] = useState<string>(editing?.pet_name || "");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const isEdit = !!editing;
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) { setImageFile(f); setPreview(URL.createObjectURL(f)); }
+  };
+
+  const handleSubmit = async () => {
+    if (!user?.id) return;
+    if (!isEdit && !imageFile) { alert("画像を選んでください"); return; }
+    setBusy(true);
+    let imageUrl = editing?.image_url || "";
+    if (imageFile) {
+      const ext = imageFile.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("gallery-images").upload(path, imageFile);
+      if (upErr) { alert("画像アップロード失敗: " + upErr.message); setBusy(false); return; }
+      const { data } = supabase.storage.from("gallery-images").getPublicUrl(path);
+      imageUrl = data.publicUrl;
+    }
+
+    if (isEdit) {
+      await supabase.from("gallery_posts").update({
+        caption, pet_type: petType || null, pet_name: petName || null,
+        ...(imageFile ? { image_url: imageUrl } : {}),
+      }).eq("id", editing.id);
+    } else {
+      await supabase.from("gallery_posts").insert({
+        user_id: user.id, image_url: imageUrl, caption,
+        pet_type: petType || null, pet_name: petName || null,
+      });
+    }
+    setBusy(false);
+    onClose();
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 16, gap: 8 }}>
+        <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 14, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>← キャンセル</button>
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark }}>{isEdit ? "📸 ギャラリーを編集" : "📸 ギャラリーに投稿"}</div>
+      </div>
+
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }}/>
+      {preview ? (
+        <div style={{ marginBottom: 14 }}>
+          <img src={preview} alt="" style={{ width: "100%", borderRadius: 12, maxHeight: 320, objectFit: "cover", background: "#000" }}/>
+          <button onClick={() => fileRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: C.orange, background: "none", border: "none", cursor: "pointer" }}>📷 画像を変更</button>
+        </div>
+      ) : (
+        <button onClick={() => fileRef.current?.click()} style={{
+          width: "100%", padding: "40px 20px", border: `2px dashed ${C.border}`, borderRadius: 14,
+          background: C.cream, cursor: "pointer", marginBottom: 14, textAlign: "center", fontFamily: "inherit",
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>📷</div>
+          <div style={{ fontSize: 13, color: C.warmGray }}>タップして写真を選ぶ</div>
+        </button>
+      )}
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 4 }}>うちの子の名前 (任意)</label>
+        <input value={petName} onChange={e => setPetName(e.target.value)} placeholder="例: まろん"
+          style={{ width: "100%", padding: 10, borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }}/>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 6 }}>
+          うちの子の種類 (任意)
+          <span style={{ fontSize: 11, color: C.warmGray, fontWeight: 400 }}> · 13 種類から</span>
+        </label>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {petCategories.map((c: PetCategory) => (
+            <button key={c.slug} onClick={() => setPetType(petType === c.slug ? "" : c.slug)} style={{
+              padding: "6px 10px", background: petType === c.slug ? C.orange : C.white,
+              color: petType === c.slug ? "#fff" : C.warmGray,
+              border: `1.5px solid ${petType === c.slug ? C.orange : C.border}`, borderRadius: 16,
+              fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            }}>{c.icon} {c.label_jp}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 18 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 4 }}>キャプション</label>
+        <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="うちの子のエピソードを書いてね🐾" rows={4} maxLength={500}
+          style={{ width: "100%", padding: 12, borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }}/>
+        <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 2 }}>{caption.length} / 500</div>
+      </div>
+
+      <button onClick={handleSubmit} disabled={busy || (!isEdit && !imageFile)} style={{
+        width: "100%", padding: 14, background: busy ? C.warmGray : C.orange, color: "#fff",
+        border: "none", borderRadius: 12, fontWeight: 800, fontSize: 15,
+        cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+      }}>{busy ? "送信中…" : isEdit ? "💾 変更を保存" : "🐾 投稿する"}</button>
+    </div>
+  );
+};
+
+// === ブログ投稿/編集フォーム ===
+const BlogComposeForm = ({ user, editing, onClose }: any) => {
+  const [title, setTitle] = useState<string>(editing?.title || "");
+  const [content, setContent] = useState<string>(editing?.content || "");
+  const [category, setCategory] = useState<string>(editing?.category || "diary");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string>(editing?.cover_image_url || "");
+  const [published, setPublished] = useState<boolean>(editing?.published ?? false);
+  const [busy, setBusy] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const isEdit = !!editing;
+
+  const handleCover = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) { setCoverFile(f); setCoverPreview(URL.createObjectURL(f)); }
+  };
+
+  const handleSubmit = async () => {
+    if (!user?.id) return;
+    if (!title.trim()) { alert("タイトルを入力してください"); return; }
+    if (!content.trim()) { alert("本文を入力してください"); return; }
+    setBusy(true);
+    let coverUrl = editing?.cover_image_url || "";
+    if (coverFile) {
+      const ext = coverFile.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("blog-images").upload(path, coverFile);
+      if (upErr) { alert("画像アップロード失敗: " + upErr.message); setBusy(false); return; }
+      const { data } = supabase.storage.from("blog-images").getPublicUrl(path);
+      coverUrl = data.publicUrl;
+    }
+    if (isEdit) {
+      await supabase.from("blog_posts").update({
+        title, content, category, published,
+        ...(coverFile ? { cover_image_url: coverUrl } : {}),
+        updated_at: new Date().toISOString(),
+      }).eq("id", editing.id);
+    } else {
+      await supabase.from("blog_posts").insert({
+        author_id: user.id, title, content, category, published,
+        cover_image_url: coverUrl, ai_generated: false,
+      });
+    }
+    setBusy(false);
+    onClose();
+  };
+
+  const BLOG_CATEGORIES = [
+    { slug: "diary",     icon: "📔", label: "うちの子日記" },
+    { slug: "tips",      icon: "💡", label: "暮らしのコツ" },
+    { slug: "review",    icon: "⭐", label: "レビュー" },
+    { slug: "memorial",  icon: "🌸", label: "そらの子へ" },
+    { slug: "other",     icon: "📝", label: "その他" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 16, gap: 8 }}>
+        <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 14, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>← キャンセル</button>
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark }}>{isEdit ? "📝 ブログを編集" : "📝 ブログに投稿"}</div>
+      </div>
+
+      <input ref={coverRef} type="file" accept="image/*" onChange={handleCover} style={{ display: "none" }}/>
+      {coverPreview ? (
+        <div style={{ marginBottom: 14 }}>
+          <img src={coverPreview} alt="" style={{ width: "100%", borderRadius: 12, maxHeight: 220, objectFit: "cover" }}/>
+          <button onClick={() => coverRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: C.orange, background: "none", border: "none", cursor: "pointer" }}>📷 カバー画像を変更</button>
+        </div>
+      ) : (
+        <button onClick={() => coverRef.current?.click()} style={{
+          width: "100%", padding: "32px 20px", border: `2px dashed ${C.border}`, borderRadius: 14,
+          background: C.cream, cursor: "pointer", marginBottom: 14, textAlign: "center", fontFamily: "inherit",
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 6 }}>🖼️</div>
+          <div style={{ fontSize: 12, color: C.warmGray }}>カバー画像を選ぶ (任意)</div>
+        </button>
+      )}
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 4 }}>タイトル *</label>
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="例: 雨の日のまろん"
+          style={{ width: "100%", padding: 10, borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }}/>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 6 }}>カテゴリ</label>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {BLOG_CATEGORIES.map(c => (
+            <button key={c.slug} onClick={() => setCategory(c.slug)} style={{
+              padding: "6px 10px", background: category === c.slug ? C.orange : C.white,
+              color: category === c.slug ? "#fff" : C.warmGray,
+              border: `1.5px solid ${category === c.slug ? C.orange : C.border}`, borderRadius: 16,
+              fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            }}>{c.icon} {c.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 4 }}>本文 *</label>
+        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="思いを書いてね…" rows={10}
+          style={{ width: "100%", padding: 12, borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", lineHeight: 1.7 }}/>
+      </div>
+
+      <div style={{ marginBottom: 18, padding: 12, background: C.cream, borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+        <input type="checkbox" id="blog-published" checked={published} onChange={e => setPublished(e.target.checked)} style={{ width: 18, height: 18, cursor: "pointer" }}/>
+        <label htmlFor="blog-published" style={{ fontSize: 13, color: C.dark, cursor: "pointer" }}>
+          🌅 すぐ公開する {!published && <span style={{ fontSize: 11, color: C.warmGray }}>(チェックを外すと下書き保存)</span>}
+        </label>
+      </div>
+
+      <button onClick={handleSubmit} disabled={busy} style={{
+        width: "100%", padding: 14, background: busy ? C.warmGray : "#4A90E2", color: "#fff",
+        border: "none", borderRadius: 12, fontWeight: 800, fontSize: 15,
+        cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
+      }}>{busy ? "送信中…" : isEdit ? "💾 変更を保存" : (published ? "🌅 公開する" : "📝 下書き保存")}</button>
+    </div>
+  );
+};
+
 const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -6799,6 +7229,7 @@ const MyPage = ({ setPage }) => {
 
   const tabs = [
     { id:"profile", icon:"👤", label:"プロフィール" },
+    { id:"posts", icon:"📸", label:"投稿管理" }, // 依頼書 #38 Phase C-E
     { id:"listings", icon:"🐾", label:"マイ出品" },
     { id:"sales", icon:"🛍️", label:"販売管理", badge:pendingSalesCount },
     { id:"orders", icon:"📦", label:"注文履歴", badge:pendingOrdersCount },
@@ -7368,6 +7799,9 @@ const MyPage = ({ setPage }) => {
 
         {/* Support Tab */}
         {tab==="support" && <SupportTab/>}
+
+        {/* 依頼書 #38 Phase C-E: 投稿管理 (新規投稿/編集/削除) */}
+        {tab==="posts" && <PostsTab/>}
       </div>
           <ProfileEditModal
         open={editOpen}
@@ -7430,7 +7864,7 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
         const { data: d } = await supabase.from("events").select("id, title, event_date, prefecture, status, image_url").eq("organizer_id", userId).order("event_date", { ascending: false });
         data = d || [];
       } else if (type === "gallery") {
-        const { data: d } = await supabase.from("gallery_posts").select("id, image_url, caption, created_at").eq("user_id", userId).order("created_at", { ascending: false });
+        const { data: d } = await supabase.from("gallery_posts").select("id, image_url, caption, created_at").eq("user_id", userId).eq("is_deleted", false).order("created_at", { ascending: false });
         data = d || [];
       } else if (type === "blog") {
         const { data: d } = await supabase.from("blog_posts").select("id, title, category, cover_image_url, created_at").eq("author_id", userId).order("created_at", { ascending: false });
