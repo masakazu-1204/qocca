@@ -4106,6 +4106,8 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
       <SectionVoices setPage={setPage} />
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
       <ArkPartnershipSection />
+      {/* 依頼書 #36 (5/31): 初期メンバー紹介 (ARK と 創業パートナーの間) */}
+      <InitialMembersSection />
       {/* 依頼書 #35 v2 (5/31): 創業パートナー (mayor_30000 + corporate_300000) */}
       <FoundingPartnersSection />
       <SectionJoinTown setPage={setPage} />
@@ -12977,6 +12979,195 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
   );
 };
 
+// ── 依頼書 #36 (2026/5/31): 初期メンバー紹介ページ /founding-creators ─────────
+// 「想いを込めて、置いていく人たち」 = 出品済みクリエイター + 創業クリエイター + 初期メンバー
+// 公開 view founding_creators_view (anon 可) から ORDER で並ぶ
+type FoundingCreator = {
+  id: string; display_name: string | null; avatar_url: string | null;
+  bio: string | null; creator_intro: string | null;
+  is_founding_creator: boolean | null; is_initial_member: boolean | null;
+  approved_count: number;
+};
+
+const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
+  const navigate = useNavigate();
+  const [creators, setCreators] = useState<FoundingCreator[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("founding_creators_view")
+        .select("id, display_name, avatar_url, bio, creator_intro, is_founding_creator, is_initial_member, approved_count")
+        .order("is_founding_creator", { ascending: false })
+        .order("approved_count", { ascending: false })
+        .order("created_at", { ascending: true });
+      setCreators((data as any[]) || []);
+      setLoaded(true);
+    })();
+  }, []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.cream, paddingTop: 64, paddingBottom: 80, fontFamily: "'Noto Sans JP',sans-serif" }}>
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: "0 20px" }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🎨</div>
+          <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, margin: "0 0 10px", lineHeight: 1.5 }}>
+            想いを込めて、置いていく人たち
+          </h1>
+          <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.9, margin: 0 }}>
+            Qocca の街で 最初に作品を<br />
+            置いてくださったクリエイターさん🐾
+          </p>
+        </div>
+
+        {!loaded ? (
+          <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>読み込み中...</div>
+        ) : creators.length === 0 ? (
+          <div style={{ background: C.white, borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize: 36, marginBottom: 14 }}>🌱</div>
+            <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.8, margin: 0 }}>
+              まだクリエイターさんがいません。<br />
+              6/3 のクラウドファンディング公開後、順次紹介してまいります🌅
+            </p>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
+              {creators.map(c => {
+                const name = c.display_name || "（名前未設定）";
+                const introRaw = (c.creator_intro || c.bio || "").trim();
+                const intro = introRaw.length > 80 ? introRaw.slice(0, 80) + "…" : introRaw;
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate(`/profile/${c.id}`)}
+                    style={{
+                      background: C.white, borderRadius: 16, padding: 20,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s",
+                      display: "flex", gap: 16, alignItems: "flex-start",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = ""; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"; }}
+                  >
+                    {c.avatar_url ? (
+                      <img src={c.avatar_url} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.cream, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>🎨</div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: C.dark }}>{name}</div>
+                        {c.is_founding_creator && (
+                          <span style={{ background: "#F3E5F5", color: "#AB47BC", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>⭐ 創業クリエイター</span>
+                        )}
+                        {!c.is_founding_creator && c.is_initial_member && (
+                          <span style={{ background: "#FFF3E0", color: "#A07640", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>🌱 初期メンバー</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.warmGray, marginBottom: intro ? 6 : 0 }}>
+                        🎨 出品 {c.approved_count}件
+                      </div>
+                      {intro && (
+                        <div style={{ fontSize: 12, color: C.dark, lineHeight: 1.7, marginBottom: 6 }}>
+                          "{intro}"
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: C.orange, fontWeight: 700 }}>作品を見る →</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ background: C.white, borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: C.dark, margin: "0 0 10px" }}>
+                あなたも創業クリエイターになる🌅
+              </h3>
+              <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 14px" }}>
+                CAMPFIRE の「創業クリエイター」リターン (¥8,000) で<br />
+                <strong style={{ color: C.dark }}>永久手数料 3% (通常 10%→3%)</strong> + 創業クリエイターバッジ獲得
+              </p>
+              <a
+                href="https://camp-fire.jp/projects/view/955666"
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: "inline-block", padding: "10px 22px", background: C.orange, color: "#fff", borderRadius: 22, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
+              >
+                📣 CAMPFIRE で支援する →
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── 依頼書 #36 (2026/5/31): HomePage 初期メンバー紹介セクション ─────────
+// アバター 横スクロール + 「もっと見る」リンク
+const InitialMembersSection = () => {
+  const navigate = useNavigate();
+  const [creators, setCreators] = useState<FoundingCreator[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("founding_creators_view")
+        .select("id, display_name, avatar_url, bio, creator_intro, is_founding_creator, is_initial_member, approved_count")
+        .order("is_founding_creator", { ascending: false })
+        .order("approved_count", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(6);
+      setCreators((data as any[]) || []);
+      setLoaded(true);
+    })();
+  }, []);
+
+  if (!loaded || creators.length === 0) return null;
+
+  return (
+    <div style={{ padding: "36px 20px 28px", background: "#FAFAF7" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 18 }}>
+          <div style={{ fontSize: 22, marginBottom: 8 }}>🎨</div>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: "#3D2E1E", margin: "0 0 6px", letterSpacing: 0.4 }}>
+            想いを込めて、置いていく人たち
+          </h3>
+          <p style={{ fontSize: 11.5, color: "#8B7355", lineHeight: 1.7, margin: 0 }}>
+            Qocca の街で 最初に作品を置いてくださっている方々
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 12, overflowX: "auto", padding: "8px 4px", justifyContent: "center", flexWrap: "wrap" }}>
+          {creators.map(c => {
+            const name = c.display_name || "—";
+            return (
+              <div
+                key={c.id}
+                onClick={() => navigate(`/profile/${c.id}`)}
+                style={{ width: 86, textAlign: "center", cursor: "pointer", flexShrink: 0 }}
+              >
+                {c.avatar_url ? (
+                  <img src={c.avatar_url} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", marginBottom: 6, border: "2px solid #FFF", boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }} />
+                ) : (
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#FFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 6px" }}>🎨</div>
+                )}
+                <div style={{ fontSize: 10.5, color: "#5A4A2C", fontWeight: 700, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                <div style={{ fontSize: 9.5, color: "#A07640" }}>🎨 {c.approved_count}件</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <a href="/founding-creators" style={{ fontSize: 12, color: "#A07640", textDecoration: "underline", fontWeight: 700 }}>
+            もっと見る →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── 依頼書 #35 v2 (2026/5/31): 法人スポンサー一覧ページ /sponsors ─────────
 // 公開 view crowdfunding_public_sponsors (anon 可) から corporate_300000 のみ
 // public_display=true & redeemed_at IS NOT NULL のスポンサーをグリッド表示
@@ -14163,6 +14354,8 @@ function QoccaAppInner() {
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
             <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
+            {/* 依頼書 #36 (5/31): 初期メンバー紹介 */}
+            <Route path="/founding-creators" element={<FoundingCreatorsPage setPage={setPage}/>} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
@@ -14387,6 +14580,8 @@ function QoccaAppInner() {
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={false}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
             <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
+            {/* 依頼書 #36 (5/31): 初期メンバー紹介 */}
+            <Route path="/founding-creators" element={<FoundingCreatorsPage setPage={setPage}/>} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
