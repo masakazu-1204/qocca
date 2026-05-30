@@ -3941,12 +3941,12 @@ const CrowdfundingBanner = () => {
           {isOpen ? (
             <>
               <strong style={{ color: "#5A4A2C" }}>クラウドファンディング 実施中</strong>（〜2026/6/30）<br />
-              ARK（動物福祉団体）連携・売上の 3% を寄付しています
+              特定非営利活動法人アニマルレフュージ関西【ARK】連携・売上の 3% を寄付しています
             </>
           ) : (
             <>
               <strong style={{ color: "#5A4A2C" }}>2026/6/1（月）クラウドファンディング開始</strong><br />
-              ARK（動物福祉団体）連携・売上の 3% を寄付しています
+              特定非営利活動法人アニマルレフュージ関西【ARK】連携・売上の 3% を寄付しています
             </>
           )}
         </div>
@@ -3988,12 +3988,12 @@ const ArkPartnershipSection = () => {
       <div style={{ maxWidth: 540, margin: "0 auto", textAlign: "center" }}>
         <div style={{ fontSize: 22, marginBottom: 10 }}>🐕</div>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: "#3D2E1E", margin: "0 0 16px", letterSpacing: 0.4 }}>
-          動物福祉団体 ARK との連携
+          動物福祉団体との連携
         </h3>
         <p style={{ fontSize: 12.5, color: "#8B7355", lineHeight: 2, margin: 0 }}>
           Qocca で生まれる売上の <strong style={{ color: "#3D2E1E" }}>3% を</strong><br />
-          特定非営利活動法人<br />
-          <strong style={{ color: "#3D2E1E" }}>アニマルレフュージ関西（ARK）</strong> へ<br />
+          <strong style={{ color: "#3D2E1E" }}>特定非営利活動法人<br />
+          アニマルレフュージ関西【ARK】</strong> へ<br />
           寄付しています。
         </p>
         <p style={{ fontSize: 11.5, color: "#A89580", lineHeight: 2, margin: "18px 0 0", fontStyle: "italic" }}>
