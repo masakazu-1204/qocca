@@ -1,13 +1,17 @@
 // ============================================
-// post-to-x v3 (依頼書 #29 緊急, 2026/5/28)
-// v3 変更点:
-//   - 投稿前に token_expires_at をチェック
-//   - 期限残り < 5分 なら x-refresh-token を同期呼び出しして refresh
-//   - refresh 後に最新 access_token を取得して投稿
-//   - 401 エラーも 1回は refresh リトライ (token 死亡ケース)
-// v2 (5/27 深夜):
-//   - image_url ありなら X v1.1 media upload して media_id 取得 → tweet.media.media_ids
-//   - 概算コスト記録
+// post-to-x v7 (依頼書 #32 A案 最終, 2026/5/30)
+// v7 変更点:
+//   - x-init-oauth v9 で media.write scope 追加済み
+//   - King 再連携 (12:25 JST) で 新 token に media.write 付与済み
+//   - X API v2 /2/media/upload (api.x.com) + media_category=tweet_image で simple upload
+//   - エラー詳細を error_message に記録 (診断用)
+//   - text-only fallback の仕組みを 保険として継続維持
+//   - 401 エラーは 1回 refresh リトライ
+// v6 (診断ログ付き production)
+// v5 (4-variant debug: 全 403 判明)
+// v4 (v2 endpoint 初試 - scope 不足で 403)
+// v3 (v1.1 endpoint - OAuth 1.0a 未対応で 403)
+// v2 (image upload 初実装)
 // ============================================
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -53,12 +57,20 @@ async function getXConnection(supabase: any) {
     .maybeSingle();
 }
 
-async function uploadMediaToX(accessToken: string, imageBytes: Uint8Array, mimeType: string): Promise<string | null> {
+// v7 (依頼書 #32 A案):
+// King 再連携で media.write scope 付与済み → v2 endpoint (api.x.com/2/media/upload) で simple upload
+// Bearer token で動作 / 5MB 以下の画像に対応 (gpt-image-1 は 一般 < 2MB)
+async function uploadMediaToX(
+  accessToken: string,
+  imageBytes: Uint8Array,
+  mimeType: string,
+): Promise<{ mediaId: string | null; errorDetail: string | null }> {
   const formData = new FormData();
   const blob = new Blob([imageBytes], { type: mimeType });
   formData.append("media", blob, "image.png");
+  formData.append("media_category", "tweet_image");
 
-  const res = await fetch("https://upload.twitter.com/1.1/media/upload.json", {
+  const res = await fetch("https://api.x.com/2/media/upload", {
     method: "POST",
     headers: { "Authorization": `Bearer ${accessToken}` },
     body: formData,
@@ -66,11 +78,17 @@ async function uploadMediaToX(accessToken: string, imageBytes: Uint8Array, mimeT
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error("[post-to-x] X media upload failed:", res.status, errText.slice(0, 300));
-    return null;
+    const detail = `status=${res.status} body=${errText.slice(0, 300)}`;
+    console.error("[post-to-x v7] media upload failed:", detail);
+    return { mediaId: null, errorDetail: detail };
   }
   const data = await res.json();
-  return data?.media_id_string || null;
+  // v2 response: { data: { id: "1234567890", media_key: "13_1234567890" } }
+  const mediaId = data?.data?.id || data?.media_id_string || data?.id || null;
+  if (!mediaId) {
+    return { mediaId: null, errorDetail: `no_media_id_in_response: ${JSON.stringify(data).slice(0, 200)}` };
+  }
+  return { mediaId, errorDetail: null };
 }
 
 async function downloadImage(url: string): Promise<{ bytes: Uint8Array; mimeType: string } | null> {
@@ -140,12 +158,18 @@ serve(async (req) => {
   // image_url ありなら X media upload
   let mediaId: string | null = null;
   let mediaUploadFailed = false;
+  let mediaErrorDetail: string | null = null;
   if (xPost.image_url) {
     const downloaded = await downloadImage(xPost.image_url);
     if (downloaded) {
-      mediaId = await uploadMediaToX(conn.access_token, downloaded.bytes, downloaded.mimeType);
+      const uploadResult = await uploadMediaToX(conn.access_token, downloaded.bytes, downloaded.mimeType);
+      mediaId = uploadResult.mediaId;
+      mediaErrorDetail = uploadResult.errorDetail;
       if (!mediaId) mediaUploadFailed = true;
-    } else { mediaUploadFailed = true; }
+    } else {
+      mediaUploadFailed = true;
+      mediaErrorDetail = `download_failed: ${xPost.image_url.slice(0, 100)}`;
+    }
   }
 
   // tweet 作成 (401 なら 1回 refresh リトライ)
@@ -186,6 +210,7 @@ serve(async (req) => {
     return jsonResponse({
       success: false, error: "x_api_error", message: errMsg,
       media_uploaded: !!mediaId, media_upload_failed: mediaUploadFailed,
+      media_error_detail: mediaErrorDetail,
       refresh_attempted: refreshAttempted, last_status: lastStatus,
     }, 500);
   }
@@ -194,12 +219,16 @@ serve(async (req) => {
   const postedAt = new Date().toISOString();
   const finalCost = xPost.cost_usd != null ? xPost.cost_usd : 0;
 
+  // 画像 upload 失敗しても tweet 自体は text-only で成功 → status=posted
+  // ただし error_message に診断詳細を記録 (text-only fallback 見える化)
   await supabase.from("x_posts").update({
     status: "posted",
     tweet_id: tweetId,
     posted_at: postedAt,
     cost_usd: finalCost,
-    error_message: mediaUploadFailed ? "media_upload_failed (text-only fallback)" : null,
+    error_message: mediaUploadFailed
+      ? `media_upload_failed (text-only fallback): ${(mediaErrorDetail || "").slice(0, 200)}`
+      : null,
   }).eq("id", xPostId);
 
   return jsonResponse({
@@ -212,6 +241,7 @@ serve(async (req) => {
     content_preview: xPost.content.slice(0, 100),
     media_attached: !!mediaId,
     media_upload_failed: mediaUploadFailed,
+    media_error_detail: mediaErrorDetail,
     image_url: xPost.image_url,
     refresh_attempted: refreshAttempted,
   });
