@@ -3979,6 +3979,80 @@ const CrowdfundingBanner = () => {
   );
 };
 
+// ── 依頼書 #35 v2 (2026/5/31): 創業パートナー HomePage セクション ─────────
+// SELECT crowdfunding_public_sponsors (anon 可) → mayor_30000 + corporate_300000 で
+// founding_display_consent=true のみ表示 (オプトイン)
+// 名前のみシンプル表示 (永続記録 #11「シンプル維持」哲学準拠)
+const FoundingPartnersSection = () => {
+  const [partners, setPartners] = useState<Array<{
+    backer_id: string; tier: string; amount: number;
+    founding_display_name: string | null; sponsor_company_name: string | null;
+    display_name: string | null;
+  }>>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("crowdfunding_public_sponsors")
+        .select("backer_id, tier, amount, founding_display_name, sponsor_company_name, display_name, founding_display_consent")
+        .in("tier", ["mayor_30000", "corporate_300000"])
+        .eq("founding_display_consent", true)
+        .order("amount", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(50);
+      setPartners((data as any[]) || []);
+      setLoaded(true);
+    })();
+  }, []);
+
+  // データがまだない期間は誠実セクションを薄く出す (CTA 中心)
+  const hasPartners = loaded && partners.length > 0;
+
+  return (
+    <div style={{ padding: "36px 20px 28px", background: "#FFF9F0" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ fontSize: 22, marginBottom: 8 }}>🌟</div>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#5A4A2C", margin: "0 0 12px", letterSpacing: 0.4 }}>
+          創業パートナー
+        </h3>
+        <p style={{ fontSize: 12, color: "#8B7355", lineHeight: 1.9, margin: "0 0 18px" }}>
+          Qocca の街を 最初に信じて<br />
+          一緒に作ってくださっている方々
+        </p>
+        {hasPartners ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 18 }}>
+            {partners.map(p => {
+              const name = p.tier === "corporate_300000"
+                ? (p.sponsor_company_name || p.founding_display_name || p.display_name || "法人スポンサー")
+                : (p.founding_display_name || p.display_name || "永久首長");
+              const icon = p.tier === "corporate_300000" ? "🏢" : "👑";
+              return (
+                <span key={p.backer_id} style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "6px 12px", background: "#FFF", borderRadius: 20,
+                  fontSize: 12, color: "#5A4A2C", fontWeight: 600,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                }}>
+                  <span>{icon}</span><span>{name}</span>
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ padding: "8px 0 18px", color: "#A89580", fontSize: 11.5, lineHeight: 1.9, fontStyle: "italic" }}>
+            ※ 創業パートナーの公開掲載は<br />
+            6/3 のクラウドファンディング公開後に順次表示されます🌅
+          </div>
+        )}
+        <div style={{ fontSize: 11, color: "#A07640" }}>
+          <a href="/about" style={{ color: "#A07640", textDecoration: "underline", fontWeight: 700 }}>創業期メンバーになる →</a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ArkPartnershipSection = () => {
   const now = new Date();
   // 6/1 以降は SectionAnnouncement や CrowdfundingBanner が ARK 言及するので重複回避で薄める
@@ -4032,6 +4106,8 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
       <SectionVoices setPage={setPage} />
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
       <ArkPartnershipSection />
+      {/* 依頼書 #35 v2 (5/31): 創業パートナー (mayor_30000 + corporate_300000) */}
+      <FoundingPartnersSection />
       <SectionJoinTown setPage={setPage} />
       <SharedFooter setPage={setPage}/>
     </div>
@@ -12901,6 +12977,118 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
   );
 };
 
+// ── 依頼書 #35 v2 (2026/5/31): 法人スポンサー一覧ページ /sponsors ─────────
+// 公開 view crowdfunding_public_sponsors (anon 可) から corporate_300000 のみ
+// public_display=true & redeemed_at IS NOT NULL のスポンサーをグリッド表示
+// 空状態は CTA 中心、登録あれば法人ロゴ + 社名 + Web リンク
+const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
+  const [sponsors, setSponsors] = useState<Array<{
+    backer_id: string;
+    sponsor_logo_url: string | null;
+    sponsor_company_name: string | null;
+    sponsor_website_url: string | null;
+    display_name: string | null;
+    created_at: string;
+  }>>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("crowdfunding_public_sponsors")
+        .select("backer_id, sponsor_logo_url, sponsor_company_name, sponsor_website_url, display_name, created_at")
+        .eq("tier", "corporate_300000")
+        .order("created_at", { ascending: true });
+      setSponsors((data as any[]) || []);
+      setLoaded(true);
+    })();
+  }, []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.cream, paddingTop: 64, paddingBottom: 80, fontFamily: "'Noto Sans JP',sans-serif" }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px" }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🏢</div>
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: C.dark, margin: "0 0 8px" }}>
+            法人スポンサー
+          </h1>
+          <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.8, margin: 0 }}>
+            Qocca の街を支えてくださっている法人スポンサーの皆様です🐾<br />
+            <span style={{ fontSize: 11, opacity: 0.7 }}>クラウドファンディング ¥300,000 リターン「法人スポンサー｜街の協力者」掲載</span>
+          </p>
+        </div>
+
+        {!loaded ? (
+          <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>読み込み中...</div>
+        ) : sponsors.length === 0 ? (
+          <div style={{ background: C.white, borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize: 38, marginBottom: 14 }}>🌱</div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: C.dark, margin: "0 0 10px" }}>
+              法人スポンサー募集中
+            </h3>
+            <p style={{ fontSize: 12.5, color: C.warmGray, lineHeight: 1.9, margin: "0 0 20px" }}>
+              Qocca の街を 一緒に育ててくださる法人パートナーを募集しています🐾<br />
+              ¥300,000 のクラウドファンディング支援で、<br />
+              法人スポンサーとして以下を提供します：<br /><br />
+              ・このページに法人ロゴ + 社名 + Web リンク掲載<br />
+              ・HomePage 創業パートナーセクションに法人名掲載<br />
+              ・利用規約 第30条で正式支援者として明文化
+            </p>
+            <a
+              href="https://camp-fire.jp/projects/view/955666"
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-block", padding: "12px 26px", background: C.orange, color: "#fff", borderRadius: 24, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
+            >
+              📣 CAMPFIRE で支援する →
+            </a>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
+              {sponsors.map(s => {
+                const name = s.sponsor_company_name || s.display_name || "法人スポンサー";
+                return (
+                  <div key={s.backer_id} style={{ background: C.white, borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                    {s.sponsor_logo_url ? (
+                      <img src={s.sponsor_logo_url} alt={name} style={{ maxWidth: "100%", maxHeight: 80, objectFit: "contain", marginBottom: 12 }} />
+                    ) : (
+                      <div style={{ fontSize: 44, marginBottom: 12 }}>🏢</div>
+                    )}
+                    <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 6 }}>{name}</div>
+                    {s.sponsor_website_url ? (
+                      <a href={s.sponsor_website_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: C.orange, textDecoration: "underline" }}>
+                        Web サイト →
+                      </a>
+                    ) : (
+                      <div style={{ fontSize: 11, color: C.warmGray, opacity: 0.6 }}>—</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ background: C.white, borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: C.dark, margin: "0 0 10px" }}>
+                あなたの会社も Qocca を支援できます🐾
+              </h3>
+              <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 14px" }}>
+                CAMPFIRE で「法人スポンサー」リターン (¥300,000) をご支援いただくと<br />
+                このページに法人ロゴと社名を掲載します。
+              </p>
+              <a
+                href="https://camp-fire.jp/projects/view/955666"
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: "inline-block", padding: "10px 22px", background: C.orange, color: "#fff", borderRadius: 22, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
+              >
+                📣 CAMPFIRE で支援する →
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
@@ -12921,6 +13109,7 @@ const LegalPage = ({ type, setPage }) => {
         { h:"第11条（免責事項）", p:"当サービスはユーザー間の取引の仲介プラットフォームであり、出品されたサービスの品質・安全性を保証するものではありません。天災、システム障害等の不可抗力による損害について、当サービスは責任を負いません。" },
         { h:"第12条（規約の変更）", p:"当サービスは本規約を随時変更できるものとします。変更後の規約は当サービス上に掲載した時点で効力を生じます。重要な変更の場合はメールまたはアプリ内通知でお知らせします。" },
         { h:"第13条（準拠法・管轄）", p:"本規約の解釈は日本法に準拠します。本規約に関連する紛争については、大阪地方裁判所を第一審の専属的合意管轄裁判所とします。" },
+        { h:"第30条（クラウドファンディング支援者特典）", p:"1. 当社は、株式会社CAMPFIREが運営するクラウドファンディングサービス「CAMPFIRE」を通じて当社プロジェクトを支援された方（以下「支援者」といいます）に対し、リターンとして本サービス内の特典（以下「クラファン特典」といいます）を提供します。\n2. クラファン特典の付与は、CAMPFIRE 経由で支援者に発行される引き換えコードを 本サービス内 (/redeem) で入力することにより完了します。\n3. クラファン特典には以下が含まれます：(1)創業期メンバーバッジ（永続表示）(2)サービス内ポイント (3)サービス内機能の先行利用権 (4)法人スポンサーロゴ掲載（法人スポンサー支援者該当）(5)創業パートナー名前掲載（永久首長以上 支援者該当）(6)ARK パトロン記念（ARK 専用 支援者該当）\n4. クラファン特典は、支援者が本サービスのアカウントを保有する場合に限り利用可能であり、支援者本人以外への譲渡はできません。\n5. 引き換えコードの有効期限は、CAMPFIRE プロジェクト終了日から1年間とします。\n6. 支援者の名前または法人ロゴの公開表示（/sponsors および HomePage 創業パートナーセクション）は、支援者本人の同意（founding_display_consent）を得た場合に限り行います。同意は支援者がいつでも撤回でき、撤回後は速やかに非表示にします。\n7. クラファン特典のうち「ARK パトロン」（ARK 専用支援者該当）については、支援額のうち¥30,000を「特定非営利活動法人アニマルレフュージ関西【ARK】」への寄付に充当します。寄付実績は本サービス内で公表します。" },
       ]
     },
     privacy: {
@@ -13972,6 +14161,8 @@ function QoccaAppInner() {
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={true}/>} />
             <Route path="/terms" element={<TermsPage setPage={setPage} isPC={true}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
+            {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
+            <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
@@ -14194,6 +14385,8 @@ function QoccaAppInner() {
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={false}/>} />
             <Route path="/terms" element={<TermsPage setPage={setPage} isPC={false}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={false}/>} />
+            {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
+            <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
