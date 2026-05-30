@@ -659,16 +659,29 @@ const CrowdfundingPage = () => {
   const [csvResult, setCsvResult] = useState<{ inserted: number; duplicated: number; errors: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [codeStats, setCodeStats] = useState<Record<string, { issued: number; redeemed: number }>>({});
+  // 依頼書 #34 Phase 1 (2026/5/31): 事前コードプール発行 UI
+  const [poolRewardId, setPoolRewardId] = useState<string>("");
+  const [poolCount, setPoolCount] = useState<number>(10);
+  const [poolBusy, setPoolBusy] = useState(false);
+  const [poolResult, setPoolResult] = useState<{ generated: number; errors: string[] } | null>(null);
+  const [poolCodes, setPoolCodes] = useState<Array<{ id: number; code: string; reward_id: string; issued_at: string; redeemed_at: string | null; redeemed_by_user_id: string | null; notes: string | null }>>([]);
+  const [poolListOpen, setPoolListOpen] = useState(false);
 
   const loadAll = async () => {
     setLoading(true);
-    const [b, r, c] = await Promise.all([
+    const [b, r, c, pc] = await Promise.all([
       supabase.from("crowdfunding_backers").select("*").order("created_at", { ascending: false }),
       supabase.from("crowdfunding_rewards").select("id, name, price_jpy, total_slots, is_active").eq("is_active", true).order("price_jpy"),
       supabase.from("crowdfunding_codes").select("backer_id, redeemed_at"),
+      supabase.from("crowdfunding_codes")
+        .select("id, code, reward_id, issued_at, redeemed_at, redeemed_by_user_id, notes")
+        .is("backer_id", null)
+        .order("issued_at", { ascending: false })
+        .limit(500),
     ]);
     setBackers((b.data as Backer[]) || []);
     setRewards((r.data as Reward[]) || []);
+    setPoolCodes((pc.data as any[]) || []);
     // tier 別 code 統計
     const cs: Record<string, { issued: number; redeemed: number }> = {};
     if (c.data && b.data) {
@@ -786,6 +799,49 @@ const CrowdfundingPage = () => {
     await loadAll();
   };
 
+  // 依頼書 #34 Phase 1 (2026/5/31): 事前コードプール発行
+  // backer_id=NULL で コードを大量発行 → CAMPFIRE 支援者リスト届く前に King がストックしておく用
+  const bulkGeneratePoolCodes = async () => {
+    if (!poolRewardId) { alert("リターンを選択してください"); return; }
+    if (poolCount < 1 || poolCount > 500) { alert("枚数は 1〜500 で指定してください"); return; }
+    if (!confirm(`${poolRewardId} のコードを ${poolCount} 枚 事前発行します。続行?`)) return;
+    setPoolBusy(true);
+    setPoolResult(null);
+    let generated = 0;
+    const errors: string[] = [];
+    const batchNote = `pool batch ${new Date().toISOString().slice(0, 19).replace("T", " ")}`;
+    for (let i = 0; i < poolCount; i++) {
+      const code = generateRedemptionCode();
+      const { error } = await supabase.from("crowdfunding_codes").insert({
+        code, reward_id: poolRewardId, backer_id: null, notes: batchNote,
+      });
+      if (error) {
+        if (error.code === "23505") errors.push(`重複(自動再試行未実装): ${code}`);
+        else errors.push(`${code}: ${error.message}`);
+      } else generated++;
+    }
+    setPoolBusy(false);
+    setPoolResult({ generated, errors });
+    await loadAll();
+  };
+
+  // プールコード CSV エクスポート (CAMPFIRE メッセージで支援者に配布する用)
+  const exportPoolCodesCSV = () => {
+    if (poolCodes.length === 0) { alert("発行済みプールコードがありません"); return; }
+    const header = ["code", "reward_id", "issued_at", "redeemed_at", "redeemed_by_user_id", "notes"].join(",");
+    const body = poolCodes.map(c => [
+      c.code, c.reward_id, c.issued_at, c.redeemed_at || "", c.redeemed_by_user_id || "", c.notes || "",
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = "﻿" + header + "\n" + body; // BOM 付き UTF-8 (Excel 対応)
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qocca-codes-pool-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // ──── 集計 ────
   const filtered = backers.filter(b =>
     (!filterTier || b.tier === filterTier) &&
@@ -865,6 +921,85 @@ const CrowdfundingPage = () => {
             {csvResult.errors.length > 0 && (
               <div style={{ color: "#E57373", fontSize: 11, whiteSpace: "pre-line" }}>{csvResult.errors.slice(0, 8).join("\n")}{csvResult.errors.length > 8 ? `\n... 他 ${csvResult.errors.length - 8}件` : ""}</div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 依頼書 #34 Phase 1: 事前コードプール発行 (backer 紐付け無しで大量発行) ── */}
+      <div style={{ background: C.white, borderRadius: 16, padding: 20, marginBottom: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 4 }}>📦 事前コードプール発行</div>
+        <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 12, lineHeight: 1.6 }}>
+          CAMPFIRE 支援者リストが届く前に、リターン別にコードをまとめて発行できます。<br />
+          発行したコードは <strong>CSV ダウンロード</strong> で書き出し、King が CAMPFIRE のメッセージ機能経由で支援者に配布します。
+        </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+          <select value={poolRewardId} onChange={(e) => setPoolRewardId(e.target.value)} style={{ padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, fontFamily: "inherit", minWidth: 240 }}>
+            <option value="">リターンを選択...</option>
+            {rewards.map(r => (
+              <option key={r.id} value={r.id}>
+                {r.name} (¥{r.price_jpy.toLocaleString()})
+              </option>
+            ))}
+          </select>
+          <input
+            type="number" min={1} max={500} value={poolCount}
+            onChange={(e) => setPoolCount(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+            style={{ width: 100, padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, fontFamily: "inherit" }}
+          />
+          <span style={{ fontSize: 12, color: C.warmGray }}>枚 (1〜500)</span>
+          <button onClick={bulkGeneratePoolCodes} disabled={poolBusy || !poolRewardId} style={{ padding: "8px 16px", background: poolRewardId && !poolBusy ? C.orange : C.warmGray, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: poolRewardId && !poolBusy ? "pointer" : "not-allowed", fontSize: 13, fontFamily: "inherit" }}>
+            {poolBusy ? "発行中..." : "🎟️ 発行する"}
+          </button>
+          <button onClick={exportPoolCodesCSV} disabled={poolCodes.length === 0} style={{ padding: "8px 14px", background: poolCodes.length > 0 ? "#4CAF50" : C.warmGray, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: poolCodes.length > 0 ? "pointer" : "not-allowed", fontSize: 12, fontFamily: "inherit" }}>
+            📥 CSV ダウンロード ({poolCodes.length}件)
+          </button>
+        </div>
+        {poolResult && (
+          <div style={{ padding: 12, background: C.cream, borderRadius: 10, fontSize: 12, marginBottom: 10 }}>
+            <div style={{ color: C.dark, fontWeight: 700, marginBottom: 4 }}>
+              ✅ 新規発行 {poolResult.generated}件 / ⚠️ エラー {poolResult.errors.length}件
+            </div>
+            {poolResult.errors.length > 0 && (
+              <div style={{ color: "#E57373", fontSize: 11, whiteSpace: "pre-line" }}>{poolResult.errors.slice(0, 5).join("\n")}{poolResult.errors.length > 5 ? `\n... 他 ${poolResult.errors.length - 5}件` : ""}</div>
+            )}
+          </div>
+        )}
+        <button onClick={() => setPoolListOpen(!poolListOpen)} style={{ background: "transparent", border: `1px dashed ${C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 11, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>
+          {poolListOpen ? "▲ 発行済プールコード一覧を閉じる" : `▼ 発行済プールコード一覧を表示 (${poolCodes.length}件)`}
+        </button>
+        {poolListOpen && (
+          <div style={{ marginTop: 12, maxHeight: 360, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead style={{ background: C.cream, position: "sticky", top: 0 }}>
+                <tr>
+                  <th style={{ padding: "8px 10px", textAlign: "left", color: C.warmGray, fontWeight: 700 }}>code</th>
+                  <th style={{ padding: "8px 10px", textAlign: "left", color: C.warmGray, fontWeight: 700 }}>reward</th>
+                  <th style={{ padding: "8px 10px", textAlign: "left", color: C.warmGray, fontWeight: 700 }}>発行日時</th>
+                  <th style={{ padding: "8px 10px", textAlign: "center", color: C.warmGray, fontWeight: 700 }}>状態</th>
+                </tr>
+              </thead>
+              <tbody>
+                {poolCodes.map(pc => {
+                  const rewardName = rewards.find(r => r.id === pc.reward_id)?.name || pc.reward_id;
+                  const redeemed = !!pc.redeemed_at;
+                  return (
+                    <tr key={pc.id} style={{ borderTop: `1px solid ${C.border}` }}>
+                      <td style={{ padding: "6px 10px", fontFamily: "monospace", color: C.dark, fontWeight: 700 }}>{pc.code}</td>
+                      <td style={{ padding: "6px 10px", color: C.warmGray }}>{rewardName}</td>
+                      <td style={{ padding: "6px 10px", color: C.warmGray }}>{new Date(pc.issued_at).toLocaleString("ja-JP")}</td>
+                      <td style={{ padding: "6px 10px", textAlign: "center" }}>
+                        {redeemed
+                          ? <span style={{ background: "#E8F5E9", color: "#4CAF50", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700 }}>✅ 引換済</span>
+                          : <span style={{ background: "#FFF3E0", color: "#FF9800", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700 }}>⏳ 未引換</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {poolCodes.length === 0 && (
+                  <tr><td colSpan={4} style={{ padding: 20, textAlign: "center", color: C.warmGray, fontSize: 11 }}>まだプールコードは発行されていません</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
