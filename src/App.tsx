@@ -3895,11 +3895,12 @@ const SectionJoinTown = ({ setPage }) => {
 // 新 HomePage（Phase 1.5 リニューアル版）
 // ============================================================================
 // ── 依頼書 #10 (5/25): クラファン誘導バナー + ARK 連携セクション ─────────
-// 期限制御内蔵: 7/1 以降は完全非表示。6/1-6/30 は「実施中」表示に切り替え
-const CROWDFUNDING_OPEN_DATE = new Date("2026-06-01T09:00:00+09:00");
+// 期限制御内蔵: 7/1 以降は完全非表示。6/3-6/30 は「実施中」表示に切り替え
+// (依頼書 #46 5/31: 6/1 → 6/3 公開日修正)
+const CROWDFUNDING_OPEN_DATE = new Date("2026-06-03T09:00:00+09:00");
 const CROWDFUNDING_CLOSE_DATE = new Date("2026-06-30T23:59:59+09:00");
 const GRAND_OPENING_DATE = new Date("2026-07-01T00:00:00+09:00");
-// CAMPFIRE プロジェクト URL は 6/1 公開時に King がここに設定する
+// CAMPFIRE プロジェクト URL は 6/3 公開時に King がここに設定する
 const CAMPFIRE_PROJECT_URL = ""; // 例: "https://camp-fire.jp/projects/view/xxxxxx"
 
 const CrowdfundingBanner = () => {
@@ -3948,7 +3949,7 @@ const CrowdfundingBanner = () => {
             </>
           ) : (
             <>
-              <strong style={{ color: "#5A4A2C" }}>2026/6/1（月）クラウドファンディング開始</strong><br />
+              <strong style={{ color: "#5A4A2C" }}>2026/6/3（水）クラウドファンディング開始</strong><br />
               特定非営利活動法人アニマルレフュージ関西【ARK】連携・売上の 3% を寄付しています
             </>
           )}
@@ -4058,7 +4059,7 @@ const FoundingPartnersSection = () => {
 
 const ArkPartnershipSection = () => {
   const now = new Date();
-  // 6/1 以降は SectionAnnouncement や CrowdfundingBanner が ARK 言及するので重複回避で薄める
+  // 6/3 以降は SectionAnnouncement や CrowdfundingBanner が ARK 言及するので重複回避で薄める
   // ただし誠実な常時表示として残す
   return (
     <div style={{ padding: "36px 20px 28px", background: "#FAFAF7" }}>
