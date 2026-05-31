@@ -12799,8 +12799,9 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
     const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
     url.searchParams.append("client_id", META_APP_ID);
     url.searchParams.append("redirect_uri", REDIRECT_URI);
-    // Instagram Graph API に必要な scope (Business Account)
-    url.searchParams.append("scope", "instagram_basic,instagram_content_publish,pages_show_list,business_management");
+    // 依頼書 #41 (5/31): Meta 新 scope 体系 (旧 instagram_basic + ... は 2025/1/27 deprecated)
+    // 新: instagram_business_basic + instagram_business_content_publish のみで Container/Publish 可能
+    url.searchParams.append("scope", "instagram_business_basic,instagram_business_content_publish");
     url.searchParams.append("response_type", "code");
     url.searchParams.append("state", user.id);
     window.location.href = url.toString();
