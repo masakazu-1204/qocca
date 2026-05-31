@@ -1786,10 +1786,13 @@ const SectionHero = () => {
             英語メイン (ロゴ下): Live with pets.
             日本語サブ: 動物を飼ったら、当たり前に入れる街。
       */}
+      {/* 依頼書 #42 (5/31): iOS Safari status bar / notch 対策
+          top: max(env(safe-area-inset-top, 0px), 56px) で iPhone notch + Android status bar 両対応
+          index.html viewport meta に viewport-fit=cover 追加で env() 有効化済み */}
       <div style={{
         position: "absolute",
-        top: 32,
-        right: 32,
+        top: "max(env(safe-area-inset-top, 0px), 56px)",
+        right: "max(env(safe-area-inset-right, 0px), 32px)",
         textAlign: "right",
         opacity: 0,
         zIndex: 20,
