@@ -12789,18 +12789,21 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
 
   useEffect(() => { if (user?.id) loadConnection(); }, [user?.id]);
 
-  // OAuth 開始: Instagram は Meta 系で Threads と同じ "Qocca SNS Integration" App を流用想定
-  // Instagram Graph API は Facebook OAuth 経由 (Business Account のみ)
+  // OAuth 開始: Instagram Business Login 新方式 (依頼書 #45 緊急 / 2026/5/31)
+  // 旧 Facebook Login (facebook.com + Meta App ID) では「URL を読み込めません」エラー
+  // 真因: Instagram には専用の App ID + endpoint 体系がある
+  //   - endpoint: https://www.instagram.com/oauth/authorize (NOT facebook.com)
+  //   - client_id: Instagram アプリ ID (NOT Meta App ID)
+  //   - token 交換: api.instagram.com + graph.instagram.com
   const startOAuth = () => {
     if (!user?.id) return;
-    // ※ Meta App ID は Threads と同じものを共有 (Edge Function 側で scope 分岐)
-    const META_APP_ID = "1524294909111459"; // 公開情報 / "Qocca SNS Integration"
+    // Instagram アプリ ID (Meta Portal の「Instagram ログインによる API 設定」内 / 公開情報)
+    const INSTAGRAM_APP_ID = "1674772637106046";
     const REDIRECT_URI = "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/instagram-oauth-callback";
-    const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
-    url.searchParams.append("client_id", META_APP_ID);
+    const url = new URL("https://www.instagram.com/oauth/authorize");
+    url.searchParams.append("client_id", INSTAGRAM_APP_ID);
     url.searchParams.append("redirect_uri", REDIRECT_URI);
-    // 依頼書 #41 (5/31): Meta 新 scope 体系 (旧 instagram_basic + ... は 2025/1/27 deprecated)
-    // 新: instagram_business_basic + instagram_business_content_publish のみで Container/Publish 可能
+    // 依頼書 #41: Meta 新 scope (旧 instagram_basic 等は 2025/1/27 deprecated)
     url.searchParams.append("scope", "instagram_business_basic,instagram_business_content_publish");
     url.searchParams.append("response_type", "code");
     url.searchParams.append("state", user.id);
