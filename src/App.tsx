@@ -2047,7 +2047,7 @@ const SectionWhatIsQocca = ({ setPage }) => {
   const items = [
     {
       title: 'うちの子との記憶を、形に残す',
-      quote: '"あの瞬間を、永遠の形に"',
+      quote: '"あの瞬間を、長く残る形に"',
       desc: '似顔絵、羊毛作品、記念グッズ。\n街の作家たちが、心を込めて。',
       linkText: '商店街を覗いてみる',
       onClick: () => setPage("search"),
@@ -4029,7 +4029,7 @@ const FoundingPartnersSection = () => {
             {partners.map(p => {
               const name = p.tier === "corporate_300000"
                 ? (p.sponsor_company_name || p.founding_display_name || p.display_name || "法人スポンサー")
-                : (p.founding_display_name || p.display_name || "永久首長");
+                : (p.founding_display_name || p.display_name || "街の首長");
               const icon = p.tier === "corporate_300000" ? "🏢" : "👑";
               return (
                 <span key={p.backer_id} style={{
@@ -4952,7 +4952,7 @@ const SellPage = ({ setPage }) => {
     }
   }, [variantOptions, hasVariants, regenerateVariants]);
 
-  // 依頼書 #9 (5/25): 創業クリエイター情報取得 (永久3% バナー表示用)
+  // 依頼書 #9 (5/25): 創業クリエイター情報取得 (事業が存続する限り3% バナー表示用)
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
@@ -5148,10 +5148,10 @@ const SellPage = ({ setPage }) => {
                 <div style={{ fontSize:28 }}>🎨</div>
                 <div style={{ flex:1, lineHeight:1.6 }}>
                   <div style={{ fontSize:13, fontWeight:800, color:"#6A1B9A" }}>
-                    創業クリエイター永久 {foundingFeeRate ?? 3}% 手数料
+                    創業クリエイター事業が存続する限り {foundingFeeRate ?? 3}% 手数料
                   </div>
                   <div style={{ fontSize:11, color:"#7B1FA2" }}>
-                    出品し続けても永久に優遇率で支えますで🌸
+                    出品し続けても事業が存続する限りに優遇率で支えますで🌸
                   </div>
                 </div>
               </div>
@@ -5165,7 +5165,7 @@ const SellPage = ({ setPage }) => {
                 <div style={{ fontSize:18 }}>🎁</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12, fontWeight:800, color:"#2E7D32" }}>
-                    クラファン参加で 永久 3% 手数料に
+                    クラファン参加で 事業が存続する限り 3% 手数料に
                   </div>
                   <div style={{ fontSize:10, color:"#388E3C" }}>
                     創業クリエイター枠 (¥8,000) → 引換コードを入力
@@ -6498,7 +6498,7 @@ const REDEEM_TIER_THEME: Record<string, { color: string; bg: string; icon: strin
   resident_3000:    { color: "#66BB6A", bg: "#E8F5E9", icon: "🏘️", label: "創業メンバー｜街の住民" },
   creator_8000:     { color: "#AB47BC", bg: "#F3E5F5", icon: "🎨", label: "創業クリエイター" },
   family_15000:     { color: "#F5A94A", bg: "#FFF3E0", icon: "🐾", label: "創業ファミリー" },
-  mayor_30000:      { color: "#FFA000", bg: "#FFF8E1", icon: "👑", label: "永久首長" },
+  mayor_30000:      { color: "#FFA000", bg: "#FFF8E1", icon: "👑", label: "街の首長" },
   ark_patron_50000: { color: "#26A69A", bg: "#E0F2F1", icon: "🏥", label: "動物福祉パトロン" },
   corporate_300000: { color: "#5C6BC0", bg: "#E8EAF6", icon: "🏢", label: "法人スポンサー" },
 };
@@ -6652,7 +6652,7 @@ const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
                 <div style={{ marginTop: 10, padding: "10px 0 0", borderTop: `1px solid ${C.border}` }}>
                   <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>⭐ プロフィール特典</div>
                   {result.profile_flags_set.includes("is_founding_creator") && (
-                    <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}>🎨 創業クリエイター認定 (永久手数料 3%)</div>
+                    <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}>🎨 創業クリエイター認定 (事業が存続する限り手数料 3%)</div>
                   )}
                   {result.profile_flags_set.includes("is_founding_mayor") && (
                     <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}>👑 創業首長認定</div>
@@ -7452,11 +7452,11 @@ const MyPage = ({ setPage }) => {
                     👑 Founding Mayor 2026
                   </div>
                   <div style={{ fontSize: 11, color: "#8B6F00", lineHeight: 1.6 }}>
-                    Qocca 街の永久首長として、創業期から街を支える方
+                    Qocca 街の街の首長として、創業期から街を支える方
                   </div>
                 </div>
               )}
-              {/* 依頼書 #7 Phase A.2 (5/25): 🎨 Founding Creator バッジ + 永久3% 手数料 */}
+              {/* 依頼書 #7 Phase A.2 (5/25): 🎨 Founding Creator バッジ + 事業が存続する限り3% 手数料 */}
               {profile?.is_founding_creator && (
                 <div style={{
                   marginTop: 12, padding: "14px 18px",
@@ -7468,7 +7468,7 @@ const MyPage = ({ setPage }) => {
                     🎨 Founding Creator
                   </div>
                   <div style={{ fontSize: 11, color: "#7B1FA2", lineHeight: 1.6 }}>
-                    永久手数料 <strong style={{ fontSize: 14 }}>{profile.founding_creator_fee_rate ?? 3}%</strong> (通常10% → 創業特典)
+                    事業が存続する限り手数料 <strong style={{ fontSize: 14 }}>{profile.founding_creator_fee_rate ?? 3}%</strong> (通常10% → 創業特典)
                   </div>
                 </div>
               )}
@@ -8154,7 +8154,7 @@ const EarningsTab = () => {
   const [showInstantModal, setShowInstantModal] = useState(false);
   const [instantAmount, setInstantAmount] = useState("");
   const [settings, setSettings] = useState<Record<string, string>>({});
-  // 依頼書 #7 Phase A.2 (5/25): 創業クリエイター永久3%手数料表示用
+  // 依頼書 #7 Phase A.2 (5/25): 創業クリエイター事業が存続する限り3%手数料表示用
   const [foundingCreatorFeeRate, setFoundingCreatorFeeRate] = useState<number | null>(null);
 
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qufrqkuipzuqeqkvuhkx.supabase.co";
@@ -8192,7 +8192,7 @@ const EarningsTab = () => {
       for (const s of settingsData || []) settingsMap[s.key] = s.value;
       setSettings(settingsMap);
 
-      // 依頼書 #7 Phase A.2: 創業クリエイター情報取得 (永久3%手数料表示用)
+      // 依頼書 #7 Phase A.2: 創業クリエイター情報取得 (事業が存続する限り3%手数料表示用)
       const { data: prof } = await sb
         .from("profiles")
         .select("is_founding_creator, founding_creator_fee_rate")
@@ -8329,7 +8329,7 @@ const handleOpenDashboard = async () => {
         </div>
       )}
 
-      {/* 依頼書 #7 Phase A.2 (5/25): 🎨 創業クリエイター永久3%手数料バナー */}
+      {/* 依頼書 #7 Phase A.2 (5/25): 🎨 創業クリエイター事業が存続する限り3%手数料バナー */}
       {foundingCreatorFeeRate !== null && (
         <div style={{
           background: "linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)",
@@ -8345,7 +8345,7 @@ const handleOpenDashboard = async () => {
               あなたは創業クリエイター
             </div>
             <div style={{ fontSize: 12, color: "#7B1FA2" }}>
-              永久販売手数料 <strong style={{ fontSize: 16 }}>{foundingCreatorFeeRate}%</strong> (通常 10% → 創業特典)
+              事業が存続する限り販売手数料 <strong style={{ fontSize: 16 }}>{foundingCreatorFeeRate}%</strong> (通常 10% → 創業特典)
             </div>
           </div>
         </div>
@@ -13094,7 +13094,7 @@ const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void }) => 
               </h3>
               <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 14px" }}>
                 CAMPFIRE の「創業クリエイター」リターン (¥8,000) で<br />
-                <strong style={{ color: C.dark }}>永久手数料 3% (通常 10%→3%)</strong> + 創業クリエイターバッジ獲得
+                <strong style={{ color: C.dark }}>事業が存続する限り手数料 3% (通常 10%→3%)</strong> + 創業クリエイターバッジ獲得
               </p>
               <a
                 href="https://camp-fire.jp/projects/view/955666"
@@ -13303,12 +13303,12 @@ const LegalPage = ({ type, setPage }) => {
         { h:"第6条（禁止事項）", p:"以下の行為を禁止します。(1)生体動物の売買 (2)プラットフォーム外への取引誘導（LINE、メール等での直接取引） (3)著作権・知的財産権を侵害する出品 (4)虚偽の情報・なりすまし (5)他のユーザーへの嫌がらせ・誹謗中傷 (6)法令に違反する行為 (7)当サービスのシステムに対する不正アクセス (8)サクラ行為（自作自演レビュー、報酬を伴う偽レビュー、未購入での評価投稿、なりすましアカウントによる評価操作 等）" },
         { h:"第7条（キャンセル・返金）", p:"作業開始前のキャンセルは購入者へ全額返金されます。納品後72時間以内に異議申し立てが可能です。出品者都合による返金の場合、購入者へ全額返金され、決済手数料は出品者が負担します。購入者都合による納品前キャンセルの場合、決済手数料（商品代金の3.6%）を差し引いた金額が返金されます。納品済み・受取確認後のキャンセルは原則不可です。商品にバリエーション（色違い・サイズ違い等）がある場合も、上記の規定はバリエーションごとに適用されます。" },
         { h:"第8条（異議申し立て）", p:"購入者は納品後72時間以内に異議を申し立てることができます。異議申し立て後、出品者に48時間の回答期限が設定されます。回答がない場合、自動的に購入者へ返金されます。当サービスは両者の主張を確認し、公正に判断します。" },
-        { h:"第9条（レビュー・評価の真正性）", p:"Qoccaは、レビュー・評価を住民の暮らしの記録として大切にします。そのため、以下を運営の永続的な約束として明示します。(1)当サービスは、運営側による架空のレビュー・評価（いわゆる「サクラ」）を一切行いません。(2)ユーザーによるサクラ行為（報酬を伴う偽レビュー、自作自演レビュー、なりすましによる評価等）を禁止し、発見次第アカウント停止等の措置を取ります。(3)レビューは実際に取引を完了した購入者のみが投稿できる仕様としています。(4)この方針はQoccaの創業からの永続的な約束であり、将来にわたって運営側もユーザーも遵守します。" },
+        { h:"第9条（レビュー・評価の真正性）", p:"Qoccaは、レビュー・評価を住民の暮らしの記録として大切にします。そのため、以下を運営の事業が存続する限り守る約束として明示します。(1)当サービスは、運営側による架空のレビュー・評価（いわゆる「サクラ」）を一切行いません。(2)ユーザーによるサクラ行為（報酬を伴う偽レビュー、自作自演レビュー、なりすましによる評価等）を禁止し、発見次第アカウント停止等の措置を取ります。(3)レビューは実際に取引を完了した購入者のみが投稿できる仕様としています。(4)この方針はQoccaの創業からの事業が存続する限り守る約束であり、将来にわたって運営側もユーザーも遵守します。" },
         { h:"第10条（ペナルティ）", p:"禁止事項に該当する行為が確認された場合、警告、出品停止、アカウント停止等の措置を取ることがあります。特に重大な違反（生体売買・詐欺）については即時アカウント停止となります。" },
         { h:"第11条（免責事項）", p:"当サービスはユーザー間の取引の仲介プラットフォームであり、出品されたサービスの品質・安全性を保証するものではありません。天災、システム障害等の不可抗力による損害について、当サービスは責任を負いません。" },
         { h:"第12条（規約の変更）", p:"当サービスは本規約を随時変更できるものとします。変更後の規約は当サービス上に掲載した時点で効力を生じます。重要な変更の場合はメールまたはアプリ内通知でお知らせします。" },
         { h:"第13条（準拠法・管轄）", p:"本規約の解釈は日本法に準拠します。本規約に関連する紛争については、大阪地方裁判所を第一審の専属的合意管轄裁判所とします。" },
-        { h:"第30条（クラウドファンディング支援者特典）", p:"1. 当社は、株式会社CAMPFIREが運営するクラウドファンディングサービス「CAMPFIRE」を通じて当社プロジェクトを支援された方（以下「支援者」といいます）に対し、リターンとして本サービス内の特典（以下「クラファン特典」といいます）を提供します。\n2. クラファン特典の付与は、CAMPFIRE 経由で支援者に発行される引き換えコードを 本サービス内 (/redeem) で入力することにより完了します。\n3. クラファン特典には以下が含まれます：(1)創業期メンバーバッジ（永続表示）(2)サービス内ポイント (3)サービス内機能の先行利用権 (4)法人スポンサーロゴ掲載（法人スポンサー支援者該当）(5)創業パートナー名前掲載（永久首長以上 支援者該当）(6)ARK パトロン記念（ARK 専用 支援者該当）\n4. クラファン特典は、支援者が本サービスのアカウントを保有する場合に限り利用可能であり、支援者本人以外への譲渡はできません。\n5. 引き換えコードの有効期限は、CAMPFIRE プロジェクト終了日から1年間とします。\n6. 支援者の名前または法人ロゴの公開表示（/sponsors および HomePage 創業パートナーセクション）は、支援者本人の同意（founding_display_consent）を得た場合に限り行います。同意は支援者がいつでも撤回でき、撤回後は速やかに非表示にします。\n7. クラファン特典のうち「ARK パトロン」（ARK 専用支援者該当）については、支援額のうち¥30,000を「特定非営利活動法人アニマルレフュージ関西」への寄付に充当します。寄付実績は本サービス内で公表します。" },
+        { h:"第30条（クラウドファンディング支援者特典）", p:"1. 当社は、株式会社CAMPFIREが運営するクラウドファンディングサービス「CAMPFIRE」を通じて当社プロジェクトを支援された方（以下「支援者」といいます）に対し、リターンとして本サービス内の特典（以下「クラファン特典」といいます）を提供します。\n2. クラファン特典の付与は、CAMPFIRE 経由で支援者に発行される引き換えコードを 本サービス内 (/redeem) で入力することにより完了します。\n3. クラファン特典には以下が含まれます：(1)創業期メンバーバッジ（事業が存続する限り表示）(2)サービス内ポイント (3)サービス内機能の先行利用権 (4)法人スポンサーロゴ掲載（法人スポンサー支援者該当）(5)創業パートナー名前掲載（街の首長以上 支援者該当）(6)動物福祉パトロン記念（動物福祉団体支援者該当）\n4. クラファン特典は、支援者が本サービスのアカウントを保有する場合に限り利用可能であり、支援者本人以外への譲渡はできません。\n5. 引き換えコードの有効期限は、CAMPFIRE プロジェクト終了日から1年間とします。\n6. 支援者の名前または法人ロゴの公開表示（/sponsors および HomePage 創業パートナーセクション）は、支援者本人の同意（founding_display_consent）を得た場合に限り行います。同意は支援者がいつでも撤回でき、撤回後は速やかに非表示にします。\n7. クラファン特典のうち「動物福祉パトロン」（動物福祉団体支援者該当）については、支援額のうち¥30,000を「特定非営利活動法人アニマルレフュージ関西」への寄付に充当します。寄付実績は本サービス内で公表します。" },
       ]
     },
     privacy: {

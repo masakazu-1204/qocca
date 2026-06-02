@@ -573,7 +573,7 @@ const TIER_OPTIONS = [
   { id: "resident_3000", label: "創業メンバー", limit: 300 },
   { id: "creator_8000", label: "創業クリエイター", limit: 100 },
   { id: "family_15000", label: "創業ファミリー", limit: 50 },
-  { id: "mayor_30000", label: "永久首長", limit: 20 },
+  { id: "mayor_30000", label: "街の首長", limit: 20 },
   { id: "ark_patron_50000", label: "動物福祉パトロン", limit: 10 },
   { id: "corporate_300000", label: "法人スポンサー", limit: 5 },
 ];
