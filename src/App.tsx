@@ -7452,7 +7452,7 @@ const MyPage = ({ setPage }) => {
                     👑 Founding Mayor 2026
                   </div>
                   <div style={{ fontSize: 11, color: "#8B6F00", lineHeight: 1.6 }}>
-                    Qocca 街の街の首長として、創業期から街を支える方
+                    Qocca の街の首長として、創業期から街を支える方
                   </div>
                 </div>
               )}
