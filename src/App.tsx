@@ -252,6 +252,11 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
     stock_quantity: isNaN(stockValue) ? null : stockValue,
     status: isDraft ? "draft" : "pending",
     has_variants: hasVariants,
+    // 依頼書 #104 Phase B (2026/6/3): 送料設定 4タイプ
+    shipping_type: form.shipping_type || 'included',
+    shipping_fee: form.shipping_type === 'flat_rate' ? (parseInt(form.shipping_fee) || 0) : 0,
+    shipping_rates: form.shipping_type === 'regional' ? (form.shipping_rates || []) : [],
+    shipping_note: form.shipping_note?.trim() || '',
   }).select().single();
 
   if (listingErr || !listing) {
@@ -4573,12 +4578,46 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           </div>
         )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
-          {[["⏱️ 納期", item.delivery],["📬 受け渡し", item.delivery_type==="shipping"?"📦 配送":item.delivery_type==="visit"?"📍 訪問":"💻 データ"],["🐾 対象", item.pet==="both"?"🐾 両対応":`${petIcon(item.pet)} ${petLabelShort(item.pet)}向け`],["🔒 保証","エスクロー決済"]].map(([k,v])=>(
-            <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
-              <span style={{ fontSize:13, color:C.warmGray }}>{k}</span>
-              <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{v}</span>
+          {(() => {
+            // 依頼書 #104 Phase B (2026/6/3): 送料表示 4タイプ別
+            const st = item.shipping_type || "included";
+            let shipLabel: string = "";
+            if (st === "included") shipLabel = "✅ 送料込み";
+            else if (st === "flat_rate") shipLabel = `📮 全国一律 ¥${(item.shipping_fee || 0).toLocaleString()}`;
+            else if (st === "regional") shipLabel = "🗾 地域により異なる";
+            else if (st === "consultation") shipLabel = "💬 出品者にお問い合わせ";
+            const rows: Array<[string, string]> = [
+              ["⏱️ 納期", item.delivery],
+              ["📬 受け渡し", item.delivery_type === "shipping" ? "📦 配送" : item.delivery_type === "visit" ? "📍 訪問" : "💻 データ"],
+              ["🚚 送料", shipLabel],
+              ["🐾 対象", item.pet === "both" ? "🐾 両対応" : `${petIcon(item.pet)} ${petLabelShort(item.pet)}向け`],
+              ["🔒 保証", "エスクロー決済"],
+            ];
+            return rows.map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 13, color: C.warmGray }}>{k}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{v}</span>
+              </div>
+            ));
+          })()}
+          {/* regional 時の地域別送料 内訳テーブル */}
+          {item.shipping_type === "regional" && Array.isArray(item.shipping_rates) && item.shipping_rates.length > 0 && (
+            <div style={{ marginTop: 10, padding: 10, background: C.cream, borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}>地域別送料</div>
+              {item.shipping_rates.map((r: any, i: number) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
+                  <span style={{ color: C.dark }}>{r.region}</span>
+                  <span style={{ fontWeight: 700, color: C.orange }}>¥{(r.fee || 0).toLocaleString()}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          {/* shipping_note 補足説明 */}
+          {item.shipping_note && (
+            <div style={{ marginTop: 8, padding: "8px 10px", background: C.cream, borderRadius: 6, fontSize: 11, color: C.warmGray, lineHeight: 1.5 }}>
+              💡 {item.shipping_note}
+            </div>
+          )}
         </div>
 
         {/* エスクロー説明 */}
@@ -4852,7 +4891,16 @@ const SellPage = ({ setPage }) => {
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only", stock:"", creation_story:"" });
+  // 依頼書 #104 Phase B: form に shipping_* 4項目追加 (デフォルト included)
+  // shipping_rates は地域別配列 [{ region: '本州', fee: 0 }, ...]
+  const [form, setForm] = useState<any>({
+    cat:"", pet:"both", title:"", desc:"", price:"", delivery:"", delivery_type:"data_only", stock:"", creation_story:"",
+    shipping_type:"included", shipping_fee:"", shipping_rates: [
+      { region: "本州", fee: 0 },
+      { region: "北海道", fee: 0 },
+      { region: "沖縄・離島", fee: 0 },
+    ], shipping_note:"",
+  });
   const [images, setImages] = useState([]);
   const [options, setOptions] = useState([]);
   // Phase B: Variant (種類) state
@@ -5318,6 +5366,68 @@ const SellPage = ({ setPage }) => {
                     {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18, marginTop:2 }}>✓</span>}
                   </button>
                 ))}
+              </div>
+            </div>
+            {/* 依頼書 #104 Phase B (2026/6/3): 送料設定 4タイプ (delivery_type=shipping 時のみ詳細表示) */}
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:13, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>送料設定</label>
+              <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>配送方法を選択してください (海外展開・地域別対応)</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {[
+                  { v:"included", icon:"✅", label:"送料込み (無料配送)", desc:"商品代金に送料を含めます" },
+                  { v:"flat_rate", icon:"📮", label:"全国一律", desc:"日本全国どこでも同じ送料" },
+                  { v:"regional", icon:"🗾", label:"地域別", desc:"地域ごとに送料を設定 (本州・北海道・沖縄等)" },
+                  { v:"consultation", icon:"💬", label:"要相談 (個別連絡)", desc:"取引後にメッセージで送料を相談" },
+                ].map(opt => (
+                  <button key={opt.v} type="button" onClick={()=>up("shipping_type", opt.v)} style={{
+                    padding:"10px 14px", border:`2px solid ${form.shipping_type===opt.v ? C.orange : C.border}`,
+                    borderRadius:10, background:form.shipping_type===opt.v ? C.orangePale : C.white,
+                    cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:10, alignItems:"flex-start"
+                  }}>
+                    <span style={{ fontSize:20, flexShrink:0 }}>{opt.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:C.dark }}>{opt.label}</div>
+                      <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5 }}>{opt.desc}</div>
+                    </div>
+                    {form.shipping_type===opt.v && <span style={{ color:C.orange, fontSize:16 }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+              {/* flat_rate: 金額入力 */}
+              {form.shipping_type === "flat_rate" && (
+                <div style={{ marginTop:10, padding:12, background:C.cream, borderRadius:10 }}>
+                  <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>全国一律送料 (¥)</label>
+                  <input type="number" min="0" value={form.shipping_fee} onChange={(e)=>up("shipping_fee", e.target.value)} placeholder="例: 800" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                </div>
+              )}
+              {/* regional: 地域別 動的リスト */}
+              {form.shipping_type === "regional" && (
+                <div style={{ marginTop:10, padding:12, background:C.cream, borderRadius:10 }}>
+                  <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:8 }}>地域別送料 (海外展開可)</label>
+                  {(form.shipping_rates || []).map((rate: any, idx: number) => (
+                    <div key={idx} style={{ display:"flex", gap:8, marginBottom:6, alignItems:"center" }}>
+                      <input type="text" value={rate.region} onChange={(e) => {
+                        const next = [...form.shipping_rates]; next[idx] = { ...next[idx], region: e.target.value }; up("shipping_rates", next);
+                      }} placeholder="地域名" style={{ flex:1, padding:"8px 10px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }} />
+                      <input type="number" min="0" value={rate.fee} onChange={(e) => {
+                        const next = [...form.shipping_rates]; next[idx] = { ...next[idx], fee: parseInt(e.target.value) || 0 }; up("shipping_rates", next);
+                      }} placeholder="送料 ¥" style={{ width:100, padding:"8px 10px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }} />
+                      <button type="button" onClick={() => { const next = form.shipping_rates.filter((_:any, i:number) => i !== idx); up("shipping_rates", next); }} style={{ width:30, height:30, border:"none", background:"transparent", color:"#E57373", fontSize:18, cursor:"pointer" }}>×</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => { up("shipping_rates", [...(form.shipping_rates || []), { region: "", fee: 0 }]); }} style={{ padding:"6px 12px", background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, color:C.warmGray, fontSize:12, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>+ 地域を追加</button>
+                </div>
+              )}
+              {/* consultation: 補足説明 */}
+              {form.shipping_type === "consultation" && (
+                <div style={{ marginTop:10, padding:12, background:C.cream, borderRadius:10, fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
+                  💬 購入後、取引メッセージで配送先・送料を個別相談します。送料は購入者・出品者間で合意の上、別途お支払いください。
+                </div>
+              )}
+              {/* shipping_note: 補足説明欄 (全タイプ共通) */}
+              <div style={{ marginTop:10 }}>
+                <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>送料の補足説明 (任意)</label>
+                <input type="text" value={form.shipping_note} onChange={(e)=>up("shipping_note", e.target.value)} placeholder="例: 同梱対応可 / 速達+500円 等" style={{ width:"100%", padding:"8px 10px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }} />
               </div>
             </div>
             {/* 画像アップロード */}
