@@ -13,6 +13,8 @@ import PetEditModal from "./components/PetEditModal";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import { ReviewModal } from "./components/ReviewModal";
+// 依頼書 #105 (2026/6/3): 弁護士確認版利用規約 v2.0 (別ファイル化で App.tsx 軽量維持)
+import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
@@ -340,11 +342,11 @@ const CATS = [
 // listings は useListings hook が DB から取得する。
 // フォールバック先は空配列とする (King 判断: Supabase 障害 / RLS ミス / network エラー時に
 // 架空 seller + 偽 rating/reviews を出すリスクを永続排除)。
-// 詳細: 利用規約 第9条 / ブランド人格 v3 第2章二・第11章・第13章
+// 詳細: 利用規約 第16条第1項⑤ / ブランド人格 v3 第2章二・第11章・第13章 (依頼書 #105 v2.0 連動更新)
 const LISTINGS: any[] = [];
 
 // レビューはユーザーの実取引完了後に reviews テーブルから取得する設計。
-// 運営による架空レビューは一切置かない（利用規約 第9条、ブランド人格 v3 第2章二・第11章・第13章）。
+// 運営による架空レビューは一切置かない（利用規約 第16条第1項⑤、ブランド人格 v3 第2章二・第11章・第13章）。
 const REVIEWS: any[] = [];
 
 const EVENTS: any[] = [];
@@ -974,9 +976,14 @@ const TokushoPage = ({ setPage, isPC }) => {
   );
 };
 
-// ── 利用規約 ─────────────────────────────────────────────────────
-const TermsPage = ({ setPage, isPC }) => {
-  return (
+// ── 利用規約 (依頼書 #105: 弁護士確認版 v2.0 / LegalPage に統一) ─────
+const TermsPage = ({ setPage, isPC: _isPC }) => {
+  // 旧 TermsPage の JSX は v2.0 と互換性なし → LegalPage(type=terms) に転送
+  return <LegalPage type="terms" setPage={setPage}/>;
+};
+
+// 旧 JSX (2026/5/11 版・dead code・参照禁止・将来削除予定 / Vite tree-shaking で除去)
+const _TermsPage_legacy_dead_code = () => (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
         <button onClick={()=>setPage("home")} style={{ background:"none", border:"none", color:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:16, padding:0, fontFamily:"inherit" }}>← ホームに戻る</button>
@@ -1038,8 +1045,8 @@ const TermsPage = ({ setPage, isPC }) => {
         </div>
       </div>
     </div>
-  );
-};
+);
+// 旧 TermsPage JSX 終わり (dead code) ───────────────────────────────
 
 // ── プライバシーポリシー ────────────────────────────────────────────
 const PrivacyPage = ({ setPage, isPC }) => {
@@ -13401,8 +13408,15 @@ const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
 // ── Legal Pages ───────────────────────────────────────────────────────────
 const LegalPage = ({ type, setPage }) => {
   const pages = {
+    // 依頼書 #105 (2026/6/3): 弁護士確認版 利用規約 v2.0 (前文 + 第1〜28条 + 第29条クラファン + 附則)
     terms: {
-      title: "利用規約",
+      title: TERMS_V2.title,
+      updated: TERMS_V2.effective_date + " 施行 (" + TERMS_V2.lawyer_reviewed + " 弁護士確認版)",
+      sections: TERMS_V2.sections,
+    },
+    // 旧 sections は v2.0 と互換性なし → import TERMS_V2 で全置換
+    _terms_legacy_disabled: {
+      title: "利用規約 (旧版・参照禁止)",
       updated: "2026年5月16日",
       sections: [
         { h:"第1条（適用）", p:"本規約は、Qocca（以下「当サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意した上で当サービスを利用するものとします。" },
@@ -13448,7 +13462,7 @@ const LegalPage = ({ type, setPage }) => {
         { h:"支払方法", p:"クレジットカード決済（Stripe経由：VISA、Mastercard、JCB、American Express対応）" },
         { h:"支払時期", p:"注文確定時に決済されます。エスクロー方式により、取引完了まで当サービスがお預かりします。" },
         { h:"サービス提供時期", p:"注文確定後、出品者が設定した納期内に提供されます。" },
-        { h:"返品・キャンセル", p:"作業開始前（購入者都合）：決済手数料（3.6%）を差し引いた金額を返金。\n作業開始前（出品者都合）：全額返金。\n納品後72時間以内：異議申し立て可能（出品者都合の場合は全額返金）。\n納品後72時間経過：取引完了（返金不可）。\n詳細は利用規約第7条をご確認ください。" },
+        { h:"返品・キャンセル", p:"作業開始前（購入者都合）：決済手数料（3.6%）を差し引いた金額を返金。\n作業開始前（出品者都合）：全額返金。\n納品後72時間以内：異議申し立て可能（出品者都合の場合は全額返金）。\n納品後72時間経過：取引完了（返金不可）。\n詳細は利用規約第12条をご確認ください。" },
         { h:"動作環境", p:"Google Chrome、Safari、Firefox、Edgeの最新版を推奨。\nスマートフォンはiOS 15以降、Android 10以降を推奨。" },
         { h:"役務の対価以外の必要料金", p:"インターネット接続料金、通信料はユーザー負担となります。" },
       ]
@@ -14468,7 +14482,7 @@ function QoccaAppInner() {
           <Routes>
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={true}/>} />
-            <Route path="/terms" element={<TermsPage setPage={setPage} isPC={true}/>} />
+            <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
             <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
@@ -14694,7 +14708,7 @@ function QoccaAppInner() {
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={false}/>} />
-            <Route path="/terms" element={<TermsPage setPage={setPage} isPC={false}/>} />
+            <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={false}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
             <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
