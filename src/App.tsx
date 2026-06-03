@@ -4250,6 +4250,8 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [addressMode, setAddressMode] = useState<"select"|"new">("select");
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState("");
+  // 依頼書 #104 Phase B-2 (2026/6/3): regional 動的計算 - 購入者が選択する配送先地域
+  const [selectedShippingRegion, setSelectedShippingRegion] = useState<string>("");
   const [reportDone, setReportDone] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState({});
   // Phase B: Variant 選択 state
@@ -4361,6 +4363,24 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         }
       }
 
+      // 依頼書 #104 Phase B-2 (2026/6/3): 送料動的計算 (Edge Function は Phase C で受信処理 / クライアント値は参考のみ)
+      let shippingFeeForOrder = 0;
+      let shippingRegionForOrder: string | null = null;
+      const shipType = item.shipping_type || "included";
+      if (shipType === "flat_rate") {
+        shippingFeeForOrder = item.shipping_fee || 0;
+      } else if (shipType === "regional") {
+        if (!selectedShippingRegion) {
+          alert("配送先地域を選択してください");
+          setOrdering(false);
+          return;
+        }
+        const rate = (item.shipping_rates || []).find((r: any) => r.region === selectedShippingRegion);
+        shippingFeeForOrder = rate?.fee || 0;
+        shippingRegionForOrder = selectedShippingRegion;
+      }
+      // included / consultation は shipping_fee=0
+
       const res = await fetch("https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -4376,6 +4396,9 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           shipping_address_id: shippingAddressId,
           // Phase B: variant_id を Edge Function に渡す (Phase C で受信処理)
           variant_id: hasVariants && selectedVariant ? selectedVariant.id : null,
+          // 依頼書 #104 Phase B-2 (2026/6/3): 送料情報 (Phase C で line_items / orders.shipping_* 反映予定)
+          shipping_fee: shippingFeeForOrder,
+          shipping_region: shippingRegionForOrder,
         })
       });
 
@@ -4607,16 +4630,35 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
               </div>
             ));
           })()}
-          {/* regional 時の地域別送料 内訳テーブル */}
+          {/* regional 時の地域別送料 - 依頼書 #104 Phase B-2 (2026/6/3) で選択可能ラジオ化 */}
           {item.shipping_type === "regional" && Array.isArray(item.shipping_rates) && item.shipping_rates.length > 0 && (
             <div style={{ marginTop: 10, padding: 10, background: C.cream, borderRadius: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}>地域別送料</div>
-              {item.shipping_rates.map((r: any, i: number) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
-                  <span style={{ color: C.dark }}>{r.region}</span>
-                  <span style={{ fontWeight: 700, color: C.orange }}>¥{(r.fee || 0).toLocaleString()}</span>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}>📍 配送先地域を選択</div>
+              {item.shipping_rates.map((r: any, i: number) => {
+                const isSelected = selectedShippingRegion === r.region;
+                return (
+                  <div key={i} onClick={()=>setSelectedShippingRegion(r.region)} style={{
+                    display:"flex", justifyContent:"space-between", alignItems:"center",
+                    padding:"8px 10px", fontSize:12, cursor:"pointer", marginBottom:4,
+                    background:isSelected ? C.white : "transparent",
+                    border:isSelected ? `1.5px solid ${C.orange}` : `1.5px solid transparent`,
+                    borderRadius:6
+                  }}>
+                    <span style={{ color:C.dark, display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${isSelected?C.orange:C.border}`, display:"inline-block", position:"relative", flexShrink:0 }}>
+                        {isSelected && <span style={{ position:"absolute", top:2, left:2, right:2, bottom:2, borderRadius:"50%", background:C.orange, display:"block" }}></span>}
+                      </span>
+                      {r.region}
+                    </span>
+                    <span style={{ fontWeight:700, color:C.orange }}>¥{(r.fee || 0).toLocaleString()}</span>
+                  </div>
+                );
+              })}
+              {selectedShippingRegion && (
+                <div style={{ marginTop:6, padding:"6px 10px", background:C.orangePale, borderRadius:6, fontSize:11, color:C.orange, fontWeight:700, textAlign:"center" }}>
+                  ✓ {selectedShippingRegion} を選択中
                 </div>
-              ))}
+              )}
             </div>
           )}
           {/* shipping_note 補足説明 */}
@@ -9231,6 +9273,14 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
   const [description, setDescription] = useState(listing.description || "");
   const [price, setPrice] = useState(listing.price?.toString() || "");
   const [delivery, setDelivery] = useState(listing.delivery_days || "");
+  // 依頼書 #104 Phase B-2 (2026/6/3): 4タイプ送料編集 UI (SellPage と同パターン)
+  const [shippingType, setShippingType] = useState<string>(listing.shipping_type || "included");
+  const [shippingFee, setShippingFee] = useState<string>(listing.shipping_fee != null ? String(listing.shipping_fee) : "");
+  const [shippingRates, setShippingRates] = useState<any[]>(() => {
+    if (Array.isArray(listing.shipping_rates) && listing.shipping_rates.length > 0) return listing.shipping_rates;
+    return [{ region:"本州", fee:0 }, { region:"北海道", fee:0 }, { region:"沖縄・離島", fee:0 }];
+  });
+  const [shippingNote, setShippingNote] = useState<string>(listing.shipping_note || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -9248,6 +9298,11 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
         description: description.trim(),
         price: priceNum,
         delivery_days: delivery,
+        // 依頼書 #104 Phase B-2 (2026/6/3): 4タイプ送料 UPDATE
+        shipping_type: shippingType,
+        shipping_fee: shippingType === 'flat_rate' ? (parseInt(shippingFee) || 0) : 0,
+        shipping_rates: shippingType === 'regional' ? shippingRates : [],
+        shipping_note: shippingNote.trim(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", listing.id);
@@ -9300,6 +9355,67 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
           }}/>
         </div>
 
+        {/* 依頼書 #104 Phase B-2 (2026/6/3): 4タイプ送料編集 UI */}
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>🚚 送料設定</label>
+          <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:8 }}>
+            {[
+              { v:"included", label:"✅ 送料込み (無料配送)" },
+              { v:"flat_rate", label:"📮 全国一律" },
+              { v:"regional", label:"🗾 地域別" },
+              { v:"consultation", label:"💬 要相談" },
+            ].map(opt => (
+              <button key={opt.v} type="button" onClick={()=>setShippingType(opt.v)} style={{
+                padding:"8px 12px", border:`1.5px solid ${shippingType===opt.v ? C.orange : C.border}`,
+                borderRadius:8, background:shippingType===opt.v ? C.orangePale : C.white,
+                textAlign:"left", fontSize:12, fontWeight:700, color:shippingType===opt.v ? C.orange : C.dark,
+                cursor:"pointer", fontFamily:"inherit", display:"flex", justifyContent:"space-between", alignItems:"center"
+              }}>
+                <span>{opt.label}</span>
+                {shippingType===opt.v && <span style={{ color:C.orange }}>✓</span>}
+              </button>
+            ))}
+          </div>
+          {shippingType === "flat_rate" && (
+            <div style={{ marginBottom:8 }}>
+              <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>送料 (円)</label>
+              <input type="number" min="0" value={shippingFee} onChange={e=>setShippingFee(e.target.value)} placeholder="例: 800" style={{
+                width:"100%", padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`,
+                fontSize:13, fontFamily:"inherit", boxSizing:"border-box"
+              }}/>
+            </div>
+          )}
+          {shippingType === "regional" && (
+            <div style={{ marginBottom:8 }}>
+              <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>地域別送料</label>
+              {shippingRates.map((rate, idx) => (
+                <div key={idx} style={{ display:"flex", gap:6, marginBottom:4, alignItems:"center" }}>
+                  <input type="text" placeholder="地域名" value={rate.region} onChange={e=>{
+                    const next = [...shippingRates]; next[idx] = { ...next[idx], region: e.target.value }; setShippingRates(next);
+                  }} style={{ flex:2, padding:"6px 8px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  <input type="number" min="0" placeholder="0" value={rate.fee} onChange={e=>{
+                    const next = [...shippingRates]; next[idx] = { ...next[idx], fee: parseInt(e.target.value)||0 }; setShippingRates(next);
+                  }} style={{ flex:1, padding:"6px 8px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  <button type="button" onClick={()=>{ setShippingRates(shippingRates.filter((_,i)=>i!==idx)); }} style={{ width:28, height:28, border:"none", background:"transparent", color:"#E57373", fontSize:16, cursor:"pointer", padding:0 }}>×</button>
+                </div>
+              ))}
+              <button type="button" onClick={()=>{ setShippingRates([...shippingRates, { region:"", fee:0 }]); }} style={{ padding:"5px 10px", background:"transparent", border:`1px dashed ${C.border}`, borderRadius:6, color:C.warmGray, fontSize:11, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>+ 地域を追加</button>
+            </div>
+          )}
+          {shippingType === "consultation" && (
+            <div style={{ background:C.orangePale, borderRadius:8, padding:"8px 10px", marginBottom:8, fontSize:11, color:C.dark, lineHeight:1.6 }}>
+              💬 購入希望者から個別に送料相談があります。
+            </div>
+          )}
+          <div>
+            <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>補足説明 (任意)</label>
+            <input type="text" value={shippingNote} onChange={e=>setShippingNote(e.target.value)} placeholder="例: 同梱対応可 / 速達+500円 等" style={{
+              width:"100%", padding:"7px 10px", borderRadius:8, border:`1.5px solid ${C.border}`,
+              fontSize:12, fontFamily:"inherit", boxSizing:"border-box"
+            }}/>
+          </div>
+        </div>
+
         {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
 
         <div style={{ display:"flex", gap:8 }}>
@@ -9322,9 +9438,10 @@ const SalesTab = () => {
   const loadSales = async () => {
     if (!user?.id) return;
     setLoading(true);
+    // 依頼書 #104 Phase B-2 (2026/6/3): shipping_fee / shipping_region / shipping_total 追加 (Phase A DDL 完了済)
     const { data, error } = await supabase
       .from("orders")
-      .select("id, status, escrow_status, transfer_status, amount, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
+      .select("id, status, escrow_status, transfer_status, amount, shipping_fee, shipping_region, shipping_total, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -9437,8 +9554,17 @@ const SalesTab = () => {
                       <span style={{ fontSize:13, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{title}</span>
                       <span style={{ background:st.bg, color:st.color, fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, flexShrink:0 }}>{st.text}</span>
                     </div>
-                    <div style={{ fontSize:11, color:C.warmGray }}>購入者: {buyerName} · {formatDate(sale.created_at)}</div>
-                    <div style={{ fontSize:15, fontWeight:700, color:C.dark, marginTop:4 }}>¥{Number(sale.amount || 0).toLocaleString()}</div>
+                    <div style={{ fontSize:11, color:C.warmGray }}>
+                      購入者: {buyerName} · {formatDate(sale.created_at)}
+                      {sale.shipping_region && <span style={{ marginLeft:6, color:C.orange, fontWeight:700 }}>· 📍 {sale.shipping_region}</span>}
+                    </div>
+                    {/* 依頼書 #104 Phase B-2 (2026/6/3): 送料込み売上 (shipping_total > 0 なら shipping_fee 内訳表示) */}
+                    <div style={{ fontSize:15, fontWeight:700, color:C.dark, marginTop:4 }}>
+                      ¥{Number(sale.shipping_total || sale.amount || 0).toLocaleString()}
+                      {(sale.shipping_fee || 0) > 0 && (
+                        <span style={{ fontSize:11, fontWeight:400, color:C.warmGray, marginLeft:6 }}>(うち送料 ¥{Number(sale.shipping_fee).toLocaleString()})</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
