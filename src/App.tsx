@@ -11,6 +11,8 @@ import AdminCorporateSponsors from "./pages/AdminCorporateSponsors";
 import MarketplacePage from "./pages/MarketplacePage";
 // 依頼書 #111 (2026/6/4): 基礎データ分析ダッシュボード (AI 戦略 Phase 1)
 import AdminAnalytics from "./pages/AdminAnalytics";
+// 依頼書 #113 (2026/6/4): 全国小規模動物イベント自動収集 v2 - source 管理 UI
+import AdminEventSources from "./pages/AdminEventSources";
 import HomeNewsSection from "./components/HomeNewsSection";
 import QoccaUniverseSection from "./components/QoccaUniverseSection";
 import CommunityShowcase from "./components/CommunityShowcase";
@@ -14546,6 +14548,8 @@ function QoccaAppInner() {
             <Route path="/marketplace" element={<MarketplacePage />} />
             {/* 依頼書 #111 (2026/6/4): 基礎データ分析ダッシュボード (AI 戦略 Phase 1) */}
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            {/* 依頼書 #113 (2026/6/4): イベント自動収集 source 管理 */}
+            <Route path="/admin/event-sources" element={<AdminEventSources />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
@@ -14780,6 +14784,8 @@ function QoccaAppInner() {
             <Route path="/marketplace" element={<MarketplacePage />} />
             {/* 依頼書 #111 (2026/6/4): 基礎データ分析ダッシュボード (AI 戦略 Phase 1) */}
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            {/* 依頼書 #113 (2026/6/4): イベント自動収集 source 管理 */}
+            <Route path="/admin/event-sources" element={<AdminEventSources />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>

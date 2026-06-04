@@ -2626,6 +2626,7 @@ const MENU: Array<{ id: string; icon: string; label: string; href?: string; grou
   { id: "ark-donations", icon: "🐾", label: "ARK 寄付管理", href: "/admin/ark-donations" },
   { id: "corporate-sponsors", icon: "🏛️", label: "法人スポンサー", href: "/admin/corporate-sponsors" },
   { id: "marketplace-view", icon: "🏪", label: "商店街 (公開)", href: "/marketplace" },
+  { id: "event-sources", icon: "🤖", label: "イベント source 管理", href: "/admin/event-sources" },
   // ── 既存 (内部 page state 切替) ──────────────────
   { id: "events", icon: "🎪", label: "イベント管理" },
   { id: "listings", icon: "📦", label: "出品管理" },
