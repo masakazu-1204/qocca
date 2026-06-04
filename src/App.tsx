@@ -12850,6 +12850,9 @@ const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => 
   const [postError, setPostError] = useState<string>("");
   const [disconnecting, setDisconnecting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // 依頼書 #124 (2026/6/5): 連携失敗時のエラー表示 (callback v12 が ?threads=error&reason=...&detail=... で戻すよう変更)
+  const [errorBanner, setErrorBanner] = useState<{ reason: string; message: string; detail?: string } | null>(null);
+  const [oauthStarting, setOauthStarting] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -12859,9 +12862,26 @@ const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => 
   }, [user, navigate]);
 
   useEffect(() => {
+    // 依頼書 #124: 成功 / 失敗 両方の戻り URL を解釈
     const params = new URLSearchParams(window.location.search);
-    if (params.get("threads") === "connected") {
+    const status = params.get("threads");
+    if (status === "connected") {
       setShowSuccess(true);
+      window.history.replaceState(null, "", "/settings/threads");
+    } else if (status === "error") {
+      const reason = params.get("reason") || "unknown";
+      const detail = params.get("detail") || "";
+      const reasonMap: Record<string, string> = {
+        meta_denied: "Meta 側で認証がキャンセル/拒否されました",
+        missing_params: "必要なパラメータが不足しています (callback URL の問題)",
+        invalid_state: "セッション (state) が不正です。もう一度連携をお試しください",
+        secrets_missing: "サーバー側の設定が未完了です。運営にお問い合わせください",
+        token_short_failed: "アクセストークン交換失敗 (Meta App の Threads ユースケース / Redirect URI 設定を確認)",
+        token_long_failed: "長期トークン (60日) 交換に失敗しました",
+        db_failed: "データベース保存に失敗しました",
+        unknown: "予期せぬエラーが発生しました",
+      };
+      setErrorBanner({ reason, message: reasonMap[reason] || reason, detail });
       window.history.replaceState(null, "", "/settings/threads");
     }
   }, []);
@@ -12887,17 +12907,40 @@ const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => 
 
   useEffect(() => { if (user?.id) loadConnection(); }, [user?.id]);
 
-  const startOAuth = () => {
-    if (!user?.id) return;
-    const META_APP_ID = "1524294909111459"; // 公開情報
-    const REDIRECT_URI = "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/threads-oauth-callback";
-    const url = new URL("https://threads.net/oauth/authorize");
-    url.searchParams.append("client_id", META_APP_ID);
-    url.searchParams.append("redirect_uri", REDIRECT_URI);
-    url.searchParams.append("scope", "threads_basic,threads_content_publish");
-    url.searchParams.append("response_type", "code");
-    url.searchParams.append("state", user.id);
-    window.location.href = url.toString();
+  // 依頼書 #124 (2026/6/5): META_APP_ID ハードコードを排除 → threads-init-oauth Edge Function 経由
+  //   - Meta App ID は Supabase secrets (META_APP_ID) で一元管理
+  //   - フロントは authorize_url を受け取って遷移するだけ → ID 差替時に再 deploy 不要
+  //   - 失敗時は callback v12 が ?threads=error&reason=... で戻る (errorBanner で表示)
+  const startOAuth = async () => {
+    if (!user?.id || oauthStarting) return;
+    setErrorBanner(null);
+    setOauthStarting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setErrorBanner({ reason: "no_session", message: "ログインセッションが切れています。再ログインしてください。" });
+        setOauthStarting(false);
+        return;
+      }
+      const res = await fetch(
+        "https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/threads-init-oauth",
+        { method: "POST", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" } }
+      );
+      const data = await res.json();
+      if (!res.ok || !data?.authorize_url) {
+        setErrorBanner({
+          reason: data?.error || `http_${res.status}`,
+          message: data?.message || `連携 URL の取得に失敗しました (${res.status})`,
+        });
+        setOauthStarting(false);
+        return;
+      }
+      window.location.href = data.authorize_url;
+    } catch (e: any) {
+      setErrorBanner({ reason: "client_exception", message: `連携開始エラー: ${e?.message || e}` });
+      setOauthStarting(false);
+    }
   };
 
   const handlePost = async () => {
@@ -12961,6 +13004,19 @@ const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) => 
       {showSuccess && (
         <div style={{ background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)", border: "1px solid #4CAF50", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: C.dark }}>
           ✅ Threads との連携が完了しました!
+        </div>
+      )}
+
+      {/* 依頼書 #124 (2026/6/5): 連携失敗時のエラー表示 (callback v12 から ?threads=error で戻った時) */}
+      {errorBanner && (
+        <div style={{ background: "linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%)", border: "1px solid #E57373", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>⚠️ 連携に失敗しました</div>
+          <div>{errorBanner.message}</div>
+          {errorBanner.detail && (
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 6, fontFamily: "monospace", wordBreak: "break-all" }}>詳細: {errorBanner.detail}</div>
+          )}
+          <div style={{ fontSize: 11, color: C.warmGray, marginTop: 6 }}>理由コード: <code>{errorBanner.reason}</code></div>
+          <button onClick={() => setErrorBanner(null)} style={{ marginTop: 8, background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>閉じる</button>
         </div>
       )}
 
