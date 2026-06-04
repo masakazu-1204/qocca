@@ -251,6 +251,85 @@ async function fetchCommunityActivity(): Promise<CommunityRow[]> {
   }));
 }
 
+// ────────────────────────────────────────────────
+// 依頼書 #118: GMV 予測 + 異常検知アラート (ルールベース・AI不使用)
+// ────────────────────────────────────────────────
+type Forecast = {
+  this_month_gmv: number;
+  last_month_gmv: number;
+  forecast: number | null; // データ不足時 null
+  daily_avg_7d: number | null;
+  days_elapsed: number;
+  total_days: number;
+  mom_change: number | null;
+  daily_series: { snapshot_date: string; gmv: number }[];
+  has_enough_data: boolean;
+};
+type Alert = {
+  id: string;
+  alert_type: string;
+  severity: "info" | "warning" | "critical";
+  title: string;
+  description: string | null;
+  detected_at: string;
+  is_read: boolean;
+};
+
+async function fetchForecast(): Promise<Forecast> {
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().slice(0, 10);
+  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().slice(0, 10);
+  const todayStr = today.toISOString().slice(0, 10);
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysElapsed = today.getDate();
+
+  const [{ data: thisM }, { data: lastM }] = await Promise.all([
+    sb.from("metrics_daily").select("snapshot_date, gmv, orders_count").gte("snapshot_date", monthStart).lte("snapshot_date", todayStr).order("snapshot_date", { ascending: true }),
+    sb.from("metrics_daily").select("gmv").gte("snapshot_date", lastMonthStart).lte("snapshot_date", lastMonthEnd),
+  ]);
+  const thisRows = (thisM || []) as any[];
+  const lastRows = (lastM || []) as any[];
+  const thisMonthGmv = thisRows.reduce((s, d) => s + Number(d.gmv || 0), 0);
+  const lastMonthGmv = lastRows.reduce((s, d) => s + Number(d.gmv || 0), 0);
+
+  // 直近 7 日分のデータ + 取引あった日が 7 日以上ある場合のみ予測
+  const last7Days = thisRows.slice(-7);
+  const last7HasOrders = last7Days.filter(d => Number(d.orders_count || 0) > 0).length;
+  let forecast: number | null = null;
+  let dailyAvg7: number | null = null;
+  if (last7Days.length >= 7 && last7HasOrders >= 3) {
+    dailyAvg7 = last7Days.reduce((s, d) => s + Number(d.gmv || 0), 0) / 7;
+    const daysRemaining = lastDayOfMonth - daysElapsed;
+    forecast = Math.round(thisMonthGmv + dailyAvg7 * daysRemaining);
+  }
+
+  // 前月比 (按分): 当月 1 日あたり平均 vs 前月 1 日あたり平均
+  let momChange: number | null = null;
+  if (lastMonthGmv > 0 && daysElapsed > 0 && lastRows.length > 0) {
+    const thisDailyAvg = thisMonthGmv / daysElapsed;
+    const lastDailyAvg = lastMonthGmv / Math.max(lastRows.length, 1);
+    momChange = ((thisDailyAvg - lastDailyAvg) / lastDailyAvg) * 100;
+  }
+
+  return {
+    this_month_gmv: thisMonthGmv,
+    last_month_gmv: lastMonthGmv,
+    forecast,
+    daily_avg_7d: dailyAvg7,
+    days_elapsed: daysElapsed,
+    total_days: lastDayOfMonth,
+    mom_change: momChange,
+    daily_series: thisRows.map(r => ({ snapshot_date: r.snapshot_date, gmv: Number(r.gmv || 0) })),
+    has_enough_data: last7Days.length >= 7 && last7HasOrders >= 3,
+  };
+}
+
+async function fetchUnreadAlerts(): Promise<Alert[]> {
+  const { data } = await sb.from("admin_alerts").select("*").eq("is_read", false).order("detected_at", { ascending: false }).limit(20);
+  return (data || []) as Alert[];
+}
+
 async function fetchActiveRate(): Promise<{ active_30d: number; total: number; active_rate: number; total_follows: number; community_participants: number; participation_rate: number }> {
   const thirty = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const [profilesRes, followsRes, cmRes] = await Promise.all([
@@ -289,20 +368,30 @@ export default function AdminAnalytics() {
   const [monthlyGmv, setMonthlyGmv] = useState<MonthlyRow[]>([]);
   const [communityActivity, setCommunityActivity] = useState<CommunityRow[]>([]);
   const [activeRate, setActiveRate] = useState<any>(null);
+  // 依頼書 #118: GMV 予測 + 異常検知
+  const [forecast, setForecast] = useState<Forecast | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const markAlertRead = async (id: string) => {
+    await sb.from("admin_alerts").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", id);
+    setAlerts(prev => prev.filter(a => a.id !== id));
+  };
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const [s, sp, lo, np, mr, cc, pb, st, sc, mg, ca, ar] = await Promise.all([
+        const [s, sp, lo, np, mr, cc, pb, st, sc, mg, ca, ar, fc, al] = await Promise.all([
           fetchSummary(), fetchPetSpecies(), fetchProfileLocation(), fetchNewUserPace(),
           fetchMemberRatio(), fetchCategoryCount(), fetchPriceBucket(), fetchShippingType(),
           fetchSellingCategory(), fetchMonthlyGmv(), fetchCommunityActivity(), fetchActiveRate(),
+          fetchForecast(), fetchUnreadAlerts(),
         ]);
         setSummary(s); setSpecies(sp); setLocations(lo); setNewPace(np);
         setMemberRatio(mr); setCatCount(cc); setPriceBucket(pb); setShippingType(st);
         setSellingCat(sc); setMonthlyGmv(mg); setCommunityActivity(ca); setActiveRate(ar);
+        setForecast(fc); setAlerts(al);
       } catch (e) {
         console.warn("AdminAnalytics fetch failed", e);
       } finally {
@@ -422,6 +511,57 @@ export default function AdminAnalytics() {
           <div style={{ background: C.white, borderRadius: 14, padding: 40, textAlign: "center", color: C.warmGray }}>📊 データを集計中…</div>
         ) : (
           <>
+            {/* ───── 依頼書 #118: 異常検知アラート (上部・未読のみ) ───── */}
+            <section style={{ marginBottom: 24 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: C.dark, margin: "0 4px 12px" }}>🚨 アラート ({alerts.length}件)</h2>
+              <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
+                {alerts.length === 0 ? (
+                  <div style={{ padding: "12px 4px", fontSize: 13, color: C.green, fontWeight: 700 }}>✅ 異常なし</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {alerts.map(a => {
+                      const sevColor = a.severity === "critical" ? C.red : a.severity === "warning" ? C.brand : C.blue;
+                      const sevBg = a.severity === "critical" ? "#FFEBEE" : a.severity === "warning" ? "#FFF3E0" : "#E3F2FD";
+                      const sevIcon = a.severity === "critical" ? "🔴" : a.severity === "warning" ? "🟠" : "🔵";
+                      return (
+                        <div key={a.id} style={{ background: sevBg, borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: 10, borderLeft: `4px solid ${sevColor}` }}>
+                          <span style={{ fontSize: 14, flexShrink: 0 }}>{sevIcon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: sevColor, marginBottom: 2 }}>{a.title}</div>
+                            <div style={{ fontSize: 11, color: C.dark, lineHeight: 1.6 }}>{a.description}</div>
+                            <div style={{ fontSize: 10, color: C.warmGray, marginTop: 3 }}>{new Date(a.detected_at).toLocaleString("ja-JP")}</div>
+                          </div>
+                          <button onClick={() => markAlertRead(a.id)} style={{ padding: "4px 8px", background: C.white, color: C.warmGray, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>既読</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ───── 依頼書 #118: GMV 予測 (ルールベース移動平均) ───── */}
+            <Section title="📈 GMV 予測 (今月)" emoji="🔮">
+              {!forecast || !forecast.has_enough_data ? (
+                <div style={{ padding: "20px 4px", fontSize: 13, color: C.warmGray, lineHeight: 1.8 }}>
+                  📈 データ蓄積中 (取引が増えると予測が表示されます)
+                  <br />
+                  <span style={{ fontSize: 11 }}>※ 直近7日に取引3件以上で予測開始</span>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
+                    <Stat label={`当月 GMV 実績 (${forecast.days_elapsed}/${forecast.total_days}日)`} value={`¥${forecast.this_month_gmv.toLocaleString()}`}/>
+                    <Stat label="月末着地予測" value={`¥${(forecast.forecast || 0).toLocaleString()}`} hint={`日次平均 ¥${Math.round(forecast.daily_avg_7d || 0).toLocaleString()} × 残${forecast.total_days - forecast.days_elapsed}日`} highlight/>
+                    <Stat label="前月日次平均比" value={forecast.mom_change !== null ? `${forecast.mom_change >= 0 ? "+" : ""}${forecast.mom_change.toFixed(1)}%` : "—"} hint={`前月計 ¥${forecast.last_month_gmv.toLocaleString()}`}/>
+                  </div>
+                  <Block title="日次 GMV 推移 (当月)">
+                    <Sparkline items={forecast.daily_series.map(d => ({ month: d.snapshot_date.slice(5), value: d.gmv }))} unit="¥"/>
+                  </Block>
+                </>
+              )}
+            </Section>
+
             {/* 1. 概要サマリ */}
             <Section title="1. 概要サマリ" emoji="🌅">
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
