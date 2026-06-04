@@ -2617,8 +2617,16 @@ const MetaAgentManagementPage = () => {
 };
 
 // ── メインアプリ ────────────────────────────────────────────────────────────
-const MENU = [
+// 依頼書 #112 (2026/6/4): Admin Sidebar 統合 - 新規 4ページ + 商店街リンク追加
+// href 付き entry は外部 Route (別ページ) に navigate / 無印 entry は内部 page state 切替
+const MENU: Array<{ id: string; icon: string; label: string; href?: string; group?: string }> = [
   { id: "dashboard", icon: "📊", label: "ダッシュボード" },
+  // ── 新規ページ (依頼書 #108-#111 / 別 Route) ──────
+  { id: "analytics", icon: "📈", label: "Analytics", href: "/admin/analytics" },
+  { id: "ark-donations", icon: "🐾", label: "ARK 寄付管理", href: "/admin/ark-donations" },
+  { id: "corporate-sponsors", icon: "🏛️", label: "法人スポンサー", href: "/admin/corporate-sponsors" },
+  { id: "marketplace-view", icon: "🏪", label: "商店街 (公開)", href: "/marketplace" },
+  // ── 既存 (内部 page state 切替) ──────────────────
   { id: "events", icon: "🎪", label: "イベント管理" },
   { id: "listings", icon: "📦", label: "出品管理" },
   { id: "members", icon: "👥", label: "会員管理" },
@@ -2747,17 +2755,23 @@ export default function AdminDashboard() {
         )}
 
         <div style={{ flex: 1, padding: "16px 0" }}>
-          {MENU.map(m => (
-            <button key={m.id} onClick={() => setPage(m.id)} style={{
-              width: "100%", padding: "12px 20px", border: "none", cursor: "pointer",
-              background: page === m.id ? "rgba(245,169,74,0.15)" : "transparent",
-              borderLeft: page === m.id ? `3px solid ${C.orange}` : "3px solid transparent",
-              display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit"
-            }}>
-              <span style={{ fontSize: 18 }}>{m.icon}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: page === m.id ? C.orange : "rgba(255,255,255,0.7)" }}>{m.label}</span>
-            </button>
-          ))}
+          {MENU.map(m => {
+            // 依頼書 #112: href 付きは外部 Route (別ページ) に遷移 / 無印は内部 page state 切替
+            const isExternal = !!m.href;
+            const isActive = !isExternal && page === m.id;
+            return (
+              <button key={m.id} onClick={() => isExternal ? (window.location.href = m.href!) : setPage(m.id)} style={{
+                width: "100%", padding: "12px 20px", border: "none", cursor: "pointer",
+                background: isActive ? "rgba(245,169,74,0.15)" : "transparent",
+                borderLeft: isActive ? `3px solid ${C.orange}` : "3px solid transparent",
+                display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit"
+              }}>
+                <span style={{ fontSize: 18 }}>{m.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? C.orange : "rgba(255,255,255,0.7)" }}>{m.label}</span>
+                {isExternal && <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,255,255,0.3)" }}>↗</span>}
+              </button>
+            );
+          })}
         </div>
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
           <button onClick={handleLogout} style={{ width: "100%", padding: "10px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
