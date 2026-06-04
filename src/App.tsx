@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
+// 依頼書 #108 (2026/6/4): ARK 透明性機能 Phase C - Admin 寄付管理画面
+import AdminArkDonations from "./pages/AdminArkDonations";
 import HomeNewsSection from "./components/HomeNewsSection";
 import QoccaUniverseSection from "./components/QoccaUniverseSection";
 import CommunityShowcase from "./components/CommunityShowcase";
@@ -14754,6 +14756,8 @@ function QoccaAppInner() {
             <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
             {/* 依頼書 #36 (5/31): 初期メンバー紹介 */}
             <Route path="/founding-creators" element={<FoundingCreatorsPage setPage={setPage}/>} />
+            {/* 依頼書 #108 (2026/6/4): ARK 寄付 Admin 管理画面 (規約 v2.0 第11条第5項) */}
+            <Route path="/admin/ark-donations" element={<AdminArkDonations />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>

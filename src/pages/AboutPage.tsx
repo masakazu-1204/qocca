@@ -15,6 +15,8 @@ import {
   MapPin,
   Instagram,
 } from "lucide-react";
+// 依頼書 #108 (2026/6/4): ARK 透明性機能 (累計送金額表示)
+import ArkDonationStats from "../components/ArkDonationStats";
 
 const BRAND = "#F5A94A";
 const BRAND_DEEP = "#B27820";
@@ -539,6 +541,9 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      {/* ================= TRANSPARENCY (依頼書 #108 / 規約 v2.0 第11条第5項) ================= */}
+      <ArkDonationStats />
 
       {/* ================= FAQ ================= */}
       <section style={sectionBase}>
