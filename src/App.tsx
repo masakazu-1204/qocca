@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 import AboutPage from "./pages/AboutPage";
@@ -361,7 +361,21 @@ const LISTINGS: any[] = [];
 const REVIEWS: any[] = [];
 
 const EVENTS: any[] = [];
-const EVENT_PREFS = ["すべて","北海道","東京都","大阪府","愛知県","福岡県"];
+// 依頼書 #122 (2026/6/5): 旧 5 件固定 ["すべて","北海道","東京都","大阪府","愛知県","福岡県"] では
+//   #120 の AI 自動収集で投入された 京都府/広島県/静岡県/兵庫県/神奈川県/埼玉県/宮城県/千葉県 等が
+//   フィルタ選択肢に出ず、ユーザーから「都道府県が足りない」報告 → 動的生成方式に変更。
+// 47 都道府県 (北→南順) のうち、events.prefecture に実在するものだけを EventsPage 内で useMemo 抽出。
+// 「該当 0 件 pill」を並べる UX 劣化を回避しつつ、新規 ai_scraped 県も自動でフィルタに追加される。
+const PREFS_47_ORDER = [
+  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
+  "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+  "新潟県","富山県","石川県","福井県","山梨県","長野県",
+  "岐阜県","静岡県","愛知県","三重県",
+  "滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
+  "鳥取県","島根県","岡山県","広島県","山口県",
+  "徳島県","香川県","愛媛県","高知県",
+  "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県",
+];
 const EVENT_CATS = ["すべて","フェスタ","交流会","撮影会","マーケット","体験会","健康"];
 // ── 依頼書 #19 (5/27): 動物カテゴリ 16種拡張 共通定数 ──────────────────
 // Qocca ビジョン「動物を飼った時に当たり前のアプリ」体現
@@ -13888,6 +13902,21 @@ const EventsPage = ({ isPC, setPage }) => {
     }
   };
 
+  // 依頼書 #122 (2026/6/5): 旧 EVENT_PREFS 5 件固定 → 実データから動的生成
+  //   - approved events の prefecture を unique 抽出
+  //   - PREFS_47_ORDER (北→南順) でソート、未収録の表記揺れは末尾に
+  //   - "すべて" 先頭 + 該当 0 件のフィルタ pill を並べない (UX 維持)
+  const dynamicPrefs = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of events) {
+      const p = (e as any).pref;
+      if (typeof p === "string" && p.trim() !== "") set.add(p.trim());
+    }
+    const inOrder = PREFS_47_ORDER.filter(p => set.has(p));
+    const extras = Array.from(set).filter(p => !PREFS_47_ORDER.includes(p)).sort();
+    return ["すべて", ...inOrder, ...extras];
+  }, [events]);
+
   const filtered = events.filter(e => {
     if (pref !== "すべて" && e.pref !== pref) return false;
     if (cat !== "すべて" && e.category !== cat) return false;
@@ -13910,7 +13939,8 @@ const EventsPage = ({ isPC, setPage }) => {
       <div style={{ marginBottom:16, padding: isPC ? 0 : "0 16px" }}>
         <div style={{ fontSize:12, fontWeight:700, color:C.warmGray, marginBottom:8 }}>都道府県</div>
         <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4 }}>
-          {EVENT_PREFS.map(p=>(
+          {/* 依頼書 #122 (2026/6/5): 旧固定 EVENT_PREFS (5件のみ) → dynamicPrefs (events から useMemo で抽出) */}
+          {dynamicPrefs.map(p=>(
             <button key={p} onClick={()=>setPref(p)} style={{ flexShrink:0, padding:"6px 14px", border:`1.5px solid ${pref===p?C.orange:C.border}`, borderRadius:20, background:pref===p?C.orangePale:C.white, color:pref===p?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{p}</button>
           ))}
         </div>

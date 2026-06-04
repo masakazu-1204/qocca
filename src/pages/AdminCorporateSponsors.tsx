@@ -71,7 +71,10 @@ export default function AdminCorporateSponsors() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+  // 依頼書 #122 (2026/6/5): #119 で createClient/SUPABASE_URL/SUPABASE_ANON を削除した際の置換漏れを修正。
+  //   旧: const sb = createClient(SUPABASE_URL, SUPABASE_ANON);  ← createClient 未定義参照 → ReferenceError → 白画面
+  //   新: import 文の `import { supabase as sb } from "../supabaseClient"` で `sb` は既に scope 内 (この行不要)
+  //   → これで認証セッション共有 + RLS authenticated 通過維持
 
   const load = async () => {
     setLoading(true);
