@@ -5189,7 +5189,8 @@ const SellPage = ({ setPage }) => {
 
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream }}>
-      <div style={{ maxWidth:500, margin:"0 auto", padding:"20px 16px" }}>
+      {/* 依頼書 #114 (2026/6/5): 最下部に TabBar(70px) + safe-area 分の paddingBottom 追加 / 「次へ・戻る」ボタン露出担保 */}
+      <div style={{ maxWidth:500, margin:"0 auto", padding:"20px 16px calc(env(safe-area-inset-bottom, 8px) + 88px)" }}>
         {/* 依頼書 #9 (5/25) P1: ウェルカムバナー (テスマケ期間 0% + 創業者特典) */}
         {step === 1 && (
           <>
@@ -9286,16 +9287,23 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
   };
 
   return (
-    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:480, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>✏️ 出品を編集</h2>
-          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+    // 依頼書 #114 (2026/6/5): TabBar(zIndex:200) 衝突解消 - 3層flex + ボトムシート型 + safe-area
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+      <div style={{ background:C.white, borderRadius:"24px 24px 0 0", maxWidth:480, width:"100%", maxHeight:"88vh", display:"flex", flexDirection:"column" }}>
+        {/* ── HEADER (flexShrink:0) ── */}
+        <div style={{ flexShrink:0, padding:"24px 24px 0" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>✏️ 出品を編集</h2>
+            <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+          </div>
+          <p style={{ fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.6 }}>
+            ※ 大きな変更は再審査の対象になる場合があります。<br/>
+            画像・カテゴリの変更は現状未対応です（後日追加予定）。
+          </p>
         </div>
-        <p style={{ fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.6 }}>
-          ※ 大きな変更は再審査の対象になる場合があります。<br/>
-          画像・カテゴリの変更は現状未対応です（後日追加予定）。
-        </p>
+
+        {/* ── BODY (flex:1 overflowY:auto minHeight:0) - 内部スクロール領域 ── */}
+        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", minHeight:0, padding:"0 24px" }}>
 
         <div style={{ marginBottom:12 }}>
           <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>タイトル</label>
@@ -9390,11 +9398,14 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
           </div>
         </div>
 
-        {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
-
-        <div style={{ display:"flex", gap:8 }}>
-          <button onClick={onClose} disabled={saving} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>キャンセル</button>
-          <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:"12px", background:saving?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>{saving ? "保存中..." : "💾 保存する"}</button>
+        </div>
+        {/* ── FOOTER (flexShrink:0 + borderTop + safe-area paddingBottom) - 常時下部固定 ── */}
+        <div style={{ flexShrink:0, padding:`16px 24px calc(env(safe-area-inset-bottom, 8px) + 16px)`, borderTop:`1px solid ${C.border}`, background:C.white }}>
+          {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12 }}>{error}</div>}
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={onClose} disabled={saving} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>キャンセル</button>
+            <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:"12px", background:saving?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit" }}>{saving ? "保存中..." : "💾 保存する"}</button>
+          </div>
         </div>
       </div>
     </div>
