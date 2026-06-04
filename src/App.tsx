@@ -5,6 +5,8 @@ import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
 // 依頼書 #108 (2026/6/4): ARK 透明性機能 Phase C - Admin 寄付管理画面
 import AdminArkDonations from "./pages/AdminArkDonations";
+// 依頼書 #109 (2026/6/4): 法人スポンサー (¥300,000) Phase B - Admin 管理画面
+import AdminCorporateSponsors from "./pages/AdminCorporateSponsors";
 import HomeNewsSection from "./components/HomeNewsSection";
 import QoccaUniverseSection from "./components/QoccaUniverseSection";
 import CommunityShowcase from "./components/CommunityShowcase";
@@ -13411,7 +13413,7 @@ const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
               法人スポンサーとして以下を提供します：<br /><br />
               ・このページに法人ロゴ + 社名 + Web リンク掲載<br />
               ・HomePage 創業パートナーセクションに法人名掲載<br />
-              ・利用規約 第30条で正式支援者として明文化
+              ・利用規約 第29条で正式支援者として明文化
             </p>
             <a
               href="https://camp-fire.jp/projects/view/955666"
@@ -14530,6 +14532,10 @@ function QoccaAppInner() {
             <Route path="/sponsors" element={<SponsorsPage setPage={setPage}/>} />
             {/* 依頼書 #36 (5/31): 初期メンバー紹介 */}
             <Route path="/founding-creators" element={<FoundingCreatorsPage setPage={setPage}/>} />
+            {/* 依頼書 #108 (2026/6/4): ARK 寄付 Admin 管理画面 (規約 v2.0 第11条第5項) */}
+            <Route path="/admin/ark-donations" element={<AdminArkDonations />} />
+            {/* 依頼書 #109 (2026/6/4): 法人スポンサー Admin 管理画面 (規約 v2.0 第29条) */}
+            <Route path="/admin/corporate-sponsors" element={<AdminCorporateSponsors />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
@@ -14758,6 +14764,8 @@ function QoccaAppInner() {
             <Route path="/founding-creators" element={<FoundingCreatorsPage setPage={setPage}/>} />
             {/* 依頼書 #108 (2026/6/4): ARK 寄付 Admin 管理画面 (規約 v2.0 第11条第5項) */}
             <Route path="/admin/ark-donations" element={<AdminArkDonations />} />
+            {/* 依頼書 #109 (2026/6/4): 法人スポンサー Admin 管理画面 (規約 v2.0 第29条) */}
+            <Route path="/admin/corporate-sponsors" element={<AdminCorporateSponsors />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
