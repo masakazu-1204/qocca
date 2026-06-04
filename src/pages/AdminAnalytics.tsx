@@ -17,7 +17,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
+// 依頼書 #119 Phase C (2026/6/5): admin RLS 認証問題解消のため共有 supabase client を使用
+import { supabase as sb } from "../supabaseClient";
 
 const C = {
   brand: "#F5A94A",
@@ -35,14 +36,7 @@ const C = {
   purple: "#9C7CB5",
 };
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://qufrqkuipzuqeqkvuhkx.supabase.co";
-const SUPABASE_ANON =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
-
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+// 依頼書 #119 Phase C: 共有 supabaseClient.ts から import で統一 (createClient 重複排除)
 
 // パレット (棒グラフ・円グラフ slice 色)
 const PALETTE = [C.brand, C.blue, C.green, C.purple, C.red, C.brandDeep, "#FFB74D", "#81C784", "#7986CB", "#F06292"];

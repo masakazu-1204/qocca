@@ -10,7 +10,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
+// 依頼書 #119 Phase C (2026/6/5): admin RLS 認証問題解消のため共有 supabase client を使用
+import { supabase as sb } from "../supabaseClient";
 
 const C = {
   brand: "#F5A94A",
@@ -25,12 +26,7 @@ const C = {
   white: "#FFFFFF",
 };
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://qufrqkuipzuqeqkvuhkx.supabase.co";
-const SUPABASE_ANON =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
+// 依頼書 #119 Phase C: 共有 supabaseClient.ts から import で統一
 
 type Donation = {
   id: string;

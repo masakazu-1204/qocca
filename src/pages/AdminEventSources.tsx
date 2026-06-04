@@ -19,7 +19,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
+// 依頼書 #119 Phase C (2026/6/5): RLS 認証問題解消のため共有 supabase client を使用
+import { supabase as sb } from "../supabaseClient";
 
 const C = {
   brand: "#F5A94A",
@@ -35,14 +36,9 @@ const C = {
   white: "#FFFFFF",
 };
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://qufrqkuipzuqeqkvuhkx.supabase.co";
-const SUPABASE_ANON =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
-
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+// 依頼書 #119 Phase C: SUPABASE_URL / sb は supabaseClient.ts から import 化
+const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
+const SUPABASE_ANON = "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou"; // 手動 fetch (orchestrator 呼出) で使用
 
 type Source = {
   id: string;

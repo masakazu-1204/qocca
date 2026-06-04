@@ -28,11 +28,9 @@ import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
+// 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
+import { supabase } from "./supabaseClient";
 const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
-const supabase = createClient(
-  SUPABASE_URL,
-  "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou"
-);
 
 // ── Auth Context ──────────────────────────────────────────────────────────
 const AuthContext = createContext(null);
