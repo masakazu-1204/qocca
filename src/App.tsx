@@ -4197,6 +4197,8 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [reportType, setReportType] = useState("");
   // 依頼書 #104 Phase B-2 (2026/6/3): regional 動的計算 - 購入者が選択する配送先地域
   const [selectedShippingRegion, setSelectedShippingRegion] = useState<string>("");
+  // 依頼書 #113 (緊急) (2026/6/4): 出品者が自分の出品ページから直接編集できるよう ListingEditModal を呼出
+  const [showMyEditModal, setShowMyEditModal] = useState(false);
   const [reportDone, setReportDone] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState({});
   // Phase B: Variant 選択 state
@@ -4388,6 +4390,24 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
       <div style={{ padding:"16px" }}>
         {item.tag && <div style={{ marginBottom:8 }}><Tag text={item.tag}/></div>}
         <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.3 }}>{item.title}</h1>
+
+        {/* 依頼書 #113 緊急 (2026/6/4): 自分の出品なら編集 banner を表示 (クリエイター動線改善) */}
+        {user?.id && item.seller_id === user.id && (
+          <div onClick={() => setShowMyEditModal(true)} style={{
+            background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+            border:`1.5px solid ${C.orange}`, borderRadius:12, padding:"12px 16px",
+            marginBottom:14, cursor:"pointer", display:"flex", alignItems:"center", gap:12,
+          }}>
+            <div style={{ fontSize:26, lineHeight:1 }}>✏️</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.orange, marginBottom:2 }}>あなたの出品です</div>
+              <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5 }}>
+                タップして編集 (タイトル / 価格 / 説明 / 納期 / 🚚 送料設定)
+              </div>
+            </div>
+            <div style={{ fontSize:13, color:C.orange, fontWeight:700, flexShrink:0 }}>編集する →</div>
+          </div>
+        )}
         {item.reviews > 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
             <Stars rating={item.rating} size={14}/>
@@ -4789,6 +4809,15 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
       )}
 
       {/* 購入確認モーダル */}
+      {/* 依頼書 #113 緊急 (2026/6/4): 自分の出品編集モーダル (DetailPage から起動) */}
+      {showMyEditModal && (
+        <ListingEditModal
+          listing={item}
+          onClose={() => setShowMyEditModal(false)}
+          onSaved={() => { setShowMyEditModal(false); /* 編集後ページリロードで反映 */ window.location.reload(); }}
+        />
+      )}
+
       {showConfirm && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:200, display:"flex", alignItems:"flex-end" }} onClick={()=>!ordering&&setShowConfirm(false)}>
           <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px", width:"100%" }} onClick={e=>e.stopPropagation()}>
