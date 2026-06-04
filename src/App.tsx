@@ -2598,8 +2598,9 @@ const MomentModal = ({ moment, counts = {}, mySet = new Set(), onReact, onClose 
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 32,
-        maxHeight: "90vh",
+        maxHeight: "88vh",
         overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       <div style={{
@@ -8575,7 +8576,7 @@ const handleOpenDashboard = async () => {
       {/* 即時受け取りモーダル */}
       {showInstantModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999 }}>
-          <div style={{ background:C.white, borderRadius:16, padding:24, maxWidth:400, width:"90%", maxHeight:"90vh", overflowY:"auto" }}>
+          <div style={{ background:C.white, borderRadius:16, padding:24, maxWidth:400, width:"90%", maxHeight:"88vh", overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
             <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:800 }}>⚡ 即時受け取り</h3>
             <p style={{ fontSize:13, color:C.text, lineHeight:1.6, margin:"0 0 16px" }}>
               手数料: 一律¥275(税込)<br/>
@@ -10607,7 +10608,7 @@ const BlogPage = ({ setPage, isPC }) => {
       {/* 執筆モーダル */}
       {showWrite && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:520, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:520, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>✍️ ブログを書く</h2>
               <button onClick={()=>setShowWrite(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
@@ -11004,7 +11005,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
 
       {showAdd && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:440, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:440, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>🐕 施設を追加</h2>
               <button onClick={()=>setShowAdd(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
@@ -11414,7 +11415,7 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
 
   return (
     <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:480, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+      <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:480, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📝 訪問レポート</h2>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
@@ -11941,7 +11942,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
       {/* 投稿モーダル */}
       {showUpload && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%", maxHeight:"90vh", overflow:"auto" }}>
+          <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📸 写真を投稿</h2>
               <button onClick={()=>{setShowUpload(false);setSelectedFile(null);setPreview("");setCaption("");}} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
