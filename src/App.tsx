@@ -4042,7 +4042,71 @@ const ArkPartnershipSection = () => {
   );
 };
 
-const HomePage = ({ setPage, listings, liked, onLike, onDetail }) => {
+// ── 依頼書 #116 (2026/6/5): HomePage 末尾イベントセクション (#113 最終ピース) ─────
+// 既存 events テーブル読み取りのみ (新規スキーマなし)
+// approved + event_date >= 今日 + limit 4 で取得 (L14531 のロジック流用)
+// 0件のときはセクションごと非表示
+const HomeEventsSection = ({ events, setPage }: { events: any[]; setPage: any }) => {
+  if (!events || events.length === 0) return null;
+  const petEmoji = (pt: string | null) => pt === "dog" ? "🐶" : pt === "cat" ? "🐱" : pt === "both" ? "🐾" : "🐾";
+  return (
+    <section style={{ padding: "48px 16px", background: C.white, borderTop: `1px solid ${C.border}` }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, margin: "0 0 6px", letterSpacing: 0.5 }}>
+            🐾 全国のペットイベント
+          </h2>
+          <p style={{ fontSize: 12, color: C.warmGray, margin: 0, lineHeight: 1.7 }}>
+            お近くのイベント、のぞいてみませんか
+          </p>
+        </div>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: 14,
+          marginBottom: 20,
+        }}>
+          {events.map((e: any) => (
+            <div key={e.id} onClick={() => setPage("events")} style={{
+              background: C.cream, borderRadius: 14, padding: 16,
+              border: `1px solid ${C.border}`, cursor: "pointer",
+              transition: "transform 0.15s, box-shadow 0.15s",
+            }}
+              onMouseEnter={ev => { (ev.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; (ev.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 16px rgba(245,169,74,0.12)"; }}
+              onMouseLeave={ev => { (ev.currentTarget as HTMLDivElement).style.transform = ""; (ev.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
+              <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, marginBottom: 6, letterSpacing: 0.3 }}>
+                {petEmoji(e.pet_type)} {e.category || "イベント"}
+              </div>
+              <div style={{
+                fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8, lineHeight: 1.4,
+                overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: 38,
+              }}>
+                {e.title}
+              </div>
+              <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
+                📅 {e.event_date}{e.event_time ? ` ${e.event_time}` : ""}
+              </div>
+              <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
+                📍 {e.prefecture || "—"}{e.city ? ` / ${e.city}` : ""}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <button onClick={() => setPage("events")} style={{
+            padding: "10px 24px", background: C.orange, color: "#fff", border: "none",
+            borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
+            fontFamily: "inherit",
+          }}>
+            イベントをもっと見る →
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvents = [] }) => {
   const progress = useScrollProgress();
   const bgColor = qoccaInterpolateBackground(progress);
 
@@ -4179,6 +4243,10 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC
           </div>
         )}
       </div>
+
+      {/* 依頼書 #116 (2026/6/5): HomePage 末尾イベントセクション (#113 最終ピース) - 0件時 null で非表示 */}
+      <HomeEventsSection events={homeEvents} setPage={setPage}/>
+
     </div>
   );
 };
@@ -14528,7 +14596,8 @@ function QoccaAppInner() {
   const [homeEvents, setHomeEvents] = useState<any[]>([]);
   useEffect(()=>{
     (async()=>{
-      const { data } = await supabase.from("events").select("*").eq("status","approved").gte("event_date", new Date().toISOString().slice(0,10)).order("event_date",{ascending:true}).limit(3);
+      // 依頼書 #116 (2026/6/5): HomePage 末尾セクション用 4件取得 (旧 limit:3 から拡張)
+      const { data } = await supabase.from("events").select("*").eq("status","approved").gte("event_date", new Date().toISOString().slice(0,10)).order("event_date",{ascending:true}).limit(4);
       setHomeEvents(data || []);
     })();
   }, []);
@@ -14593,7 +14662,7 @@ function QoccaAppInner() {
             <Route path="/admin/event-sources" element={<AdminEventSources />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
-            <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
+            <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} homeEvents={homeEvents}/>}/>
             <Route path="/search" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -14808,7 +14877,7 @@ function QoccaAppInner() {
       ) : (
         <>
           <Routes>
-            <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
+            <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} homeEvents={homeEvents}/>}/>
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={false}/>} />
             <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
