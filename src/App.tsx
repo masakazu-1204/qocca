@@ -30,6 +30,9 @@ type CommentTargetType = "gallery" | "event" | "blog";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
+// 依頼書 #121 (2026/6/5): Meta Pixel + コンバージョン計測 (7/1 Meta 広告稼働準備)
+// ID 未設定で完全 no-op、localhost で発火しない fail-safe 設計
+import { initMetaPixel, trackPageView as mpTrackPageView, trackEvent as mpTrackEvent, trackPurchaseOnce as mpTrackPurchase } from "./lib/metaPixel";
 const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
 
 // ── Auth Context ──────────────────────────────────────────────────────────
@@ -1037,6 +1040,8 @@ const PrivacyPage = ({ setPage, isPC }) => {
 
           <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>5. Cookieの利用</h2>
           <p>本サービスは、利便性向上のためCookieを利用します。Cookieの受け入れはブラウザ設定で拒否することができますが、その場合一部機能が利用できない可能性があります。</p>
+          {/* 依頼書 #121 (2026/6/5): Meta Pixel 利用追記 (既存文言は保持・追記のみ / 次回弁護士月次レビュー対象) */}
+          <p style={{ marginTop:8 }}>また、広告効果測定およびサービス改善のため、Meta Pixel（Meta Platforms, Inc.）を利用し、Cookie 等を通じて閲覧情報を取得する場合があります。ブラウザの設定により、これを無効化することができます。</p>
 
           <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>6. 開示・訂正・削除請求</h2>
           <p>ユーザーは、自己の個人情報について、開示・訂正・削除を請求できます。お問い合わせフォームよりご連絡ください。</p>
@@ -4273,6 +4278,18 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   // - selectedVariant: selectedAttrs に完全一致する listing_variants の row
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+
+  // 依頼書 #121 (2026/6/5): Meta Pixel ViewContent (個人情報なし: listing_id + 価格 + 通貨のみ)
+  useEffect(() => {
+    if (!item?.id) return;
+    mpTrackEvent("ViewContent", {
+      content_ids: [item.id],
+      content_type: "product",
+      value: Number(item.price) || 0,
+      currency: "JPY",
+    });
+  }, [item?.id]);
+
   if (!item) return null;
 
   // Phase B: variant 導出ロジック
@@ -4394,6 +4411,21 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         shippingRegionForOrder = selectedShippingRegion;
       }
       // included / consultation は shipping_fee=0
+
+      // 依頼書 #121 (2026/6/5): Meta Pixel InitiateCheckout (Edge Function 呼出直前 / 個人情報なし)
+      // クライアント値は参考 (サーバー側で再計算するが、Pixel 計測は購入意図検出が目的)
+      try {
+        const clientTotal =
+          (hasVariants && selectedVariant ? selectedVariant.price : item.price) +
+          (Array.isArray(selectedOpts) ? selectedOpts.reduce((s: number, o: any) => s + (o?.price || 0), 0) : 0) +
+          shippingFeeForOrder;
+        mpTrackEvent("InitiateCheckout", {
+          value: Number(clientTotal) || 0,
+          currency: "JPY",
+          content_ids: item?.id ? [item.id] : [],
+          content_type: "product",
+        });
+      } catch (_) { /* 計測失敗で購入フローを妨げない */ }
 
       const res = await fetch("https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/create-checkout", {
         method: "POST",
@@ -5869,6 +5901,8 @@ const SignupPage = ({ setPage }) => {
           setError("このメールアドレスは既に登録されています。");
         } else {
           setMessage("✉️ 確認メールを送信しました！メール内のリンクをクリックして登録を完了してください。");
+          // 依頼書 #121 (2026/6/5): Meta Pixel CompleteRegistration (個人情報なし)
+          try { mpTrackEvent("CompleteRegistration"); } catch (_) { /* no-op */ }
         }
       }
     } catch (e) {
@@ -14579,6 +14613,53 @@ function QoccaAppInner() {
       });
     }
   }, [location.pathname, location.search]);
+
+  // 依頼書 #121 (2026/6/5): Meta Pixel 初期化 (アプリ起動時 1 回のみ、初回 PageView も発火)
+  // VITE_META_PIXEL_ID 未設定なら完全 no-op で安全
+  useEffect(() => {
+    initMetaPixel();
+  }, []);
+
+  // 依頼書 #121 (2026/6/5): SPA ルート遷移時の Meta Pixel PageView (初回二重発火防止 ref 利用)
+  const mpFirstPageRef = useRef(true);
+  useEffect(() => {
+    if (mpFirstPageRef.current) {
+      // 初回 PageView は initMetaPixel() 内で既に発火済 → スキップ
+      mpFirstPageRef.current = false;
+      return;
+    }
+    mpTrackPageView();
+  }, [location.pathname, location.search]);
+
+  // 依頼書 #121 (2026/6/5): Stripe 決済成功からの戻り検知 → Purchase 発火 (order_id 単位で重複ガード)
+  // create-checkout の success_url = /mypage?order=success&order_id={uuid}
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(location.search);
+    if (params.get("order") !== "success") return;
+    const orderId = params.get("order_id");
+    if (!orderId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // 注文情報を取得 (個人情報は含めず amount + listing_id のみ)
+        const { data: order } = await supabase
+          .from("orders")
+          .select("amount, listing_id")
+          .eq("id", orderId)
+          .maybeSingle();
+        if (cancelled || !order) return;
+        mpTrackPurchase(orderId, {
+          value: Number(order.amount) || 0,
+          currency: "JPY",
+          content_ids: order.listing_id ? [order.listing_id] : [],
+        });
+      } catch (_) {
+        /* no-op: 計測失敗で UI を妨げない */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [location.search]);
 
   // Supabase data hooks
   const { listings: dbListings, dbLoading, refetch } = useListings();
