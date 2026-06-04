@@ -7,6 +7,8 @@ import AboutSection from "./components/AboutSection";
 import AdminArkDonations from "./pages/AdminArkDonations";
 // 依頼書 #109 (2026/6/4): 法人スポンサー (¥300,000) Phase B - Admin 管理画面
 import AdminCorporateSponsors from "./pages/AdminCorporateSponsors";
+// 依頼書 #110 (2026/6/4): 商店街 v2.0 リッチ TOP ページ
+import MarketplacePage from "./pages/MarketplacePage";
 import HomeNewsSection from "./components/HomeNewsSection";
 import QoccaUniverseSection from "./components/QoccaUniverseSection";
 import CommunityShowcase from "./components/CommunityShowcase";
@@ -1205,7 +1207,7 @@ const ContactPage = ({ setPage, isPC }) => {
 const QoccaTownGuide = ({ setPage }) => {
   const features = [
     { icon:"💬", emoji:"🏞", label:"広場", title:"仲間と話せる広場", desc:"同じ犬種・年齢・お悩みの仲間とつながる。\nペット好き専用のコミュニティ。", to:"communities" },
-    { icon:"🛍", emoji:"🏪", label:"商店街", title:"想いを形にした商店街", desc:"似顔絵・ハンドメイド服・写真撮影。\nペット好きクリエイターの一点物が並ぶ。", to:"search" },
+    { icon:"🛍", emoji:"🏪", label:"商店街", title:"想いを形にした商店街", desc:"似顔絵・ハンドメイド服・写真撮影。\nペット好きクリエイターの一点物が並ぶ。", to:"marketplace" },
     { icon:"🗺", emoji:"🏯", label:"案内所", title:"全国の施設・イベント案内所", desc:"ドッグラン、公園、ペット可カフェ。\n全国の情報がここに集まる。", to:"facilities" },
     { icon:"📷", emoji:"🖼", label:"掲示板", title:"うちの子の写真掲示板", desc:"自慢のうちの子をシェアして、\n他の住民とコメントで盛り上がる。", to:"gallery" },
   ];
@@ -1257,7 +1259,7 @@ const FirstStepGuide = ({ setPage }) => {
   const steps = [
     { num:"1", emoji:"🐾", title:"住民になる(30秒)", desc:"うちの子のプロフィールを登録。\n街の住民として歓迎されます。", action:"アカウント作成", to:"signup" },
     { num:"2", emoji:"💬", title:"広場で挨拶する(1分)", desc:"同じ犬種・地域の仲間がいる\nコミュニティに参加してみよう。", action:"広場をのぞく", to:"communities" },
-    { num:"3", emoji:"🏘", title:"街を散歩する", desc:"商店街でお気に入りを探したり、\n近所の施設を案内所でチェック。", action:"街を歩く", to:"search" },
+    { num:"3", emoji:"🏘", title:"街を散歩する", desc:"商店街でお気に入りを探したり、\n近所の施設を案内所でチェック。", action:"街を歩く", to:"marketplace" },
   ];
   return (
     <section style={{ padding:"40px 20px 50px", background:C.white }}>
@@ -2001,7 +2003,7 @@ const SectionWhatIsQocca = ({ setPage }) => {
       quote: '"あの瞬間を、長く残る形に"',
       desc: '似顔絵、羊毛作品、記念グッズ。\n街の作家たちが、心を込めて。',
       linkText: '商店街を覗いてみる',
-      onClick: () => setPage("search"),
+      onClick: () => setPage("marketplace"),
     },
     {
       title: 'うちの子の話で、笑い合う',
@@ -2800,7 +2802,7 @@ const SectionTownMap = ({ setPage }) => {
       name: "商店街",
       en: "Atelier",
       desc: "心を込めて作る、街の作家たち",
-      onClick: () => setPage("search"),
+      onClick: () => setPage("marketplace"),
     },
     {
       icon: "◇",
@@ -14395,6 +14397,8 @@ const useNav = () => {
       navigate(`/listing/${data.id}`, { state: { item: data } });
     } else if (page === "home") navigate("/");
     else if (page === "search") navigate("/search");
+    // 依頼書 #110 (2026/6/4): 商店街 v2.0 (リッチ TOP)
+    else if (page === "marketplace") navigate("/marketplace");
     else if (page === "sell") navigate("/sell");
     else if (page === "signup") navigate("/login");
     else if (page === "mypage") navigate("/mypage");
@@ -14536,6 +14540,8 @@ function QoccaAppInner() {
             <Route path="/admin/ark-donations" element={<AdminArkDonations />} />
             {/* 依頼書 #109 (2026/6/4): 法人スポンサー Admin 管理画面 (規約 v2.0 第29条) */}
             <Route path="/admin/corporate-sponsors" element={<AdminCorporateSponsors />} />
+            {/* 依頼書 #110 (2026/6/4): 商店街 v2.0 リッチ TOP */}
+            <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail}/>}/>
@@ -14766,6 +14772,8 @@ function QoccaAppInner() {
             <Route path="/admin/ark-donations" element={<AdminArkDonations />} />
             {/* 依頼書 #109 (2026/6/4): 法人スポンサー Admin 管理画面 (規約 v2.0 第29条) */}
             <Route path="/admin/corporate-sponsors" element={<AdminCorporateSponsors />} />
+            {/* 依頼書 #110 (2026/6/4): 商店街 v2.0 リッチ TOP */}
+            <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
