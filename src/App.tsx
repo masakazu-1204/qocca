@@ -13942,12 +13942,57 @@ const LegalPage = ({ type, setPage }) => {
   );
 };
 
+// ── FAQ ページ (依頼書 #128 Phase C, 2026/6/5) ─────────────────────────
+//   AI 検索 (ChatGPT search / Perplexity / Claude / Google AI Overviews) で
+//   Qocca が引用される際の「質問→簡潔回答」資産。
+//   index.html の FAQPage JSON-LD + /llms.txt の FAQ 要約 と本ページで 3 層 GEO 対策。
+//   ⚠️ 手数料表記はマーケ戦略書 v1.0 準拠 (BP4% は法律ページ以外で出さない)
+const FAQPage = ({ setPage, isPC }: { setPage: (p: string) => void; isPC?: boolean }) => {
+  const faqs = [
+    { q: "Qocca(クオッカ)とは何ですか?", a: "Qocca は、ペットオーナーとクリエイターをつなぐ日本発のペット専門マーケットプレイスです。売上の 3% を特定非営利活動法人アニマルレフュージ関西に寄付しています。" },
+    { q: "どんな商品が買えますか?", a: "ペット似顔絵、ハンドメイド服、フォト撮影、オリジナルグッズ、ペット食品 (おやつ等)、トレーニング動画など、ペットと暮らす日々を豊かにする幅広い商品があります。" },
+    { q: "出品する方法を教えてください", a: "無料でアカウント登録した上で、出品ページから商品情報・画像を登録します。運営審査を経て公開されます。創業期メンバー枠 (限定) は1年間の手数料優遇枠があります。" },
+    { q: "購入の流れは?", a: "気になる商品を選び、配送先を指定して Stripe で決済します。取引完了まで Qocca が代金を預かるエスクロー方式で、受取確認後に出品者へ送金されます。" },
+    { q: "配送方法は選べますか?", a: "出品者が複数の配送方法 (クリックポスト・宅急便等) を登録できる仕組みがあり、購入者は購入時に好みの配送方法を選べます (商品ごとに異なります)。" },
+    { q: "寄付の仕組みを教えてください", a: "Qocca の売上 3% を月次で集計し、特定非営利活動法人アニマルレフュージ関西 (略称 ARK) へ送金しています。寄付内訳は公開ダッシュボードで開示しています。" },
+    { q: "安全に取引できますか?", a: "1人1アカウント原則・Stripe エスクロー方式・取引メッセージ管理・通報機能を組み合わせ、安全な取引を支えています。" },
+    { q: "なぜ 1人1アカウント なのですか?", a: "なりすまし・不正取引を防ぎ、クリエイターと購入者双方の信頼を守るためです。違反は規約違反として停止対象になります。" },
+    { q: "出品手数料はかかりますか?", a: "出品者プラン (創業期メンバー / 通常) によって異なります。詳細は /help/fees ページにてご確認ください。" },
+    { q: "対応しているペットの種類は?", a: "犬、猫、うさぎ、ハムスター、モルモット、フェレット、チンチラ、ハリネズミ、リス、鳥、爬虫類、両生類、魚、甲殻類、昆虫、その他 (計16種) に対応しています。" },
+  ];
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:"#FFF9F0" }}>
+      <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
+        <button onClick={()=>setPage("home")} style={{ background:"none", border:"none", color:"#888780", fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:16, padding:0, fontFamily:"inherit" }}>← ホームに戻る</button>
+        <h1 style={{ fontSize:24, fontWeight:900, color:"#2C2C2A", marginBottom:8, lineHeight:1.4 }}>❓ よくあるご質問 (FAQ)</h1>
+        <p style={{ fontSize:12, color:"#888780", marginBottom:24 }}>Qocca のサービスに関する代表的なご質問への回答です。</p>
+        <div style={{ background:"#FFFFFF", borderRadius:16, padding:"24px 28px", border:"1px solid #F1EFE8", lineHeight:1.9, fontSize:13, color:"#333" }}>
+          {faqs.map((f, i) => (
+            <details key={i} open={i < 3} style={{ borderBottom: i < faqs.length-1 ? "1px solid #F1EFE8" : "none", padding:"12px 0" }}>
+              <summary style={{ cursor:"pointer", fontSize:14, fontWeight:800, color:"#2C2C2A", listStyle:"none", display:"flex", alignItems:"flex-start", gap:8 }}>
+                <span style={{ color:"#F5A94A", flexShrink:0 }}>Q.</span>
+                <span>{f.q}</span>
+              </summary>
+              <div style={{ marginTop:8, paddingLeft:24, color:"#555", lineHeight:1.85 }}>
+                <span style={{ color:"#7FB069", fontWeight:800 }}>A. </span>{f.a}
+              </div>
+            </details>
+          ))}
+          <div style={{ marginTop:24, padding:"14px 16px", background:"#FFF9F0", borderRadius:10, fontSize:12, color:"#888780", lineHeight:1.7 }}>
+            🐾 ここに無いご質問は <span onClick={()=>setPage("contact")} style={{ color:"#F5A94A", fontWeight:700, cursor:"pointer" }}>お問い合わせ</span> または <span onClick={()=>setPage("help")} style={{ color:"#F5A94A", fontWeight:700, cursor:"pointer" }}>ヘルプ</span> をご確認ください。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Shared Footer ─────────────────────────────────────────────────────────
 const SharedFooter = ({ setPage }) => (
   <footer style={{ background:"#0D0A05", padding:"24px 16px" }}>
     <Logo size={24}/>
     <div style={{ display:"flex", flexWrap:"wrap", gap:16, marginTop:16 }}>
-      {[["help","ヘルプ"],["terms","利用規約"],["privacy","プライバシー"],["tokusho","特定商取引法"],["contact","お問い合わせ"]].map(([id,l])=>(
+      {[["help","ヘルプ"],["faq","FAQ"],["terms","利用規約"],["privacy","プライバシー"],["tokusho","特定商取引法"],["contact","お問い合わせ"]].map(([id,l])=>(
         <span key={id} onClick={()=>setPage(id)} style={{ fontSize:11, color:"rgba(255,255,255,0.3)", cursor:"pointer" }}>{l}</span>
       ))}
     </div>
@@ -14825,6 +14870,8 @@ const useNav = () => {
     else if (page === "privacy") navigate("/privacy");
     else if (page === "tokusho") navigate("/tokusho");
     else if (page === "contact") navigate("/contact");
+    else if (page === "faq") navigate("/faq");
+    else if (page === "help") navigate("/help");
     else navigate("/" + page);
   };
   return { setPage, navigate };
@@ -15001,6 +15048,8 @@ function QoccaAppInner() {
             {/* 依頼書 #113 (2026/6/4): イベント自動収集 source 管理 */}
             <Route path="/admin/event-sources" element={<AdminEventSources />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={true}/>} />
+            {/* 依頼書 #128 (2026/6/5): GEO 対策 FAQ ページ (PC) */}
+            <Route path="/faq" element={<FAQPage setPage={setPage} isPC={true}/>} />
             {/* 新 PC版 Route (Phase 1.5 リニューアル) - HomePage に統一 */}
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} homeEvents={homeEvents}/>}/>
             <Route path="/search" element={
@@ -15237,6 +15286,8 @@ function QoccaAppInner() {
             {/* 依頼書 #113 (2026/6/4): イベント自動収集 source 管理 */}
             <Route path="/admin/event-sources" element={<AdminEventSources />} />
             <Route path="/contact" element={<ContactPage setPage={setPage} isPC={false}/>} />
+            {/* 依頼書 #128 (2026/6/5): GEO 対策 FAQ ページ (Mobile) */}
+            <Route path="/faq" element={<FAQPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
             <Route path="/events" element={<EventsPage isPC={false} setPage={setPage}/>}/>

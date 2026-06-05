@@ -37,7 +37,7 @@
     <meta name="twitter:description" content="うちの子のための特別なものを。ペット専門クリエイターが作る、世界にひとつだけの作品。" />
     <meta name="twitter:image" content="https://qocca.pet/logo.png" />
 
-    <!-- 構造化データ (Google検索リッチリザルト) -->
+    <!-- 構造化データ (Google検索リッチリザルト + 依頼書 #128 GEO 対策: AI 検索引用基盤) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -51,6 +51,74 @@
         "target": "https://qocca.pet/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
+    }
+    </script>
+    <!-- 依頼書 #128 Phase B (2026/6/5): Organization (AI 引用時のエンティティ確定用) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Qocca",
+      "alternateName": "クオッカ",
+      "url": "https://qocca.pet",
+      "logo": "https://qocca.pet/logo.png",
+      "description": "Qocca(クオッカ)は、ペットオーナーとクリエイターをつなぐ日本発のペット専門マーケットプレイス。売上の3%を特定非営利活動法人アニマルレフュージ関西に寄付している。",
+      "foundingDate": "2026-07-01",
+      "areaServed": "JP",
+      "sameAs": [
+        "https://x.com/qocca_pet",
+        "https://www.threads.net/@qocca_pet",
+        "https://www.instagram.com/qocca_pet/"
+      ]
+    }
+    </script>
+    <!-- 依頼書 #128 Phase B (2026/6/5): FAQPage (AI 検索引用に有効・トップに 5問抜粋) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Qoccaとは何ですか?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Qocca(クオッカ)は、ペットオーナーとクリエイターをつなぐ日本発のペット専門マーケットプレイスです。売上の3%を特定非営利活動法人アニマルレフュージ関西に寄付しています。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "取扱商品は?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ペット似顔絵、ハンドメイド服、フォト撮影、オリジナルグッズ、ペット食品、トレーニング動画など、ペットと暮らす日々を豊かにする幅広い商品を扱っています。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "購入の流れは?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "気になる商品を選び、配送先を指定して Stripe で決済します。取引完了まで Qocca が代金を預かるエスクロー方式で、受取確認後に出品者へ送金されます。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "寄付の仕組みは?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Qocca の売上 3% を月次で集計し、特定非営利活動法人アニマルレフュージ関西へ送金しています。寄付内訳は公開ダッシュボードで開示しています。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "安全な利用のための仕組みは?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "1人1アカウント原則、Stripe エスクロー方式、取引メッセージ管理、通報機能を組み合わせ、安全な取引を支えています。"
+          }
+        }
+      ]
     }
     </script>
 

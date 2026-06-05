@@ -3,4 +3,56 @@ Allow: /
 Disallow: /mypage
 Disallow: /favorites
 
+# AI クローラー明示許可 (依頼書 #128 - GEO 対策 / 2026/6/5)
+# AI 検索 (ChatGPT search / Claude / Perplexity / Google AI Overviews) からの引用を促進
+User-agent: GPTBot
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: CCBot
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
+User-agent: Bytespider
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+
 Sitemap: https://qocca.pet/sitemap.xml
