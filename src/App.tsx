@@ -160,6 +160,14 @@ const useListings = () => {
           // Phase B: variant 関連 (DetailPage で参照)
           has_variants: l.has_variants === true,
           listing_variants: Array.isArray(l.listing_variants) ? l.listing_variants : [],
+          // 🔴 緊急修正 (依頼書 #127 後追い / 2026/6/5):
+          //   useListings の map が shipping_* を欠落 → DetailPage / 購入処理で undefined → methods 出品が動かない原因
+          //   全タイプ (included/flat_rate/regional/methods/consultation) で必要
+          shipping_type: l.shipping_type || "included",
+          shipping_fee: l.shipping_fee || 0,
+          shipping_rates: Array.isArray(l.shipping_rates) ? l.shipping_rates : [],
+          shipping_methods: Array.isArray(l.shipping_methods) ? l.shipping_methods : [],
+          shipping_note: l.shipping_note || "",
         };
       }));
     }
@@ -14885,17 +14893,54 @@ const DetailPageWrapper = ({ listings, liked, onLike }) => {
   const { setPage } = useNav();
   const [item, setItem] = useState(location.state?.item || null);
 
+  // 🔴 緊急修正 (依頼書 #127 後追い / 2026/6/5):
+  //   listings.find で見つからない場合に DB 直 fetch する fallback を追加
+  //   - 新規 approved 出品が useListings refetch 前 → 「読み込み中...」のまま固まる問題を解消
+  //   - InPrivate / 別タブで直接 URL 叩き でも詳細が見られる
+  const [fetchTried, setFetchTried] = useState(false);
   useEffect(() => {
     if (!item && id) {
       const found = listings.find(l => l.id === id);
-      if (found) setItem(found);
+      if (found) { setItem(found); return; }
+      // listings 取得直後 (空) の瞬間にも空 fetch しないよう、listings が "戻ってきている" 状態でのみ DB fallback 試行
+      if (!fetchTried && listings.length >= 0) {
+        setFetchTried(true);
+        (async () => {
+          const { data } = await supabase
+            .from("listings")
+            .select("*, listing_variants(*)")
+            .eq("id", id)
+            .in("status", ["approved", "sold_out"])
+            .maybeSingle();
+          if (data) {
+            setItem({
+              ...data,
+              imageUrl: data.image_urls?.[0] || "",
+              imageUrls: data.image_urls || [],
+              listing_variants: Array.isArray(data.listing_variants) ? data.listing_variants : [],
+              shipping_type: data.shipping_type || "included",
+              shipping_fee: data.shipping_fee || 0,
+              shipping_rates: Array.isArray(data.shipping_rates) ? data.shipping_rates : [],
+              shipping_methods: Array.isArray(data.shipping_methods) ? data.shipping_methods : [],
+              shipping_note: data.shipping_note || "",
+              options: data.options || [],
+              has_variants: data.has_variants === true,
+              pet: data.pet_type,
+              delivery: data.delivery_days || "要相談",
+              delivery_type: data.delivery_type || "data_only",
+              emoji: "🐾",
+              bg: "#FFF3E0",
+            });
+          }
+        })();
+      }
     }
-  }, [id, listings]);
+  }, [id, listings, item, fetchTried]);
 
   if (!item) return (
     <div style={{ paddingTop:80, textAlign:"center", color:C.warmGray }}>
       <div style={{ fontSize:40, marginBottom:8 }}>🔍</div>
-      <div>読み込み中...</div>
+      <div>{fetchTried ? "出品が見つかりません" : "読み込み中..."}</div>
     </div>
   );
 
