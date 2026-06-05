@@ -14,37 +14,63 @@ main HEAD: 1173672 起算 (Phase 0 #126 完了後)
 [Edge] post-to-instagram v3        ← graph.instagram.com/v21.0/{ig}/media + media_publish
 [Edge] instagram-refresh-token v1  ← ig_refresh_token (24h ルール + 7日閾値 + admin_alerts)
                 ↓
-[DB] instagram_post_templates (7本 active / NG語彙 0件 / hashtags + image_prompt)
+[DB] instagram_post_templates (v2: 7本 active 豆知識系 + 7本 inactive 旧ブランド系 / NG語彙 0件 / day_of_week 0-6 全曜日)
 [DB] instagram_posts (status, media_id, permalink, cost_usd)
 [DB] social_connections (platform='instagram' / 60日トークン)
 [DB] admin_alerts (refresh 失敗時 warning)
 [Storage] x-images/auto-instagram/*.png (30日自動削除 cron)
 ```
 
-## キャプションサンプル 3本 + 画像 1枚
+## v2 (依頼書 #126 v2 / King 方針反映): 豆知識・実用情報系 + リアル系画像
 
-### ① クリエイター応援 (実投稿成功 ✨)
-- **permalink**: https://www.instagram.com/p/18112219478309297/
-- **image_url**: https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/x-images/auto-instagram/1780618340434-________.png
+### 曜日テーマ (1日1回 12:00 JST)
+| 曜日 | テーマ | day_of_week |
+|---|---|---|
+| 月 | 健康・肉球ケア | 1 |
+| 火 | ごはん・NG食材 | 2 |
+| 水 | しつけ・暮らしの工夫 | 3 |
+| 木 | 季節の注意・体調管理 | 4 |
+| 金 | グッズ・ブラッシング | 5 |
+| 土 | 動物福祉・保護動物 | 6 |
+| 日 | 豆知識総合・平熱 | 0 |
+
+### 安全ルール (テンプレ全件適用済)
+- 断定回避: 「〜と言われています」「〜が一般的です」
+- 健康・食事系には 「気になる場合は獣医師にご相談ください」を添える
+- 投薬量・治療法など誤情報リスクの高い断定は扱わない
+- NG 語彙 0件 (バズ/No.1/最強/今だけ/急成長/爆発/絶対/100%/必ず/お得/激安/永久/永遠/無期限)
+- 画像プロンプト: photorealistic / 自然光 / 文字なし (誤字リスク回避)
+
+### サンプル投稿
+
+#### ① 金: グッズ・ブラッシング (v2 実テスト投稿成功 ✨)
+- **permalink**: https://www.instagram.com/p/18110638616478828/
+- **image_url**: https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/x-images/auto-instagram/1780618969112-_____________.png
 - caption:
-> Qoccaには、想いを込めた作品を 置いてくださっているクリエイターさんが居ます🎨
-> うちの子の似顔絵、手作りグッズ、想い出グッズ。
-> ひとつひとつが "暮らしの灯" です🌿
-> 👉 qocca.pet
-> #Qocca #クリエイター #ペットグッズ #うちの子グッズ #ハンドメイド
+> 🐾 【ブラッシングの豆知識】
+> 毛並みの長さや種類によって、 おすすめのブラシは変わると言われています🪮
+> 短毛種はラバーブラシ、 長毛種はピンブラシが 一般的です🌿
+> お手入れの時間は、 うちの子の体調を観察する 大切な瞬間でもありますね🐾
+> 詳しくは qocca.pet のブログへ
+> #ブラッシング #ペットのお手入れ #犬猫 #愛犬グッズ #Qocca
 
-### ② うちの子おはよう (テンプレ)
-> おはようございます🌅
-> 今日も窓辺で日向ぼっこ☀️
-> ペットと暮らす朝の景色は、何度見ても飽きへんなぁ🐾
-> 👉 qocca.pet
-> #Qocca #うちの子 #おはよう #日向ぼっこ #朝の景色
+#### ② 月: 健康・肉球ケア (テンプレ)
+> 🐾 【肉球ケアの豆知識】
+> 夏が近づくと、 アスファルトは体感より熱くなると 言われています☀️
+> お散歩前に 手の甲で地面の温度を確認すると、 肉球を守りやすいです🐕
+> 気になる赤みやひび割れがある場合は、 動物病院でご相談ください🌿
+> #犬の健康 #肉球ケア #ペットと暮らす #犬のいる暮らし #Qocca
 
-### ③ ARK連携 - 動物福祉 (テンプレ)
-> Qoccaの売上の 3% は ARK さんを通じて、 保護動物さんたちへ届きます🐾
-> 小さな循環が、 街の灯をつくる🌿
-> 👉 qocca.pet
-> #Qocca #ARK #動物福祉 #保護犬 #保護猫
+#### ③ 火: ごはん・NG食材 (テンプレ)
+> 🐾 【知っておきたい NG 食材】
+> 玉ねぎ・チョコレート・ぶどう・アボカドなどは、 ペットに与えてはいけない食材として 知られています🚫
+> うちの子の口に入りやすい場所にないか、 こまめにチェックしておきたいですね🐕🐈
+> もし誤って口にした場合は、 すぐに獣医師にご相談ください🌿
+> #犬の食事 #猫の食事 #NG食材 #ペットの健康 #Qocca
+
+### 旧 v1 (依頼書 #126 初版・実装直前差し替え)
+- 旧 7本 (ブランド系: Qocca哲学・うちの子・クリエイター応援 等) は `is_active=false` で保持 (instagram_posts.template_id FK 維持)
+- 旧テスト投稿: https://www.instagram.com/p/18112219478309297/ — King 判断で手動削除可
 
 ## 月額コスト試算
 
