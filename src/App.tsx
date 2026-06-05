@@ -4983,6 +4983,18 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
                 } else {
                   if (!selectedAddressId) { alert("住所を選択してください"); return; }
                 }
+                // 🔴 緊急修正 (2026/6/5 King テスト後追い): methods 出品で配送方法未選択のまま決済モーダルに進めないガード
+                if (item.shipping_type === "methods") {
+                  const methods = Array.isArray(item.shipping_methods) ? item.shipping_methods : [];
+                  if (methods.length > 0 && !selectedShippingMethodId && !methods[0]?.id) {
+                    alert("配送方法を選択してください");
+                    return;
+                  }
+                }
+                if (item.shipping_type === "regional" && !selectedShippingRegion) {
+                  alert("配送先地域を選択してください");
+                  return;
+                }
                 setShowAddressStep(false);
                 setShowConfirm(true);
               }} style={{ flex:2, padding:"13px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>
@@ -5021,14 +5033,53 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
                     <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>+¥{o.price.toLocaleString()}</span>
                   </div>
                 ))}
+                {/* 🔴 緊急修正 (2026/6/5 King テスト後追い): 送料行表示 (flat_rate / regional / methods 選択時) */}
+                {(() => {
+                  const st = item.shipping_type || "included";
+                  let shipFeeConfirm = 0;
+                  let shipLabel = "";
+                  if (st === "flat_rate") { shipFeeConfirm = item.shipping_fee || 0; shipLabel = "📮 送料 (全国一律)"; }
+                  else if (st === "regional" && selectedShippingRegion) {
+                    const rate = (item.shipping_rates || []).find((r: any) => r.region === selectedShippingRegion);
+                    shipFeeConfirm = rate?.fee || 0; shipLabel = `🗾 送料 (${selectedShippingRegion})`;
+                  } else if (st === "methods") {
+                    const methods = Array.isArray(item.shipping_methods) ? item.shipping_methods : [];
+                    const chosen = methods.find((m: any) => m.id === selectedShippingMethodId) || methods[0];
+                    if (chosen) { shipFeeConfirm = chosen.fee || 0; shipLabel = `📦 送料 (${chosen.name})`; }
+                  }
+                  return shipFeeConfirm > 0 ? (
+                    <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
+                      <span style={{ fontSize:12, color:C.warmGray }}>{shipLabel}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:C.dark }}>+¥{shipFeeConfirm.toLocaleString()}</span>
+                    </div>
+                  ) : null;
+                })()}
                 <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
                   <span style={{ fontSize:12, color:C.warmGray }}>🛡️ バイヤープロテクション(4%)</span>
                   <span style={{ fontSize:12, fontWeight:700, color:C.warmGray }}>+¥{Math.floor(totalPrice * 0.04).toLocaleString()}</span>
                 </div>
-                <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", borderTop:`2px solid ${C.dark}`, marginTop:4 }}>
-                  <span style={{ fontSize:14, fontWeight:800, color:C.dark }}>お支払い合計</span>
-                  <span style={{ fontSize:20, fontWeight:900, color:C.orange }}>¥{(totalPrice + Math.floor(totalPrice * 0.04)).toLocaleString()}</span>
-                </div>
+                {/* 🔴 緊急修正 (2026/6/5): 合計に送料を加算 (Stripe 側 ¥1,589 と一致させる / 旧: 商品+BP のみで Stripe と不整合) */}
+                {(() => {
+                  const st = item.shipping_type || "included";
+                  let shipFeeConfirm = 0;
+                  if (st === "flat_rate") shipFeeConfirm = item.shipping_fee || 0;
+                  else if (st === "regional" && selectedShippingRegion) {
+                    const rate = (item.shipping_rates || []).find((r: any) => r.region === selectedShippingRegion);
+                    shipFeeConfirm = rate?.fee || 0;
+                  } else if (st === "methods") {
+                    const methods = Array.isArray(item.shipping_methods) ? item.shipping_methods : [];
+                    const chosen = methods.find((m: any) => m.id === selectedShippingMethodId) || methods[0];
+                    if (chosen) shipFeeConfirm = chosen.fee || 0;
+                  }
+                  const bp = Math.floor(totalPrice * 0.04);
+                  const grand = totalPrice + shipFeeConfirm + bp;
+                  return (
+                    <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 0", borderTop:`2px solid ${C.dark}`, marginTop:4 }}>
+                      <span style={{ fontSize:14, fontWeight:800, color:C.dark }}>お支払い合計</span>
+                      <span style={{ fontSize:20, fontWeight:900, color:C.orange }}>¥{grand.toLocaleString()}</span>
+                    </div>
+                  );
+                })()}
               </div>
               <div style={{ background:"#E3F2FD", borderRadius:10, padding:"10px", marginBottom:12, fontSize:11, color:C.blue, lineHeight:1.6 }}>
                 🔒 Stripe安全決済：クレジットカード情報はStripeが安全に処理します。Qoccaにカード情報は保存されません。
