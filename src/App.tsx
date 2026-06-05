@@ -13131,6 +13131,9 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
   const [postError, setPostError] = useState<string>("");
   const [disconnecting, setDisconnecting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // 依頼書 #126 Phase 0 (2026/6/5): #124 Threads と同型のエラーバナー導入
+  //   callback v10 が ?instagram=error&reason=...&detail=... で戻す
+  const [errorBanner, setErrorBanner] = useState<{ reason: string; message: string; detail?: string } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -13140,9 +13143,26 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
   }, [user, navigate]);
 
   useEffect(() => {
+    // 依頼書 #126 Phase 0: 成功 / 失敗 両方の戻り URL を解釈
     const params = new URLSearchParams(window.location.search);
-    if (params.get("instagram") === "connected") {
+    const status = params.get("instagram");
+    if (status === "connected") {
       setShowSuccess(true);
+      window.history.replaceState(null, "", "/settings/instagram");
+    } else if (status === "error") {
+      const reason = params.get("reason") || "unknown";
+      const detail = params.get("detail") || "";
+      const reasonMap: Record<string, string> = {
+        meta_denied: "Meta 側で認証がキャンセル/拒否されました",
+        missing_params: "必要なパラメータが不足しています (callback URL の問題)",
+        invalid_state: "セッション (state) が不正です。もう一度連携をお試しください",
+        secrets_missing: "サーバー側の設定が未完了です。運営にお問い合わせください",
+        token_short_failed: "アクセストークン交換失敗 (Meta App / Instagram Login API 設定を確認)",
+        token_long_failed: "長期トークン (60日) 交換に失敗しました",
+        db_failed: "データベース保存に失敗しました",
+        unknown: "予期せぬエラーが発生しました",
+      };
+      setErrorBanner({ reason, message: reasonMap[reason] || reason, detail });
       window.history.replaceState(null, "", "/settings/instagram");
     }
   }, []);
@@ -13285,6 +13305,19 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
       {showSuccess && (
         <div style={{ background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)", border: "1px solid #4CAF50", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: C.dark }}>
           ✅ Instagram との連携が完了しました!
+        </div>
+      )}
+
+      {/* 依頼書 #126 Phase 0 (2026/6/5): 連携失敗時のエラー表示 (callback v10 から ?instagram=error で戻った時) */}
+      {errorBanner && (
+        <div style={{ background: "linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%)", border: "1px solid #E57373", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>⚠️ 連携に失敗しました</div>
+          <div>{errorBanner.message}</div>
+          {errorBanner.detail && (
+            <div style={{ fontSize: 11, color: C.warmGray, marginTop: 6, fontFamily: "monospace", wordBreak: "break-all" }}>詳細: {errorBanner.detail}</div>
+          )}
+          <div style={{ fontSize: 11, color: C.warmGray, marginTop: 6 }}>理由コード: <code>{errorBanner.reason}</code></div>
+          <button onClick={() => setErrorBanner(null)} style={{ marginTop: 8, background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>閉じる</button>
         </div>
       )}
 
