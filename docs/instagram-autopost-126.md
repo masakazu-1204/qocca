@@ -41,26 +41,42 @@ main HEAD: 1173672 起算 (Phase 0 #126 完了後)
 - NG 語彙 0件 (バズ/No.1/最強/今だけ/急成長/爆発/絶対/100%/必ず/お得/激安/永久/永遠/無期限)
 - 画像プロンプト: v3 で 飼い主スマホスナップ風 photorealistic / 自然光 / 文字なし (誤字リスク回避)
 
-### 画像プロンプト 3 段階進化
+### 画像プロンプト 4 段階進化 (最終: Qocca 公式世界観に合流)
 
 | Ver | スタイル | 残課題 |
 |---|---|---|
 | v1 (初版) | warm pastel / Japanese illustration | Threads と方向性被り |
 | v2 (King 方針1) | photorealistic / 自然光 / soft warm tones | まだ水彩寄りの仕上がり |
-| **v3 (King 方針2 最終)** | **candid smartphone photo by pet owner / Japanese home interior / shallow DOF / no staging / NOT watercolor/illustration/anime/pastel/painting** | スタジオ撮影感ゼロ・ギャラリー投稿テイスト |
+| v3-mid (King 方針2) | candid smartphone photo by pet owner | スナップ寄り・公式世界観と統一感不足 |
+| **v3-final (King 方針3 / 公式統一)** | **Documentary photography × Kinfolk aesthetic** (ちゃぴ作 HomePage 採用済 勝ちプロンプト構造) | qocca.pet 公式画像と世界観完全統一 |
 
-v3 共通プロンプト構造 (全7本):
-```
-Candid smartphone photo taken by a pet owner: [テーマ別シーン], 
-soft natural window light, shallow depth of field, warm everyday tones,
-authentic everyday moment, no staging, no text overlay.
-Photorealistic, NOT watercolor, NOT illustration, NOT anime, NOT pastel, NOT painting.
-```
+#### v3-final 必須構造 5要素 + 6禁止 (全7本適用済)
+1. 具体的一場面 (犬猫の自然な仕草 + 質感小物 + 環境)
+2. 光の描写 (dappled / soft window / afternoon)
+3. 背景ボケ `Out of focus in background: ...`
+4. スタイル (固定): `Documentary photography, Kinfolk aesthetic, warm earthy tones, film grain`
+5. `Mood: ...` 行 (テーマ別情緒)
 
-### サンプル投稿 (3 バージョン目視比較用)
+禁止ワード明示: `NOT watercolor, NOT illustration, NOT anime, NOT pastel, NOT painting, NOT drawing`
+`no text overlay` 維持 (誤字リスク回避)
 
-#### ① v3 金: グッズ・ブラッシング (最新テスト投稿 ✨ 飼い主スマホスナップ風)
-- **permalink**: **https://www.instagram.com/p/18062903696472460/**
+#### v3-final 各曜日テーマ (Documentary × Kinfolk 翻訳)
+- 月 健康・肉球: 窓辺・飼い主の手 × 犬の前足・観葉植物のボケ / Mood: gentle care, quiet trust
+- 火 ごはん: キッチンの床で見上げる犬猫 / 銅のケトル背景 / Mood: protective everyday, calm caution
+- 水 しつけ: 低いリネンソファで犬と飼い主 / 本棚のボケ / Mood: patient connection, building trust
+- 木 季節: 雨の窓辺で寄り添う犬猫 / お茶のカップ背景 / Mood: cozy watchfulness, seasonal change
+- 金 グッズ: リネンクッションで長毛猫ブラッシング / ニットスローのボケ / Mood: slow afternoon, attentive grooming
+- 土 動物福祉: 木の床で寄り添う保護犬猫 / 譲渡サイン背景 / Mood: hopeful tenderness, new beginnings
+- 日 豆知識: ソファで犬に手を添える / アンバーランプ背景 / Mood: intimate care, quiet evening
+
+### サンプル投稿 (4 バージョン目視比較用)
+
+#### ① v3-final 金: グッズ・ブラッシング (最新テスト ✨ Documentary × Kinfolk)
+- **permalink**: **https://www.instagram.com/p/18070613702345193/**
+- image_url: https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/x-images/auto-instagram/1780621586852-_____________.png
+
+#### ② v3-mid 金: ブラッシング (Candid smartphone)
+- permalink: https://www.instagram.com/p/18062903696472460/
 - image_url: https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/x-images/auto-instagram/1780620056192-_____________.png
 
 #### ② v2 金: グッズ・ブラッシング (前回テスト・水彩寄り)
