@@ -39,11 +39,31 @@ main HEAD: 1173672 起算 (Phase 0 #126 完了後)
 - 健康・食事系には 「気になる場合は獣医師にご相談ください」を添える
 - 投薬量・治療法など誤情報リスクの高い断定は扱わない
 - NG 語彙 0件 (バズ/No.1/最強/今だけ/急成長/爆発/絶対/100%/必ず/お得/激安/永久/永遠/無期限)
-- 画像プロンプト: photorealistic / 自然光 / 文字なし (誤字リスク回避)
+- 画像プロンプト: v3 で 飼い主スマホスナップ風 photorealistic / 自然光 / 文字なし (誤字リスク回避)
 
-### サンプル投稿
+### 画像プロンプト 3 段階進化
 
-#### ① 金: グッズ・ブラッシング (v2 実テスト投稿成功 ✨)
+| Ver | スタイル | 残課題 |
+|---|---|---|
+| v1 (初版) | warm pastel / Japanese illustration | Threads と方向性被り |
+| v2 (King 方針1) | photorealistic / 自然光 / soft warm tones | まだ水彩寄りの仕上がり |
+| **v3 (King 方針2 最終)** | **candid smartphone photo by pet owner / Japanese home interior / shallow DOF / no staging / NOT watercolor/illustration/anime/pastel/painting** | スタジオ撮影感ゼロ・ギャラリー投稿テイスト |
+
+v3 共通プロンプト構造 (全7本):
+```
+Candid smartphone photo taken by a pet owner: [テーマ別シーン], 
+soft natural window light, shallow depth of field, warm everyday tones,
+authentic everyday moment, no staging, no text overlay.
+Photorealistic, NOT watercolor, NOT illustration, NOT anime, NOT pastel, NOT painting.
+```
+
+### サンプル投稿 (3 バージョン目視比較用)
+
+#### ① v3 金: グッズ・ブラッシング (最新テスト投稿 ✨ 飼い主スマホスナップ風)
+- **permalink**: **https://www.instagram.com/p/18062903696472460/**
+- image_url: https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/x-images/auto-instagram/1780620056192-_____________.png
+
+#### ② v2 金: グッズ・ブラッシング (前回テスト・水彩寄り)
 - **permalink**: https://www.instagram.com/p/18110638616478828/
 - **image_url**: https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/x-images/auto-instagram/1780618969112-_____________.png
 - caption:
