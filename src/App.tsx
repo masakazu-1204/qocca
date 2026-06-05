@@ -4176,6 +4176,8 @@ const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvents = [] 
       {/* 依頼書 #35 v2 (5/31): 創業パートナー (mayor_30000 + corporate_300000) */}
       <FoundingPartnersSection />
       <SectionJoinTown setPage={setPage} />
+      {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
+      <HomeEventsSection events={homeEvents} setPage={setPage}/>
       <SharedFooter setPage={setPage}/>
     </div>
   );
@@ -4282,10 +4284,10 @@ const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC
           </div>
         )}
       </div>
-
-      {/* 依頼書 #116 (2026/6/5): HomePage 末尾イベントセクション (#113 最終ピース) - 0件時 null で非表示 */}
-      <HomeEventsSection events={homeEvents} setPage={setPage}/>
-
+      {/* 🔴 緊急修正 (2026/6/5): #116 で誤って SearchPage 末尾に挿入されていた
+          <HomeEventsSection events={homeEvents} ...> を削除。
+          SearchPage の props に homeEvents は存在しない → ReferenceError で「さがす」白画面。
+          本来の挿入先 = HomePage (L4178 SectionJoinTown 直前) に移動済。 */}
     </div>
   );
 };
