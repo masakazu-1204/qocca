@@ -270,6 +270,20 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
     shipping_fee: form.shipping_type === 'flat_rate' ? (parseInt(form.shipping_fee) || 0) : 0,
     shipping_rates: form.shipping_type === 'regional' ? (form.shipping_rates || []) : [],
     shipping_note: form.shipping_note?.trim() || '',
+    // 依頼書 #127 Phase B (2026/6/5): 配送方法選択 (5タイプ目 'methods')
+    //   保存形式: { id, name, fee, note } の配列 (最大5件 / name 必須 / fee >= 0 / id クライアント生成・listing 内 unique)
+    //   他タイプ選択時は [] で保存 (後方互換)
+    shipping_methods: form.shipping_type === 'methods'
+      ? (form.shipping_methods || [])
+          .filter((m: any) => m?.name?.trim())
+          .slice(0, 5)
+          .map((m: any, i: number) => ({
+            id: String(m.id || `m${i + 1}_${Date.now().toString(36)}`),
+            name: String(m.name).trim().slice(0, 40),
+            fee: Math.max(0, parseInt(m.fee) || 0),
+            note: String(m.note || '').trim().slice(0, 60),
+          }))
+      : [],
   }).select().single();
 
   if (listingErr || !listing) {
@@ -4283,6 +4297,8 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const [reportType, setReportType] = useState("");
   // 依頼書 #104 Phase B-2 (2026/6/3): regional 動的計算 - 購入者が選択する配送先地域
   const [selectedShippingRegion, setSelectedShippingRegion] = useState<string>("");
+  // 依頼書 #127 Phase C (2026/6/5): methods - 購入者が選択する配送方法 (デフォルト先頭 method)
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>("");
   // 依頼書 #113 (緊急) (2026/6/4): 出品者が自分の出品ページから直接編集できるよう ListingEditModal を呼出
   const [showMyEditModal, setShowMyEditModal] = useState(false);
   const [reportDone, setReportDone] = useState(false);
@@ -4409,8 +4425,10 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
       }
 
       // 依頼書 #104 Phase B-2 (2026/6/3): 送料動的計算 (Edge Function は Phase C で受信処理 / クライアント値は参考のみ)
+      // 依頼書 #127 Phase C (2026/6/5): methods 対応 + サーバー側 listing 再取得が大前提 (クライアント値は Meta Pixel 用)
       let shippingFeeForOrder = 0;
       let shippingRegionForOrder: string | null = null;
+      let shippingMethodIdForOrder: string | null = null;
       const shipType = item.shipping_type || "included";
       if (shipType === "flat_rate") {
         shippingFeeForOrder = item.shipping_fee || 0;
@@ -4423,6 +4441,18 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         const rate = (item.shipping_rates || []).find((r: any) => r.region === selectedShippingRegion);
         shippingFeeForOrder = rate?.fee || 0;
         shippingRegionForOrder = selectedShippingRegion;
+      } else if (shipType === "methods") {
+        // 依頼書 #127 Phase C (2026/6/5): 配送方法選択
+        const methods = Array.isArray(item.shipping_methods) ? item.shipping_methods : [];
+        const chosenId = selectedShippingMethodId || methods[0]?.id;
+        const method = methods.find((m: any) => m.id === chosenId);
+        if (!method) {
+          alert("配送方法を選択してください");
+          setOrdering(false);
+          return;
+        }
+        shippingFeeForOrder = method.fee || 0;
+        shippingMethodIdForOrder = method.id;
       }
       // included / consultation は shipping_fee=0
 
@@ -4456,9 +4486,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           shipping_address_id: shippingAddressId,
           // Phase B: variant_id を Edge Function に渡す (Phase C で受信処理)
           variant_id: hasVariants && selectedVariant ? selectedVariant.id : null,
-          // 依頼書 #104 Phase B-2 (2026/6/3): 送料情報 (Phase C で line_items / orders.shipping_* 反映予定)
+          // 依頼書 #104 Phase B-2 (2026/6/3): 送料情報 (#127 Phase C で line_items / orders.shipping_* 反映完了)
           shipping_fee: shippingFeeForOrder,
           shipping_region: shippingRegionForOrder,
+          // 依頼書 #127 Phase C (2026/6/5): methods 用 ID (サーバー側で listing から fee 再取得)
+          selected_shipping_method_id: shippingMethodIdForOrder,
         })
       });
 
@@ -4693,6 +4725,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
             if (st === "included") shipLabel = "✅ 送料込み";
             else if (st === "flat_rate") shipLabel = `📮 全国一律 ¥${(item.shipping_fee || 0).toLocaleString()}`;
             else if (st === "regional") shipLabel = "🗾 地域により異なる";
+            else if (st === "methods") shipLabel = "📦 配送方法から選択 (下で選んでください)";
             else if (st === "consultation") shipLabel = "💬 出品者にお問い合わせ";
             const rows: Array<[string, string]> = [
               ["⏱️ 納期", item.delivery],
@@ -4737,6 +4770,35 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
                   ✓ {selectedShippingRegion} を選択中
                 </div>
               )}
+            </div>
+          )}
+          {/* 依頼書 #127 Phase C (2026/6/5): methods 時の配送方法選択ラジオ (購入者) */}
+          {item.shipping_type === "methods" && Array.isArray(item.shipping_methods) && item.shipping_methods.length > 0 && (
+            <div style={{ marginTop: 10, padding: 10, background: C.cream, borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}>📦 配送方法を選択</div>
+              {item.shipping_methods.map((m: any, i: number) => {
+                const isSelected = selectedShippingMethodId === m.id || (!selectedShippingMethodId && i === 0);
+                return (
+                  <div key={m.id || i} onClick={()=>setSelectedShippingMethodId(m.id)} style={{
+                    display:"flex", justifyContent:"space-between", alignItems:"center",
+                    padding:"8px 10px", fontSize:12, cursor:"pointer", marginBottom:4,
+                    background:isSelected ? C.white : "transparent",
+                    border:isSelected ? `1.5px solid ${C.orange}` : `1.5px solid transparent`,
+                    borderRadius:6
+                  }}>
+                    <span style={{ color:C.dark, display:"flex", alignItems:"center", gap:8, flex:1, minWidth:0 }}>
+                      <span style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${isSelected?C.orange:C.border}`, display:"inline-block", position:"relative", flexShrink:0 }}>
+                        {isSelected && <span style={{ position:"absolute", top:2, left:2, right:2, bottom:2, borderRadius:"50%", background:C.orange, display:"block" }}></span>}
+                      </span>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {m.name}
+                        {m.note && <span style={{ color:C.warmGray, fontSize:10, marginLeft:6 }}>({m.note})</span>}
+                      </span>
+                    </span>
+                    <span style={{ fontWeight:700, color:C.orange, flexShrink:0, marginLeft:8 }}>¥{(m.fee || 0).toLocaleString()}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
           {/* shipping_note 補足説明 */}
@@ -5036,6 +5098,12 @@ const SellPage = ({ setPage }) => {
       { region: "北海道", fee: 0 },
       { region: "沖縄・離島", fee: 0 },
     ], shipping_note:"",
+    // 依頼書 #127 Phase B (2026/6/5): minne 型 配送方法選択 (購入者が選ぶ)
+    //   id は uuid 風 (送信時に確定) / name 必須 / fee >= 0 / note 任意 / 最大 5 件
+    shipping_methods: [
+      { id: "m1", name: "クリックポスト", fee: 185, note: "" },
+      { id: "m2", name: "宅急便60サイズ", fee: 750, note: "" },
+    ],
   });
   const [images, setImages] = useState([]);
   const [options, setOptions] = useState([]);
@@ -5514,6 +5582,7 @@ const SellPage = ({ setPage }) => {
                   { v:"included", icon:"✅", label:"送料込み (無料配送)", desc:"商品代金に送料を含めます" },
                   { v:"flat_rate", icon:"📮", label:"全国一律", desc:"日本全国どこでも同じ送料" },
                   { v:"regional", icon:"🗾", label:"地域別", desc:"地域ごとに送料を設定 (本州・北海道・沖縄等)" },
+                  { v:"methods", icon:"📦", label:"配送方法から選ぶ (購入者が選択)", desc:"クリックポスト ¥185 / 宅急便 ¥750 等を登録 → 購入者が選びます" },
                   { v:"consultation", icon:"💬", label:"要相談 (個別連絡)", desc:"取引後にメッセージで送料を相談" },
                 ].map(opt => (
                   <button key={opt.v} type="button" onClick={()=>up("shipping_type", opt.v)} style={{
@@ -5559,6 +5628,33 @@ const SellPage = ({ setPage }) => {
               {form.shipping_type === "consultation" && (
                 <div style={{ marginTop:10, padding:12, background:C.cream, borderRadius:10, fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
                   💬 購入後、取引メッセージで配送先・送料を個別相談します。送料は購入者・出品者間で合意の上、別途お支払いください。
+                </div>
+              )}
+              {/* 依頼書 #127 Phase B (2026/6/5): methods - 配送方法選択 (購入者がラジオで選ぶ / 最大 5件) */}
+              {form.shipping_type === "methods" && (
+                <div style={{ marginTop:10, padding:12, background:C.cream, borderRadius:10 }}>
+                  <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:6 }}>配送方法 (最大 5件・購入者が選択)</label>
+                  <p style={{ fontSize:11, color:C.warmGray, marginBottom:8, lineHeight:1.6 }}>例: クリックポスト ¥185 / 宅急便60サイズ ¥750 / レターパックライト ¥430</p>
+                  {(form.shipping_methods || []).map((m: any, idx: number) => (
+                    <div key={idx} style={{ display:"flex", gap:6, marginBottom:6, alignItems:"flex-start", flexWrap:"wrap" }}>
+                      <input type="text" maxLength={40} value={m.name || ""} onChange={(e) => {
+                        const next = [...(form.shipping_methods || [])]; next[idx] = { ...next[idx], name: e.target.value }; up("shipping_methods", next);
+                      }} placeholder="配送方法名 (40字以内)" style={{ flex:"1 1 160px", minWidth:120, padding:"8px 10px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }} />
+                      <input type="number" min="0" value={m.fee ?? 0} onChange={(e) => {
+                        const next = [...(form.shipping_methods || [])]; next[idx] = { ...next[idx], fee: Math.max(0, parseInt(e.target.value) || 0) }; up("shipping_methods", next);
+                      }} placeholder="送料 ¥" style={{ width:100, padding:"8px 10px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }} />
+                      <input type="text" maxLength={60} value={m.note || ""} onChange={(e) => {
+                        const next = [...(form.shipping_methods || [])]; next[idx] = { ...next[idx], note: e.target.value }; up("shipping_methods", next);
+                      }} placeholder="補足 (任意)" style={{ flex:"1 1 140px", minWidth:120, padding:"8px 10px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }} />
+                      <button type="button" onClick={() => { const next = (form.shipping_methods || []).filter((_:any, i:number) => i !== idx); up("shipping_methods", next); }} style={{ width:30, height:30, border:"none", background:"transparent", color:"#E57373", fontSize:18, cursor:"pointer" }}>×</button>
+                    </div>
+                  ))}
+                  {((form.shipping_methods || []).length < 5) && (
+                    <button type="button" onClick={() => { up("shipping_methods", [ ...(form.shipping_methods || []), { id: `m${(form.shipping_methods?.length || 0) + 1}_${Date.now().toString(36)}`, name: "", fee: 0, note: "" } ]); }} style={{ padding:"6px 12px", background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, color:C.warmGray, fontSize:12, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>+ 配送方法を追加 ({(form.shipping_methods || []).length}/5)</button>
+                  )}
+                  {((form.shipping_methods || []).filter((m:any)=>m?.name?.trim()).length === 0) && (
+                    <div style={{ marginTop:8, fontSize:11, color:"#E57373" }}>⚠️ 配送方法は最低 1件 必要です (名前を入力)</div>
+                  )}
                 </div>
               )}
               {/* shipping_note: 補足説明欄 (全タイプ共通) */}
@@ -9371,6 +9467,11 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
     return [{ region:"本州", fee:0 }, { region:"北海道", fee:0 }, { region:"沖縄・離島", fee:0 }];
   });
   const [shippingNote, setShippingNote] = useState<string>(listing.shipping_note || "");
+  // 依頼書 #127 Phase B (2026/6/5): methods 編集 state
+  const [shippingMethods, setShippingMethods] = useState<any[]>(() => {
+    if (Array.isArray(listing.shipping_methods) && listing.shipping_methods.length > 0) return listing.shipping_methods;
+    return [{ id: "m1", name: "クリックポスト", fee: 185, note: "" }, { id: "m2", name: "宅急便60サイズ", fee: 750, note: "" }];
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -9380,6 +9481,11 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
     if (!description.trim()) { setError("説明を入力してください"); return; }
     const priceNum = parseInt(price);
     if (isNaN(priceNum) || priceNum <= 0) { setError("価格は1円以上の数字を入力してください"); return; }
+    // 依頼書 #127 Phase B: methods 選択時は最低1件 + 名前必須
+    if (shippingType === 'methods') {
+      const valid = (shippingMethods || []).filter((m:any) => m?.name?.trim());
+      if (valid.length === 0) { setError("配送方法を最低1件 (名前必須) 入力してください"); return; }
+    }
     setSaving(true);
     const { error: updErr } = await supabase
       .from("listings")
@@ -9393,6 +9499,18 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
         shipping_fee: shippingType === 'flat_rate' ? (parseInt(shippingFee) || 0) : 0,
         shipping_rates: shippingType === 'regional' ? shippingRates : [],
         shipping_note: shippingNote.trim(),
+        // 依頼書 #127 Phase B (2026/6/5): methods 編集 UPDATE (他タイプ選択時は [] で後方互換)
+        shipping_methods: shippingType === 'methods'
+          ? (shippingMethods || [])
+              .filter((m:any) => m?.name?.trim())
+              .slice(0, 5)
+              .map((m:any, i:number) => ({
+                id: String(m.id || `m${i+1}_${Date.now().toString(36)}`),
+                name: String(m.name).trim().slice(0, 40),
+                fee: Math.max(0, parseInt(m.fee) || 0),
+                note: String(m.note || '').trim().slice(0, 60),
+              }))
+          : [],
         updated_at: new Date().toISOString(),
       })
       .eq("id", listing.id);
@@ -9460,6 +9578,7 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
               { v:"included", label:"✅ 送料込み (無料配送)" },
               { v:"flat_rate", label:"📮 全国一律" },
               { v:"regional", label:"🗾 地域別" },
+              { v:"methods", label:"📦 配送方法から選ぶ (購入者が選択)" },
               { v:"consultation", label:"💬 要相談" },
             ].map(opt => (
               <button key={opt.v} type="button" onClick={()=>setShippingType(opt.v)} style={{
@@ -9502,6 +9621,29 @@ const ListingEditModal = ({ listing, onClose, onSaved }) => {
           {shippingType === "consultation" && (
             <div style={{ background:C.orangePale, borderRadius:8, padding:"8px 10px", marginBottom:8, fontSize:11, color:C.dark, lineHeight:1.6 }}>
               💬 購入希望者から個別に送料相談があります。
+            </div>
+          )}
+          {/* 依頼書 #127 Phase B (2026/6/5): methods 編集 UI (最大5件 / 名前必須) */}
+          {shippingType === "methods" && (
+            <div style={{ marginBottom:8 }}>
+              <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>配送方法 (最大5件・購入者が選択)</label>
+              {(shippingMethods || []).map((m:any, idx:number) => (
+                <div key={idx} style={{ display:"flex", gap:6, marginBottom:6, flexWrap:"wrap", alignItems:"center" }}>
+                  <input type="text" maxLength={40} placeholder="配送方法名" value={m.name || ""} onChange={e=>{
+                    const next = [...shippingMethods]; next[idx] = { ...next[idx], name: e.target.value }; setShippingMethods(next);
+                  }} style={{ flex:"1 1 140px", minWidth:120, padding:"6px 8px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  <input type="number" min="0" placeholder="¥" value={m.fee ?? 0} onChange={e=>{
+                    const next = [...shippingMethods]; next[idx] = { ...next[idx], fee: Math.max(0, parseInt(e.target.value) || 0) }; setShippingMethods(next);
+                  }} style={{ width:90, padding:"6px 8px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  <input type="text" maxLength={60} placeholder="補足 (任意)" value={m.note || ""} onChange={e=>{
+                    const next = [...shippingMethods]; next[idx] = { ...next[idx], note: e.target.value }; setShippingMethods(next);
+                  }} style={{ flex:"1 1 120px", minWidth:100, padding:"6px 8px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:11, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  <button type="button" onClick={()=>{ setShippingMethods(shippingMethods.filter((_,i)=>i!==idx)); }} style={{ width:28, height:28, border:"none", background:"transparent", color:"#E57373", fontSize:16, cursor:"pointer", padding:0 }}>×</button>
+                </div>
+              ))}
+              {shippingMethods.length < 5 && (
+                <button type="button" onClick={()=>{ setShippingMethods([...shippingMethods, { id: `m${shippingMethods.length+1}_${Date.now().toString(36)}`, name:"", fee:0, note:"" }]); }} style={{ padding:"5px 10px", background:"transparent", border:`1px dashed ${C.border}`, borderRadius:6, color:C.warmGray, fontSize:11, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>+ 配送方法を追加 ({shippingMethods.length}/5)</button>
+              )}
             </div>
           )}
           <div>
