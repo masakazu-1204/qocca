@@ -2941,13 +2941,14 @@ const SectionTownMap = ({ setPage }) => {
           }}>
             A Town Map
           </p>
+          {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 */}
           <h2 style={{
-            fontFamily: QC_FONT_JP,
-            fontSize: "clamp(20px, 4vw, 24px)",
-            fontWeight: 500,
+            fontFamily: QC_FONT_DISPLAY,
+            fontSize: "clamp(26px, 4.4vw, 36px)",
+            fontWeight: 700,
             color: QC.softBrown,
-            letterSpacing: 0.8,
-            lineHeight: 1.6,
+            letterSpacing: "0.06em",
+            lineHeight: 1.55,
             margin: 0,
           }}>
             Qocca、こんな街です
