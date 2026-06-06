@@ -3986,7 +3986,8 @@ const CrowdfundingBanner = () => {
         boxShadow: "0 2px 12px rgba(245,169,74,0.06)",
       }}>
         <div style={{ fontSize: 24, marginBottom: 8 }}>🌅</div>
-        <div style={{ fontSize: 17, fontWeight: 700, color: "#5A4A2C", lineHeight: 1.6, marginBottom: 10, letterSpacing: 0.2 }}>
+        {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): 見出し Shippori Mincho 700 で「号」品位 */}
+        <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: "#5A4A2C", lineHeight: 1.6, marginBottom: 12, letterSpacing: "0.04em" }}>
           {isOpen ? "Qocca が街として、立ち上がる月です。" : "Qocca の最初の季節を、一緒に。"}
         </div>
         <div style={{ fontSize: 12.5, color: "#8B7355", lineHeight: 1.85, marginBottom: 14 }}>
