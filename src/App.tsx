@@ -4119,7 +4119,8 @@ const ArkPartnershipSection = () => {
     <div style={{ padding: "36px 20px 28px", background: "#FAFAF7" }}>
       <div style={{ maxWidth: 540, margin: "0 auto", textAlign: "center" }}>
         <div style={{ fontSize: 22, marginBottom: 10 }}>🐕</div>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#3D2E1E", margin: "0 0 16px", letterSpacing: 0.4 }}>
+        {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h3 Shippori Mincho 700 / 本文は Noto Sans JP 維持 (ARK 正式名称含むため可読性最優先) */}
+        <h3 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: "#3D2E1E", margin: "0 0 18px", letterSpacing: "0.04em" }}>
           動物福祉団体との連携
         </h3>
         <p style={{ fontSize: 12.5, color: "#8B7355", lineHeight: 2, margin: 0 }}>
