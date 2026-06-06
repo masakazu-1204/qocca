@@ -4071,7 +4071,8 @@ const FoundingPartnersSection = () => {
     <div style={{ padding: "36px 20px 28px", background: "#FFF9F0" }}>
       <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center" }}>
         <div style={{ fontSize: 22, marginBottom: 8 }}>🌟</div>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#5A4A2C", margin: "0 0 12px", letterSpacing: 0.4 }}>
+        {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h3 Shippori Mincho 700 */}
+        <h3 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: "#5A4A2C", margin: "0 0 14px", letterSpacing: "0.04em" }}>
           創業パートナー
         </h3>
         <p style={{ fontSize: 12, color: "#8B7355", lineHeight: 1.9, margin: "0 0 18px" }}>
