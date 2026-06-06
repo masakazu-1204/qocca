@@ -1962,22 +1962,25 @@ const SectionAnnouncement = () => {
         {/* 上の区切り線 ("貼り紙" の境界) */}
         <Divider />
 
-        {/* ブロック1: 7月開店 */}
+        {/* ブロック1: 7月開店 / 依頼書 #134 Phase 2 案A改: Shippori Mincho 700 で創刊号風 */}
         <div style={{
-          fontSize: isMobile ? 18 : 20,
-          fontWeight: 400,
+          fontSize: isMobile ? 22 : 26,
+          fontFamily: QC_FONT_DISPLAY,
+          fontWeight: 700,
           color: C.dark,
-          lineHeight: 1.7,
-          letterSpacing: '0.02em',
+          lineHeight: 1.65,
+          letterSpacing: '0.04em',
         }}>
           7月から、少しずつ始まります。
         </div>
+        {/* 日付: Shippori Mincho 500 + 大きめ字間で「号外」風 */}
         <div style={{
-          fontSize: isMobile ? 14 : 15,
-          fontWeight: 300,
+          fontSize: isMobile ? 13 : 14,
+          fontFamily: QC_FONT_DISPLAY,
+          fontWeight: 500,
           color: C.warmGray,
-          marginTop: 14,
-          letterSpacing: '0.05em',
+          marginTop: 18,
+          letterSpacing: '0.18em',
         }}>
           2026年7月1日
         </div>
@@ -2029,12 +2032,14 @@ const SectionAnnouncement = () => {
 
         <Divider />
 
-        {/* ブロック3: クラファン + 詩的招待 */}
+        {/* ブロック3: クラファン + 詩的招待 / 依頼書 #134 Phase 2 案A改: Shippori Mincho 700 で見出し化 */}
         <div style={{
-          fontSize: isMobile ? 13 : 14,
-          fontWeight: 400,
+          fontSize: isMobile ? 18 : 22,
+          fontFamily: QC_FONT_DISPLAY,
+          fontWeight: 700,
           color: C.dark,
-          lineHeight: 1.8,
+          lineHeight: 1.7,
+          letterSpacing: '0.04em',
         }}>
           6月、<br />
           クラウドファンディングを始めます。
