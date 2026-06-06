@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code ローカル状態 (依頼書 #134 緊急監査 後追い / King 承認 2026/6/6)
+# git add -A 事故の再発防止: ローカル セッション lock + transcript ディレクトリ
+# 「git add ファイル限定指定」の運用厳格化と併せて二重防御
+.claude/scheduled_tasks.lock
+.claude/projects/
