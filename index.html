@@ -31,6 +31,39 @@
     <meta property="og:site_name" content="Qocca" />
     <meta property="og:locale" content="ja_JP" />
 
+    <!-- 依頼書 #134 Phase 2 案A改 Editorial Documentary (2026/6/6):
+         Display: Shippori Mincho 500/700/800 (見出し・キャッチ)
+         Body: Noto Sans JP 300/400/500 (本文・モバイル可読性優先で維持)
+         display=swap で FOIT 回避 / Google Fonts 自動 subset で軽量化 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet" />
+
+    <!-- 依頼書 #134 Phase 2 案A改 Editorial Documentary - CSS変数システム
+         design-language.md (Phase 3) で正式文書化予定 -->
+    <style>
+      :root {
+        /* タイポグラフィ */
+        --qc-font-display: "Shippori Mincho", "Yu Mincho", "游明朝", serif;
+        --qc-font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+        /* インク色 (本文・見出し) */
+        --qc-ink: #1A1208;
+        --qc-sumi: #2D1F0A;
+        /* 紙 (背景) */
+        --qc-paper: #FAFAF7;
+        /* 朱色 (accent / オレンジを朱と再定義) */
+        --qc-vermilion: #F5A94A;
+        --qc-vermilion-deep: #C9742A;
+        --qc-vermilion-pale: #FFF3E0;
+        /* 罫線・霧 */
+        --qc-mist: #EDE9E3;
+        /* film grain overlay */
+        --qc-grain: rgba(45, 31, 10, 0.05);
+        /* 紙の暖色 (Hero 文字補強用) */
+        --qc-warm-white: #FAF7F2;
+      }
+    </style>
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Qocca(クオッカ)- ペットオーナー専門マーケットプレイス" />

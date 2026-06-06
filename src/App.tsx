@@ -501,7 +501,7 @@ const DISPUTE_REASONS = [
 const Logo = ({ size = 32 }) => (
   <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flexShrink:0 }}>
     <img src="/logo.png" width={size*1.5} height={size*1.5} style={{ objectFit:"contain" }} alt="Qocca"/>
-    <span style={{ fontSize:size*0.72, fontWeight:900, color:C.orange, letterSpacing:"-0.5px", fontFamily:"'Helvetica Neue',Arial,sans-serif" }}>Qocca</span>
+    <span style={{ fontSize:size*0.78, fontWeight:700, color:C.orange, letterSpacing:"0.02em", fontFamily:QC_FONT_DISPLAY }}>Qocca</span>
   </div>
 );
 
@@ -1394,6 +1394,10 @@ const QC = {
 
 const QC_FONT_JP = '"Zen Kaku Gothic New", "LINE Seed JP", "Noto Sans JP", sans-serif';
 const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
+// 依頼書 #134 Phase 2 案A改 Editorial Documentary (2026/6/6):
+// 見出し・キャッチ用 / index.html で Shippori Mincho を Google Fonts 読込
+// CSS変数 var(--qc-font-display) でも参照可能 (将来の再判断余地を残す構造)
+const QC_FONT_DISPLAY = '"Shippori Mincho", "Yu Mincho", "游明朝", serif';
 
 // CSS keyframes（インライン用）- 静けさ Redesign 版
 const QC_KEYFRAMES = `
@@ -1748,53 +1752,69 @@ const SectionHero = () => {
       }}>
         {isPC ? (
           <>
+            {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): メインキャッチ Shippori Mincho 700 */}
             <p style={{
-              fontSize: "clamp(24px, 4vw, 48px)",
-              fontFamily: QC_FONT_JP,
-              fontWeight: 300,
+              fontSize: "clamp(28px, 4.4vw, 56px)",
+              fontFamily: QC_FONT_DISPLAY,
+              fontWeight: 700,
               color: QC.warmWhite,
-              letterSpacing: "0.08em",
-              lineHeight: 1.6,
-              opacity: 0.95,
+              letterSpacing: "0.06em",
+              lineHeight: 1.55,
+              opacity: 0.97,
               margin: 0,
-              textShadow: "0 2px 24px rgba(44, 41, 38, 0.5), 0 1px 4px rgba(44, 41, 38, 0.3)",
+              textShadow: "0 2px 24px rgba(44, 41, 38, 0.55), 0 1px 4px rgba(44, 41, 38, 0.35)",
             }}>
-              うちの子との時間を、
+              想いを形にして、
               <br />
-              ちゃんと残せる場所。
+              ふたりをつなぐ。
             </p>
+            {/* サブ: 控えめに Noto Sans JP Light を維持 (本文・モバイル可読性優先) */}
             <p style={{
-              fontSize: "clamp(12px, 1.2vw, 16px)",
+              fontSize: "clamp(13px, 1.2vw, 16px)",
               fontFamily: QC_FONT_JP,
               fontWeight: 300,
               color: QC.warmWhite,
-              letterSpacing: "0.08em",
+              letterSpacing: "0.14em",
               lineHeight: 1.9,
-              opacity: 0.75,
-              margin: "24px 0 0 0",
+              opacity: 0.78,
+              margin: "28px 0 0 0",
               textShadow: "0 2px 16px rgba(44, 41, 38, 0.5)",
             }}>
-              ペットを愛する人たちが集まる、
-              <br />
-              コミュニティ＆マーケットプレイス。
+              うちの子との時間を、ちゃんと残せる場所。
             </p>
           </>
         ) : (
-          <p style={{
-            fontSize: "clamp(18px, 4vw, 28px)",
-            fontFamily: QC_FONT_JP,
-            fontWeight: 300,
-            color: QC.warmWhite,
-            letterSpacing: "0.08em",
-            lineHeight: 1.8,
-            opacity: 0.92,
-            margin: 0,
-            textShadow: "0 2px 24px rgba(44, 41, 38, 0.5), 0 1px 4px rgba(44, 41, 38, 0.3)",
-          }}>
-            うちの子を愛してる人が
-            <br />
-            集まる街。
-          </p>
+          <>
+            {/* 依頼書 #134 Phase 2 案A改: モバイル メインキャッチ Shippori Mincho 700 */}
+            <p style={{
+              fontSize: "clamp(22px, 6.5vw, 32px)",
+              fontFamily: QC_FONT_DISPLAY,
+              fontWeight: 700,
+              color: QC.warmWhite,
+              letterSpacing: "0.05em",
+              lineHeight: 1.65,
+              opacity: 0.96,
+              margin: 0,
+              textShadow: "0 2px 24px rgba(44, 41, 38, 0.55), 0 1px 4px rgba(44, 41, 38, 0.35)",
+            }}>
+              想いを形にして、
+              <br />
+              ふたりをつなぐ。
+            </p>
+            <p style={{
+              fontSize: "clamp(11px, 3vw, 13px)",
+              fontFamily: QC_FONT_JP,
+              fontWeight: 300,
+              color: QC.warmWhite,
+              letterSpacing: "0.14em",
+              lineHeight: 1.9,
+              opacity: 0.78,
+              margin: "18px 0 0 0",
+              textShadow: "0 2px 16px rgba(44, 41, 38, 0.5)",
+            }}>
+              うちの子と暮らす街。
+            </p>
+          </>
         )}
       </div>
 
@@ -1815,13 +1835,13 @@ const SectionHero = () => {
         zIndex: 20,
         animation: "qocca-fadeInSlow 2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards",
       }}>
+        {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): ロゴ Shippori Mincho 700 (italic解除・Editorial らしい品位) */}
         <div style={{
-          fontFamily: QC_FONT_EN,
-          fontSize: 20,
+          fontFamily: QC_FONT_DISPLAY,
+          fontSize: 22,
           color: QC.warmWhite,
-          letterSpacing: 0.8,
-          fontWeight: 300,
-          fontStyle: "italic",
+          letterSpacing: "0.04em",
+          fontWeight: 700,
           textShadow: "0 1px 6px rgba(44, 41, 38, 0.4)",
           lineHeight: 1,
         }}>
