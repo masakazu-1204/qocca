@@ -2136,13 +2136,14 @@ const SectionWhatIsQocca = ({ setPage }) => {
           }}>
             What you can do here
           </p>
+          {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 で「号」見出し品位 */}
           <h2 style={{
-            fontFamily: QC_FONT_JP,
-            fontSize: 'clamp(20px, 4vw, 24px)',
-            fontWeight: 500,
+            fontFamily: QC_FONT_DISPLAY,
+            fontSize: 'clamp(26px, 4.4vw, 36px)',
+            fontWeight: 700,
             color: QC.softBrown,
-            letterSpacing: 0.8,
-            lineHeight: 1.5,
+            letterSpacing: '0.06em',
+            lineHeight: 1.55,
             margin: 0,
           }}>
             Qocca、できること
@@ -2184,15 +2185,15 @@ const SectionWhatIsQocca = ({ setPage }) => {
                   height: '100%',
                 }}
               >
-                {/* タイトル (詩的・大きく) */}
+                {/* タイトル (詩的・大きく) / 依頼書 #134 Phase 2 案A改: Shippori Mincho 700 で「号」見出し化 */}
                 <h3 style={{
-                  fontFamily: QC_FONT_JP,
-                  fontSize: 17,
-                  fontWeight: 400,
+                  fontFamily: QC_FONT_DISPLAY,
+                  fontSize: 20,
+                  fontWeight: 700,
                   color: QC.softBrown,
-                  margin: '0 0 16px 0',
-                  letterSpacing: 0.8,
-                  lineHeight: 1.6,
+                  margin: '0 0 18px 0',
+                  letterSpacing: '0.04em',
+                  lineHeight: 1.55,
                 }}>
                   {item.title}
                 </h3>
