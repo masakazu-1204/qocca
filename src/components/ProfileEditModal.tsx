@@ -17,6 +17,22 @@ const C = {
   danger: "#E57373",
 };
 
+// 依頼書 #133 Phase A2 (2026/6/6): フォント装飾
+const FONT_FAMILIES_LOCAL: Record<string, string> = {
+  system: 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif',
+  serif: 'Georgia, "Yu Mincho", "游明朝", serif',
+  mincho: '"Hiragino Mincho ProN", "Yu Mincho", "游明朝", "MS Mincho", serif',
+  round: '"M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Yu Gothic UI", sans-serif',
+  handwriting: '"Caveat", "Klee One", "Yu Mincho", cursive',
+};
+const FONT_OPTIONS_LOCAL = [
+  { key: "system", label: "システム標準" },
+  { key: "serif", label: "セリフ" },
+  { key: "mincho", label: "明朝" },
+  { key: "round", label: "丸ゴシック" },
+  { key: "handwriting", label: "手書き風" },
+];
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -34,6 +50,10 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
   const [avatarPreview, setAvatarPreview] = useState("");
   const [location, setLocation] = useState("");
   const [error, setError] = useState("");
+  // 依頼書 #133 Phase A2: フォント装飾 (3つ: display_name / bio / one_word)
+  const [fontDisplayName, setFontDisplayName] = useState("system");
+  const [fontBio, setFontBio] = useState("system");
+  const [fontOneWord, setFontOneWord] = useState("system");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,7 +63,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
       setError("");
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, bio, avatar_url, location")
+        .select("display_name, bio, avatar_url, location, font_display_name, font_bio, font_one_word")
         .eq("id", userId)
         .single();
       if (error) {
@@ -54,6 +74,9 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
         setAvatarUrl(data.avatar_url || "");
         setAvatarPreview(data.avatar_url || "");
         setLocation(data.location || "");
+        setFontDisplayName(data.font_display_name || "system");
+        setFontBio(data.font_bio || "system");
+        setFontOneWord(data.font_one_word || "system");
       }
       setLoading(false);
     })();
@@ -118,6 +141,9 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
         bio: bio.trim(),
         avatar_url: avatarUrl || null,
         location: location.trim(),
+        font_display_name: fontDisplayName,
+        font_bio: fontBio,
+        font_one_word: fontOneWord,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
@@ -174,6 +200,62 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
                 <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={50} placeholder="例: 東京・中野区 / 朝の散歩は新宿御苑" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", outline: "none" }} />
                 <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 4 }}>{location.length} / 50</div>
               </div>
+
+              {/* 依頼書 #133 Phase A2 (2026/6/6): フォント装飾 (無料5本 / 既存住民は DEFAULT='system' で見た目変化なし) */}
+              <div style={{ marginBottom: 20, padding: "14px 12px", background: C.cream, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.dark, marginBottom: 4 }}>🎨 フォント装飾</div>
+                <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 12 }}>表示用のフォントを 3 箇所別々に選べます (無料 5 種)</div>
+
+                {([
+                  { state: fontDisplayName, setter: setFontDisplayName, label: "表示名", sample: displayName || "ユーザー" },
+                  { state: fontBio, setter: setFontBio, label: "自己紹介", sample: bio.slice(0, 16) || "ペットと暮らす毎日を…" },
+                  { state: fontOneWord, setter: setFontOneWord, label: "ひとこと", sample: "うちの子の物語をそっと…" },
+                ] as const).map((row) => (
+                  <div key={row.label} style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 4 }}>{row.label}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {FONT_OPTIONS_LOCAL.map((opt) => {
+                        const selected = row.state === opt.key;
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => row.setter(opt.key)}
+                            style={{
+                              padding: "6px 10px",
+                              border: `1.5px solid ${selected ? C.orange : C.border}`,
+                              borderRadius: 8,
+                              background: selected ? C.orangePale : C.white,
+                              color: selected ? C.orange : C.warmGray,
+                              fontSize: 11,
+                              fontWeight: selected ? 700 : 500,
+                              cursor: "pointer",
+                              fontFamily: FONT_FAMILIES_LOCAL[opt.key],
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        padding: "6px 10px",
+                        background: C.white,
+                        borderRadius: 6,
+                        fontSize: 13,
+                        color: C.dark,
+                        fontFamily: FONT_FAMILIES_LOCAL[row.state],
+                        border: `1px dashed ${C.border}`,
+                      }}
+                    >
+                      {row.sample}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {error && (
                 <div style={{ background: "#FFEBEE", color: C.danger, padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 16 }}>⚠️ {error}</div>
               )}

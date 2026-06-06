@@ -339,6 +339,27 @@ const C = {
   red: "#EF5350", redPale: "#FFEBEE",
 };
 
+// ── フォント装飾 (依頼書 #133 Phase A2, 2026/6/6) ──────────────────
+// 無料 5本: system / serif / mincho / round / handwriting
+// items テーブル font カテゴリ + profiles.font_* 5カラム と連動
+// 適用先: display_name / bio / pet_name / one_word / blog_title
+const FONT_FAMILIES: Record<string, string> = {
+  system: 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif',
+  serif: 'Georgia, "Yu Mincho", "游明朝", serif',
+  mincho: '"Hiragino Mincho ProN", "Yu Mincho", "游明朝", "MS Mincho", serif',
+  round: '"M PLUS Rounded 1c", "Hiragino Maru Gothic Pro", "Yu Gothic UI", sans-serif',
+  handwriting: '"Caveat", "Klee One", "Yu Mincho", cursive',
+};
+const FONT_OPTIONS: Array<{ key: string; label: string; sample: string }> = [
+  { key: "system", label: "システム標準", sample: "Aa あ" },
+  { key: "serif", label: "セリフ", sample: "Aa あ" },
+  { key: "mincho", label: "明朝", sample: "Aa あ" },
+  { key: "round", label: "丸ゴシック", sample: "Aa あ" },
+  { key: "handwriting", label: "手書き風", sample: "Aa あ" },
+];
+const resolveFontFamily = (key: string | null | undefined): string =>
+  FONT_FAMILIES[key || "system"] || FONT_FAMILIES.system;
+
 // ── 暮らしの空気 (v3.2 第23章: "設定" でなく "模様替え") ──────────────────
 // MyPage 内だけ色が変わる。5 プリセット。保存ボタンなし、即タップ反映。
 // "世界観を見せるカスタム" でなく "住む感覚を増やすカスタム"。
@@ -6303,7 +6324,7 @@ const handleFollow = async () => {
     if (!userId) return;
     (async ()=>{
       setLoading(true);
-      const { data } = await supabase.from("profiles").select("display_name, avatar_url, bio, created_at").eq("id", userId).single();
+      const { data } = await supabase.from("profiles").select("display_name, avatar_url, bio, created_at, font_display_name, font_bio, font_one_word, creator_intro").eq("id", userId).single();
       if (data) setProfile(data);
       setLoading(false);
     })();
@@ -6411,9 +6432,9 @@ const handleFollow = async () => {
     <div style={{ maxWidth:600, margin:"0 auto" }}>
       <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:16 }}>
         <div style={{ width:72, height:72, borderRadius:"50%", background: profile.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:800, color:"#fff" }}>{!profile.avatar_url && initial}</div>
-        <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4 }}>{displayName}</div>
+        <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4, fontFamily: resolveFontFamily(profile.font_display_name) }}>{displayName}</div>
         {profile.bio && (
-          <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{profile.bio}</div>
+          <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word", fontFamily: resolveFontFamily(profile.font_bio) }}>{profile.bio}</div>
         )}
         <div style={{ display:"flex", gap:0, marginTop:16, background:"#FFF9F0", borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
           <div style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}` }}>
@@ -7575,7 +7596,7 @@ const MyPage = ({ setPage }) => {
     birthday?: string | null; bio?: string | null; avatar_url?: string | null;
     gender?: string | null; status: string;
   }>>([]);
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null; is_founding_creator?: boolean; is_founding_mayor?: boolean; founding_creator_fee_rate?: number | null } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null; is_founding_creator?: boolean; is_founding_mayor?: boolean; founding_creator_fee_rate?: number | null; font_display_name?: string | null; font_bio?: string | null; font_one_word?: string | null } | null>(null);
   // 依頼書 #7 Phase A.2: クラファン引き換え済みコード + 未受け取りバッカー
   const [crowdfundCodes, setCrowdfundCodes] = useState<any[]>([]);
   const [crowdfundPendingBackers, setCrowdfundPendingBackers] = useState<any[]>([]);
@@ -7586,7 +7607,7 @@ const MyPage = ({ setPage }) => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at, is_founding_creator, is_founding_mayor, founding_creator_fee_rate")
+        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at, is_founding_creator, is_founding_mayor, founding_creator_fee_rate, font_display_name, font_bio, font_one_word")
         .eq("id", user.id)
         .single();
       if (data) setProfile(data);
