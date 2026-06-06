@@ -13832,7 +13832,8 @@ const InitialMembersSection = () => {
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 18 }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>🎨</div>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: "#3D2E1E", margin: "0 0 6px", letterSpacing: 0.4 }}>
+          {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h3 Shippori Mincho 700 */}
+          <h3 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: "#3D2E1E", margin: "0 0 8px", letterSpacing: "0.04em" }}>
             想いを込めて、置いていく人たち
           </h3>
           <p style={{ fontSize: 11.5, color: "#8B7355", lineHeight: 1.7, margin: 0 }}>
