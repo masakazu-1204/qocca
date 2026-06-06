@@ -3890,14 +3890,15 @@ const SectionJoinTown = ({ setPage }) => {
           Join the Town
         </p>
 
+        {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 で「号」見出し */}
         <h2 style={{
-          fontFamily: QC_FONT_JP,
-          fontSize: "clamp(20px, 4vw, 26px)",
-          fontWeight: 400,
+          fontFamily: QC_FONT_DISPLAY,
+          fontSize: "clamp(26px, 4.4vw, 36px)",
+          fontWeight: 700,
           color: QC.softBrown,
-          letterSpacing: 1,
-          lineHeight: 1.8,
-          margin: "0 0 40px 0",
+          letterSpacing: "0.06em",
+          lineHeight: 1.7,
+          margin: "0 0 44px 0",
         }}>
           あなたの家の窓辺を、
           <br />
