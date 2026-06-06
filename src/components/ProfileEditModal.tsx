@@ -50,10 +50,12 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
   const [avatarPreview, setAvatarPreview] = useState("");
   const [location, setLocation] = useState("");
   const [error, setError] = useState("");
-  // 依頼書 #133 Phase A2: フォント装飾 (3つ: display_name / bio / one_word)
+  // 依頼書 #133 Phase A2: フォント装飾 (5箇所: display_name / bio / one_word / pet_name / blog_title)
   const [fontDisplayName, setFontDisplayName] = useState("system");
   const [fontBio, setFontBio] = useState("system");
   const [fontOneWord, setFontOneWord] = useState("system");
+  const [fontPetName, setFontPetName] = useState("system");
+  const [fontBlogTitle, setFontBlogTitle] = useState("system");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
       setError("");
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, bio, avatar_url, location, font_display_name, font_bio, font_one_word")
+        .select("display_name, bio, avatar_url, location, font_display_name, font_bio, font_one_word, font_pet_name, font_blog_title")
         .eq("id", userId)
         .single();
       if (error) {
@@ -77,6 +79,8 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
         setFontDisplayName(data.font_display_name || "system");
         setFontBio(data.font_bio || "system");
         setFontOneWord(data.font_one_word || "system");
+        setFontPetName(data.font_pet_name || "system");
+        setFontBlogTitle(data.font_blog_title || "system");
       }
       setLoading(false);
     })();
@@ -144,6 +148,8 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
         font_display_name: fontDisplayName,
         font_bio: fontBio,
         font_one_word: fontOneWord,
+        font_pet_name: fontPetName,
+        font_blog_title: fontBlogTitle,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
@@ -204,12 +210,14 @@ export default function ProfileEditModal({ open, onClose, userId, onSaved }: Pro
               {/* 依頼書 #133 Phase A2 (2026/6/6): フォント装飾 (無料5本 / 既存住民は DEFAULT='system' で見た目変化なし) */}
               <div style={{ marginBottom: 20, padding: "14px 12px", background: C.cream, borderRadius: 10, border: `1px solid ${C.border}` }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: C.dark, marginBottom: 4 }}>🎨 フォント装飾</div>
-                <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 12 }}>表示用のフォントを 3 箇所別々に選べます (無料 5 種)</div>
+                <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 12 }}>5 箇所のフォントを別々に選べます (無料 5 種)</div>
 
                 {([
                   { state: fontDisplayName, setter: setFontDisplayName, label: "表示名", sample: displayName || "ユーザー" },
                   { state: fontBio, setter: setFontBio, label: "自己紹介", sample: bio.slice(0, 16) || "ペットと暮らす毎日を…" },
                   { state: fontOneWord, setter: setFontOneWord, label: "ひとこと", sample: "うちの子の物語をそっと…" },
+                  { state: fontPetName, setter: setFontPetName, label: "うちの子の名前", sample: "ポチ / ミケ" },
+                  { state: fontBlogTitle, setter: setFontBlogTitle, label: "ブログタイトル", sample: "うちの子と暮らす日々" },
                 ] as const).map((row) => (
                   <div key={row.label} style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 4 }}>{row.label}</div>

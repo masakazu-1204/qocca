@@ -633,7 +633,7 @@ const UserMenu = ({ setPage }) => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio, created_at")
+        .select("display_name, avatar_url, bio, created_at, font_display_name")
         .eq("id", user.id)
         .single();
       if (data) setProfile(data);
@@ -669,7 +669,7 @@ const UserMenu = ({ setPage }) => {
           boxShadow:"0 8px 32px rgba(0,0,0,0.12)", padding:"8px", width:220, zIndex:999
         }}>
           <div style={{ padding:"12px 14px", borderBottom:`1px solid ${C.border}`, marginBottom:4 }}>
-            <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{displayName}</div>
+            <div style={{ fontSize:14, fontWeight:800, color:C.dark, fontFamily: resolveFontFamily(profile?.font_display_name) }}>{displayName}</div>
             <div style={{ fontSize:11, color:C.warmGray, marginTop:2, overflow:"hidden", textOverflow:"ellipsis" }}>{user?.email}</div>
           </div>
           {[
@@ -6324,7 +6324,7 @@ const handleFollow = async () => {
     if (!userId) return;
     (async ()=>{
       setLoading(true);
-      const { data } = await supabase.from("profiles").select("display_name, avatar_url, bio, created_at, font_display_name, font_bio, font_one_word, creator_intro").eq("id", userId).single();
+      const { data } = await supabase.from("profiles").select("display_name, avatar_url, bio, created_at, font_display_name, font_bio, font_one_word, font_pet_name, font_blog_title, creator_intro").eq("id", userId).single();
       if (data) setProfile(data);
       setLoading(false);
     })();
@@ -6680,7 +6680,7 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
     avatar_url?: string | null; gender?: string | null; status: string;
   } | null>(null);
   const [photos, setPhotos] = useState<Array<{ id: string; photo_url: string; caption?: string | null; taken_at?: string | null }>>([]);
-  const [owner, setOwner] = useState<{ id: string; display_name: string; avatar_url?: string | null } | null>(null);
+  const [owner, setOwner] = useState<{ id: string; display_name: string; avatar_url?: string | null; font_pet_name?: string | null } | null>(null);
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState(0);
 
   // 認証ガード (King 判断: ログイン必要)
@@ -6718,7 +6718,7 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
 
         const { data: ownerData } = await supabase
           .from("profiles")
-          .select("id, display_name, avatar_url")
+          .select("id, display_name, avatar_url, font_pet_name")
           .eq("id", petData.owner_id)
           .single();
         setOwner(ownerData || null);
@@ -6847,7 +6847,7 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
         border: `1px solid ${C.border}`,
         marginBottom: 16,
       }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.dark, marginBottom: 6, lineHeight: 1.3 }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: C.dark, marginBottom: 6, lineHeight: 1.3, fontFamily: resolveFontFamily(owner?.font_pet_name) }}>
           {pet.name}
           {genderIcon && (
             <span style={{ color: C.warmGray, fontSize: 18, fontWeight: 600, marginLeft: 10 }}>{genderIcon}</span>
@@ -7596,7 +7596,7 @@ const MyPage = ({ setPage }) => {
     birthday?: string | null; bio?: string | null; avatar_url?: string | null;
     gender?: string | null; status: string;
   }>>([]);
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null; is_founding_creator?: boolean; is_founding_mayor?: boolean; founding_creator_fee_rate?: number | null; font_display_name?: string | null; font_bio?: string | null; font_one_word?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; early_supporter_expires_at?: string | null; is_founding_creator?: boolean; is_founding_mayor?: boolean; founding_creator_fee_rate?: number | null; font_display_name?: string | null; font_bio?: string | null; font_one_word?: string | null; font_pet_name?: string | null; font_blog_title?: string | null } | null>(null);
   // 依頼書 #7 Phase A.2: クラファン引き換え済みコード + 未受け取りバッカー
   const [crowdfundCodes, setCrowdfundCodes] = useState<any[]>([]);
   const [crowdfundPendingBackers, setCrowdfundPendingBackers] = useState<any[]>([]);
@@ -7607,7 +7607,7 @@ const MyPage = ({ setPage }) => {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at, is_founding_creator, is_founding_mayor, founding_creator_fee_rate, font_display_name, font_bio, font_one_word")
+        .select("display_name, avatar_url, bio, created_at, early_supporter_expires_at, is_founding_creator, is_founding_mayor, founding_creator_fee_rate, font_display_name, font_bio, font_one_word, font_pet_name, font_blog_title")
         .eq("id", user.id)
         .single();
       if (data) setProfile(data);
@@ -7796,7 +7796,7 @@ const MyPage = ({ setPage }) => {
           <>
             <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:20 }}>
               <div style={{ width:72, height:72, borderRadius:"50%", background: profile?.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>{!profile?.avatar_url && initial}</div>
-              <div style={{ fontSize:18, fontWeight:700, color:C.dark, marginBottom:4 }}>{displayName}</div>
+              <div style={{ fontSize:18, fontWeight:700, color:C.dark, marginBottom:4, fontFamily: resolveFontFamily(profile?.font_display_name) }}>{displayName}</div>
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>
               {/* Phase D Phase 2: プロフィール情報セクション「編集」+「公開で見る」 */}
