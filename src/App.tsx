@@ -4152,7 +4152,8 @@ const HomeEventsSection = ({ events, setPage }: { events: any[]; setPage: any })
     <section style={{ padding: "48px 16px", background: C.white, borderTop: `1px solid ${C.border}` }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, margin: "0 0 6px", letterSpacing: 0.5 }}>
+          {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 */}
+          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 28, fontWeight: 700, color: C.dark, margin: "0 0 8px", letterSpacing: "0.04em" }}>
             🐾 全国のペットイベント
           </h2>
           <p style={{ fontSize: 12, color: C.warmGray, margin: 0, lineHeight: 1.7 }}>
