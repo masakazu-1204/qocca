@@ -719,23 +719,27 @@ const PCNavbar = ({ setPage, liked, search, setSearch }) => {
             fontSize:14, outline:"none", fontFamily:"inherit", background:C.lightGray, color:C.dark, boxSizing:"border-box" }}
         />
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:16, marginLeft:"auto" }}>
+      {/* 依頼書 #134 Phase 2 後追い (2026/6/6): 中間幅 (~960px) で折り返す問題を nowrap + clamp gap で解消 */}
+      <div style={{ display:"flex", alignItems:"center", gap:"clamp(6px, 1.2vw, 16px)", marginLeft:"auto", flexWrap:"nowrap", minWidth:0 }}>
         {[["home","ホーム"],["search","さがす"],["events","イベント"],["gallery","ギャラリー"],["liked","お気に入り"]].map(([id,label])=>(
           <button key={id} onClick={()=>setPage(id)} style={{
             background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
-            fontSize:14, fontWeight:700, color:C.dark, padding:"4px 8px"
+            fontSize:14, fontWeight:700, color:C.dark, padding:"4px clamp(4px, 0.6vw, 8px)",
+            whiteSpace:"nowrap", flexShrink:0
           }}>{label}</button>
         ))}
         <button onClick={()=>setPage("sell")} style={{
-          padding:"9px 20px", background:C.orange, border:"none", borderRadius:10,
-          color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit"
+          padding:"9px clamp(12px, 1.6vw, 20px)", background:C.orange, border:"none", borderRadius:10,
+          color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit",
+          whiteSpace:"nowrap", flexShrink:0
         }}>出品する</button>
         {user ? (
           <UserMenu setPage={setPage}/>
         ) : (
           <button onClick={()=>setPage("signup")} style={{
-            padding:"9px 20px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:10,
-            color:C.dark, fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit"
+            padding:"9px clamp(12px, 1.6vw, 20px)", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:10,
+            color:C.dark, fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit",
+            whiteSpace:"nowrap", flexShrink:0
           }}>ログイン</button>
         )}
       </div>
