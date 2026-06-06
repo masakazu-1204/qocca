@@ -2444,13 +2444,14 @@ const SectionTodaysMoments = ({ setPage }) => {
             }}>
               Today's Quiet Moments
             </p>
+            {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 */}
             <h2 style={{
-              fontFamily: QC_FONT_JP,
-              fontSize: 24,
-              fontWeight: 500,
+              fontFamily: QC_FONT_DISPLAY,
+              fontSize: 34,
+              fontWeight: 700,
               color: QC.softBrown,
-              letterSpacing: 0.8,
-              lineHeight: 1.5,
+              letterSpacing: '0.06em',
+              lineHeight: 1.55,
               margin: 0,
             }}>
               今日のうちの子たち
