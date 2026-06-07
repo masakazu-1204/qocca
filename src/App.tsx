@@ -1946,8 +1946,9 @@ const SectionAnnouncement = () => {
   );
 
   return (
+    {/* 依頼書 #134 追補 (2026/6/8): モバイル 80px → 50px / PC 120px → clamp 化 */}
     <section style={{
-      padding: isMobile ? '80px 16px' : '120px 24px',
+      padding: 'clamp(50px, 10vw, 120px) 16px',
       background: 'transparent',
       display: 'flex',
       justifyContent: 'center',
@@ -2253,7 +2254,7 @@ const SectionWhatIsQocca = ({ setPage }) => {
         </div>
 
         {/* 空気コピー (3カードの下) */}
-        <div style={{ marginTop: 80, textAlign: 'center' }}>
+        <div style={{ marginTop: 'clamp(40px, 8vw, 80px)' as any, textAlign: 'center' }}>
           <p style={{
             fontFamily: QC_FONT_JP,
             fontSize: 11,
@@ -2928,7 +2929,7 @@ const SectionTownMap = ({ setPage }) => {
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
 
         {/* セクションヘッダー */}
-        <div style={{ marginBottom: 80, textAlign: "center" }}>
+        <div style={{ marginBottom: 'clamp(40px, 8vw, 80px)' as any, textAlign: "center" }}>
           <p style={{
             fontFamily: QC_FONT_EN,
             fontSize: 13,
@@ -3081,7 +3082,7 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px' }}>
 
         {/* ヘッダー */}
-        <div style={{ textAlign: 'center', marginBottom: 100 }}>
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(50px, 10vw, 100px)' as any}}>
           <p style={{
             fontFamily: QC_FONT_EN,
             fontSize: 13,
@@ -3275,7 +3276,7 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
         </div>
 
         {/* 街の温度ナレーション + 控えめなリンク */}
-        <div style={{ marginTop: 100, textAlign: 'center', padding: '0 32px' }}>
+        <div style={{ marginTop: 'clamp(50px, 10vw, 100px)' as any, textAlign: 'center', padding: '0 32px' }}>
           <p style={{
             fontFamily: QC_FONT_JP,
             fontSize: 12,
@@ -3380,7 +3381,7 @@ const SectionResidentArtisans = ({ listings, onDetail, setPage }) => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px' }}>
 
         {/* ヘッダー */}
-        <div style={{ textAlign: 'center', marginBottom: 100 }}>
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(50px, 10vw, 100px)' as any}}>
           <p style={{
             fontFamily: QC_FONT_EN,
             fontSize: 13,
@@ -3418,7 +3419,7 @@ const SectionResidentArtisans = ({ listings, onDetail, setPage }) => {
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 80,
+          gap: 'clamp(40px, 8vw, 80px)' as any,
         }}>
           {artisans.map((artisan, i) => {
             const isHover = hoverIndex === i;
@@ -3583,7 +3584,7 @@ const SectionResidentArtisans = ({ listings, onDetail, setPage }) => {
         </div>
 
         {/* 下部: 空気ナレーション + 区切り点 + "すべての作家を覗いてみる" */}
-        <div style={{ marginTop: 120, textAlign: 'center', padding: '0 32px' }}>
+        <div style={{ marginTop: 'clamp(60px, 12vw, 120px)' as any, textAlign: 'center', padding: '0 32px' }}>
           <p style={{
             fontFamily: QC_FONT_JP,
             fontSize: 12,
