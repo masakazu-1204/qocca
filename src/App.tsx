@@ -7070,6 +7070,37 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
                   </button>
                 </div>
               )}
+              {/* 依頼書 #136 B1 Step 3 (2026/6/8): 体重推移グラフ (SVG / 2件以上で表示 / 過去並列のみ・判定なし) */}
+              {weights.length >= 2 && (() => {
+                const sorted = [...weights].slice(0, 10).reverse(); // ASC
+                const vals = sorted.map(d => Number(d.weight_kg));
+                const max = Math.max(...vals);
+                const min = Math.min(...vals);
+                const range = Math.max(max - min, 0.1);
+                const yMin = min - range * 0.15;
+                const yMax = max + range * 0.15;
+                const W = 280, H = 80;
+                const points = sorted.map((d, i) => ({
+                  x: sorted.length === 1 ? W / 2 : (i / (sorted.length - 1)) * W,
+                  y: H - ((Number(d.weight_kg) - yMin) / (yMax - yMin)) * H,
+                  ...d,
+                }));
+                const pathD = points.map((p, i) => (i === 0 ? `M${p.x.toFixed(1)},${p.y.toFixed(1)}` : `L${p.x.toFixed(1)},${p.y.toFixed(1)}`)).join(" ");
+                const first = sorted[0], last = sorted[sorted.length - 1];
+                return (
+                  <div style={{ background: C.cream, borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 4 }}>📈 直近 {sorted.length} 件の推移 (過去並列・判定なし)</div>
+                    <svg viewBox={`0 0 ${W} ${H + 18}`} style={{ width: "100%", height: 96, display: "block" }} preserveAspectRatio="none" role="img" aria-label="体重推移グラフ">
+                      <path d={pathD} stroke={C.orange} strokeWidth={1.5} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                      {points.map((p, i) => (
+                        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={C.orange} />
+                      ))}
+                      <text x={0} y={H + 14} fill={C.warmGray} fontSize="9">{first.recorded_at.slice(5)} {first.weight_kg}kg</text>
+                      <text x={W} y={H + 14} fill={C.warmGray} fontSize="9" textAnchor="end">{last.recorded_at.slice(5)} {last.weight_kg}kg</text>
+                    </svg>
+                  </div>
+                );
+              })()}
               {weights.length === 0 ? (
                 <div style={{ fontSize: 12, color: C.warmGray, textAlign: "center", padding: 16 }}>まだ記録がありません</div>
               ) : (
