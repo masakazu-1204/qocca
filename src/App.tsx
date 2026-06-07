@@ -7119,6 +7119,41 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
               )}
             </div>
 
+            {/* 依頼書 #136 B1 Step 4 (2026/6/8): 時系列タイムライン (体重 + 通院 を merge) */}
+            {(weights.length > 0 || clinicVisits.length > 0) && (() => {
+              const merged: Array<{ type: 'w' | 'c'; date: string; key: string; line1: string; line2?: string }> = [];
+              weights.forEach(w => merged.push({ type: 'w', date: w.recorded_at, key: `w-${w.id}`, line1: `⚖️ ${w.weight_kg} kg`, line2: w.memo || undefined }));
+              clinicVisits.forEach(c => merged.push({ type: 'c', date: c.visited_at, key: `c-${c.id}`,
+                line1: `🏥 ${c.clinic_name || "(病院名なし)"}${c.reason ? ` · ${c.reason}` : ""}`,
+                line2: c.memo || undefined }));
+              merged.sort((a, b) => b.date.localeCompare(a.date)); // DESC
+              const top = merged.slice(0, 30);
+              return (
+                <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, marginBottom: 4 }}>📜 時系列 ({merged.length})</div>
+                  <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 10 }}>体重と通院を時系列で並べた振り返り (飼い主専用 / 判定なし)</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {top.map((e) => (
+                      <div key={e.key} style={{
+                        display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 10px",
+                        background: e.type === 'c' ? "#FFF8E7" : C.cream, borderRadius: 8,
+                        borderLeft: `2px solid ${e.type === 'c' ? "#D9B888" : C.orangeLight}`,
+                      }}>
+                        <div style={{ fontSize: 10, color: C.warmGray, minWidth: 56, fontFamily: "monospace" }}>{e.date.slice(5)}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, color: C.dark, fontWeight: 600 }}>{e.line1}</div>
+                          {e.line2 && <div style={{ fontSize: 10, color: C.warmGray, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{e.line2}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {merged.length > 30 && (
+                    <div style={{ fontSize: 10, color: C.warmGray, textAlign: "center", marginTop: 8 }}>...直近 30 件のみ表示</div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* 通院カード */}
             <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
