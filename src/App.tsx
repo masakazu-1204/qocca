@@ -1101,8 +1101,10 @@ const PrivacyPage = ({ setPage, isPC }) => {
 
           <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>5. Cookieの利用</h2>
           <p>本サービスは、利便性向上のためCookieを利用します。Cookieの受け入れはブラウザ設定で拒否することができますが、その場合一部機能が利用できない可能性があります。</p>
-          {/* 依頼書 #121 (2026/6/5): Meta Pixel 利用追記 (既存文言は保持・追記のみ / 次回弁護士月次レビュー対象) */}
-          <p style={{ marginTop:8 }}>また、広告効果測定およびサービス改善のため、Meta Pixel（Meta Platforms, Inc.）を利用し、Cookie 等を通じて閲覧情報を取得する場合があります。ブラウザの設定により、これを無効化することができます。</p>
+          {/* 依頼書 #121 (2026/6/5): Meta Pixel 利用追記 */}
+          {/* 依頼書 #135 Phase B (2026/6/8): Cookie 拒否ガイド + Meta opt-out URL 補強 */}
+          <p style={{ marginTop:8 }}>また、広告効果測定およびサービス改善のため、Meta Pixel（Meta Platforms, Inc.）を利用し、Cookie 等を通じて閲覧情報（閲覧ページ・参照元・行動イベント等）を取得する場合があります。氏名・メールアドレス・電話番号・住所等の個人を特定する情報は計測タグに含めない設計としています。</p>
+          <p style={{ marginTop:8 }}>Cookie の利用を希望されない場合、ブラウザ設定（Chrome / Safari / Firefox の「設定」→「プライバシーとセキュリティ」→「Cookie」）から無効化または個別サイト単位での拒否が可能です。また Meta 社の広告計測のオプトアウトは <span style={{ color:C.orange, fontWeight:600 }}>https://www.facebook.com/settings?tab=ads</span> から行えます（Meta アカウントへのログインが必要）。</p>
 
           <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, marginTop:24, marginBottom:10 }}>6. 開示・訂正・削除請求</h2>
           <p>ユーザーは、自己の個人情報について、開示・訂正・削除を請求できます。お問い合わせフォームよりご連絡ください。</p>

@@ -7,6 +7,17 @@
 
 ## 🟡 Active (未解消)
 
+### KI-002: Meta Pixel をサーバー側 Conversions API に拡張 (2026/6/8 #135 King 指示)
+- **発見日**: 2026/6/8 (#135 Phase A 承認時)
+- **症状**: 現状の Meta Pixel はブラウザ fbq 計測のみ。iOS 14+ ATT / Adblock / Cookie 拒否で計測欠損が発生する可能性
+- **改善案**: Meta Conversions API (CAPI) をサーバー側 (Edge Function) で並行発火 → ブラウザ計測の欠損を補完 + deduplication (event_id 共有) で重複防止
+- **影響**: 機能影響なし / 計測精度の向上のみ
+- **優先度**: 🟢 低 (Dday 7/1 後 / 広告投下が増えてからで OK)
+- **見積工数**: 2-3日 (Edge Function 新規 + Pixel event_id 共有 + Meta Business 側 CAPI 接続設定)
+- **参照**: https://developers.facebook.com/docs/marketing-api/conversions-api/
+
+---
+
 ### KI-001: 「Multiple GoTrueClient instances detected」コンソール警告
 - **発見日**: 2026/6/6 以前 (継続観察)
 - **症状**: ブラウザ Console に `Multiple GoTrueClient instances detected in the same browser context` の warning
