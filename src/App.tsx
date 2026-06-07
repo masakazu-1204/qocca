@@ -2116,7 +2116,7 @@ const SectionWhatIsQocca = ({ setPage }) => {
 
   return (
     <section style={{
-      padding: '160px 0 160px',
+      padding: 'clamp(80px, 14vw, 160px) 0',
       background: 'transparent',
       position: 'relative',
     }}>
@@ -2420,7 +2420,7 @@ const SectionTodaysMoments = ({ setPage }) => {
   return (
     <>
       <section style={{
-        padding: "200px 0 200px",
+        padding: "clamp(100px, 18vw, 200px) 0",
         background: "transparent",
         position: "relative",
       }}>
@@ -2920,7 +2920,7 @@ const SectionTownMap = ({ setPage }) => {
 
   return (
     <section style={{
-      padding: "200px 0 200px",
+      padding: "clamp(100px, 18vw, 200px) 0",
       background: "rgba(245, 239, 230, 0.5)",
       borderTop: `1px solid ${QC.lightSand}`,
       borderBottom: `1px solid ${QC.lightSand}`,
@@ -3074,7 +3074,7 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
 
   return (
     <section style={{
-      padding: '200px 0',
+      padding: 'clamp(100px, 18vw, 200px) 0',
       background: 'transparent',
       position: 'relative',
     }}>
@@ -3373,7 +3373,7 @@ const SectionResidentArtisans = ({ listings, onDetail, setPage }) => {
 
   return (
     <section style={{
-      padding: '200px 0',
+      padding: 'clamp(100px, 18vw, 200px) 0',
       background: 'transparent',
       position: 'relative',
     }}>
@@ -3672,7 +3672,7 @@ const SectionVoices = ({ setPage }) => {
 
   return (
     <section style={{
-      padding: "200px 0 200px",
+      padding: "clamp(100px, 18vw, 200px) 0",
       background: "rgba(245, 239, 230, 0.5)",
       borderTop: `1px solid ${QC.lightSand}`,
       borderBottom: `1px solid ${QC.lightSand}`,
@@ -3871,7 +3871,7 @@ const SectionJoinTown = ({ setPage }) => {
 
   return (
     <section style={{
-      padding: "240px 0 240px",
+      padding: "clamp(120px, 22vw, 240px) 0",
       background: "transparent",
       textAlign: "center",
     }}>

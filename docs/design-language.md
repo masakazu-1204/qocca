@@ -131,6 +131,18 @@ const QC_FONT_JP = '"Zen Kaku Gothic New", "LINE Seed JP", "Noto Sans JP", sans-
 
 セクション間は **広く取る** (PC: 160-240px / mobile: 80-120px)。 雑誌の紙面の「余白の品位」を再現。
 
+#### モバイル圧縮ルール (依頼書 #134 追補 / 2026/6/6)
+
+モバイル幅 (≤768px) では Editorial の余白が縦に間延びしスクロール負荷が高くなる問題に対応:
+
+- **PC 値の約 50-60% に圧縮**を基本ルールに
+- 実装: `padding: 'clamp(MIN, RATIO_VW, MAX) 0'` で連続スケール
+  - PC 160px → `clamp(80px, 14vw, 160px)` (375px時 ≈ 53px、768px時 ≈ 108px、PC時 160px)
+  - PC 200px → `clamp(100px, 18vw, 200px)` (375px時 ≈ 68px、768px時 ≈ 138px、PC時 200px)
+  - PC 240px → `clamp(120px, 22vw, 240px)` (375px時 ≈ 83px、768px時 ≈ 169px、PC時 240px)
+- isMobile state 不要 (CSS だけで完結 / SSR 安全)
+- 静けさ・品位は保ちつつ「間延び」のみ圧縮
+
 ### 角丸
 
 - カード: `4-16px` (Editorial は控えめ寄り)
