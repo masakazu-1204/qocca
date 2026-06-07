@@ -6725,6 +6725,21 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
   const [photos, setPhotos] = useState<Array<{ id: string; photo_url: string; caption?: string | null; taken_at?: string | null }>>([]);
   const [owner, setOwner] = useState<{ id: string; display_name: string; avatar_url?: string | null; font_pet_name?: string | null } | null>(null);
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState(0);
+  // 依頼書 #136 B1 Step 2 (2026/6/8): 健康記録 (体重 + 通院) - 飼い主専用
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [weights, setWeights] = useState<Array<{ id: string; recorded_at: string; weight_kg: number; memo: string | null }>>([]);
+  const [clinicVisits, setClinicVisits] = useState<Array<{ id: string; visited_at: string; clinic_name: string | null; reason: string | null; memo: string | null }>>([]);
+  const [showWeightForm, setShowWeightForm] = useState(false);
+  const [wDate, setWDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [wKg, setWKg] = useState("");
+  const [wMemo, setWMemo] = useState("");
+  const [showClinicForm, setShowClinicForm] = useState(false);
+  const [cDate, setCDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [cName, setCName] = useState("");
+  const [cReason, setCReason] = useState("");
+  const [cMemo, setCMemo] = useState("");
+  const [hrSaving, setHrSaving] = useState(false);
+  const [hrError, setHrError] = useState("");
 
   // 認証ガード (King 判断: ログイン必要)
   useEffect(() => {
@@ -6769,6 +6784,74 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
       setLoading(false);
     })();
   }, [petId]);
+
+  // 依頼書 #136 B1 Step 2 (2026/6/8): currentUser 取得 + 飼い主のみ健康記録 fetch
+  // 設計憲法: 飼い主のみ参照可 (RLS で保護 / fetch 結果も RLS 側で 0行 になる安全二重)
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    })();
+  }, []);
+  useEffect(() => {
+    if (!petId || !pet || !currentUserId || currentUserId !== pet.owner_id) {
+      setWeights([]);
+      setClinicVisits([]);
+      return;
+    }
+    (async () => {
+      const [{ data: ws }, { data: cs }] = await Promise.all([
+        supabase.from("pet_weights").select("id, recorded_at, weight_kg, memo").eq("pet_id", petId).order("recorded_at", { ascending: false }).limit(20),
+        supabase.from("pet_clinic_visits").select("id, visited_at, clinic_name, reason, memo").eq("pet_id", petId).order("visited_at", { ascending: false }).limit(20),
+      ]);
+      setWeights(ws || []);
+      setClinicVisits(cs || []);
+    })();
+  }, [petId, pet, currentUserId]);
+
+  // 依頼書 #136 B1 Step 2: 体重記録追加
+  const handleAddWeight = async () => {
+    if (!petId || !currentUserId) return;
+    const kgNum = parseFloat(wKg);
+    if (!wDate || isNaN(kgNum) || kgNum <= 0 || kgNum >= 200) {
+      setHrError("日付と体重 (0 < kg < 200) を入力してください");
+      return;
+    }
+    setHrSaving(true); setHrError("");
+    const { data, error } = await supabase.from("pet_weights").insert({
+      pet_id: petId, recorded_at: wDate, weight_kg: kgNum, memo: wMemo.trim() || null, created_by: currentUserId
+    }).select("id, recorded_at, weight_kg, memo").single();
+    setHrSaving(false);
+    if (error) { setHrError("保存に失敗しました: " + error.message); return; }
+    if (data) setWeights([data, ...weights]);
+    setShowWeightForm(false); setWKg(""); setWMemo(""); setWDate(new Date().toISOString().slice(0, 10));
+  };
+
+  // 依頼書 #136 B1 Step 2: 通院記録追加
+  const handleAddClinic = async () => {
+    if (!petId || !currentUserId) return;
+    if (!cDate) { setHrError("日付を入力してください"); return; }
+    setHrSaving(true); setHrError("");
+    const { data, error } = await supabase.from("pet_clinic_visits").insert({
+      pet_id: petId, visited_at: cDate, clinic_name: cName.trim() || null, reason: cReason.trim() || null, memo: cMemo.trim() || null, created_by: currentUserId
+    }).select("id, visited_at, clinic_name, reason, memo").single();
+    setHrSaving(false);
+    if (error) { setHrError("保存に失敗しました: " + error.message); return; }
+    if (data) setClinicVisits([data, ...clinicVisits]);
+    setShowClinicForm(false); setCName(""); setCReason(""); setCMemo(""); setCDate(new Date().toISOString().slice(0, 10));
+  };
+
+  // 削除 (体重・通院 共通)
+  const handleDeleteWeight = async (id: string) => {
+    if (!confirm("この体重記録を削除しますか?")) return;
+    const { error } = await supabase.from("pet_weights").delete().eq("id", id);
+    if (!error) setWeights(weights.filter(w => w.id !== id));
+  };
+  const handleDeleteClinic = async (id: string) => {
+    if (!confirm("この通院記録を削除しますか?")) return;
+    const { error } = await supabase.from("pet_clinic_visits").delete().eq("id", id);
+    if (!error) setClinicVisits(clinicVisits.filter(c => c.id !== id));
+  };
 
   if (!authChecked || loading) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>読み込み中...</div>;
   if (!pet) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>うちの子が見つかりません</div>;
@@ -6939,6 +7022,111 @@ const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) 
             : "写真とともに、これまでの記録をここに残せるようになります。"}
         </div>
       </div>
+
+      {/* 依頼書 #136 B1 Step 2 (2026/6/8): 健康のきろく (飼い主専用 / 設計憲法 6箇条 厳守)
+          - 記録 + 可視化のみ / 診断・助言・自動判定・公開流出 一切なし
+          - RLS で飼い主のみアクセス / フロント側で currentUserId === pet.owner_id でも二重ガード */}
+      {currentUserId && pet.owner_id === currentUserId && (
+        <div style={{ marginBottom: 16 }}>
+          {/* セクションヘッダー */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: C.dark, marginBottom: 6, letterSpacing: "0.04em" }}>
+              📋 健康のきろく
+            </div>
+            <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
+              あなた専用 — このページは飼い主にしか見えません
+            </div>
+          </div>
+
+          {/* 獣医師相談 定型文 (設計憲法 #6) */}
+          <div style={{ background: "#FFF8E1", border: "1px solid #F5D680", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#7A5C00", lineHeight: 1.7 }}>
+            ⚠️ 体調の急変や気になる症状がある場合は、必ず獣医師にご相談ください。Qocca は記録の保存・可視化のみを行います。
+          </div>
+
+          {hrError && (
+            <div style={{ background: C.redPale, color: C.red, padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {hrError}</div>
+          )}
+
+          {/* 2 カード レイアウト: 体重 / 通院 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+
+            {/* 体重カード */}
+            <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>⚖️ 体重 ({weights.length})</div>
+                <button onClick={() => setShowWeightForm(!showWeightForm)} style={{ background: showWeightForm ? C.lightGray : C.orange, color: showWeightForm ? C.dark : "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  {showWeightForm ? "閉じる" : "+ 記録する"}
+                </button>
+              </div>
+              {showWeightForm && (
+                <div style={{ background: C.lightGray, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                    <input type="date" value={wDate} onChange={(e) => setWDate(e.target.value)} style={{ padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }} />
+                    <input type="number" inputMode="decimal" step="0.1" min="0.1" max="199.9" value={wKg} onChange={(e) => setWKg(e.target.value)} placeholder="体重 (kg)" style={{ padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }} />
+                  </div>
+                  <input type="text" value={wMemo} onChange={(e) => setWMemo(e.target.value)} maxLength={100} placeholder="メモ (任意・100文字以内)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
+                  <button onClick={handleAddWeight} disabled={hrSaving} style={{ width: "100%", padding: "9px", background: hrSaving ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: hrSaving ? "wait" : "pointer", fontFamily: "inherit" }}>
+                    {hrSaving ? "保存中..." : "💾 記録する"}
+                  </button>
+                </div>
+              )}
+              {weights.length === 0 ? (
+                <div style={{ fontSize: 12, color: C.warmGray, textAlign: "center", padding: 16 }}>まだ記録がありません</div>
+              ) : (
+                <div>
+                  {weights.slice(0, 10).map((w) => (
+                    <div key={w.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ color: C.warmGray, fontSize: 11, marginRight: 8 }}>{w.recorded_at}</span>
+                        <span style={{ color: C.dark, fontWeight: 700 }}>{w.weight_kg} kg</span>
+                        {w.memo && <span style={{ color: C.warmGray, fontSize: 11, marginLeft: 8 }}>· {w.memo}</span>}
+                      </div>
+                      <button onClick={() => handleDeleteWeight(w.id)} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 14, cursor: "pointer", padding: 4 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 通院カード */}
+            <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>🏥 通院 ({clinicVisits.length})</div>
+                <button onClick={() => setShowClinicForm(!showClinicForm)} style={{ background: showClinicForm ? C.lightGray : C.orange, color: showClinicForm ? C.dark : "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  {showClinicForm ? "閉じる" : "+ 記録する"}
+                </button>
+              </div>
+              {showClinicForm && (
+                <div style={{ background: C.lightGray, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                  <input type="date" value={cDate} onChange={(e) => setCDate(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
+                  <input type="text" value={cName} onChange={(e) => setCName(e.target.value)} maxLength={50} placeholder="病院名 (任意)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
+                  <input type="text" value={cReason} onChange={(e) => setCReason(e.target.value)} maxLength={50} placeholder="理由 (定期検診/ワクチン/その他)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
+                  <input type="text" value={cMemo} onChange={(e) => setCMemo(e.target.value)} maxLength={200} placeholder="メモ (任意・200文字以内)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
+                  <button onClick={handleAddClinic} disabled={hrSaving} style={{ width: "100%", padding: "9px", background: hrSaving ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: hrSaving ? "wait" : "pointer", fontFamily: "inherit" }}>
+                    {hrSaving ? "保存中..." : "💾 記録する"}
+                  </button>
+                </div>
+              )}
+              {clinicVisits.length === 0 ? (
+                <div style={{ fontSize: 12, color: C.warmGray, textAlign: "center", padding: 16 }}>まだ記録がありません</div>
+              ) : (
+                <div>
+                  {clinicVisits.slice(0, 10).map((c) => (
+                    <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "10px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: C.warmGray, fontSize: 11, marginBottom: 2 }}>{c.visited_at}</div>
+                        <div style={{ color: C.dark, fontWeight: 700, fontSize: 13 }}>{c.clinic_name || "(病院名なし)"}{c.reason ? ` · ${c.reason}` : ""}</div>
+                        {c.memo && <div style={{ color: C.warmGray, fontSize: 11, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.memo}</div>}
+                      </div>
+                      <button onClick={() => handleDeleteClinic(c.id)} style={{ background: "none", border: "none", color: C.warmGray, fontSize: 14, cursor: "pointer", padding: 4, marginLeft: 8 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
