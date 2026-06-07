@@ -1945,8 +1945,8 @@ const SectionAnnouncement = () => {
     }} />
   );
 
+  // 依頼書 #134 追補 (2026/6/8): モバイル 80px → 50px / PC 120px → clamp 化
   return (
-    {/* 依頼書 #134 追補 (2026/6/8): モバイル 80px → 50px / PC 120px → clamp 化 */}
     <section style={{
       padding: 'clamp(50px, 10vw, 120px) 16px',
       background: 'transparent',
