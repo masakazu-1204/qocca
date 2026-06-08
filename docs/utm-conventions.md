@@ -37,6 +37,7 @@
 | `email` | メールマガジン (将来) |
 | `qr` | 紙メディア・名刺の QR コード |
 | `partner` | 提携先 (将来) |
+| `qocca` | qocca.pet サイト内 → CAMPFIRE への内部誘導 (#137 で追加) |
 | `direct` | 直接アクセス (UTM なし時のデフォルト) |
 
 ### utm_medium (流入種別 / 全部 7 個)
@@ -45,6 +46,7 @@
 |---|---|
 | `cpc` | クリック課金広告 (Meta / Google / Yahoo) |
 | `social` | organic SNS 投稿 |
+| `site_banner` | qocca.pet サイト内バナー / CTA からの内部遷移 (#137 で追加) |
 | `referral` | 他媒体からの自然リンク |
 | `email` | メールマガジン |
 | `display` | バナー広告 |
@@ -61,6 +63,7 @@
 | `dday_cv_202607` | Dday 7/1 CV 最適化 2段ロケット (7月) |
 | `dday_cv_202608` | 同 (8月分) |
 | `creator_invite_202607` | クリエイター招待広告 |
+| `cf_launch_202606` | qocca.pet → CAMPFIRE 内部誘導 (公開期間 / #137 で導入) |
 | `reward_creator_8000` | CAMPFIRE 創業クリエイター 8000 リターン誘導 |
 | `reward_supporter_3000` | CAMPFIRE 支援者 3000 リターン誘導 |
 | `organic_202606` | SNS organic (期間で識別 / 個別投稿は utm_content) |
@@ -104,6 +107,14 @@ https://qocca.pet/?utm_source=instagram&utm_medium=social&utm_campaign=organic_2
 https://qocca.pet/?utm_source=campfire&utm_medium=referral&utm_campaign=reward_creator_8000
 https://qocca.pet/redeem?utm_source=campfire&utm_medium=referral&utm_campaign=reward_supporter_3000
 ```
+
+### qocca.pet → CAMPFIRE 内部誘導 (依頼書 #137 で導入)
+
+```
+https://camp-fire.jp/projects/955666/view?utm_source=qocca&utm_medium=site_banner&utm_campaign=cf_launch_202606
+```
+
+サイト内の CTA ボタン (Hero 直下 SectionAnnouncement / HomePage 中段 CrowdfundingBanner / LegalPage 第30条) から飛ぶリンクに統一適用。App.tsx の定数 `CAMPFIRE_PROJECT_URL_WITH_UTM` を参照する形で 1箇所管理。
 
 ### Google organic / 検索広告
 
