@@ -3957,8 +3957,13 @@ const SectionJoinTown = ({ setPage }) => {
 const CROWDFUNDING_OPEN_DATE = new Date("2026-06-03T09:00:00+09:00");
 const CROWDFUNDING_CLOSE_DATE = new Date("2026-06-30T23:59:59+09:00");
 const GRAND_OPENING_DATE = new Date("2026-07-01T00:00:00+09:00");
-// CAMPFIRE プロジェクト URL は 6/3 公開時に King がここに設定する
-const CAMPFIRE_PROJECT_URL = ""; // 例: "https://camp-fire.jp/projects/view/xxxxxx"
+// 依頼書 #137 (2026/6/8): CAMPFIRE 確定 URL + UTM + 期間フラグ統一管理
+// 正式形式: /projects/<ID>/view (旧 /projects/view/<ID> は 6/8 監査でバグ判明 → 全置換)
+// 終了後は CROWDFUNDING_ACTIVE を false にすれば全導線が消える設計
+const CAMPFIRE_PROJECT_URL = "https://camp-fire.jp/projects/955666/view";
+const CAMPFIRE_PROJECT_URL_WITH_UTM = "https://camp-fire.jp/projects/955666/view?utm_source=qocca&utm_medium=site_banner&utm_campaign=cf_launch_202606";
+// CROWDFUNDING_ACTIVE: 期間内 + URL 設定済 を一括判定 (終了後は手動で false にして即時撤去可能)
+const CROWDFUNDING_ACTIVE = true;
 
 const CrowdfundingBanner = () => {
   const navigate = useNavigate();
@@ -14050,7 +14055,7 @@ const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void }) => 
                 <strong style={{ color: C.dark }}>事業が存続する限り手数料 3% (通常 10%→3%)</strong> + 創業クリエイターバッジ獲得
               </p>
               <a
-                href="https://camp-fire.jp/projects/view/955666"
+                href={CAMPFIRE_PROJECT_URL_WITH_UTM}
                 target="_blank" rel="noopener noreferrer"
                 style={{ display: "inline-block", padding: "10px 22px", background: C.orange, color: "#fff", borderRadius: 22, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
               >
@@ -14188,7 +14193,7 @@ const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
               ・利用規約 第29条で正式支援者として明文化
             </p>
             <a
-              href="https://camp-fire.jp/projects/view/955666"
+              href={CAMPFIRE_PROJECT_URL_WITH_UTM}
               target="_blank" rel="noopener noreferrer"
               style={{ display: "inline-block", padding: "12px 26px", background: C.orange, color: "#fff", borderRadius: 24, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
             >
@@ -14228,7 +14233,7 @@ const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
                 このページに法人ロゴと社名を掲載します。
               </p>
               <a
-                href="https://camp-fire.jp/projects/view/955666"
+                href={CAMPFIRE_PROJECT_URL_WITH_UTM}
                 target="_blank" rel="noopener noreferrer"
                 style={{ display: "inline-block", padding: "10px 22px", background: C.orange, color: "#fff", borderRadius: 22, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
               >
