@@ -2035,7 +2035,7 @@ const SectionAnnouncement = () => {
 
         <Divider />
 
-        {/* ブロック3: クラファン + 詩的招待 / 依頼書 #134 Phase 2 案A改: Shippori Mincho 700 で見出し化 */}
+        {/* ブロック3: クラファン主導線 / 依頼書 #137 (2026/6/8): "公開中" 確定後 CTA 強化 */}
         <div style={{
           fontSize: isMobile ? 18 : 22,
           fontFamily: QC_FONT_DISPLAY,
@@ -2044,9 +2044,24 @@ const SectionAnnouncement = () => {
           lineHeight: 1.7,
           letterSpacing: '0.04em',
         }}>
-          6月、<br />
-          クラウドファンディングを始めます。
+          {CROWDFUNDING_ACTIVE ? (
+            <>クラウドファンディング、<br />公開中。</>
+          ) : (
+            <>6月、<br />クラウドファンディングを始めます。</>
+          )}
         </div>
+        {CROWDFUNDING_ACTIVE && (
+          <div style={{
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 400,
+            color: C.warmGray,
+            lineHeight: 1.85,
+            marginTop: 16,
+          }}>
+            7月1日のグランドオープンに向けて、<br />
+            創業期の住民を募集しています。
+          </div>
+        )}
         <div style={{
           fontSize: isMobile ? 13 : 14,
           fontWeight: 400,
@@ -2067,6 +2082,33 @@ const SectionAnnouncement = () => {
           もしこの街を好きだと思ってくれたら、<br />
           一緒に見守ってもらえたら嬉しいです。
         </div>
+
+        {/* 依頼書 #137 (2026/6/8): Hero 直下の主導線 CTA - 朱色 / Editorial Documentary */}
+        {CROWDFUNDING_ACTIVE && (
+          <a
+            href={CAMPFIRE_PROJECT_URL_WITH_UTM}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              marginTop: 28,
+              padding: '13px 28px',
+              background: '#F5A94A',
+              color: '#fff',
+              textDecoration: 'none',
+              borderRadius: 999,
+              fontSize: isMobile ? 13 : 14,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              boxShadow: '0 2px 10px rgba(245,169,74,0.25)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 14px rgba(245,169,74,0.35)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(245,169,74,0.25)'; }}
+          >
+            CAMPFIRE で支援する →
+          </a>
+        )}
 
         {/* 下の区切り線 ("貼り紙" の境界) */}
         <Divider />
@@ -4110,7 +4152,7 @@ const FoundingPartnersSection = () => {
         ) : (
           <div style={{ padding: "8px 0 18px", color: "#A89580", fontSize: 11.5, lineHeight: 1.9, fontStyle: "italic" }}>
             ※ 創業パートナーの公開掲載は<br />
-            6/3 のクラウドファンディング公開後に順次表示されます🌅
+            クラウドファンディング 公開中。創業期住民・作家さんの紹介を順次掲載します🌅
           </div>
         )}
         <div style={{ fontSize: 11, color: "#A07640" }}>
@@ -13994,7 +14036,7 @@ const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void }) => 
             <div style={{ fontSize: 36, marginBottom: 14 }}>🌱</div>
             <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.8, margin: 0 }}>
               まだクリエイターさんがいません。<br />
-              6/3 のクラウドファンディング公開後、順次紹介してまいります🌅
+              クラウドファンディング 公開中。創業パートナーさんを順次紹介してまいります🌅
             </p>
           </div>
         ) : (
