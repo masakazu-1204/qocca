@@ -8036,6 +8036,38 @@ const MyPage = ({ setPage }) => {
 
   const [activityModal, setActivityModal] = useState<string | null>(null);
 
+  // 依頼書 #138 タスク1 (2026/6/9): 公開ページ URL 共有 (8eighty8eight さん DM 起点)
+  // 出品クリエイターが Instagram に貼るための URL。/user/:userId 形式 (依頼書指定)。
+  const publicProfileUrl = user?.id ? `https://www.qocca.pet/user/${user.id}` : "";
+  const [copyToast, setCopyToast] = useState<"" | "ok" | "fail">("");
+  const handleCopyPublicUrl = async () => {
+    if (!publicProfileUrl) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(publicProfileUrl);
+        setCopyToast("ok");
+      } else {
+        // フォールバック (古い Safari 等): textarea + execCommand
+        const ta = document.createElement("textarea");
+        ta.value = publicProfileUrl;
+        ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        setCopyToast(ok ? "ok" : "fail");
+      }
+    } catch (_) {
+      setCopyToast("fail");
+    }
+    setTimeout(() => setCopyToast(""), 2400);
+  };
+  const openPublicProfile = () => {
+    if (publicProfileUrl && typeof window !== "undefined") {
+      window.open(publicProfileUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   if (!user) return null;
 
   const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
@@ -8095,13 +8127,32 @@ const MyPage = ({ setPage }) => {
 
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:atmosphere.bg, padding:"80px 16px 40px", transition:"background 0.6s ease" }}>
+      {/* 依頼書 #138 タスク1 (2026/6/9): コピー結果トースト (Editorial / fade in-out / 2.4s) */}
+      {copyToast && (
+        <div style={{
+          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          padding: "12px 22px", borderRadius: 24, fontSize: 13, fontWeight: 700,
+          fontFamily: "inherit", zIndex: 9999,
+          background: copyToast === "ok" ? "#FFF8E7" : "#FFE4E1",
+          color: copyToast === "ok" ? "#7A5C00" : "#A33C2E",
+          border: `1px solid ${copyToast === "ok" ? "#F5D680" : "#D9888C"}`,
+          boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+          opacity: 0.98,
+          maxWidth: "90vw", textAlign: "center", lineHeight: 1.5,
+        }}>
+          {copyToast === "ok" ? "🔗 公開ページのリンクをコピーしました。SNS にどうぞ。" : "コピーできませんでした。手動で URL をコピーしてください。"}
+        </div>
+      )}
       <div style={{ maxWidth:600, margin:"0 auto" }}>
-        {/* Phase D Phase 2: 公開プロフィール導線 (King 判断: ヘッダー + Profile タブ両方) */}
-        <div style={{ marginBottom: 16, textAlign: "right" }}>
+        {/* 依頼書 #138 タスク1 (2026/6/9): SNS 宣伝用 公開ページ共有導線 (8eighty8eight さん DM 起点)
+            - 「自分の公開ページを見る」: 新規タブで /user/:userId を開く
+            - 「リンクをコピー」: https://www.qocca.pet/user/:userId をクリップボードへ */}
+        <div style={{ marginBottom: 16, display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button
-            onClick={() => navigate("/profile/me")}
+            onClick={openPublicProfile}
+            title={publicProfileUrl}
             style={{
-              padding: "10px 18px",
+              padding: "10px 16px",
               background: C.white,
               border: `1.5px solid ${C.orange}`,
               borderRadius: 22,
@@ -8116,7 +8167,28 @@ const MyPage = ({ setPage }) => {
               minHeight: 44,
             }}
           >
-            👁️ 公開プロフィールを見る →
+            🔗 自分の公開ページを見る
+          </button>
+          <button
+            onClick={handleCopyPublicUrl}
+            title={publicProfileUrl}
+            style={{
+              padding: "10px 16px",
+              background: C.orange,
+              border: `1.5px solid ${C.orange}`,
+              borderRadius: 22,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              minHeight: 44,
+            }}
+          >
+            📋 リンクをコピー
           </button>
         </div>
         {/* Tab Navigation - レスポンシブ：スマホ2列(4行) / PC4列(2行) */}
@@ -8163,7 +8235,8 @@ const MyPage = ({ setPage }) => {
                   ✏️ 編集
                 </button>
                 <button
-                  onClick={() => navigate("/profile/me")}
+                  onClick={openPublicProfile}
+                  title={publicProfileUrl}
                   style={{
                     padding: "8px 16px",
                     background: C.white,
@@ -8177,7 +8250,25 @@ const MyPage = ({ setPage }) => {
                     minHeight: 36,
                   }}
                 >
-                  👁️ 公開で見る
+                  🔗 公開ページを見る
+                </button>
+                <button
+                  onClick={handleCopyPublicUrl}
+                  title={publicProfileUrl}
+                  style={{
+                    padding: "8px 16px",
+                    background: C.orangePale,
+                    border: `1.5px solid ${C.orange}`,
+                    borderRadius: 18,
+                    color: C.orange,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    minHeight: 36,
+                  }}
+                >
+                  📋 リンクをコピー
                 </button>
               </div>
             </div>
