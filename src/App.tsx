@@ -7295,6 +7295,108 @@ const ProfileMeRedirect: React.FC = () => {
   return <div style={{ padding: 40, textAlign: "center", color: C.warmGray, fontSize: 13 }}>読み込み中...</div>;
 };
 
+// ============================================================================
+// UpdatePasswordPage (依頼書 #138 タスク2 Step 2, 2026/6/9)
+// パスワード再設定リンクを受ける専用ルート (/update-password)
+// 設計憲法:
+//   1. isRecovery=true (recovery メール経由) のみ新パスワード入力を許可
+//   2. 通常ログイン中のユーザーが直接 URL を叩いてもエラー画面 (=自分のパスワードを書き換えできない)
+//   3. 成功時は signOut → /login へ navigate (新パスワードで再ログイン)
+//   4. Editorial Documentary トーン
+// ============================================================================
+const UpdatePasswordPage = () => {
+  const navigate = useNavigate();
+  const { isRecovery, user, updatePassword, signOut } = useAuth() as any;
+  const [pass, setPass] = useState("");
+  const [pass2, setPass2] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [errMsg, setErrMsg] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async () => {
+    setErrMsg("");
+    if (pass.length < 6) { setErrMsg("パスワードは 6文字以上で入力してください"); return; }
+    if (pass !== pass2) { setErrMsg("確認用パスワードが一致しません"); return; }
+    setSubmitting(true);
+    const { error } = await updatePassword(pass);
+    setSubmitting(false);
+    if (error) { setErrMsg(error.message || "パスワード変更に失敗しました"); return; }
+    setSuccess(true);
+    // 安全のため signOut してログイン画面へ
+    setTimeout(async () => {
+      await signOut();
+      navigate("/?page=login");
+    }, 1800);
+  };
+
+  // ガード: isRecovery=false かつ user=非ログイン → 無効アクセス
+  // recovery 経由でない通常ログイン中ユーザーも はじく (= 自分のパスワードを誤って書き換えできない)
+  if (!isRecovery) {
+    return (
+      <div style={{ paddingTop: 60, minHeight: "100vh", background: "#FAF5EC", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 16px" }}>
+        <div style={{ maxWidth: 440, width: "100%", background: "#fff", borderRadius: 18, padding: "32px 22px", textAlign: "center", border: `1px solid ${C.border}`, boxShadow: "0 4px 18px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>🔒</div>
+          <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: C.dark, marginBottom: 10, letterSpacing: "0.04em" }}>
+            無効なアクセスです
+          </div>
+          <div style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.85, marginBottom: 22 }}>
+            このページはメールで届いた<br />
+            パスワード再設定リンクからのみ開けます。<br /><br />
+            パスワードをお忘れの方は、ログイン画面の<br />
+            「パスワードを忘れた方」からやり直してください。
+          </div>
+          <button onClick={() => navigate(user ? "/" : "/?page=login")} style={{ padding: "10px 22px", background: C.orange, color: "#fff", border: "none", borderRadius: 22, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 42 }}>
+            {user ? "ホームへ戻る" : "ログイン画面へ"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingTop: 60, minHeight: "100vh", background: "#FAF5EC", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
+      <div style={{ maxWidth: 440, width: "100%", background: "#fff", borderRadius: 18, padding: "32px 22px", border: `1px solid ${C.border}`, boxShadow: "0 4px 18px rgba(0,0,0,0.04)" }}>
+        <div style={{ textAlign: "center", marginBottom: 22 }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🔑</div>
+          <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: C.dark, marginBottom: 8, letterSpacing: "0.04em" }}>
+            新しいパスワードを設定
+          </div>
+          <div style={{ fontSize: 12.5, color: C.warmGray, lineHeight: 1.8 }}>
+            6文字以上の新しいパスワードを<br />入力してください。
+          </div>
+        </div>
+
+        {success ? (
+          <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "18px 14px", borderRadius: 12, textAlign: "center", fontSize: 13, fontWeight: 700, lineHeight: 1.7 }}>
+            ✅ パスワードを変更しました<br />
+            <span style={{ fontSize: 11, fontWeight: 400, color: "#558B5C" }}>ログイン画面へ移動します...</span>
+          </div>
+        ) : (
+          <>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 13, fontWeight: 700, color: C.dark, display: "block", marginBottom: 6 }}>新しいパスワード</label>
+              <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="6文字以上" autoComplete="new-password" style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}/>
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 13, fontWeight: 700, color: C.dark, display: "block", marginBottom: 6 }}>確認のためもう一度</label>
+              <input type="password" value={pass2} onChange={(e) => setPass2(e.target.value)} placeholder="もう一度入力" autoComplete="new-password" style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}/>
+            </div>
+            {errMsg && (
+              <div style={{ background: "#FFE4E1", color: "#A33C2E", padding: "10px 12px", borderRadius: 8, fontSize: 12.5, marginBottom: 14, lineHeight: 1.6 }}>⚠️ {errMsg}</div>
+            )}
+            <button onClick={handleSubmit} disabled={submitting} style={{ width: "100%", padding: 13, background: submitting ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 24, fontSize: 14, fontWeight: 700, cursor: submitting ? "wait" : "pointer", fontFamily: "inherit", minHeight: 46 }}>
+              {submitting ? "変更中..." : "パスワードを変更する"}
+            </button>
+            <div style={{ marginTop: 14, fontSize: 11, color: C.warmGray, textAlign: "center", lineHeight: 1.7 }}>
+              変更後は安全のため自動でログアウトされます。<br />新パスワードで改めてログインしてください。
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── /redeem ページ (依頼書 #7 Phase A, 2026/5/25) ───────────────────────────
 // CAMPFIRE クラファンバッカーがメールで受け取ったコードを引き換える
 // redeem-crowdfunding-code Edge Function → RPC redeem_crowdfunding_code v2 呼び出し
@@ -15799,6 +15901,8 @@ function QoccaAppInner() {
           }/>
             {/* Phase D: 公開プロフィール (King 哲学: 管理ページとは別、みんなに見てもらうページ) */}
             <Route path="/profile/me" element={<ProfileMeRedirect/>}/>
+            {/* 依頼書 #138 タスク2 Step 2 (2026/6/9): パスワード再設定 専用ルート */}
+            <Route path="/update-password" element={<UpdatePasswordPage/>}/>
             <Route path="/profile/:userId" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -15906,6 +16010,8 @@ function QoccaAppInner() {
             <Route path="/user/:userId" element={<UserProfilePage setPage={setPage}/>}/>
             {/* Phase D: 公開プロフィール (mobile) */}
             <Route path="/profile/me" element={<ProfileMeRedirect/>}/>
+            {/* 依頼書 #138 タスク2 Step 2 (2026/6/9): パスワード再設定 専用ルート */}
+            <Route path="/update-password" element={<UpdatePasswordPage/>}/>
             <Route path="/profile/:userId" element={<UserProfilePage setPage={setPage}/>}/>
             {/* Phase D Phase 2 (5/22 夜): /pet/:petId (mobile) */}
             <Route path="/pet/:petId" element={<PetDetailPage setPage={setPage}/>}/>
