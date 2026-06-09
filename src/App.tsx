@@ -40,6 +40,10 @@ const AuthContext = createContext(null);
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  // 依頼書 #138 タスク2 (2026/6/9): PASSWORD_RECOVERY 検出フラグ
+  // recovery メール経由のみ true / 通常ログインは絶対に false
+  // /update-password の表示ガードに使用
+  const [isRecovery, setIsRecovery] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,9 +54,26 @@ const AuthProvider = ({ children }) => {
     });
 
     // Auth状態の変更を監視
+    // 依頼書 #138 タスク2: PASSWORD_RECOVERY を検出して /update-password へ強制 navigate
+    // 通常ログイン・OAuth・既存セッション復帰の挙動は完全に不変
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          // recovery セッション: user は記録するが isRecovery=true で印を付ける
+          setUser(session?.user ?? null);
+          setIsRecovery(true);
+          // /update-password 以外にいる場合のみ強制 navigate (recovery flow ループ防止)
+          if (typeof window !== "undefined" && window.location.pathname !== "/update-password") {
+            window.location.assign("/update-password");
+          }
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+          setIsRecovery(false);
+        } else {
+          // SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED 等: 通常通り user を更新
+          // isRecovery は維持 (recovery flow 中の中間 SIGNED_IN で誤って解除されない)
+          setUser(session?.user ?? null);
+        }
       }
     );
 
@@ -93,15 +114,28 @@ const AuthProvider = ({ children }) => {
     return { error };
   };
 
+  // 依頼書 #138 タスク2 (2026/6/9): redirectTo を専用ルート /update-password へ変更
+  // 旧 /?page=reset は処理ロジックがなかった (= バグ根本原因の一つ)
+  // King が Supabase Auth → URL Configuration → Redirect URLs に下記URLを追加することが前提:
+  //   - https://qocca.pet/update-password
+  //   - https://www.qocca.pet/update-password
+  //   - Vercel preview env: https://*.vercel.app/update-password
   const resetPassword = async (email) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/?page=reset` : undefined,
+      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/update-password` : undefined,
     });
     return { data, error };
   };
 
+  // 依頼書 #138 タスク2: 新パスワード適用 (UpdatePasswordPage 側で呼び出し)
+  // isRecovery=true のときのみ呼ばれる想定 (UI 側でガード)
+  const updatePassword = async (newPassword: string) => {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    return { data, error };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithProvider, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, isRecovery, signUp, signIn, signInWithProvider, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );
