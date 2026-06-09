@@ -16,6 +16,34 @@ ID 未投入時は `metaPixel.ts` が **完全 no-op** (通信ゼロ・エラー
 
 ---
 
+## ✅ 本番 確定情報 (2026/6/9 21:22 着弾実証)
+
+| 項目 | 値 |
+|---|---|
+| **データセット名** | **Qocca Production** |
+| Pixel ID 末尾 | **1385** (フル ID は秘匿) |
+| 初回着弾実証 | 2026/6/9 21:22 (Meta テストイベント PageView 受信) |
+| Vercel env | `VITE_META_PIXEL_ID` (Production scope / Sensitive flag ON) |
+| 本番 bundle 注入確認 | `var cf="...1385"` で minified 注入確認済 |
+
+### ⚠️ 過去の誤情報 (混同防止)
+- **末尾 7030**: 旧引き継ぎ書に記載されていたが **実態と不一致 = 誤記**。**今後使用禁止**。
+- **末尾 1459 (Qocca SNS Integration)**: 別用途の旧データセット (SNS Insights 系)。**広告用ではない**。**広告 / Pixel 計測には絶対に使わない**。
+
+### 🚨 Vite 静的埋め込み 仕様 重要注意 (env 変更後)
+
+**Vite は `import.meta.env.VITE_*` を ビルド時に bundle.js へ静的置換** する。
+= **env 値を Vercel ダッシュボードで変更しただけでは本番に反映されない**。
+
+env 変更後の手順:
+1. Vercel Dashboard → Deployments
+2. 最新 production deployment の「⋯」→ **Redeploy**
+3. **「Use existing Build Cache」のチェックを外す** ⚠️ (これを忘れると旧 bundle が再利用され env 反映されない)
+4. **Redeploy** クリック → 完了まで ~2分
+5. 検証手順書 (`docs/meta-pixel-verification.md`) の手順 + Meta テストイベントで着弾確認
+
+---
+
 ## 📋 Step 1: Meta Business アカウント確認 (King 既存)
 
 1. https://business.facebook.com にログイン
@@ -116,3 +144,9 @@ Pixel が学習データ蓄積するため、CAMPFIRE 期間中に:
 - **6/10-6/12**: クマが Vercel env + domain-verification 投入 → 本番反映
 - **6/12-6/30** (CAMPFIRE期間): 1段目 小額テスト (¥1,000/日) で Pixel 学習開始
 - **7/1 Dday**: 2段目 (¥5万/月 CV 最適化) ロケット発射 🚀
+
+---
+
+## 改訂履歴
+- 2026/6/8 (依頼書 #135 Phase B) v1.0 初版
+- 2026/6/9 (依頼書 #139 本日記録) v1.1: 本番確定情報追記 (Qocca Production / 末尾1385 着弾実証 2026/6/9 21:22) + Vite 静的埋め込み Build Cache 注意書き追加 + 旧誤情報 (末尾7030 / 1459) の明示的禁止

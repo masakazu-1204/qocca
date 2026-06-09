@@ -1,9 +1,45 @@
 # Meta Pixel 動作検証手順書 (King 用)
 
-日付: 2026/6/8
-依頼書: #135 Phase B
+日付: 2026/6/8 (2026/6/9 改訂)
+依頼書: #135 Phase B / #139 本日記録
 所要時間: 10-15分
 タイミング: Vercel env に `VITE_META_PIXEL_ID` 投入後の本番反映完了後
+
+---
+
+## ✅ 本番 確定情報 (2026/6/9 21:22 着弾実証)
+
+| 項目 | 値 |
+|---|---|
+| **データセット名** | **Qocca Production** |
+| Pixel ID 末尾 | **1385** (フル ID は秘匿) |
+| 初回 PageView 着弾 | 2026/6/9 21:22 (Meta テストイベント受信) |
+
+### ⚠️ 旧 ID への注意 (混同防止)
+- **末尾 7030** : 旧引き継ぎ書の **誤記** (実態と不一致 / 今後使用禁止)
+- **末尾 1459 (Qocca SNS Integration)**: 別用途の旧データセット (広告計測 NG)
+
+---
+
+## 🚨 Vite 静的埋め込み 重要注意 (env 変更後 必読)
+
+**Vite は `import.meta.env.VITE_META_PIXEL_ID` を ビルド時に bundle.js へ静的置換** する仕様。
+= **Vercel env を変更しただけでは本番 bundle に反映されない**。
+
+env 変更後の正しい手順:
+1. Vercel Dashboard → Deployments
+2. 最新 production deployment の「⋯」→ **Redeploy**
+3. **「Use existing Build Cache」のチェックを外す** ⚠️ (これを忘れると旧 bundle が再利用される)
+4. **Redeploy** クリック → 完了まで ~2分
+5. 本書の手順で着弾確認
+
+### env 反映確認 (技術裏取り)
+```bash
+# bundle.js を取得して末尾4桁を grep (フル ID は伏せる)
+curl -sL https://www.qocca.pet/ | grep -oE '/assets/[^"]+\.js'
+curl -sL https://www.qocca.pet/assets/<bundle>.js | grep -oE '"1385"'
+# → "1385" がヒットすれば env 反映済
+```
 
 ---
 
@@ -105,9 +141,15 @@
 ### Pixel Helper が「No Pixel found」
 - ブラウザ DevTools (F12) → Console で `window.fbq` を確認 → `undefined` なら未ロード
 - 原因候補:
-  1. Vercel env `VITE_META_PIXEL_ID` 未投入 → 投入 + Redeploy
-  2. localhost で確認している → 本番 URL (qocca.pet) で確認
-  3. Pixel Helper が古いバージョン → 拡張を最新化
+  1. Vercel env `VITE_META_PIXEL_ID` 未投入 → 投入 + **Redeploy (Build Cache OFF 必須)**
+  2. **env 投入後に Vite 再ビルドされていない** → Redeploy で Build Cache のチェックを外す
+  3. localhost で確認している → 本番 URL (qocca.pet) で確認
+  4. Pixel Helper が古いバージョン → 拡張を最新化
+
+### `Object.keys(window._fbq.instance._pixels)` が `[]` を返す
+**重要**: DevTools Console での `_pixels` 配列確認は SDK バージョンや Meta SDK 内部仕様によっては **空配列を返すことがある** (= 必ずしも未起動を意味しない)。
+- 発火の最終確認は **Meta テストイベント タブ** で行うのが確実 (本書 §「Meta 側での確認」参照)
+- Pixel Helper 拡張も並行して使うとさらに確実 (Meta 公式 / ブロック回避)
 
 ### Purchase が発火しない
 - URL に `?order=success&order_id=<uuid>` が含まれているか確認
@@ -139,3 +181,4 @@
 
 ## 改訂履歴
 - 2026/6/8 (依頼書 #135 Phase B) v1.0 初版
+- 2026/6/9 (依頼書 #139 本日記録) v1.1: 本番確定情報追記 (Qocca Production / 末尾1385 / 着弾実証 2026/6/9 21:22) + Vite 静的埋め込み Build Cache 注意書き追加 + DevTools `_pixels=[]` の SDK 仕様注意追記 + 旧誤情報 (末尾7030 / 1459) の明示的禁止
