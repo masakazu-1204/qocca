@@ -4463,6 +4463,9 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   // - selectedVariant: selectedAttrs に完全一致する listing_variants の row
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  // 依頼書 #143 TOP2 方式B (2026/6/10): 出品者の送金準備状態 (購入は止めず警告のみ)
+  // null=取得中 / true=送金可 / false=未連携(警告表示)。判定軸=stripe_payouts_enabled
+  const [sellerPayoutsEnabled, setSellerPayoutsEnabled] = useState<boolean | null>(null);
 
   // 依頼書 #121 (2026/6/5): Meta Pixel ViewContent (個人情報なし: listing_id + 価格 + 通貨のみ)
   useEffect(() => {
@@ -4474,6 +4477,18 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
       currency: "JPY",
     });
   }, [item?.id]);
+
+  // 依頼書 #143 TOP2 方式B: 出品者の stripe_payouts_enabled を取得 (購入確認モーダルの警告バナー用)
+  useEffect(() => {
+    if (!item?.seller_id) { setSellerPayoutsEnabled(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles").select("stripe_payouts_enabled").eq("id", item.seller_id).maybeSingle();
+      if (!cancelled) setSellerPayoutsEnabled(data?.stripe_payouts_enabled === true);
+    })();
+    return () => { cancelled = true; };
+  }, [item?.seller_id]);
 
   if (!item) return null;
 
@@ -5226,6 +5241,12 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
                   );
                 })()}
               </div>
+              {/* 依頼書 #143 TOP2 方式B (2026/6/10): 出品者が送金未連携の場合の警告 (購入は止めない / 同意の上で進める) */}
+              {sellerPayoutsEnabled === false && (
+                <div style={{ background:"#FFF8E1", border:"1px solid #F5D680", borderRadius:10, padding:"10px 12px", marginBottom:12, fontSize:11.5, color:"#7A5C00", lineHeight:1.7 }}>
+                  ⚠️ この出品者はまだ売上の受け取り準備中です。発送・対応が遅れる場合があります。ご了承の上でお進みください。
+                </div>
+              )}
               <div style={{ background:"#E3F2FD", borderRadius:10, padding:"10px", marginBottom:12, fontSize:11, color:C.blue, lineHeight:1.6 }}>
                 🔒 Stripe安全決済：クレジットカード情報はStripeが安全に処理します。Qoccaにカード情報は保存されません。
               </div>
