@@ -34,10 +34,10 @@
 - **教訓 (今後の防止策)**:
   1. **発火確認は Meta テストイベント (Events Manager) が唯一の確実な手段**。DevTools `_pixels` 確認は補助で、SDK バージョン依存で空配列を返すことがある
   2. **env 変更 → 必ず Build Cache OFF で Redeploy** (Vite 静的埋め込みのため / `docs/meta-pixel-setup-king.md` / `docs/meta-pixel-verification.md` 両書に明記済)
-  3. **データセット名と末尾 4 桁の組** で記録 (フル ID は秘匿)
+  3. **データセット名 + Pixel ID フル値** で記録 (Pixel ID は HTML/bundle 埋め込みの公開識別子 = 秘匿不要 / 2026/6/11 #143 後追いで「末尾4桁のみ」→「フル明示」に方針更新。正規 = **Qocca Production / `1039178921791385`**)
 - **影響**: 解消済 (実害ゼロ / 6/9 21:22 以降 Pixel 学習開始)
 - **優先度**: ✅ 既解消 (記録目的のみ)
-- **関連ファイル**: `docs/meta-pixel-setup-king.md` v1.1 / `docs/meta-pixel-verification.md` v1.1 (両書とも 2026/6/9 更新)
+- **関連ファイル**: `docs/meta-pixel-setup-king.md` v1.2 / `docs/meta-pixel-verification.md` v1.2 (フル ID 明示 / 2026/6/11 更新)
 
 ---
 
@@ -64,6 +64,51 @@
 
 ---
 
+## 🔐 決済・セキュリティ修正記録 (2026/6/10-11 #142 / #143)
+
+Dday(7/1) 前のセキュリティ・公平性 総点検で完了した本番修正の記録。
+**実取引が動く本番**に対し、Step制 (提案→設計→承認→実装) + 各 Step ロールバック手順 + 既存データ本体不可触 を厳守して実施。
+
+### ✅ 完了した修正一覧
+
+| # | 修正 | 実装 | 防御内容 |
+|---|---|---|---|
+| 🔴 | **二重送金封鎖** | complete-order **v29** + フロント | 三層防御 (下記) |
+| 🟠 | **RLS orders 修正** | DROP ポリシー (#142) | `orders_insert (WITH CHECK true)` 削除でなりすまし注文封鎖 + 重複ポリシー整理 (7→4) |
+| 🟠 | **Stripe 未連携購入 警告** | create-checkout **v39** + フロント (方式B) | `seller_payout_pending` フラグ + 購入確認モーダルに警告バナー。判定軸 = **`stripe_payouts_enabled`** (`onboarded` は restricted とのズレ実在で不採用) |
+| 🟠 | **認可漏れ封鎖** | complete-order **v30** | 受取確認は **buyer本人 or admin のみ**。`getUser(token)` で callerId 取得 → `buyer_id` 一致 or `admins` テーブル直接照会 → 不一致 403 / 未認証 401 |
+| 🟠 | **手数料取りこぼし** | complete-order **v31** (方式C) | welcome 判定**のみ** `order.created_at` 基準に変更 → 受注生産品 (3-4週間) が welcome 期間中購入なら受取が8月でも 0% 適用 |
+
+### 🔴 二重送金 三層防御 (complete-order v29 + フロント)
+| 層 | 防御 | 効果 |
+|---|---|---|
+| Stripe | `Idempotency-Key: transfer_${order_id}` | 同一 order の重複送金を Stripe が物理的に1回に固定 |
+| DB | 原子的クレーム `transfer_status='processing'` (UPDATE 行ロック再評価) | 並行2本目を 0行で安全中断 |
+| フロント | `confirming` state + ボタン disabled | await 中の連打を物理的に防止 |
+
+### ⚠️ complete-order は v29→v30→v31 と積層 — 触る時の注意 (最重要)
+
+complete-order は**1関数に3つの独立した防御が積み重なっている**。今後改修する際、各層を壊さないこと:
+
+| 層 | 役割 | コード位置 | 触る時の注意 |
+|---|---|---|---|
+| **v31** 手数料 | welcome 判定を `order.created_at` 基準 | fee 候補収集ブロック (`candidates.push`) | welcome の if のみ created_at / **他 tier (standard/first/3M/early/founding) は `now` のまま**。min(rate) ロジックを壊さない |
+| **v30** 認可 | buyer本人/admin チェック | order 取得後 ・ **原子的クレームの手前** | `getUser(token)` で callerId → buyer_id 一致 or admins 照会。**service_role 経路なし前提** (将来必要なら `x-internal-secret` 例外を別途設計) |
+| **v29** 二重送金 | 冪等キー + 原子的クレーム | クレーム = fee 計算の後 / 冪等キー = transfer fetch | クレームは transfer の**直前**・冪等キーは `transfer_${order_id}` 固定。**順序 (認可→fee→クレーム→冪等transfer) を変えない** |
+
+- **改修原則**: 認可は常にクレームの**上流**、クレームは transfer の**直前**、welcome は `created_at`・他 tier は `now`。この不変条件を破ると二重送金 or 認可漏れ or 手数料バグが再発する。
+- **ロールバック**: 各版は独立 (v31→v30→v29→v28 と1版ずつ戻せる)。Edge Function 版管理で即時復帰。
+
+### 📋 バックログ (Dday 後)
+| 項目 | 内容 |
+|---|---|
+| 方式A (全 tier 注文時ロック) | create-checkout で全 tier を確定し `orders.fee_tier_locked`/`fee_rate_locked` (DDL) に保存 → complete-order は参照のみ。welcome 以外の根本解決 |
+| P2/P3/P4 | within_3months 境界 / first_transaction 消費判定 / early_supporter 境界。**welcome 期間中は welcome 優先で 8/1 まで顕在化せず** → 方式A でまとめて対応 |
+| KI-004 | 出品 approve 前の Stripe 連携必須化 (本ファイル上部) |
+| #142 TOP2 | profiles の stripe カラム公開 (RLS USING(true)) の絞り込み (Dday後) |
+
+---
+
 ## ✅ 解消済 (履歴)
 
 (まだなし — 解消時に commit hash と日付を記録)
@@ -75,3 +120,4 @@
 - 2026/6/8 (依頼書 #135 Phase B) KI-002 Conversions API 拡張 backlog 追記
 - 2026/6/9 (依頼書 #139) KI-003 Pixel ID 不整合解消 + DevTools `_pixels` 仕様注意 追記
 - 2026/6/10 (依頼書 #143 TOP2) KI-004 出品 approve 前 Stripe 連携必須化 (根本解決) 登録
+- 2026/6/11 (依頼書 #143 後追い) 「決済・セキュリティ修正記録」セクション追加 (二重送金/RLS/未連携警告/認可漏れ/手数料 の5修正 + complete-order v29→v30→v31 積層注意) + KI-003 を Pixel ID フル明示方針に更新
