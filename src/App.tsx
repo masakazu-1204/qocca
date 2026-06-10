@@ -9678,6 +9678,8 @@ const OrdersTab = () => {
   const [showDispute, setShowDispute] = useState<any>(null);
   const [showReview, setShowReview] = useState<any>(null);
   const [filter, setFilter] = useState("all");
+  // 依頼書 #143 TOP1 Step 3 (2026/6/10): 受取確認の連打防止 (二重送金 多層防御のフロント側)
+  const [confirming, setConfirming] = useState(false);
 
   const loadOrders = async () => {
     if (!user?.id) return;
@@ -9722,7 +9724,10 @@ const OrdersTab = () => {
   };
 
   const handleConfirm = async (orderId: string) => {
+    // 依頼書 #143 TOP1 Step 3: 再入ガード (await 中の連打を物理的に防ぐ)
+    if (confirming) return;
     if (!confirm("受取を確定しますか？\nこの操作で出品者へ売上が支払われます。")) return;
+    setConfirming(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${SUPABASE_URL}/functions/v1/complete-order`, {
@@ -9737,6 +9742,8 @@ const OrdersTab = () => {
       await loadOrders();
     } catch (e: any) {
       alert(`エラー: ${e.message}`);
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -9809,10 +9816,10 @@ const OrdersTab = () => {
                     <div style={{ display:"flex", gap:8, marginTop:12 }}>
                       {order.status==="delivered" && (
                         <>
-                          <button onClick={(e)=>{e.stopPropagation();handleConfirm(order.id);}} style={{
-                            flex:2, padding:"11px", background:C.green, border:"none", borderRadius:10,
-                            color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
-                          }}>✅ 受取完了</button>
+                          <button disabled={confirming} onClick={(e)=>{e.stopPropagation();handleConfirm(order.id);}} style={{
+                            flex:2, padding:"11px", background:confirming?C.warmGray:C.green, border:"none", borderRadius:10,
+                            color:"#fff", fontWeight:800, fontSize:13, cursor:confirming?"not-allowed":"pointer", fontFamily:"inherit"
+                          }}>{confirming ? "処理中..." : "✅ 受取完了"}</button>
                           <button onClick={(e)=>{e.stopPropagation();setShowDispute(order);}} style={{
                             flex:1, padding:"11px", background:C.white, border:`1.5px solid ${C.red}`,
                             borderRadius:10, color:C.red, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit"
