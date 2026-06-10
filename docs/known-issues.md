@@ -7,6 +7,23 @@
 
 ## 🟡 Active (未解消)
 
+### KI-004: 出品 approve 前の Stripe 連携 (payouts_enabled) 必須化 — 根本解決 (2026/6/10 #143 TOP2)
+- **発見日**: 2026/6/10 (#143 バグ棚卸し TOP2 調査)
+- **症状 / 経緯**:
+  - create-checkout が seller の送金可否を未チェックで、**Stripe 未連携 (payouts_enabled=false) の出品者からも購入が通る** → お金がエスクローで無期限 pending (塩漬けリスク)。
+  - 現状: approved 出品保有 7出品者**すべて** payouts_enabled=false (完全連携 active は運営事務局 1人のみ)。
+- **#143 TOP2 で実施した対症療法 (方式B)**: 購入は止めず、購入確認モーダルで**警告バナー + 同意**を表示 (commit `64d6956` / create-checkout v39 `seller_payout_pending` フラグ)。
+- **根本解決 (本 KI / 未実装)**: **出品を approve する前に Stripe 連携 (payouts_enabled=true) を必須化**する。
+  - 案: admin の listing approve フロー / RPC で `seller.stripe_payouts_enabled=true` を承認条件に追加。
+  - または出品者が「Stripe 連携完了」しないと listing を `approved` にできない gating。
+  - → これにより「buyable な出品 = 必ず送金可能な出品者」になり、塩漬けが構造的にゼロに。
+- **影響**: 対症療法 (方式B) で当面の購入者保護は完了。根本解決は運用フロー変更を伴うため Dday 前後で別途設計。
+- **優先度**: 🟠 中 (7/1 までに出品者オンボーディングが進めば自然解消するが、approve gating があると確実)
+- **見積工数**: 半日 (approve 条件追加 + 出品者向け「連携してください」導線)
+- **関連**: #143 TOP2 (方式B 実装済) / #142 TOP2 (profiles の stripe カラム公開 / Dday後)
+
+---
+
 ### KI-003: Meta Pixel ID 不整合 (旧7030 誤記の解消) + DevTools `_pixels` の確認限界 (2026/6/9 #139)
 - **発見日**: 2026/6/9 (Meta 広告本日公開時の Pixel 検証で発覚)
 - **症状 / 経緯**:
@@ -57,3 +74,4 @@
 - 2026/6/6 (依頼書 #134 後追い) v1.0 初版 / KI-001 GoTrueClient 警告を記録
 - 2026/6/8 (依頼書 #135 Phase B) KI-002 Conversions API 拡張 backlog 追記
 - 2026/6/9 (依頼書 #139) KI-003 Pixel ID 不整合解消 + DevTools `_pixels` 仕様注意 追記
+- 2026/6/10 (依頼書 #143 TOP2) KI-004 出品 approve 前 Stripe 連携必須化 (根本解決) 登録
