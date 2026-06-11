@@ -11716,6 +11716,11 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("all");
   const [pref, setPref] = useState("");
+  // 依頼書 #143 U1 (2026/6/12): 市区町村フィルタ + RPC 50件ページング (1万件対応)
+  const [city, setCity] = useState("");
+  const [cityOptions, setCityOptions] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
   const [submitting, setSubmitting] = useState(false);
@@ -11753,50 +11758,53 @@ const FacilitiesPage = ({ setPage, isPC }) => {
     });
   };
 
-  // 通常取得 (検索なし)
-  const fetchFacilities = async () => {
-    setLoading(true);
-    let query = supabase.from("pet_facilities").select("*").eq("approved", true).order("review_count", { ascending: false });
-    const { data, error } = await query;
-    if (!error) setFacilities(data || []);
-    setLoading(false);
-  };
-
-  // 依頼書 #28 Phase 1 UI: search_facilities RPC 呼び出し
-  const runSearch = async (q: string) => {
-    setSearchInProgress(true);
+  // 依頼書 #143 U1 (2026/6/12): 取得を search_facilities RPC に一本化 + 50件ページング
+  // (旧 fetchFacilities の全件ロードを廃止 = 1万件でも落ちない / カテゴリ絞込も RPC 側へ)
+  const PAGE_SIZE = 50;
+  const loadFacilities = async (reset: boolean, baseList: any[] = []) => {
+    if (reset) setLoading(true); else setLoadingMore(true);
+    if (searchQuery) setSearchInProgress(true);
     const { data, error } = await supabase.rpc("search_facilities", {
-      query_text: q || null,
-      filter_category: null,
+      query_text: searchQuery || null,
+      filter_category: cat !== "all" ? [cat] : null,
       filter_prefecture: pref || null,
+      filter_city: city || null,
       filter_pet_type: null,
       filter_pet_size: null,
       filter_region: null,
       sort_mode: "relevance",
-      result_limit: 50,
+      result_limit: PAGE_SIZE,
+      result_offset: reset ? 0 : baseList.length,
     });
     if (!error) {
-      setFacilities(data || []);
-      if (q) pushHistory(q);
+      const rows = data || [];
+      setFacilities(reset ? rows : [...baseList, ...rows]);
+      setHasMore(rows.length === PAGE_SIZE);
+      if (reset && searchQuery) pushHistory(searchQuery);
     }
-    setSearchInProgress(false);
-    setLoading(false);
+    setLoading(false); setLoadingMore(false); setSearchInProgress(false);
   };
 
-  // searchQuery 変動時に検索 / 空なら通常取得
+  // 検索・絞り込み変更で先頭から再取得
   useEffect(() => {
-    if (searchQuery) {
-      runSearch(searchQuery);
-    } else {
-      fetchFacilities();
-    }
+    loadFacilities(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, pref]);
+  }, [searchQuery, pref, city, cat]);
 
-  const filtered = facilities.filter(f => {
-    if (cat !== "all" && f.category !== cat) return false;
-    return true;
-  });
+  // 都道府県変更 → 市区町村リセット + 選択肢取得 (DB側 distinct / 全件ロードしない)
+  useEffect(() => {
+    setCity("");
+    if (!pref) { setCityOptions([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("facility_city_options", { p_prefecture: pref });
+      if (!cancelled) setCityOptions(data || []);
+    })();
+    return () => { cancelled = true; };
+  }, [pref]);
+
+  const filtered = facilities; // カテゴリ絞込は RPC 側に移管 (client filter 廃止)
+  const hasActiveFilter = !!(searchQuery || pref || city || cat !== "all");
 
   const handleSubmitFacility = async () => {
     if (!user || !addForm.name || !addForm.address) return;
@@ -11816,7 +11824,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const catLabel = (c) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
 
   if (selectedFacility) {
-    return <FacilityDetailView facility={selectedFacility} onBack={()=>{ setSelectedFacility(null); fetchFacilities(); }} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
+    return <FacilityDetailView facility={selectedFacility} onBack={()=>{ setSelectedFacility(null); loadFacilities(true); }} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
   }
 
   return (
@@ -11933,10 +11941,20 @@ const FacilitiesPage = ({ setPage, isPC }) => {
           <option value="">📍 全国</option>
           {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
+        {/* 依頼書 #143 U1: 市区町村ドロップダウン (都道府県選択時のみ / 食べログ式の2段階エリア) */}
+        {pref && cityOptions.length > 0 && (
+          <select value={city} onChange={e=>setCity(e.target.value)} style={{
+            marginLeft:8, padding:"8px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13,
+            fontFamily:"inherit", outline:"none", background:C.white, color:C.dark, maxWidth:180
+          }}>
+            <option value="">🏘 市区町村: すべて</option>
+            {cityOptions.map((c:any) => <option key={c.city} value={c.city}>{c.city} ({c.cnt})</option>)}
+          </select>
+        )}
         <span style={{ marginLeft:12, fontSize:12, color:C.warmGray }}>
           {searchQuery
-            ? <>🔎 「{searchQuery}」: <b style={{ color:C.dark }}>{filtered.length}</b>件</>
-            : <>{filtered.length}件の施設</>}
+            ? <>🔎 「{searchQuery}」: <b style={{ color:C.dark }}>{filtered.length}{hasMore ? "+" : ""}</b>件</>
+            : <>{filtered.length}{hasMore ? "+" : ""}件の施設</>}
         </span>
       </div>
 
@@ -12014,12 +12032,12 @@ const FacilitiesPage = ({ setPage, isPC }) => {
           <div style={{ textAlign:"center", padding:"60px 24px" }}>
             <div style={{ fontSize:56, marginBottom:14, opacity:0.85 }}>🐕</div>
             <div style={{ fontSize:17, fontWeight:700, color:C.dark, marginBottom:10, letterSpacing:0.2 }}>
-              {facilities.length === 0
+              {!hasActiveFilter
                 ? "街の住民が見つけた場所が、ここに集まります"
                 : "該当する施設がまだ見つかりません"}
             </div>
             <p style={{ fontSize:12.5, color:C.warmGray, lineHeight:1.9, marginBottom:24, maxWidth:400, margin:"0 auto 24px" }}>
-              {facilities.length === 0 ? (
+              {!hasActiveFilter ? (
                 <>
                   ドッグラン、動物病院、ペット同伴カフェ、トリミング——<br/>
                   あなたが「ここよかったよ」と思った場所を、そっと共有してや🌅
@@ -12031,7 +12049,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
                 </>
               )}
             </p>
-            {user && facilities.length === 0 && (
+            {user && !hasActiveFilter && (
               <button
                 onClick={()=>setShowAdd(true)}
                 style={{ padding:"11px 26px", background:"transparent", border:`1.5px solid ${C.orange}`, borderRadius:22, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}
@@ -12068,6 +12086,15 @@ const FacilitiesPage = ({ setPage, isPC }) => {
                 <div style={{ marginTop:10, fontSize:11, color:C.orange, fontWeight:700 }}>タップして詳細を見る →</div>
               </div>
             ))}
+          </div>
+        )}
+        {/* 依頼書 #143 U1: 50件ページング「もっと見る」 (直近フェッチが PAGE_SIZE 件 = 続きあり) */}
+        {!loading && hasMore && filtered.length > 0 && (
+          <div style={{ textAlign:"center", marginTop:16 }}>
+            <button onClick={()=>loadFacilities(false, facilities)} disabled={loadingMore} style={{
+              padding:"11px 28px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:22,
+              color:C.orange, fontWeight:800, fontSize:13, cursor: loadingMore ? "wait" : "pointer", fontFamily:"inherit"
+            }}>{loadingMore ? "読み込み中..." : "もっと見る ▼"}</button>
           </div>
         )}
       </div>
