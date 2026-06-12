@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
+// 依頼書 U2 (2026/6/13): 施設マップ Leaflet 地図表示 (OSM タイル / 出典表記必須 / react-leaflet 不使用)
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet.markercluster";
 import AboutPage from "./pages/AboutPage";
 import AboutSection from "./components/AboutSection";
 // 依頼書 #108 (2026/6/4): ARK 透明性機能 Phase C - Admin 寄付管理画面
@@ -11710,6 +11716,76 @@ const checkFacilityNGWords = (text) => {
 
 const PREFS = ["北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川","新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良","和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分","宮崎","鹿児島","沖縄"];
 
+// 依頼書 U2 (2026/6/13): Leaflet 地図ビュー (OSMタイル + markercluster)
+// - 出典表記「© OpenStreetMap contributors」必須 (ライセンス)
+// - ピンは divIcon (デフォルト画像のバンドラパス問題回避 + カテゴリ絵文字でデザイン統一)
+// - chunkedLoading で 1000 ピンでも描画が固まらない
+// - ポップアップは DOM 組み立て (textContent = 施設名/住所の XSS 安全)
+const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }) => {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const clusterRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = L.map(containerRef.current, { center: [36.2, 138.25], zoom: 5 });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+    const cluster = (L as any).markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false, maxClusterRadius: 60 });
+    map.addLayer(cluster);
+    mapRef.current = map;
+    clusterRef.current = cluster;
+    requestAnimationFrame(() => map.invalidateSize());
+    return () => { map.remove(); mapRef.current = null; clusterRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current, cluster = clusterRef.current;
+    if (!map || !cluster) return;
+    cluster.clearLayers();
+    const pts: any[] = [];
+    (facilities || []).forEach((f: any) => {
+      const lat = Number(f.latitude), lng = Number(f.longitude);
+      if (!isFinite(lat) || !isFinite(lng) || f.latitude == null || f.longitude == null || (lat === 0 && lng === 0)) return;
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="width:34px;height:34px;border-radius:50% 50% 50% 4px;background:#F5A94A;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px">${catIcon(f.category)}</div>`,
+        iconSize: [34, 34], iconAnchor: [17, 32], popupAnchor: [0, -30],
+      });
+      const m = L.marker([lat, lng], { icon });
+      // ポップアップ (DOM 直組み = textContent で安全)
+      const pop = document.createElement("div");
+      pop.style.cssText = "min-width:170px;font-family:inherit";
+      const title = document.createElement("div");
+      title.style.cssText = "font-weight:800;font-size:13px;color:#3E2E1E;margin-bottom:3px";
+      title.textContent = `${catIcon(f.category)} ${f.name}`;
+      const addr = document.createElement("div");
+      addr.style.cssText = "font-size:11px;color:#8C7B6B;margin-bottom:8px";
+      addr.textContent = `📍 ${f.address || f.prefecture || ""}`;
+      const btn = document.createElement("button");
+      btn.textContent = "詳細を見る →";
+      btn.style.cssText = "padding:6px 14px;background:#F5A94A;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit";
+      btn.onclick = () => onSelect(f);
+      pop.appendChild(title); pop.appendChild(addr); pop.appendChild(btn);
+      m.bindPopup(pop);
+      cluster.addLayer(m);
+      pts.push([lat, lng]);
+    });
+    if (pts.length > 0) {
+      map.fitBounds(L.latLngBounds(pts).pad(0.1), { maxZoom: 14 });
+    }
+  }, [facilities, onSelect, catIcon]);
+
+  return (
+    <div ref={containerRef} style={{
+      height: isPC ? 560 : "60vh", borderRadius: 16, overflow: "hidden",
+      border: `1px solid ${C.border}`, position: "relative", zIndex: 0, isolation: "isolate"
+    }}/>
+  );
+};
+
 const FacilitiesPage = ({ setPage, isPC }) => {
   const { user } = useAuth();
   const [facilities, setFacilities] = useState([]);
@@ -11726,6 +11802,12 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
+
+  // 依頼書 U2 (2026/6/13): 地図↔リスト切替 + 地図用データ (リストの50件ページングとは独立)
+  const [viewMode, setViewMode] = useState("list");
+  const [mapFacilities, setMapFacilities] = useState<any[]>([]);
+  const [mapLoading, setMapLoading] = useState(false);
+  const MAP_LIMIT = 1000; // 1万件対応: 上限1000ピン + クラスタ (超過時は絞り込み誘導)
 
   // 依頼書 #28 Phase 1 UI: 検索バー state
   const [searchInput, setSearchInput] = useState("");          // ユーザー入力中
@@ -11790,6 +11872,33 @@ const FacilitiesPage = ({ setPage, isPC }) => {
     loadFacilities(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, pref, city, cat]);
+
+  // 依頼書 U2 (2026/6/13): 地図モード時のみ地図用データ取得 (同フィルタ / 上限1000 / last-wins ガード)
+  useEffect(() => {
+    if (viewMode !== "map") return;
+    let cancelled = false;
+    (async () => {
+      setMapLoading(true);
+      const { data, error } = await supabase.rpc("search_facilities", {
+        query_text: searchQuery || null,
+        filter_category: cat !== "all" ? [cat] : null,
+        filter_prefecture: pref || null,
+        filter_city: city || null,
+        filter_pet_type: null,
+        filter_pet_size: null,
+        filter_region: null,
+        sort_mode: "relevance",
+        result_limit: MAP_LIMIT,
+        result_offset: 0,
+      });
+      if (!cancelled) {
+        if (!error) setMapFacilities(data || []);
+        setMapLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, searchQuery, pref, city, cat]);
 
   // 都道府県変更 → 市区町村リセット + 選択肢取得 (DB側 distinct / 全件ロードしない)
   useEffect(() => {
@@ -11933,7 +12042,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
           }}><span>{c.icon}</span><span style={{ whiteSpace:"nowrap" }}>{c.label}</span></button>
         ))}
       </div>
-      <div style={{ padding:"8px 16px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
+      <div style={{ padding:"8px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", flexWrap:"wrap", rowGap:6 }}>
         <select value={pref} onChange={e=>setPref(e.target.value)} style={{
           padding:"8px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13,
           fontFamily:"inherit", outline:"none", background:C.white, color:C.dark
@@ -11956,6 +12065,16 @@ const FacilitiesPage = ({ setPage, isPC }) => {
             ? <>🔎 「{searchQuery}」: <b style={{ color:C.dark }}>{filtered.length}{hasMore ? "+" : ""}</b>件</>
             : <>{filtered.length}{hasMore ? "+" : ""}件の施設</>}
         </span>
+        {/* 依頼書 U2 (2026/6/13): 地図↔リスト切替トグル */}
+        <div style={{ marginLeft:"auto", display:"flex", border:`1.5px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
+          {[["list","📋 リスト"],["map","🗺️ 地図"]].map(([mode, label]) => (
+            <button key={mode} onClick={()=>setViewMode(mode)} style={{
+              padding:"6px 12px", background:viewMode===mode?C.orange:C.white,
+              color:viewMode===mode?"#fff":C.warmGray, border:"none",
+              fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit"
+            }}>{label}</button>
+          ))}
+        </div>
       </div>
 
       {showAdd && (
@@ -12024,6 +12143,24 @@ const FacilitiesPage = ({ setPage, isPC }) => {
       {/* 依頼書 #11 #2 (5/25): CrowdfundingBanner 再利用 (FacilitiesPage 版) */}
       <CrowdfundingBanner />
 
+      {/* 依頼書 U2 (2026/6/13): 地図表示 (リスト側 JSX は無変更でラップのみ) */}
+      {viewMode === "map" ? (
+        <div style={{ padding:16 }}>
+          {mapLoading && (
+            <div style={{ textAlign:"center", padding:"8px 0", color:C.warmGray, fontSize:12 }}>🗺️ 地図データ読み込み中...</div>
+          )}
+          <FacilityMapView facilities={mapFacilities} isPC={isPC} onSelect={setSelectedFacility} catIcon={catIcon}/>
+          {!mapLoading && (() => {
+            const noCoords = mapFacilities.filter((f) => f.latitude == null || f.longitude == null).length;
+            return (
+              <div style={{ marginTop:8, fontSize:11, color:C.warmGray, lineHeight:1.7 }}>
+                <div>🗺️ 地図上のピン: {mapFacilities.length - noCoords}件{mapFacilities.length >= MAP_LIMIT ? `（表示上限${MAP_LIMIT}件に達しています。エリアやカテゴリで絞り込むと全件表示されます）` : ""}</div>
+                {noCoords > 0 && <div>📍 座標未登録の施設 {noCoords}件 は地図に表示されません。リスト表示でご確認ください。</div>}
+              </div>
+            );
+          })()}
+        </div>
+      ) : (
       <div style={{ padding:"16px" }}>
         {loading ? (
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
@@ -12098,6 +12235,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
