@@ -11761,9 +11761,11 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }) => {
     (facilities || []).forEach((f: any) => {
       const lat = Number(f.latitude), lng = Number(f.longitude);
       if (!isFinite(lat) || !isFinite(lng) || f.latitude == null || f.longitude == null || (lat === 0 && lng === 0)) return;
+      // 依頼書 #146 Step3 (2026/6/13): 閉店施設はグレーピン + 🚧
+      const closed = !!f.is_closed;
       const icon = L.divIcon({
         className: "",
-        html: `<div style="width:34px;height:34px;border-radius:50% 50% 50% 4px;background:#F5A94A;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px">${catIcon(f.category)}</div>`,
+        html: `<div style="width:34px;height:34px;border-radius:50% 50% 50% 4px;background:${closed ? "#9E9E9E" : "#F5A94A"};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;opacity:${closed ? "0.85" : "1"}">${closed ? "🚧" : catIcon(f.category)}</div>`,
         iconSize: [34, 34], iconAnchor: [17, 32], popupAnchor: [0, -30],
       });
       const m = L.marker([lat, lng], { icon });
@@ -11772,7 +11774,7 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }) => {
       pop.style.cssText = "min-width:170px;font-family:inherit";
       const title = document.createElement("div");
       title.style.cssText = "font-weight:800;font-size:13px;color:#3E2E1E;margin-bottom:3px";
-      title.textContent = `${catIcon(f.category)} ${f.name}`;
+      title.textContent = `${closed ? "🚧" : catIcon(f.category)} ${f.name}${closed ? "（閉店）" : ""}`;
       const addr = document.createElement("div");
       addr.style.cssText = "font-size:11px;color:#8C7B6B;margin-bottom:8px";
       addr.textContent = `📍 ${f.address || f.prefecture || ""}`;
@@ -12225,6 +12227,8 @@ const FacilitiesPage = ({ setPage, isPC }) => {
                     <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📍 {f.address}</div>
                     {f.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {f.hours}</div>}
                     <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+                      {/* 依頼書 #146 Step3 (2026/6/13): 閉店バッジ (承認済の閉店報告) */}
+                      {f.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}>🚧 閉店</span>}
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(f.category)}</span>
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{f.prefecture}</span>
                       {(f.review_count > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {f.review_count}件のレポート</span>}
@@ -12309,6 +12313,8 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
             {facility.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {facility.hours}</div>}
             {facility.phone && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📞 {facility.phone}</div>}
             <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
+              {/* 依頼書 #146 Step3 (2026/6/13): 閉店バッジ (承認済の閉店報告) */}
+              {facility.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}>🚧 閉店</span>}
               <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(facility.category)}</span>
               <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{facility.prefecture}</span>
               {(facility.review_count > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {facility.review_count}件のレポート</span>}

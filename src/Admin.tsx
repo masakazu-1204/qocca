@@ -2777,6 +2777,131 @@ const FacilityModerationPage = () => {
   );
 };
 
+// 依頼書 #146 Step3 (2026/6/13): 承認型 施設訂正提案 (まず「閉店報告」のみ)
+// ⚠️ facility_corrections は select_own RLS → 閲覧/承認は SECURITY DEFINER RPC 経由 (is_admin ゲート)
+// ⚠️ closed 承認時に pet_facilities.is_closed=true (RPC内で反映) / 却下・保留で false に戻る
+const CORR_STATUS = [
+  { id: "pending",  icon: "⏳", label: "承認待ち" },
+  { id: "approved", icon: "✅", label: "承認済 (閉店)" },
+  { id: "rejected", icon: "🚫", label: "却下" },
+];
+const CORR_PAGE = 50;
+
+const CorrectionModerationPage = () => {
+  const [status, setStatus] = useState("pending");
+  const [rows, setRows] = useState<any[]>([]);
+  const [stats, setStats] = useState<Record<string, number>>({});
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+
+  const loadStats = async () => {
+    const { data } = await supabase.rpc("admin_corrections_stats", { p_field: "closed" });
+    const m: Record<string, number> = {};
+    (data || []).forEach((r: any) => { m[r.status] = Number(r.cnt); });
+    setStats(m);
+  };
+  const loadRows = async (reset: boolean, base: any[] = []) => {
+    setLoading(true);
+    const offset = reset ? 0 : base.length;
+    const { data, error } = await supabase.rpc("admin_list_corrections", {
+      p_status: status, p_field: "closed", p_limit: CORR_PAGE, p_offset: offset,
+    });
+    if (!error) {
+      const list = data || [];
+      setRows(reset ? list : [...base, ...list]);
+      setHasMore(list.length === CORR_PAGE);
+    }
+    if (reset) setSelected(new Set());
+    setLoading(false);
+  };
+  useEffect(() => { loadStats(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { loadRows(true); /* eslint-disable-next-line */ }, [status]);
+
+  const toggle = (id: string) => setSelected(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const moderate = async (ids: string[], newStatus: string, label: string) => {
+    if (ids.length === 0) return;
+    // ⚠️ confirm 必須 (件数明示) / 「表示分」に限定 (広すぎる一括なし)
+    if (!confirm(`${ids.length}件の閉店報告を「${label}」します。よろしいですか？`)) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_moderate_corrections", { p_ids: ids, p_status: newStatus });
+    setBusy(false);
+    if (error) return alert("エラー: " + error.message);
+    await loadStats();
+    await loadRows(true);
+  };
+
+  const cardBtn = (bg: string): any => ({ padding: "5px 10px", background: bg, color: "#fff", border: "none", borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: busy ? "wait" : "pointer", fontFamily: "inherit" });
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 4 }}>🚧 施設訂正提案 (閉店報告)</h1>
+        <p style={{ fontSize: 12, color: C.warmGray }}>住民からの「閉店・移転している」報告を承認/却下。承認で施設に「閉店」バッジが付きます (住所/電話/営業時間は次フェーズ)</p>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        {CORR_STATUS.map(s => (
+          <button key={s.id} onClick={() => setStatus(s.id)} style={{
+            padding: "8px 14px", borderRadius: 20, border: `1.5px solid ${status === s.id ? C.orange : C.border}`,
+            background: status === s.id ? C.orange : C.white, color: status === s.id ? "#fff" : C.warmGray,
+            fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit"
+          }}>{s.icon} {s.label} ({stats[s.id] ?? 0})</button>
+        ))}
+      </div>
+
+      {status === "pending" && rows.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap", padding: "10px 12px", background: C.cream, borderRadius: 10 }}>
+          <button onClick={() => setSelected(new Set(rows.map(r => r.id)))} style={{ ...cardBtn(C.warmGray) }}>表示分を全選択</button>
+          <button onClick={() => setSelected(new Set())} style={{ ...cardBtn("#BBB") }}>選択解除</button>
+          <span style={{ fontSize: 12, color: C.dark, fontWeight: 700 }}>選択 {selected.size}件</span>
+          <div style={{ flex: 1 }} />
+          <button disabled={busy || selected.size === 0} onClick={() => moderate([...selected], "approved", "承認 (閉店にする)")} style={{ ...cardBtn(selected.size ? C.green : "#CCC"), padding: "8px 14px", fontSize: 12 }}>✅ 選択を承認</button>
+          <button disabled={busy || selected.size === 0} onClick={() => moderate([...selected], "rejected", "却下")} style={{ ...cardBtn(selected.size ? "#E57373" : "#CCC"), padding: "8px 14px", fontSize: 12 }}>🚫 選択を却下</button>
+        </div>
+      )}
+
+      {loading && rows.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>読み込み中...</div>
+      ) : rows.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>該当する閉店報告はありません</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {rows.map(c => (
+            <div key={c.id} style={{ display: "flex", gap: 10, padding: "12px 14px", background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, alignItems: "flex-start" }}>
+              {status === "pending" && (
+                <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)} style={{ marginTop: 3, width: 16, height: 16, cursor: "pointer", flexShrink: 0 }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.dark }}>
+                  {c.facility_name}
+                  {c.is_closed && <span style={{ marginLeft: 8, fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "#FFEBEE", color: "#C62828", fontWeight: 800 }}>🚧 閉店中</span>}
+                </div>
+                <div style={{ fontSize: 11, color: C.warmGray, marginTop: 2 }}>📍 {c.prefecture} {c.address}</div>
+                <div style={{ fontSize: 11, color: "#C62828", marginTop: 4, fontWeight: 700 }}>🚧 報告: 閉店・移転している{c.proposed_value ? ` (${c.proposed_value})` : ""}</div>
+                <div style={{ fontSize: 10, color: C.warmGray, marginTop: 2 }}>{new Date(c.created_at).toLocaleString("ja-JP")}</div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {status !== "approved" && <button disabled={busy} onClick={() => moderate([c.id], "approved", "承認 (閉店にする)")} style={cardBtn(C.green)}>承認</button>}
+                {status !== "rejected" && <button disabled={busy} onClick={() => moderate([c.id], "rejected", "却下")} style={cardBtn("#E57373")}>却下</button>}
+                {status !== "pending" && <button disabled={busy} onClick={() => moderate([c.id], "pending", "保留に戻す")} style={cardBtn(C.warmGray)}>保留</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && hasMore && (
+        <div style={{ textAlign: "center", marginTop: 14 }}>
+          <button disabled={busy} onClick={() => loadRows(false, rows)} style={{ padding: "10px 24px", background: C.white, border: `1.5px solid ${C.orange}`, borderRadius: 20, color: C.orange, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>もっと見る ▼</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── メインアプリ ────────────────────────────────────────────────────────────
 // 依頼書 #112 (2026/6/4): Admin Sidebar 統合 - 新規 4ページ + 商店街リンク追加
 // href 付き entry は外部 Route (別ページ) に navigate / 無印 entry は内部 page state 切替
@@ -2798,6 +2923,7 @@ const MENU: Array<{ id: string; icon: string; label: string; href?: string; grou
   { id: "meta-ads", icon: "💰", label: "Meta 広告" },
   { id: "events-ai", icon: "📅", label: "AI イベント収集" },
   { id: "facilities-mod", icon: "🗺️", label: "施設モデレーション" },
+  { id: "facility-corrections", icon: "🚧", label: "施設訂正提案" },
   { id: "meta-agent", icon: "🌌", label: "エージェントチーム" },
 ];
 
@@ -2955,6 +3081,7 @@ export default function AdminDashboard() {
         {page === "meta-ads" && <MetaAdsPage />}
         {page === "events-ai" && <EventsAiManagementPage />}
         {page === "facilities-mod" && <FacilityModerationPage />}
+        {page === "facility-corrections" && <CorrectionModerationPage />}
         {page === "meta-agent" && <MetaAgentManagementPage />}
       </div>
 
