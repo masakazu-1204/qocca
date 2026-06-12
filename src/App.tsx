@@ -11716,6 +11716,18 @@ const checkFacilityNGWords = (text) => {
 
 const PREFS = ["北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川","新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良","和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分","宮崎","鹿児島","沖縄"];
 
+// 依頼書 #146 Step1 (2026/6/13): 登録番号・出典を画面非表示にする表示用フィルタ
+// ⚠️ DB の description は CC-BY の出典保持義務のため削除しない (画面表示のみフィルタ)
+// open_data 617件 = 「登録番号: ｜ 出典:」のみ / admin_manual 80件 = 営業情報のみ (混在ゼロを確認済)
+const facilityDisplayDesc = (desc) => {
+  if (!desc) return "";
+  return String(desc)
+    .split("\n")
+    .filter(line => !/^\s*(登録番号|出典)\s*[:：]/.test(line))
+    .join("\n")
+    .trim();
+};
+
 // 依頼書 U2 (2026/6/13): Leaflet 地図ビュー (OSMタイル + markercluster)
 // - 出典表記「© OpenStreetMap contributors」必須 (ライセンス)
 // - ピンは divIcon (デフォルト画像のバンドラパス問題回避 + カテゴリ絵文字でデザイン統一)
@@ -12219,7 +12231,8 @@ const FacilitiesPage = ({ setPage, isPC }) => {
                     </div>
                   </div>
                 </div>
-                {f.description && <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>{f.description.length > 80 ? f.description.slice(0,80)+"..." : f.description}</div>}
+                {/* 依頼書 #146 Step1 (2026/6/13): 一覧カードも登録番号・出典を非表示 (詳細と同フィルタ) */}
+                {(() => { const d = facilityDisplayDesc(f.description); return d ? <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>{d.length > 80 ? d.slice(0,80)+"..." : d}</div> : null; })()}
                 <div style={{ marginTop:10, fontSize:11, color:C.orange, fontWeight:700 }}>タップして詳細を見る →</div>
               </div>
             ))}
@@ -12302,7 +12315,8 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
             </div>
           </div>
         </div>
-        {facility.description && <div style={{ fontSize:12, color:"#666", lineHeight:1.7, marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>{facility.description}</div>}
+        {/* 依頼書 #146 Step1 (2026/6/13): 登録番号・出典は非表示 (DB保持・表示のみフィルタ) */}
+        {facilityDisplayDesc(facility.description) && <div style={{ fontSize:12, color:"#666", lineHeight:1.7, marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}`, whiteSpace:"pre-wrap" }}>{facilityDisplayDesc(facility.description)}</div>}
         {facility.website && <a href={facility.website} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:12, color:C.blue, fontWeight:700 }}>🔗 ウェブサイトを見る</a>}
         <button onClick={()=>setShowCorrectionForm(true)} style={{ display:"block", marginTop:8, fontSize:11, color:C.warmGray, background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline", fontFamily:"inherit" }}>この情報を訂正する</button>
       </div>
