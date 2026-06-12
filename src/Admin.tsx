@@ -2757,6 +2757,12 @@ const FacilityModerationPage = () => {
                   {f.latitude == null && <span style={{ color: "#E57373" }}> ｜ ⚠️座標なし</span>}
                 </div>
                 {f.description && <div style={{ fontSize: 10.5, color: "#999", marginTop: 3 }}>{f.description.length > 70 ? f.description.slice(0, 70) + "…" : f.description}</div>}
+                {/* 依頼書 #146 段階2 (2026/6/13): 存在確認用 Google検索リンク (URL生成のみ・Places API/スクレイピング不使用) */}
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent([f.name, f.prefecture, f.city, f.address].filter(Boolean).join(" "))}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: "inline-block", marginTop: 4, fontSize: 11, color: C.blue, fontWeight: 700, textDecoration: "none" }}
+                >🔍 Googleで存在確認</a>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {status !== "manual_approved" && <button disabled={busy} onClick={() => moderate([f.id], "manual_approved", "公開")} style={cardBtn(C.green)}>公開</button>}
