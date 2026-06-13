@@ -37,6 +37,7 @@ import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAME
 import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES, PREFS_47_ORDER } from "./constants/data";
 import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
 import { detectContacts, detectNGWords, checkFacilityNGWords } from "./utils/moderation";
+import { PET_CATEGORIES, petLabelShort, petIcon, evPetLabel, evPetColor, evPetBg } from "./constants/pets";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
@@ -400,55 +401,7 @@ const findAtmosphere = (id?: string | null): AtmospherePreset =>
   ATMOSPHERE_PRESETS.find(a => a.id === id) || DEFAULT_ATMOSPHERE;
 
 // CATS / LISTINGS / REVIEWS / EVENTS / PREFS_47_ORDER は constants/data.ts へ移動 (Phase 1 ②/c)
-// ── 依頼書 #19 (5/27): 動物カテゴリ 16種拡張 共通定数 ──────────────────
-// Qocca ビジョン「動物を飼った時に当たり前のアプリ」体現
-// id (英) / label (日) / icon (emoji) / color (主色) / bg (背景色)
-const PET_CATEGORIES: Array<{ id: string; label: string; icon: string; color: string; bg: string }> = [
-  { id: "dog",         label: "犬",         icon: "🐕", color: "#F5A94A", bg: "#FFF3E0" }, // orange
-  { id: "cat",         label: "猫",         icon: "🐈", color: "#9C27B0", bg: "#F3E5F5" }, // purple
-  { id: "rabbit",      label: "うさぎ",     icon: "🐰", color: "#EC407A", bg: "#FCE4EC" }, // pink
-  { id: "hamster",     label: "ハムスター", icon: "🐹", color: "#FFA726", bg: "#FFF8E1" }, // amber
-  { id: "guinea_pig",  label: "モルモット", icon: "🐭", color: "#A1887F", bg: "#EFEBE9" }, // brown
-  { id: "ferret",      label: "フェレット", icon: "🦦", color: "#8D6E63", bg: "#EFEBE9" }, // brown
-  { id: "chinchilla",  label: "チンチラ",   icon: "🐭", color: "#90A4AE", bg: "#ECEFF1" }, // bluegrey
-  { id: "hedgehog",    label: "ハリネズミ", icon: "🦔", color: "#A1887F", bg: "#EFEBE9" }, // brown
-  { id: "squirrel",    label: "リス",       icon: "🐿️", color: "#FF7043", bg: "#FBE9E7" }, // deeporange
-  { id: "bird",        label: "鳥",         icon: "🐦", color: "#42A5F5", bg: "#E3F2FD" }, // blue (小鳥・インコ・オウム・文鳥等)
-  { id: "reptile",     label: "爬虫類",     icon: "🦎", color: "#66BB6A", bg: "#E8F5E9" }, // green (カメ・ヘビ・トカゲ等)
-  { id: "amphibian",   label: "両生類",     icon: "🐸", color: "#26A69A", bg: "#E0F2F1" }, // teal (カエル・サンショウウオ等)
-  { id: "fish",        label: "魚",         icon: "🐠", color: "#29B6F6", bg: "#E1F5FE" }, // lightblue (金魚・熱帯魚・メダカ等)
-  { id: "crustacean",  label: "甲殻類",     icon: "🦀", color: "#EF5350", bg: "#FFEBEE" }, // red (エビ・カニ等)
-  { id: "insect",      label: "昆虫",       icon: "🐛", color: "#9CCC65", bg: "#F1F8E9" }, // lightgreen (カブトムシ・クワガタ等)
-  { id: "other",       label: "その他",     icon: "🐾", color: "#9E9B95", bg: "#FAFAF7" }, // warmgray
-];
-const PET_CAT_BY_ID: Record<string, typeof PET_CATEGORIES[number]> =
-  Object.fromEntries(PET_CATEGORIES.map(c => [c.id, c]));
-// ヘルパー (既存 dog/cat/both API 後方互換)
-const petLabel = (id: string): string => {
-  if (id === "both") return "🐾 両方";
-  const c = PET_CAT_BY_ID[id];
-  return c ? `${c.icon} ${c.label}` : `🐾 ${id || "その他"}`;
-};
-const petLabelShort = (id: string): string => {
-  if (id === "both") return "両方";
-  return PET_CAT_BY_ID[id]?.label || id || "その他";
-};
-const petIcon = (id: string): string => {
-  if (id === "both") return "🐾";
-  return PET_CAT_BY_ID[id]?.icon || "🐾";
-};
-const petColor = (id: string): string => {
-  if (id === "both") return "#4CAF50";  // green
-  return PET_CAT_BY_ID[id]?.color || "#9E9B95";
-};
-const petBg = (id: string): string => {
-  if (id === "both") return "#E8F5E9";  // greenpale
-  return PET_CAT_BY_ID[id]?.bg || "#FAFAF7";
-};
-// 既存 API 後方互換 (event 系)
-const evPetLabel = (p: string) => p === "dog" ? "🐕 犬" : p === "cat" ? "🐈 猫" : p === "both" ? "🐾 両方" : petLabel(p);
-const evPetColor = (p: string) => p === "dog" ? "#F5A94A" : p === "cat" ? "#9C27B0" : p === "both" ? "#4CAF50" : petColor(p);
-const evPetBg = (p: string) => p === "dog" ? "#FFF3E0" : p === "cat" ? "#F3E5F5" : p === "both" ? "#E8F5E9" : petBg(p);
+// 動物カテゴリ定数・表示ヘルパー (PET_CATEGORIES/PET_CAT_BY_ID/petLabel/petLabelShort/petIcon/petColor/petBg/evPetLabel/evPetColor/evPetBg) は constants/pets.ts へ移動 (Phase 1 a)
 
 // ORDER_STEPS は constants/data.ts へ移動 (Phase 1 ②)
 // stepIndex は utils/format.ts へ移動 (Phase 1 ③)
