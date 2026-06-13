@@ -198,10 +198,10 @@ App.tsx に残るのは `QoccaAppInner`(8387) `QoccaApp`(8663) と Router 周り
 
 | Phase | 状態 | コミット | 備考 |
 |---|---|---|---|
-| 計画書作成 | ✅ 完了 | (このコミット) | docs/app-split-plan.md |
-| Phase 0 | ⬜ 未着手 | — | 型外出し＋ビルド緑確認 |
+| 計画書作成 | ✅ 完了 | 8500a50 | docs/app-split-plan.md (最新mainへ再cherry-pick) |
+| Phase 0 | ✅ 完了 | (このコミット) | `CommentTargetType` を `src/types.ts` へ外出し。**型のみの export は `import type` で読む**(通常importはrolldownが値解釈しMISSING_EXPORTでビルド失敗)。ビルド緑確認済 |
 | Phase 1 | ⬜ 未着手 | — | |
-| Phase 2 | ⬜ 未着手 | — | |
+| Phase 2 | ⬜ 一部完了 | — | ⚠️ **`supabase` は最新mainで既に `src/supabaseClient.ts` へ外出し済**(依頼書#119 Phase C)。App.tsx は `import { supabase } from "./supabaseClient"` を使用中。Phase2残りは `AuthContext`/`AuthProvider`/`useAuth` の外出しのみ |
 | Phase 3 | ⬜ 未着手 | — | |
 | Phase 4 | ⬜ 未着手 | — | |
 | Phase 5 | ⬜ 未着手 | — | |

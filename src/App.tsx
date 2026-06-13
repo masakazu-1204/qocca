@@ -32,7 +32,7 @@ import { ReviewModal } from "./components/ReviewModal";
 // 依頼書 #105 (2026/6/3): 弁護士確認版利用規約 v2.0 (別ファイル化で App.tsx 軽量維持)
 import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
-type CommentTargetType = "gallery" | "event" | "blog";
+import type { CommentTargetType } from "./types";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
