@@ -34,7 +34,7 @@ import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import type { CommentTargetType } from "./types";
 import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_TIMING, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "./constants/theme";
-import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES } from "./constants/data";
+import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES, PREFS_47_ORDER } from "./constants/data";
 import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
 import { detectContacts, detectNGWords, checkFacilityNGWords } from "./utils/moderation";
 // ── Supabase Client ───────────────────────────────────────────────────────
@@ -399,22 +399,7 @@ const DEFAULT_ATMOSPHERE = ATMOSPHERE_PRESETS[4]; // atatakai
 const findAtmosphere = (id?: string | null): AtmospherePreset =>
   ATMOSPHERE_PRESETS.find(a => a.id === id) || DEFAULT_ATMOSPHERE;
 
-// CATS / LISTINGS / REVIEWS / EVENTS は constants/data.ts へ移動 (Phase 1 ②)
-// 依頼書 #122 (2026/6/5): 旧 5 件固定 ["すべて","北海道","東京都","大阪府","愛知県","福岡県"] では
-//   #120 の AI 自動収集で投入された 京都府/広島県/静岡県/兵庫県/神奈川県/埼玉県/宮城県/千葉県 等が
-//   フィルタ選択肢に出ず、ユーザーから「都道府県が足りない」報告 → 動的生成方式に変更。
-// 47 都道府県 (北→南順) のうち、events.prefecture に実在するものだけを EventsPage 内で useMemo 抽出。
-// 「該当 0 件 pill」を並べる UX 劣化を回避しつつ、新規 ai_scraped 県も自動でフィルタに追加される。
-const PREFS_47_ORDER = [
-  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
-  "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
-  "新潟県","富山県","石川県","福井県","山梨県","長野県",
-  "岐阜県","静岡県","愛知県","三重県",
-  "滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
-  "鳥取県","島根県","岡山県","広島県","山口県",
-  "徳島県","香川県","愛媛県","高知県",
-  "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県",
-];
+// CATS / LISTINGS / REVIEWS / EVENTS / PREFS_47_ORDER は constants/data.ts へ移動 (Phase 1 ②/c)
 // ── 依頼書 #19 (5/27): 動物カテゴリ 16種拡張 共通定数 ──────────────────
 // Qocca ビジョン「動物を飼った時に当たり前のアプリ」体現
 // id (英) / label (日) / icon (emoji) / color (主色) / bg (背景色)
