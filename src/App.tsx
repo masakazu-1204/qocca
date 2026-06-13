@@ -33,6 +33,7 @@ import { ReviewModal } from "./components/ReviewModal";
 import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import type { CommentTargetType } from "./types";
+import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS } from "./constants/theme";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
@@ -218,7 +219,6 @@ const useListings = () => {
   return { listings, dbLoading, refetch: fetchListings };
 };
 
-const CAT_COLORS = { illust:"#FFF3E0", clothes:"#F3E5F5", photo:"#E3F2FD", goods:"#E8F5E9", food:"#FCE4EC", training:"#E0F7FA" };
 // ── 人気スコア計算（ハイブリッドアルゴリズム）─────────────────────────
 // 販売数×5 + お気に入り×1 + 閲覧数×0.1 + 新規ボーナス×30(14日以内) - 経過日数×0.1
 const calcPopularityScore = (item) => {
@@ -370,15 +370,6 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
 };
 
 // ── Colors & Constants ────────────────────────────────────────────────────
-const C = {
-  orange: "#F5A94A", orangeLight: "#FAC97A", orangePale: "#FFF3E0",
-  orangeDeep: "#E8903A", cream: "#FAFAF7", dark: "#1A1208",
-  darkBrown: "#2D1F0A", warmGray: "#9E9B95", lightGray: "#F5F3F0",
-  border: "#EDE9E3", white: "#FFFFFF", green: "#4CAF50",
-  greenPale: "#E8F5E9", blue: "#2196F3", bluePale: "#E3F2FD",
-  red: "#EF5350", redPale: "#FFEBEE",
-};
-
 // ── フォント装飾 (依頼書 #133 Phase A2, 2026/6/6) ──────────────────
 // 無料 5本: system / serif / mincho / round / handwriting
 // items テーブル font カテゴリ + profiles.font_* 5カラム と連動
@@ -1426,58 +1417,6 @@ const FirstStepGuide = ({ setPage }) => {
 // ============================================================================
 // Qocca リニューアル用デザイントークン
 // ============================================================================
-const QC = {
-  warmWhite: '#FAF7F2',
-  cream: '#F5EFE6',
-  lightSand: '#EEE6D9',
-  charcoal: '#2C2926',
-  warmGray: '#6B6259',
-  softBrown: '#8B6F5C',
-  mutedGreen: '#7A8B6E',
-  sage: '#A8B59E',
-  terracotta: '#C97B5F',
-};
-
-const QC_FONT_JP = '"Zen Kaku Gothic New", "LINE Seed JP", "Noto Sans JP", sans-serif';
-const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
-// 依頼書 #134 Phase 2 案A改 Editorial Documentary (2026/6/6):
-// 見出し・キャッチ用 / index.html で Shippori Mincho を Google Fonts 読込
-// CSS変数 var(--qc-font-display) でも参照可能 (将来の再判断余地を残す構造)
-const QC_FONT_DISPLAY = '"Shippori Mincho", "Yu Mincho", "游明朝", serif';
-
-// CSS keyframes（インライン用）- 静けさ Redesign 版
-const QC_KEYFRAMES = `
-  @keyframes qocca-fadeInSlow {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-
-  @keyframes qocca-fadeInSlowUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes qocca-breathe-slow {
-    0%, 100% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
-    50%      { opacity: 0.6; transform: translateX(-50%) translateY(4px); }
-  }
-
-  @keyframes qocca-ken-burns-1 {
-    0%   { transform: scale(1.0) translate(0, 0); }
-    100% { transform: scale(1.08) translate(-1%, -1%); }
-  }
-
-  @keyframes qocca-ken-burns-2 {
-    0%   { transform: scale(1.05) translate(1%, 0); }
-    100% { transform: scale(1.0) translate(0, -1%); }
-  }
-
-  @keyframes qocca-ken-burns-3 {
-    0%   { transform: scale(1.0) translate(0, 1%); }
-    100% { transform: scale(1.08) translate(1%, 0); }
-  }
-`;
-
 // タイミング定数
 const QC_TIMING = {
   hoverDuration: '0.8s',
@@ -1495,9 +1434,6 @@ const QC_TIMING = {
 // SECTION 1: ファーストビュー (SectionHero)
 // ============================================================================
 
-// 各画像の表示時間（秒）- display_priority 1〜7 に対応
-// 静けさ Redesign: 各 +40% で時間をゆっくり流す
-const QC_HERO_DURATIONS = [14, 10, 10, 10, 10, 10, 14];
 const QC_HERO_TRANSITION_MS = 1500;
 const QC_PC_BREAKPOINT = 768;
 
