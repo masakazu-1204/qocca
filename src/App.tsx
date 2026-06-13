@@ -32,7 +32,12 @@ import { ReviewModal } from "./components/ReviewModal";
 // 依頼書 #105 (2026/6/3): 弁護士確認版利用規約 v2.0 (別ファイル化で App.tsx 軽量維持)
 import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
-type CommentTargetType = "gallery" | "event" | "blog";
+import type { CommentTargetType } from "./types";
+import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_TIMING, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "./constants/theme";
+import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES, PREFS_47_ORDER } from "./constants/data";
+import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
+import { detectContacts, detectNGWords, checkFacilityNGWords } from "./utils/moderation";
+import { PET_CATEGORIES, petLabelShort, petIcon, evPetLabel, evPetColor, evPetBg } from "./constants/pets";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
@@ -218,28 +223,9 @@ const useListings = () => {
   return { listings, dbLoading, refetch: fetchListings };
 };
 
-const CAT_COLORS = { illust:"#FFF3E0", clothes:"#F3E5F5", photo:"#E3F2FD", goods:"#E8F5E9", food:"#FCE4EC", training:"#E0F7FA" };
 // ── 人気スコア計算（ハイブリッドアルゴリズム）─────────────────────────
 // 販売数×5 + お気に入り×1 + 閲覧数×0.1 + 新規ボーナス×30(14日以内) - 経過日数×0.1
-const calcPopularityScore = (item) => {
-  if (!item) return 0;
-  const sales = item.sales_count || 0;
-  const favs  = item.favorite_count || 0;
-  const views = item.view_count || 0;
-  const created = item.created_at ? new Date(item.created_at) : new Date();
-  const daysSince = Math.max(0, Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)));
-  const newBonus = daysSince <= 14 ? 30 : 0;
-  
-  return (sales * 5.0)
-       + (favs * 1.0)
-       + (views * 0.1)
-       + newBonus
-       - (daysSince * 0.1);
-};
-
-const sortByPopularity = (items) => {
-  return [...items].sort((a, b) => calcPopularityScore(b) - calcPopularityScore(a));
-};
+// calcPopularityScore / sortByPopularity は utils/format.ts へ移動 (Phase 1 ③)
 
 
 // お気に入りをSupabaseで管理
@@ -370,15 +356,6 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
 };
 
 // ── Colors & Constants ────────────────────────────────────────────────────
-const C = {
-  orange: "#F5A94A", orangeLight: "#FAC97A", orangePale: "#FFF3E0",
-  orangeDeep: "#E8903A", cream: "#FAFAF7", dark: "#1A1208",
-  darkBrown: "#2D1F0A", warmGray: "#9E9B95", lightGray: "#F5F3F0",
-  border: "#EDE9E3", white: "#FFFFFF", green: "#4CAF50",
-  greenPale: "#E8F5E9", blue: "#2196F3", bluePale: "#E3F2FD",
-  red: "#EF5350", redPale: "#FFEBEE",
-};
-
 // ── フォント装飾 (依頼書 #133 Phase A2, 2026/6/6) ──────────────────
 // 無料 5本: system / serif / mincho / round / handwriting
 // items テーブル font カテゴリ + profiles.font_* 5カラム と連動
@@ -423,119 +400,13 @@ const DEFAULT_ATMOSPHERE = ATMOSPHERE_PRESETS[4]; // atatakai
 const findAtmosphere = (id?: string | null): AtmospherePreset =>
   ATMOSPHERE_PRESETS.find(a => a.id === id) || DEFAULT_ATMOSPHERE;
 
-const CATS = [
-  { id:"all", icon:"🐾", label:"すべて" },
-  { id:"illust", icon:"🎨", label:"似顔絵" },
-  { id:"clothes", icon:"👕", label:"お洋服" },
-  { id:"photo", icon:"📸", label:"フォト" },
-  { id:"goods", icon:"✨", label:"グッズ" },
-  { id:"food", icon:"🍖", label:"フード" },
-  { id:"training", icon:"🐕", label:"しつけ" },
-];
+// CATS / LISTINGS / REVIEWS / EVENTS / PREFS_47_ORDER は constants/data.ts へ移動 (Phase 1 ②/c)
+// 動物カテゴリ定数・表示ヘルパー (PET_CATEGORIES/PET_CAT_BY_ID/petLabel/petLabelShort/petIcon/petColor/petBg/evPetLabel/evPetColor/evPetBg) は constants/pets.ts へ移動 (Phase 1 a)
 
-// listings は useListings hook が DB から取得する。
-// フォールバック先は空配列とする (King 判断: Supabase 障害 / RLS ミス / network エラー時に
-// 架空 seller + 偽 rating/reviews を出すリスクを永続排除)。
-// 詳細: 利用規約 第16条第1項⑤ / ブランド人格 v3 第2章二・第11章・第13章 (依頼書 #105 v2.0 連動更新)
-const LISTINGS: any[] = [];
+// ORDER_STEPS は constants/data.ts へ移動 (Phase 1 ②)
+// stepIndex は utils/format.ts へ移動 (Phase 1 ③)
 
-// レビューはユーザーの実取引完了後に reviews テーブルから取得する設計。
-// 運営による架空レビューは一切置かない（利用規約 第16条第1項⑤、ブランド人格 v3 第2章二・第11章・第13章）。
-const REVIEWS: any[] = [];
-
-const EVENTS: any[] = [];
-// 依頼書 #122 (2026/6/5): 旧 5 件固定 ["すべて","北海道","東京都","大阪府","愛知県","福岡県"] では
-//   #120 の AI 自動収集で投入された 京都府/広島県/静岡県/兵庫県/神奈川県/埼玉県/宮城県/千葉県 等が
-//   フィルタ選択肢に出ず、ユーザーから「都道府県が足りない」報告 → 動的生成方式に変更。
-// 47 都道府県 (北→南順) のうち、events.prefecture に実在するものだけを EventsPage 内で useMemo 抽出。
-// 「該当 0 件 pill」を並べる UX 劣化を回避しつつ、新規 ai_scraped 県も自動でフィルタに追加される。
-const PREFS_47_ORDER = [
-  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
-  "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
-  "新潟県","富山県","石川県","福井県","山梨県","長野県",
-  "岐阜県","静岡県","愛知県","三重県",
-  "滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
-  "鳥取県","島根県","岡山県","広島県","山口県",
-  "徳島県","香川県","愛媛県","高知県",
-  "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県",
-];
-const EVENT_CATS = ["すべて","フェスタ","交流会","撮影会","マーケット","体験会","健康"];
-// ── 依頼書 #19 (5/27): 動物カテゴリ 16種拡張 共通定数 ──────────────────
-// Qocca ビジョン「動物を飼った時に当たり前のアプリ」体現
-// id (英) / label (日) / icon (emoji) / color (主色) / bg (背景色)
-const PET_CATEGORIES: Array<{ id: string; label: string; icon: string; color: string; bg: string }> = [
-  { id: "dog",         label: "犬",         icon: "🐕", color: "#F5A94A", bg: "#FFF3E0" }, // orange
-  { id: "cat",         label: "猫",         icon: "🐈", color: "#9C27B0", bg: "#F3E5F5" }, // purple
-  { id: "rabbit",      label: "うさぎ",     icon: "🐰", color: "#EC407A", bg: "#FCE4EC" }, // pink
-  { id: "hamster",     label: "ハムスター", icon: "🐹", color: "#FFA726", bg: "#FFF8E1" }, // amber
-  { id: "guinea_pig",  label: "モルモット", icon: "🐭", color: "#A1887F", bg: "#EFEBE9" }, // brown
-  { id: "ferret",      label: "フェレット", icon: "🦦", color: "#8D6E63", bg: "#EFEBE9" }, // brown
-  { id: "chinchilla",  label: "チンチラ",   icon: "🐭", color: "#90A4AE", bg: "#ECEFF1" }, // bluegrey
-  { id: "hedgehog",    label: "ハリネズミ", icon: "🦔", color: "#A1887F", bg: "#EFEBE9" }, // brown
-  { id: "squirrel",    label: "リス",       icon: "🐿️", color: "#FF7043", bg: "#FBE9E7" }, // deeporange
-  { id: "bird",        label: "鳥",         icon: "🐦", color: "#42A5F5", bg: "#E3F2FD" }, // blue (小鳥・インコ・オウム・文鳥等)
-  { id: "reptile",     label: "爬虫類",     icon: "🦎", color: "#66BB6A", bg: "#E8F5E9" }, // green (カメ・ヘビ・トカゲ等)
-  { id: "amphibian",   label: "両生類",     icon: "🐸", color: "#26A69A", bg: "#E0F2F1" }, // teal (カエル・サンショウウオ等)
-  { id: "fish",        label: "魚",         icon: "🐠", color: "#29B6F6", bg: "#E1F5FE" }, // lightblue (金魚・熱帯魚・メダカ等)
-  { id: "crustacean",  label: "甲殻類",     icon: "🦀", color: "#EF5350", bg: "#FFEBEE" }, // red (エビ・カニ等)
-  { id: "insect",      label: "昆虫",       icon: "🐛", color: "#9CCC65", bg: "#F1F8E9" }, // lightgreen (カブトムシ・クワガタ等)
-  { id: "other",       label: "その他",     icon: "🐾", color: "#9E9B95", bg: "#FAFAF7" }, // warmgray
-];
-const PET_CAT_BY_ID: Record<string, typeof PET_CATEGORIES[number]> =
-  Object.fromEntries(PET_CATEGORIES.map(c => [c.id, c]));
-// ヘルパー (既存 dog/cat/both API 後方互換)
-const petLabel = (id: string): string => {
-  if (id === "both") return "🐾 両方";
-  const c = PET_CAT_BY_ID[id];
-  return c ? `${c.icon} ${c.label}` : `🐾 ${id || "その他"}`;
-};
-const petLabelShort = (id: string): string => {
-  if (id === "both") return "両方";
-  return PET_CAT_BY_ID[id]?.label || id || "その他";
-};
-const petIcon = (id: string): string => {
-  if (id === "both") return "🐾";
-  return PET_CAT_BY_ID[id]?.icon || "🐾";
-};
-const petColor = (id: string): string => {
-  if (id === "both") return "#4CAF50";  // green
-  return PET_CAT_BY_ID[id]?.color || "#9E9B95";
-};
-const petBg = (id: string): string => {
-  if (id === "both") return "#E8F5E9";  // greenpale
-  return PET_CAT_BY_ID[id]?.bg || "#FAFAF7";
-};
-// 既存 API 後方互換 (event 系)
-const evPetLabel = (p: string) => p === "dog" ? "🐕 犬" : p === "cat" ? "🐈 猫" : p === "both" ? "🐾 両方" : petLabel(p);
-const evPetColor = (p: string) => p === "dog" ? "#F5A94A" : p === "cat" ? "#9C27B0" : p === "both" ? "#4CAF50" : petColor(p);
-const evPetBg = (p: string) => p === "dog" ? "#FFF3E0" : p === "cat" ? "#F3E5F5" : p === "both" ? "#E8F5E9" : petBg(p);
-
-// ── Mock Orders ───────────────────────────────────────────────────────────
-const ORDER_STEPS = [
-  { key:"pending", label:"注文確定", icon:"🛒" },
-  { key:"working", label:"作業中", icon:"🎨" },
-  { key:"delivered", label:"納品済み", icon:"📦" },
-  { key:"completed", label:"取引完了", icon:"✅" },
-];
-
-const stepIndex = (status) => {
-  if (status==="pending") return 0;
-  if (status==="working") return 1;
-  if (status==="delivered") return 2;
-  if (status==="completed") return 3;
-  if (status==="disputed") return 2;
-  if (status==="refunded") return -1;
-  if (status==="cancelled") return -1;
-  return 0;
-};
-
-const DISPUTE_REASONS = [
-  { id:"quality", label:"イメージと違う・品質問題", icon:"😕" },
-  { id:"not_delivered", label:"商品が届かない", icon:"📭" },
-  { id:"wrong_spec", label:"サイズ・仕様が違う", icon:"📏" },
-  { id:"no_show", label:"サービスが提供されなかった", icon:"🚫" },
-  { id:"other", label:"その他", icon:"💬" },
-];
+// DISPUTE_REASONS は constants/data.ts へ移動 (Phase 1 ②)
 
 // ── Logo ─────────────────────────────────────────────────────────────────
 const Logo = ({ size = 32 }) => (
@@ -1008,18 +879,7 @@ const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
 
 // ── ヒーローセクション統計データ取得 ──────────────────────────────────────
 // リアル値を取得し、100超えたら「+」表記
-const formatStat = (n:number, threshold:number = 100) => {
-  if (n >= threshold) {
-    // 100以上は切り下げて「+」表記（例: 234 → "200+"）
-    if (n >= 1000) {
-      const k = Math.floor(n / 1000);
-      return `${k},000+`;
-    }
-    const rounded = Math.floor(n / 100) * 100;
-    return `${rounded.toLocaleString()}+`;
-  }
-  return n.toLocaleString();
-};
+// formatStat は utils/format.ts へ移動 (Phase 1 ③)
 
 const useHeroStats = () => {
   const [stats, setStats] = useState<{ listings:string; users:string; communities:string }>({ listings: "0", users: "0", communities: "0" });
@@ -1425,81 +1285,11 @@ const FirstStepGuide = ({ setPage }) => {
 
 // ============================================================================
 // Qocca リニューアル用デザイントークン
-// ============================================================================
-const QC = {
-  warmWhite: '#FAF7F2',
-  cream: '#F5EFE6',
-  lightSand: '#EEE6D9',
-  charcoal: '#2C2926',
-  warmGray: '#6B6259',
-  softBrown: '#8B6F5C',
-  mutedGreen: '#7A8B6E',
-  sage: '#A8B59E',
-  terracotta: '#C97B5F',
-};
-
-const QC_FONT_JP = '"Zen Kaku Gothic New", "LINE Seed JP", "Noto Sans JP", sans-serif';
-const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
-// 依頼書 #134 Phase 2 案A改 Editorial Documentary (2026/6/6):
-// 見出し・キャッチ用 / index.html で Shippori Mincho を Google Fonts 読込
-// CSS変数 var(--qc-font-display) でも参照可能 (将来の再判断余地を残す構造)
-const QC_FONT_DISPLAY = '"Shippori Mincho", "Yu Mincho", "游明朝", serif';
-
-// CSS keyframes（インライン用）- 静けさ Redesign 版
-const QC_KEYFRAMES = `
-  @keyframes qocca-fadeInSlow {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-
-  @keyframes qocca-fadeInSlowUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes qocca-breathe-slow {
-    0%, 100% { opacity: 0.2; transform: translateX(-50%) translateY(0); }
-    50%      { opacity: 0.6; transform: translateX(-50%) translateY(4px); }
-  }
-
-  @keyframes qocca-ken-burns-1 {
-    0%   { transform: scale(1.0) translate(0, 0); }
-    100% { transform: scale(1.08) translate(-1%, -1%); }
-  }
-
-  @keyframes qocca-ken-burns-2 {
-    0%   { transform: scale(1.05) translate(1%, 0); }
-    100% { transform: scale(1.0) translate(0, -1%); }
-  }
-
-  @keyframes qocca-ken-burns-3 {
-    0%   { transform: scale(1.0) translate(0, 1%); }
-    100% { transform: scale(1.08) translate(1%, 0); }
-  }
-`;
-
-// タイミング定数
-const QC_TIMING = {
-  hoverDuration: '0.8s',
-  hoverEasing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  sectionFadeIn: '1.2s',
-  sectionFadeInEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-  heroCrossFade: 1500,
-  pageTransition: '0.8s',
-  buttonHover: '0.6s',
-  microMotion: '1.0s',
-  staggerDelay: 200,
-};
+// QC_TIMING / QC_HERO_TRANSITION_MS / QC_PC_BREAKPOINT は constants/theme.ts へ移動 (Phase 1 b)
 
 // ============================================================================
 // SECTION 1: ファーストビュー (SectionHero)
 // ============================================================================
-
-// 各画像の表示時間（秒）- display_priority 1〜7 に対応
-// 静けさ Redesign: 各 +40% で時間をゆっくり流す
-const QC_HERO_DURATIONS = [14, 10, 10, 10, 10, 10, 14];
-const QC_HERO_TRANSITION_MS = 1500;
-const QC_PC_BREAKPOINT = 768;
 
 // Phase B: PC 専用シネマ画像 (16:9 フルワイド表示)
 // モバイルは既存の supabase gallery_posts (display_priority 1〜7) を使用
@@ -1941,12 +1731,7 @@ const SectionHero = () => {
 // SECTION 2: 今日のうちの子たち (SectionTodaysMoments)
 // ============================================================================
 
-const QC_REACTIONS: { key: string; label: string }[] = [
-  { key: "precious", label: "尊い" },
-  { key: "healed", label: "癒された" },
-  { key: "glad_met", label: "出会えてよかった" },
-  { key: "want_see", label: "ずっと見てたい" },
-];
+// QC_REACTIONS は constants/data.ts へ移動 (Phase 1 ②)
 
 // ============================================================================
 // ============================================================================
@@ -10127,18 +9912,7 @@ const MyListingsTab = ({ setPage }) => {
 };
 
 // ── 小さなボタン用スタイル ──
-const miniBtnStyle = (bg, color, disabled) => ({
-  padding: "6px 10px",
-  fontSize: 11,
-  fontWeight: 700,
-  borderRadius: 8,
-  background: bg,
-  color,
-  border: `1.5px solid ${color === "#fff" ? bg : color}`,
-  cursor: disabled ? "not-allowed" : "pointer",
-  opacity: disabled ? 0.5 : 1,
-  fontFamily: "inherit",
-});
+// miniBtnStyle は utils/format.ts へ移動 (Phase 1 ③)
 
 // ── 出品編集モーダル ─────────────────────────────────────────────────
 const ListingEditModal = ({ listing, onClose, onSaved }) => {
@@ -10632,94 +10406,7 @@ const DisputeModal = ({ order, onClose, onSubmit }) => {
 // ── Messages Tab ──────────────────────────────────────────────────────────
 // ── 連絡先検出フィルター ──────────────────────────────────────────────────
 // 取引前のメッセージで連絡先交換を防ぐ
-const CONTACT_PATTERNS = [
-  // 電話番号
-  { regex: /0\d{1,4}[-－‐ーｰ\s]?\d{1,4}[-－‐ーｰ\s]?\d{3,4}/g, label: "電話番号" },
-  { regex: /0\d{9,10}/g, label: "電話番号" },
-  // メールアドレス
-  { regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, label: "メールアドレス" },
-  { regex: /[a-zA-Z0-9._%+-]+\s*[＠@]\s*[a-zA-Z0-9.-]+\s*[\.。]\s*[a-zA-Z]{2,}/g, label: "メールアドレス" },
-  // URL
-  { regex: /https?:\/\/[^\s]+/gi, label: "URL" },
-  { regex: /[a-zA-Z0-9-]+\.(com|jp|net|org|io|co|me|app|shop|store|tv|ne)\b/gi, label: "URL" },
-  // LINE
-  { regex: /(LINE|line|Line|ライン|らいん|ﾗｲﾝ|raɪn)/gi, label: "LINE" },
-  // Twitter/X
-  { regex: /(Twitter|twitter|ツイッター|ついったー|ﾂｲｯﾀｰ|つぶやき)/gi, label: "Twitter/X" },
-  { regex: /(\bX\b|エックス)\s*(id|ID|アカウント|あかうんと)/gi, label: "Twitter/X" },
-  // Instagram
-  { regex: /(Instagram|instagram|insta|Insta|インスタ|いんすた|ｲﾝｽﾀ|インスタグラム|いんすたぐらむ|ｲﾝｽﾀｸﾞﾗﾑ|IG)/gi, label: "Instagram" },
-  // Facebook
-  { regex: /(Facebook|facebook|フェイスブック|ふぇいすぶっく|ﾌｪｲｽﾌﾞｯｸ|フェースブック|FB|ｴﾌﾋﾞｰ)/gi, label: "Facebook" },
-  // TikTok
-  { regex: /(TikTok|tiktok|ティックトック|てぃっくとっく|ﾃｨｯｸﾄｯｸ|tt)/gi, label: "TikTok" },
-  // WhatsApp
-  { regex: /(WhatsApp|whatsapp|ワッツアップ|わっつあっぷ|ﾜｯﾂｱｯﾌﾟ)/gi, label: "WhatsApp" },
-  // Telegram
-  { regex: /(Telegram|telegram|テレグラム|てれぐらむ|ﾃﾚｸﾞﾗﾑ)/gi, label: "Telegram" },
-  // Discord
-  { regex: /(Discord|discord|ディスコード|でぃすこーど|ﾃﾞｨｽｺｰﾄﾞ|ディスコ|でぃすこ|ﾃﾞｨｽｺ)/gi, label: "Discord" },
-  // YouTube
-  { regex: /(YouTube|youtube|ユーチューブ|ゆーちゅーぶ|ﾕｰﾁｭｰﾌﾞ|ようつべ|ﾖｳﾂﾍﾞ)/gi, label: "YouTube" },
-  // Skype
-  { regex: /(Skype|skype|スカイプ|すかいぷ|ｽｶｲﾌﾟ)/gi, label: "Skype" },
-  // Kakao Talk
-  { regex: /(KakaoTalk|kakao|カカオトーク|かかおとーく|ｶｶｵﾄｰｸ|カカオ|かかお|ｶｶｵ)/gi, label: "KakaoTalk" },
-  // Signal
-  { regex: /(Signal|signal|シグナル|しぐなる|ｼｸﾞﾅﾙ)/gi, label: "Signal" },
-  // 一般的な連絡関連キーワード
-  { regex: /(連絡先|れんらくさき|ﾚﾝﾗｸｻｷ)\s*[:：はを]?\s*[\w@＠\-_.]+/gi, label: "連絡先" },
-  { regex: /(直接|ちょくせつ|ﾁｮｸｾﾂ)(連絡|連絡先|やりとり|取引|送金|振込)/gi, label: "サイト外取引" },
-  { regex: /(サイト外|外部|別|他|ほか)で\s*(連絡|やりとり|取引|送金|振込|決済)/gi, label: "サイト外取引" },
-  { regex: /(振込|ふりこみ|銀行|ぎんこう|口座|こうざ)/gi, label: "銀行振込" },
-];
-
-const detectContacts = (text:string): { found: boolean; types: string[]; masked: string } => {
-  const types: string[] = [];
-  let masked = text;
-  for (const { regex, label } of CONTACT_PATTERNS) {
-    const newRegex = new RegExp(regex.source, regex.flags);
-    if (newRegex.test(text)) {
-      if (!types.includes(label)) types.push(label);
-      const replaceRegex = new RegExp(regex.source, regex.flags);
-      masked = masked.replace(replaceRegex, "***");
-    }
-  }
-  return { found: types.length > 0, types, masked };
-};
-
-// ── NGワードフィルター（喧嘩・誹謗中傷防止） ──────────────────────────────
-const NG_WORDS = [
-  // 暴言・侮辱
-  "死ね","しね","シネ","ｼﾈ","殺す","ころす","コロス","ｺﾛｽ","殺して","しんで","死んで",
-  "ばか","バカ","馬鹿","ｱﾎ","あほ","アホ","阿呆","間抜け","まぬけ","低能","低脳","無能",
-  "クソ","くそ","糞","クズ","くず","屑","ゴミ","ごみ","カス","かす","滓",
-  "ブス","ぶす","醜い","キモい","きもい","気持ち悪い","うざい","ウザい","ウザ","邪魔",
-  "雑魚","ザコ","ざこ","負け犬","負け組","役立たず","やくたたず",
-  // 差別・ヘイト
-  "ガイジ","がいじ","池沼","ちしょう","知障","精神病","キチガイ","きちがい","気違い","発達障害者",
-  "在日","ザイニチ","チョン","支那","シナ人","土人","部落",
-  // 性的・下品
-  "セックス","ｾｯｸｽ","ヤリマン","やりまん","ビッチ","びっち","売女","淫売",
-  "ち〇ぽ","ま〇こ","おまんこ","チンコ","ﾁﾝｺ","マンコ","ﾏﾝｺ",
-  // 脅迫
-  "潰す","ぶっ殺","ぶっころ","殴る","なぐる","刺す","さす","ぶん殴","ボコる","ぼこる",
-  "晒す","さらす","特定する","個人情報","住所教えろ","住所さらす",
-  "訴える","訴訟","裁判","慰謝料","賠償",
-  // ペット関連の悪質ワード（Qocca特有）
-  "虐待","ぎゃくたい","ギャクタイ","殺処分","保健所送り","捨てろ","捨てる",
-];
-
-const detectNGWords = (text:string): { found: boolean; words: string[] } => {
-  const found: string[] = [];
-  const lower = text.toLowerCase();
-  for (const ng of NG_WORDS) {
-    if (lower.includes(ng.toLowerCase()) && !found.includes(ng)) {
-      found.push(ng);
-    }
-  }
-  return { found: found.length > 0, words: found };
-};
+// detectContacts / detectNGWords は utils/moderation.ts へ移動 (Phase 1 ④) ※決済防御の心臓部
 
 // ── 取引メッセージタブ（OrderMessagesTab） ────────────────────────────────
 const OrderMessagesTab = () => {
@@ -11311,16 +10998,7 @@ const SupportTab = () => {
 };
 
 // ── Blog (ペットブログ) ────────────────────────────────────────────────────
-const BLOG_CATS = [
-  { id:"all", icon:"📝", label:"すべて" },
-  { id:"tips", icon:"💡", label:"豆知識" },
-  { id:"health", icon:"🏥", label:"健康" },
-  { id:"food", icon:"🍖", label:"ごはん" },
-  { id:"training", icon:"🎓", label:"しつけ" },
-  { id:"goods", icon:"🛍", label:"グッズ" },
-  { id:"story", icon:"📖", label:"うちの子物語" },
-  { id:"creator", icon:"🎨", label:"クリエイター" },
-];
+// BLOG_CATS は constants/data.ts へ移動 (Phase 1 ②)
 
 const BlogPage = ({ setPage, isPC }) => {
   const { user } = useAuth();
@@ -11661,60 +11339,12 @@ const BlogPage = ({ setPage, isPC }) => {
 };
 
 // ── Pet Facilities (ドッグラン・ペット施設マップ) ──────────────────────────
-const FACILITY_CATS = [
-  { id:"all", icon:"🐾", label:"すべて" },
-  { id:"dogrun", icon:"🐕", label:"ドッグラン" },
-  { id:"cafe", icon:"☕", label:"ペットカフェ" },
-  { id:"hospital", icon:"🏥", label:"動物病院" },
-  { id:"salon", icon:"✂️", label:"トリミング" },
-  { id:"hotel", icon:"🏨", label:"ペットホテル" },
-  { id:"park", icon:"🌳", label:"公園" },
-  { id:"shop", icon:"🛍", label:"ペットショップ" },
-];
+// FACILITY_CATS / MOOD_TAGS / FACILITY_REPORT_REASONS / FACILITY_NG_WORDS は constants/data.ts へ移動 (Phase 1 ②)
 
-// 気分タグ（ポジティブ・ファクトベース型）
-const MOOD_TAGS = [
-  { id:"fun", icon:"🐕", label:"楽しく遊べた" },
-  { id:"clean", icon:"✨", label:"きれいで快適" },
-  { id:"empty", icon:"☀️", label:"空いていた" },
-  { id:"moderate", icon:"🌤", label:"適度な人出" },
-  { id:"busy", icon:"⛅", label:"少し混んでいた" },
-  { id:"water", icon:"💧", label:"水道・足洗い場あり" },
-  { id:"parking", icon:"🚗", label:"駐車場が便利" },
-  { id:"shade", icon:"🌳", label:"日陰・木陰あり" },
-  { id:"roof", icon:"🏠", label:"屋根あり" },
-  { id:"small_dog", icon:"🐕‍🦺", label:"小型犬向け" },
-  { id:"large_dog", icon:"🦮", label:"大型犬向け" },
-  { id:"agility", icon:"🎯", label:"アジリティあり" },
-];
-
-const FACILITY_REPORT_REASONS = [
-  { id:"inappropriate", label:"不適切な内容" },
-  { id:"spam", label:"スパム・宣伝" },
-  { id:"misinformation", label:"誤った情報" },
-  { id:"defamation", label:"誹謗中傷・名誉毀損" },
-  { id:"privacy", label:"プライバシー侵害" },
-  { id:"other", label:"その他" },
-];
-
-// 名誉毀損リスクを下げるためのNGワード（コメント投稿時のチェック）
-const FACILITY_NG_WORDS = [
-  "最悪","ひどい","クソ","くそ","死ね","殺","ゴミ","汚い","汚れすぎ",
-  "詐欺","二度と行かない","潰れろ","訴え","営業停止","違法",
-  "店員がムカつく","スタッフが最悪","オーナーが","○○さん",
-];
-
-// NGワードチェック関数
-const checkFacilityNGWords = (text) => {
-  if (!text) return null;
-  for (const word of FACILITY_NG_WORDS) {
-    if (text.includes(word)) return word;
-  }
-  return null;
-};
+// checkFacilityNGWords は utils/moderation.ts へ移動 (Phase 1 ④)
 
 
-const PREFS = ["北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川","新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良","和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分","宮崎","鹿児島","沖縄"];
+// PREFS は constants/data.ts へ移動 (Phase 1 ②)
 
 // 依頼書 #146 Step1 (2026/6/13): 登録番号・出典を画面非表示にする表示用フィルタ
 // ⚠️ DB の description は CC-BY の出典保持義務のため削除しない (画面表示のみフィルタ)
@@ -15262,7 +14892,7 @@ const EventsPage = ({ isPC, setPage }) => {
 
 
 // ── コミュニティカテゴリ ──────────────────────────────────────────────────
-const COMMUNITY_CATEGORIES = ["すべて","犬種別","猫種別","エリア別","しつけ・お悩み","お散歩仲間","多頭飼い","シニアペット","保護犬・保護猫","その他"];
+// COMMUNITY_CATEGORIES は constants/data.ts へ移動 (Phase 1 ②)
 
 // ── コミュニティ作成モーダル ──────────────────────────────────────────────
 const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onCreated: (id:string) => void }) => {
