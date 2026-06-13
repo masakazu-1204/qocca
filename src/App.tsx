@@ -36,6 +36,7 @@ import type { CommentTargetType } from "./types";
 import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS } from "./constants/theme";
 import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES } from "./constants/data";
 import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
+import { detectContacts, detectNGWords, checkFacilityNGWords } from "./utils/moderation";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
@@ -10482,34 +10483,7 @@ const DisputeModal = ({ order, onClose, onSubmit }) => {
 // ── Messages Tab ──────────────────────────────────────────────────────────
 // ── 連絡先検出フィルター ──────────────────────────────────────────────────
 // 取引前のメッセージで連絡先交換を防ぐ
-// CONTACT_PATTERNS は constants/data.ts へ移動 (Phase 1 ②) ※決済防御データ
-
-const detectContacts = (text:string): { found: boolean; types: string[]; masked: string } => {
-  const types: string[] = [];
-  let masked = text;
-  for (const { regex, label } of CONTACT_PATTERNS) {
-    const newRegex = new RegExp(regex.source, regex.flags);
-    if (newRegex.test(text)) {
-      if (!types.includes(label)) types.push(label);
-      const replaceRegex = new RegExp(regex.source, regex.flags);
-      masked = masked.replace(replaceRegex, "***");
-    }
-  }
-  return { found: types.length > 0, types, masked };
-};
-
-// NG_WORDS は constants/data.ts へ移動 (Phase 1 ②) ※モデレーションデータ
-
-const detectNGWords = (text:string): { found: boolean; words: string[] } => {
-  const found: string[] = [];
-  const lower = text.toLowerCase();
-  for (const ng of NG_WORDS) {
-    if (lower.includes(ng.toLowerCase()) && !found.includes(ng)) {
-      found.push(ng);
-    }
-  }
-  return { found: found.length > 0, words: found };
-};
+// detectContacts / detectNGWords は utils/moderation.ts へ移動 (Phase 1 ④) ※決済防御の心臓部
 
 // ── 取引メッセージタブ（OrderMessagesTab） ────────────────────────────────
 const OrderMessagesTab = () => {
@@ -11444,14 +11418,7 @@ const BlogPage = ({ setPage, isPC }) => {
 // ── Pet Facilities (ドッグラン・ペット施設マップ) ──────────────────────────
 // FACILITY_CATS / MOOD_TAGS / FACILITY_REPORT_REASONS / FACILITY_NG_WORDS は constants/data.ts へ移動 (Phase 1 ②)
 
-// NGワードチェック関数
-const checkFacilityNGWords = (text) => {
-  if (!text) return null;
-  for (const word of FACILITY_NG_WORDS) {
-    if (text.includes(word)) return word;
-  }
-  return null;
-};
+// checkFacilityNGWords は utils/moderation.ts へ移動 (Phase 1 ④)
 
 
 // PREFS は constants/data.ts へ移動 (Phase 1 ②)
