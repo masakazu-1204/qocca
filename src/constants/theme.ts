@@ -70,3 +70,19 @@ export const QC_KEYFRAMES = `
 // 各画像の表示時間（秒）- display_priority 1〜7 に対応
 // 静けさ Redesign: 各 +40% で時間をゆっくり流す
 export const QC_HERO_DURATIONS = [14, 10, 10, 10, 10, 10, 14];
+
+// タイミング定数
+export const QC_TIMING = {
+  hoverDuration: '0.8s',
+  hoverEasing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  sectionFadeIn: '1.2s',
+  sectionFadeInEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+  heroCrossFade: 1500,
+  pageTransition: '0.8s',
+  buttonHover: '0.6s',
+  microMotion: '1.0s',
+  staggerDelay: 200,
+};
+
+export const QC_HERO_TRANSITION_MS = 1500;
+export const QC_PC_BREAKPOINT = 768;

@@ -33,7 +33,7 @@ import { ReviewModal } from "./components/ReviewModal";
 import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import type { CommentTargetType } from "./types";
-import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS } from "./constants/theme";
+import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_TIMING, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "./constants/theme";
 import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES } from "./constants/data";
 import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
 import { detectContacts, detectNGWords, checkFacilityNGWords } from "./utils/moderation";
@@ -1347,26 +1347,11 @@ const FirstStepGuide = ({ setPage }) => {
 
 // ============================================================================
 // Qocca リニューアル用デザイントークン
-// ============================================================================
-// タイミング定数
-const QC_TIMING = {
-  hoverDuration: '0.8s',
-  hoverEasing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  sectionFadeIn: '1.2s',
-  sectionFadeInEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-  heroCrossFade: 1500,
-  pageTransition: '0.8s',
-  buttonHover: '0.6s',
-  microMotion: '1.0s',
-  staggerDelay: 200,
-};
+// QC_TIMING / QC_HERO_TRANSITION_MS / QC_PC_BREAKPOINT は constants/theme.ts へ移動 (Phase 1 b)
 
 // ============================================================================
 // SECTION 1: ファーストビュー (SectionHero)
 // ============================================================================
-
-const QC_HERO_TRANSITION_MS = 1500;
-const QC_PC_BREAKPOINT = 768;
 
 // Phase B: PC 専用シネマ画像 (16:9 フルワイド表示)
 // モバイルは既存の supabase gallery_posts (display_priority 1〜7) を使用
