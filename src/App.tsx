@@ -35,6 +35,7 @@ import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import type { CommentTargetType } from "./types";
 import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS } from "./constants/theme";
 import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES } from "./constants/data";
+import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
 // ── Supabase Client ───────────────────────────────────────────────────────
 // 依頼書 #119 Phase C (2026/6/5): 全ページ共有の唯一 client に統一 (RLS 認証問題解消)
 import { supabase } from "./supabaseClient";
@@ -222,25 +223,7 @@ const useListings = () => {
 
 // ── 人気スコア計算（ハイブリッドアルゴリズム）─────────────────────────
 // 販売数×5 + お気に入り×1 + 閲覧数×0.1 + 新規ボーナス×30(14日以内) - 経過日数×0.1
-const calcPopularityScore = (item) => {
-  if (!item) return 0;
-  const sales = item.sales_count || 0;
-  const favs  = item.favorite_count || 0;
-  const views = item.view_count || 0;
-  const created = item.created_at ? new Date(item.created_at) : new Date();
-  const daysSince = Math.max(0, Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)));
-  const newBonus = daysSince <= 14 ? 30 : 0;
-  
-  return (sales * 5.0)
-       + (favs * 1.0)
-       + (views * 0.1)
-       + newBonus
-       - (daysSince * 0.1);
-};
-
-const sortByPopularity = (items) => {
-  return [...items].sort((a, b) => calcPopularityScore(b) - calcPopularityScore(a));
-};
+// calcPopularityScore / sortByPopularity は utils/format.ts へ移動 (Phase 1 ③)
 
 
 // お気に入りをSupabaseで管理
@@ -482,16 +465,7 @@ const evPetColor = (p: string) => p === "dog" ? "#F5A94A" : p === "cat" ? "#9C27
 const evPetBg = (p: string) => p === "dog" ? "#FFF3E0" : p === "cat" ? "#F3E5F5" : p === "both" ? "#E8F5E9" : petBg(p);
 
 // ORDER_STEPS は constants/data.ts へ移動 (Phase 1 ②)
-const stepIndex = (status) => {
-  if (status==="pending") return 0;
-  if (status==="working") return 1;
-  if (status==="delivered") return 2;
-  if (status==="completed") return 3;
-  if (status==="disputed") return 2;
-  if (status==="refunded") return -1;
-  if (status==="cancelled") return -1;
-  return 0;
-};
+// stepIndex は utils/format.ts へ移動 (Phase 1 ③)
 
 // DISPUTE_REASONS は constants/data.ts へ移動 (Phase 1 ②)
 
@@ -966,18 +940,7 @@ const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
 
 // ── ヒーローセクション統計データ取得 ──────────────────────────────────────
 // リアル値を取得し、100超えたら「+」表記
-const formatStat = (n:number, threshold:number = 100) => {
-  if (n >= threshold) {
-    // 100以上は切り下げて「+」表記（例: 234 → "200+"）
-    if (n >= 1000) {
-      const k = Math.floor(n / 1000);
-      return `${k},000+`;
-    }
-    const rounded = Math.floor(n / 100) * 100;
-    return `${rounded.toLocaleString()}+`;
-  }
-  return n.toLocaleString();
-};
+// formatStat は utils/format.ts へ移動 (Phase 1 ③)
 
 const useHeroStats = () => {
   const [stats, setStats] = useState<{ listings:string; users:string; communities:string }>({ listings: "0", users: "0", communities: "0" });
@@ -10025,18 +9988,7 @@ const MyListingsTab = ({ setPage }) => {
 };
 
 // ── 小さなボタン用スタイル ──
-const miniBtnStyle = (bg, color, disabled) => ({
-  padding: "6px 10px",
-  fontSize: 11,
-  fontWeight: 700,
-  borderRadius: 8,
-  background: bg,
-  color,
-  border: `1.5px solid ${color === "#fff" ? bg : color}`,
-  cursor: disabled ? "not-allowed" : "pointer",
-  opacity: disabled ? 0.5 : 1,
-  fontFamily: "inherit",
-});
+// miniBtnStyle は utils/format.ts へ移動 (Phase 1 ③)
 
 // ── 出品編集モーダル ─────────────────────────────────────────────────
 const ListingEditModal = ({ listing, onClose, onSaved }) => {
