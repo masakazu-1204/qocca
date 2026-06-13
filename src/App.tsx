@@ -11951,7 +11951,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
   }
 
   return (
-    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
+    <div style={{ paddingTop: isPC ? 0 : 60, paddingBottom: isPC ? 0 : "calc(80px + env(safe-area-inset-bottom, 0px))", minHeight:"100vh", background:C.cream }}>
       <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
@@ -12080,7 +12080,7 @@ const FacilitiesPage = ({ setPage, isPC }) => {
             : <>{filtered.length}{hasMore ? "+" : ""}件の施設</>}
         </span>
         {/* 依頼書 U2 (2026/6/13): 地図↔リスト切替トグル */}
-        <div style={{ marginLeft:"auto", display:"flex", border:`1.5px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
+        <div style={{ marginLeft:"auto", flexShrink:0, display:"flex", border:`1.5px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
           {[["list","📋 リスト"],["map","🗺️ 地図"]].map(([mode, label]) => (
             <button key={mode} onClick={()=>setViewMode(mode)} style={{
               padding:"6px 12px", background:viewMode===mode?C.orange:C.white,
