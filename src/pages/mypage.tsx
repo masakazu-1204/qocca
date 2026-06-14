@@ -2107,6 +2107,8 @@ const OrdersTab = () => {
   const [filter, setFilter] = useState("all");
   // 依頼書 #143 TOP1 Step 3 (2026/6/10): 受取確認の連打防止 (二重送金 多層防御のフロント側)
   const [confirming, setConfirming] = useState(false);
+  // Phase7分割時の import 漏れ修正: handleConfirm(complete-order呼び出し) が参照する SUPABASE_URL を OrdersTab スコープに定義 (EarningsTab と同パターン)
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qufrqkuipzuqeqkvuhkx.supabase.co";
 
   const loadOrders = async () => {
     if (!user?.id) return;
