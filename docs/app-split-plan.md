@@ -225,6 +225,21 @@ App.tsx に残るのは `QoccaAppInner`(8387) `QoccaApp`(8663) と Router 周り
 | # | 内容 | 詳細 | 起因 | 対応 |
 |---|---|---|---|---|
 | K1 | 施設「もっと見る」後に React duplicate-key 警告 | RPC `search_facilities` が offset ページング境界で**重複ID**を返す → `FacilitiesPage` の `facilities=[...baseList,...rows]` に同一 `id` が混入 → `key={f.id}` 重複。初回ロードは無問題、もっと見る押下後のみ顕在化。 | **分割と無関係の既存バグ**（④facilities で `key`/append ロジックは byte 同一移動・無改変と確認済）。 | Phase 完了後に別途 dedup 修正（append 時に id 重複排除、or RPC 側 offset/sort 安定化）。今は「ロジック無改変」厳守のため未着手。 |
+| **K2** 🔴**Dday前必須** | **全出品者が Stripe Connect 未連携 (`stripe_payouts_enabled=false`)** | 2026-06-15 調査時点で、承認済み出品の**出品者全員が `stripe_payouts_enabled=false`**。complete-order は受取確認時に seller の payouts 無効を検出すると「送金準備中」で completed/transfer_status=pending 止まり＝**取引成立しても出品者に送金されない**。 | データ実態（出品者の Stripe Connect オンボーディング未完了）。分割・決済コードとは無関係。 | **7/1 前に必須**: 出品者に Stripe Connect 連携完了を促す。現状 stripe未連携警告バナー(購入確認モーダル/EarningsTab)は実装済 → それで足りるか検証＋リマインドメール等の導線追加を検討。送金できないと Dday 取引が破綻する。 |
+
+---
+
+## 🛡 決済UX防御 実施記録 (2026-06-15)
+
+未決済(pending)テスト注文 09e569cc 発覚を機に、未決済取引の「入口」と「出口」を二重防御。**いずれも本番反映済み**。
+
+| 層 | 対策 | 実装 | 検証 |
+|---|---|---|---|
+| 入口①B (フロント) | 未決済を出品者が触れない・「決済待ち」明示 | `pages/mypage.tsx`: SalesTab「対応中」から pending 除外 / statusLabel「決済待ち」/ 「作業開始」ボタン廃止 (PR #14, main マージ済) | tsc/vite緑・/mypage実描画 |
+| 出口② (Edge Function) | 未決済の立替送金を拒否 | `complete-order` **v32**: transfer 手前で `stripe_payment_intent_id` が `pi_` でなければ拒否 (本番 version 32 デプロイ済 / repo記録) | **ライブ拒否テスト成功**(cs_注文→HTTP400 payment_not_completed・送金ゼロ)・pass側は構造上自明＋pi_送金実績(QOC-2026-9109)で確証 |
+
+- 案②(Stripe実照会) は Dday後・テスト環境整備後に後付け候補。
+- ⚠️ テスト環境: supabase CLI/Docker/プレビューブランチ無し・Stripe本番LIVE → Edge Function は MCP `deploy_edge_function` で直接デプロイ運用。
 
 ---
 
