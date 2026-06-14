@@ -2139,7 +2139,7 @@ const OrdersTab = () => {
   const filtered = orders.filter(o => filter==="all" || o.status===filter);
 
   const statusLabel = (s) => {
-    const map = { pending:{text:"注文確定",bg:C.orangePale,color:C.orange}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
+    const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
     return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
@@ -2570,14 +2570,14 @@ const SalesTab = () => {
 
   // フィルタ：active=対応中(pending+working+delivered+disputed) / completed=完了 / cancelled=キャンセル系
   const filtered = sales.filter(o => {
-    if (filter === "active") return ["pending", "working", "delivered", "disputed"].includes(o.status);
+    if (filter === "active") return ["working", "delivered", "disputed"].includes(o.status);
     if (filter === "completed") return o.status === "completed";
     if (filter === "cancelled") return ["cancelled", "refunded"].includes(o.status);
     return true;
   });
 
   const statusLabel = (s) => {
-    const map = { pending:{text:"注文確定",bg:C.orangePale,color:C.orange}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
+    const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
     return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
@@ -2681,10 +2681,10 @@ const SalesTab = () => {
 
                     <div style={{ display:"flex", gap:8, marginTop:12, flexWrap:"wrap" }}>
                       {sale.status==="pending" && (
-                        <button disabled={busy} onClick={(e)=>{e.stopPropagation();startWork(sale.id);}} style={{
-                          flex:1, minWidth:140, padding:"11px", background:C.blue, border:"none", borderRadius:10,
-                          color:"#fff", fontWeight:800, fontSize:13, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", opacity:busy?0.6:1
-                        }}>🎨 作業を開始</button>
+                        <div style={{
+                          flex:1, minWidth:140, padding:"11px", background:C.lightGray, borderRadius:10,
+                          color:C.warmGray, fontWeight:700, fontSize:12, textAlign:"center", fontFamily:"inherit"
+                        }}>⏳ 購入者の決済待ち（決済完了後に作業を開始できます）</div>
                       )}
                       {sale.status==="working" && (
                         <button disabled={busy} onClick={(e)=>{e.stopPropagation();markDelivered(sale.id);}} style={{
