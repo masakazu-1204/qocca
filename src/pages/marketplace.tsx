@@ -2424,3 +2424,23 @@ export const DetailPageWrapper = ({ listings, liked, onLike }) => {
   return <DetailPage item={item} onBack={() => navigate(-1)} liked={liked[item?.id]} onLike={onLike} setPage={setPage}/>;
 };
 
+// Phase8 8b: LikedPage を App.tsx から移動 (元 App.tsx 2343-2361 / C・Card は既import)
+export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }) => {
+  const items = listings.filter(l => liked[l.id]);
+  return (
+    <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream, padding: isPC ? "0 0 40px" : "80px 16px 40px" }}>
+      <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:6 }}>❤️ お気に入り</h1>
+      <p style={{ color:C.warmGray, marginBottom:20, fontSize:14 }}>{items.length}件</p>
+      {items.length===0?(
+        <div style={{ textAlign:"center", padding:"60px 20px" }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+          <div style={{ fontSize:16, fontWeight:800, color:C.dark }}>まだお気に入りがありません</div>
+        </div>
+      ):(
+        <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(3,1fr)" : "1fr 1fr", gap: isPC ? 16 : 12 }}>
+          {items.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+        </div>
+      )}
+    </div>
+  );
+};
