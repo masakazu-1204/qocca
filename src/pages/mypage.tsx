@@ -1723,6 +1723,8 @@ const handleOpenDashboard = async () => {
 
   const isConnected = connectStatus?.connected && connectStatus?.payouts_enabled;
   const monthlyThreshold = parseInt(settings.monthly_payout_threshold || "30000");
+  // 未連携バナーの動機づけ用: 完了した取引数 (既存フィールド・追加クエリなし)。0 のときは汎用文。
+  const completedCount = balance?.completed_orders_count || 0;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -1730,12 +1732,17 @@ const handleOpenDashboard = async () => {
       {!isConnected && (
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-            <span style={{ fontSize:20 }}>🏦</span>
-            <h3 style={{ margin:0, fontSize:15, fontWeight:700, color:C.dark }}>銀行口座を設定してください</h3>
+            <span style={{ fontSize:20 }}>{completedCount > 0 ? "💰" : "🏦"}</span>
+            <h3 style={{ margin:0, fontSize:15, fontWeight:700, color:C.dark }}>
+              {completedCount > 0
+                ? `完了した取引が ${completedCount}件 あります`
+                : "銀行口座を設定してください"}
+            </h3>
           </div>
           <p style={{ margin:"8px 0 12px", fontSize:13, color:C.text, lineHeight:1.6 }}>
-            売上を受け取るには、Stripe で銀行口座を連携する必要があります。<br/>
-            セキュアな本人確認を経て、安全に振込が可能になります。
+            {completedCount > 0
+              ? <>売上を受け取るには、Stripe で銀行口座の連携が必要です🐾<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>
+              : <>売上を受け取るには、Stripe で銀行口座を連携する必要があります。<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>}
           </p>
           <button
             onClick={handleStartOnboarding}
