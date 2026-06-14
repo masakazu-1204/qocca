@@ -32,7 +32,7 @@ import { ReviewModal } from "./components/ReviewModal";
 // 依頼書 #105 (2026/6/3): 弁護士確認版利用規約 v2.0 (別ファイル化で App.tsx 軽量維持)
 import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
-import type { CommentTargetType } from "./types";
+import type { CommentTargetType, FoundingCreator } from "./types";
 import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_TIMING, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "./constants/theme";
 import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES, PREFS_47_ORDER, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "./constants/data";
 import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
@@ -13356,12 +13356,7 @@ const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =
 // ── 依頼書 #36 (2026/5/31): 初期メンバー紹介ページ /founding-creators ─────────
 // 「想いを込めて、置いていく人たち」 = 出品済みクリエイター + 創業クリエイター + 初期メンバー
 // 公開 view founding_creators_view (anon 可) から ORDER で並ぶ
-type FoundingCreator = {
-  id: string; display_name: string | null; avatar_url: string | null;
-  bio: string | null; creator_intro: string | null;
-  is_founding_creator: boolean | null; is_initial_member: boolean | null;
-  approved_count: number;
-};
+// FoundingCreator 型は src/types.ts へ移動 (Phase5 ①static / InitialMembersSection と共有のため中立化)
 
 const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
   const navigate = useNavigate();
