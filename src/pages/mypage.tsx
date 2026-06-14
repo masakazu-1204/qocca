@@ -2606,7 +2606,12 @@ const SalesTab = () => {
     setBusy(true);
     try {
       const now = new Date().toISOString();
-      const { error } = await supabase.from("orders").update({ status: "delivered", delivered_at: now, updated_at: now }).eq("id", sale.id);
+      // ②-1(A): 納品時に自動完了時刻をセット (設定値 auto_complete_hours / default 72h)。
+      // ⚠️ 値は配信時点で確定 (買い手の確認期限を後から動かさない)。送金本体には触れない。
+      const { data: acRow } = await supabase.from("platform_settings").select("value").eq("key", "auto_complete_hours").maybeSingle();
+      const acHours = parseInt(acRow?.value || "72", 10) || 72;
+      const autoCompleteAt = new Date(Date.now() + acHours * 3600 * 1000).toISOString();
+      const { error } = await supabase.from("orders").update({ status: "delivered", delivered_at: now, auto_complete_at: autoCompleteAt, updated_at: now }).eq("id", sale.id);
       if (error) throw error;
       // ②-2: 買い手へ納品通知メール (既存 delivery_notice テンプレ再利用 / best-effort=失敗してもステータス更新は成立)
       // ⚠️ 送金ロジックには一切触れない。通知のみ。
