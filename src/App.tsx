@@ -34,7 +34,7 @@ import { TERMS_V2 } from "./legal/terms_v2";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import type { CommentTargetType } from "./types";
 import { C, CAT_COLORS, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_TIMING, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "./constants/theme";
-import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES, PREFS_47_ORDER } from "./constants/data";
+import { CATS, LISTINGS, REVIEWS, EVENTS, EVENT_CATS, ORDER_STEPS, DISPUTE_REASONS, QC_REACTIONS, CONTACT_PATTERNS, NG_WORDS, BLOG_CATS, FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, FACILITY_NG_WORDS, PREFS, COMMUNITY_CATEGORIES, PREFS_47_ORDER, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "./constants/data";
 import { calcPopularityScore, sortByPopularity, stepIndex, formatStat, miniBtnStyle } from "./utils/format";
 import { detectContacts, detectNGWords, checkFacilityNGWords } from "./utils/moderation";
 import { PET_CATEGORIES, petLabelShort, petIcon, evPetLabel, evPetColor, evPetBg } from "./constants/pets";
@@ -3157,10 +3157,8 @@ const GRAND_OPENING_DATE = new Date("2026-07-01T00:00:00+09:00");
 // 依頼書 #137 (2026/6/8): CAMPFIRE 確定 URL + UTM + 期間フラグ統一管理
 // 正式形式: /projects/<ID>/view (旧 /projects/view/<ID> は 6/8 監査でバグ判明 → 全置換)
 // 終了後は CROWDFUNDING_ACTIVE を false にすれば全導線が消える設計
+// ⚠️ CAMPFIRE_PROJECT_URL_WITH_UTM / CROWDFUNDING_ACTIVE は constants/data.ts へ移管 (Phase5 ①static 循環import回避)
 const CAMPFIRE_PROJECT_URL = "https://camp-fire.jp/projects/955666/view";
-const CAMPFIRE_PROJECT_URL_WITH_UTM = "https://camp-fire.jp/projects/955666/view?utm_source=qocca&utm_medium=site_banner&utm_campaign=cf_launch_202606";
-// CROWDFUNDING_ACTIVE: 期間内 + URL 設定済 を一括判定 (終了後は手動で false にして即時撤去可能)
-const CROWDFUNDING_ACTIVE = true;
 
 const CrowdfundingBanner = () => {
   const navigate = useNavigate();
