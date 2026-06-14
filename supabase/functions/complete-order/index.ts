@@ -1,4 +1,10 @@
 // ============================================
+// complete-order v33 (2026/6/15): 自動完了 system 認可経路 追加 (②-1 B)
+//   v30 buyer認可のみを service_role 経路で迂回。pi_ガード(v32)/payouts判定/v29冪等 は全継承。
+//   識別: Authorization が service_role キー かつ body.system===true の時のみ system 扱い。
+//   濫用防止: status==='delivered' かつ auto_complete_at 経過 でなければ system でも拒否。
+//   ⚠️ 既存の transfer/fee/v29/v30/v32 ロジックは 1行も変更していない (分岐の追加のみ)。
+// --- 以下 v32 までの履歴 ---
 // complete-order v32 (2026/6/15): 決済成立ガード追加 (未決済 立替送金の防止)
 //   status guard 通過後・v30/原子的クレームの手前に pi_ 検証を追加。cs_(未決済)は送金拒否。
 //   既存の transfer/fee/v29/v30 ロジックは 1行も変更していない (拒否ガード追加のみ)。
@@ -40,7 +46,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { order_id, completed_by_user_id } = await req.json();
+    const { order_id, completed_by_user_id, system } = await req.json();
     if (!order_id) {
       return new Response(JSON.stringify({ error: "order_id required" }), { status: 400, headers: corsHeaders });
     }
@@ -85,25 +91,44 @@ serve(async (req) => {
     }
 
     // ============================================
-    // 🔒 v30 (#143 #2): 認可チェック (buyer本人 or admin のみ)
+    // 🔒 v30 認可 (buyer本人 or admin) / v33 system(自動完了cron)認可 — 分岐
     // order 取得後 ・ 原子的クレームの手前に配置 (v29 防御は不変)
-    // JWT から caller を解決 (service_role クライアントでも getUser(token) は JWT 検証可能)
+    // ⚠️ v33: 迂回するのは buyer認可(v30)のみ。pi_ガード(v32)は上で実行済 / payouts判定・v29冪等は下で実行=全継承。
     // ============================================
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "").trim();
-    const { data: { user: caller } } = await supabase.auth.getUser(token);
-    const callerId = caller?.id || null;
-    if (!callerId) {
-      return new Response(JSON.stringify({ error: "unauthorized", message: "認証が必要です" }), { status: 401, headers: corsHeaders });
-    }
-    if (callerId !== order.buyer_id) {
-      // buyer 本人でなければ admin か確認 (admins テーブル直接照会 / is_admin() は auth.uid() 依存のため使わない)
-      const { data: adminRow } = await supabase
-        .from("admins").select("user_id").eq("user_id", callerId).maybeSingle();
-      if (!adminRow) {
+    // v33: system 呼び出し判定 = service_role キー かつ body.system===true
+    //   (service_role キーは cron/サーバのみが保持。外部呼び出しは到達不可)
+    const isSystemCall = system === true && token === SUPABASE_SERVICE_ROLE_KEY;
+
+    if (isSystemCall) {
+      // v33: buyer認可の代わりに「自動完了の厳格条件」を課す。
+      //   delivered かつ auto_complete_at が設定済かつ既に経過 でなければ system でも拒否。
+      //   → working / 期限前 / auto_complete_at未設定 を system が勝手に完了することは不可能。
+      if (order.status !== "delivered" || !order.auto_complete_at || new Date(order.auto_complete_at) > new Date()) {
         return new Response(JSON.stringify({
-          error: "forbidden", message: "この操作は購入者本人のみ可能です"
-        }), { status: 403, headers: corsHeaders });
+          error: "not_eligible_for_auto_complete",
+          message: "自動完了の条件を満たしていません (delivered かつ auto_complete_at 経過が必要)",
+          current_status: order.status, auto_complete_at: order.auto_complete_at || null,
+        }), { status: 400, headers: corsHeaders });
+      }
+      // → buyer認可(v30)をスキップして続行 (system = service_role を持つ信頼済呼び出し)
+    } else {
+      // 通常のユーザー呼び出し: 既存 v30 認可 (buyer本人 or admin) — 挙動は一切不変
+      const { data: { user: caller } } = await supabase.auth.getUser(token);
+      const callerId = caller?.id || null;
+      if (!callerId) {
+        return new Response(JSON.stringify({ error: "unauthorized", message: "認証が必要です" }), { status: 401, headers: corsHeaders });
+      }
+      if (callerId !== order.buyer_id) {
+        // buyer 本人でなければ admin か確認 (admins テーブル直接照会 / is_admin() は auth.uid() 依存のため使わない)
+        const { data: adminRow } = await supabase
+          .from("admins").select("user_id").eq("user_id", callerId).maybeSingle();
+        if (!adminRow) {
+          return new Response(JSON.stringify({
+            error: "forbidden", message: "この操作は購入者本人のみ可能です"
+          }), { status: 403, headers: corsHeaders });
+        }
       }
     }
 
