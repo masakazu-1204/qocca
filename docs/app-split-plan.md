@@ -211,5 +211,13 @@ App.tsx に残るのは `QoccaAppInner`(8387) `QoccaApp`(8663) と Router 周り
 
 ---
 
+## 🐛 既知バグ・別件TODO（分割と無関係 / Phase完了後に対応）
+
+| # | 内容 | 詳細 | 起因 | 対応 |
+|---|---|---|---|---|
+| K1 | 施設「もっと見る」後に React duplicate-key 警告 | RPC `search_facilities` が offset ページング境界で**重複ID**を返す → `FacilitiesPage` の `facilities=[...baseList,...rows]` に同一 `id` が混入 → `key={f.id}` 重複。初回ロードは無問題、もっと見る押下後のみ顕在化。 | **分割と無関係の既存バグ**（④facilities で `key`/append ロジックは byte 同一移動・無改変と確認済）。 | Phase 完了後に別途 dedup 修正（append 時に id 重複排除、or RPC 側 offset/sort 安定化）。今は「ロジック無改変」厳守のため未着手。 |
+
+---
+
 > **再開時の読み方**: このファイルの「進捗ログ」を見て、次に着手する Phase を確認。
 > 該当 Phase の手順とリスクを読んでから作業開始。基盤（Phase 0-3）が未完なら必ずそこから。
