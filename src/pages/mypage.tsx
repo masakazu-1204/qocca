@@ -2548,7 +2548,7 @@ const SalesTab = () => {
     // 依頼書 #104 Phase B-2 (2026/6/3): shipping_fee / shipping_region / shipping_total 追加 (Phase A DDL 完了済)
     const { data, error } = await supabase
       .from("orders")
-      .select("id, status, escrow_status, transfer_status, amount, shipping_fee, shipping_region, shipping_total, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
+      .select("id, order_number, status, escrow_status, transfer_status, amount, shipping_fee, shipping_region, shipping_total, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -2601,13 +2601,31 @@ const SalesTab = () => {
     finally { setBusy(false); }
   };
 
-  const markDelivered = async (orderId: string) => {
+  const markDelivered = async (sale: any) => {
     if (!confirm("納品完了として通知しますか？\n購入者が受取確認したら売上が支払われます。")) return;
     setBusy(true);
     try {
       const now = new Date().toISOString();
-      const { error } = await supabase.from("orders").update({ status: "delivered", delivered_at: now, updated_at: now }).eq("id", orderId);
+      const { error } = await supabase.from("orders").update({ status: "delivered", delivered_at: now, updated_at: now }).eq("id", sale.id);
       if (error) throw error;
+      // ②-2: 買い手へ納品通知メール (既存 delivery_notice テンプレ再利用 / best-effort=失敗してもステータス更新は成立)
+      // ⚠️ 送金ロジックには一切触れない。通知のみ。
+      try {
+        const { data: me } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+        await supabase.functions.invoke("send-email", {
+          body: {
+            type: "delivery_notice",
+            user_id: sale.buyer_id,
+            data: {
+              user_name: sale.buyer?.display_name || "ご購入者",
+              seller_name: me?.display_name || "出品者",
+              order_number: sale.order_number || "",
+              listing_title: sale.listing?.title || "(商品)",
+              order_url: "https://qocca.pet/mypage",
+            },
+          },
+        });
+      } catch (mailErr) { console.error("delivery notice email failed (非致命):", mailErr); }
       await loadSales();
     } catch(e: any) { alert("エラー: "+e.message); }
     finally { setBusy(false); }
@@ -2696,7 +2714,7 @@ const SalesTab = () => {
                         }}>⏳ 購入者の決済待ち（決済完了後に作業を開始できます）</div>
                       )}
                       {sale.status==="working" && (
-                        <button disabled={busy} onClick={(e)=>{e.stopPropagation();markDelivered(sale.id);}} style={{
+                        <button disabled={busy} onClick={(e)=>{e.stopPropagation();markDelivered(sale);}} style={{
                           flex:1, minWidth:140, padding:"11px", background:C.orange, border:"none", borderRadius:10,
                           color:"#fff", fontWeight:800, fontSize:13, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", opacity:busy?0.6:1
                         }}>📦 納品完了として通知</button>
