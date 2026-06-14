@@ -211,6 +211,14 @@ App.tsx に残るのは `QoccaAppInner`(8387) `QoccaApp`(8663) と Router 周り
 
 ---
 
+## 🧭 分割作業の教訓（Phase 7-8 で必ず活かす）
+
+| # | 教訓 | 詳細 |
+|---|---|---|
+| L1 | **tsc 緑だけでは不十分・実描画が命綱** | Phase6 6b で SellPage の `useRef`(bare) を新モジュールの react import に入れ忘れ→実行時クラッシュ(/sell白画面)。だが `tsc --noEmit` は**緑のまま見逃した**(本プロジェクトの tsc は bare hook の未import を検出しないケースがある)。**ブラウザ実描画**で「component error」を捕捉→git stash で baseline 比較→起因特定→修正。**移動後は必ず実描画で全ルート確認**。特に各ページの **bare hook (useRef/useState/useEffect/useMemo/useCallback) が新ファイルの `import {...} from "react"` に揃っているか** を要確認。 |
+
+---
+
 ## 🐛 既知バグ・別件TODO（分割と無関係 / Phase完了後に対応）
 
 | # | 内容 | 詳細 | 起因 | 対応 |
