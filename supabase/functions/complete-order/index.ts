@@ -1,4 +1,8 @@
 // ============================================
+// complete-order v35 (Phase2 dual-write, 2026/6/15): 完了時UPDATEに fulfillment_status='completed' を併記
+//   payouts無効/transfer失敗/送金成功 の3つの「completed」UPDATE に fulfillment_status を追加するのみ。
+//   ⚠️ transfer/fee/v29/v30/v32/v33認可/v34 SELECT は1行も変えない。payment_status は webhook が 'paid' 設定済。
+// --- 以下 v34 ---
 // complete-order v34 (2026/6/15): v33 の order SELECT に auto_complete_at を追加 (②-1 C テストで検出)
 //   v33 で system eligibility チェックが order.auto_complete_at を見るのに SELECT に無く、
 //   常に undefined→!undefined=true で全注文を not_eligible 拒否していた (安全側だが機能不全)。
@@ -146,7 +150,7 @@ serve(async (req) => {
 
     if (!seller || !seller.stripe_account_id || !seller.stripe_payouts_enabled) {
       await supabase.from("orders").update({
-        status: "completed", escrow_status: "held", transfer_status: "pending",
+        status: "completed", fulfillment_status: "completed", escrow_status: "held", transfer_status: "pending",
         updated_at: new Date().toISOString(),
       }).eq("id", order_id);
       return new Response(JSON.stringify({
@@ -278,14 +282,14 @@ serve(async (req) => {
     if (!transferRes.ok) {
       console.error("Stripe transfer failed:", transferData);
       await supabase.from("orders").update({
-        status: "completed", escrow_status: "held", transfer_status: "failed",
+        status: "completed", fulfillment_status: "completed", escrow_status: "held", transfer_status: "failed",
         updated_at: new Date().toISOString(),
       }).eq("id", order_id);
       return new Response(JSON.stringify({ error: "Stripe transfer failed", detail: transferData }), { status: 500, headers: corsHeaders });
     }
 
     await supabase.from("orders").update({
-      status: "completed", escrow_status: "released_seller",
+      status: "completed", fulfillment_status: "completed", escrow_status: "released_seller",
       stripe_transfer_id: transferData.id, transferred_at: new Date().toISOString(),
       transfer_amount: sellerPayout, transfer_status: "paid",
       stripe_fee: stripeFee, qocca_fee: qoccaFee, seller_payout: sellerPayout,
