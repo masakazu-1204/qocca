@@ -1,4 +1,9 @@
 // ============================================
+// create-checkout v40 (Phase2 dual-write, 2026/6/15)
+//   v40 追加: 2軸化 dual-write — 注文INSERT に payment_status/fulfillment_status を併記。
+//     旧 status('pending')/escrow_status は不変。読みは旧statusのまま=挙動不変。
+//     ⚠️ 在庫処理・Stripe Checkout Session・価格計算・送金ロジックは1行も変えない (insertData に2列追加のみ)。
+// --- 以下 v39 までの履歴 ---
 // create-checkout v39 (依頼書 #143 TOP2 方式B, 2026/6/10)
 //   v39 追加: Stripe 未連携 seller の警告フラグ (購入はブロックしない)
 //     1. seller.stripe_payouts_enabled を select (送金可否の真の判定軸)
@@ -182,6 +187,8 @@ Deno.serve(async (req) => {
       buyer_protection_fee: buyerProtectionFee,
       stripe_fee: 0, qocca_fee: 0, seller_payout: 0,
       status: "pending", escrow_status: "held",
+      // Phase2 dual-write (2軸化): 旧 status に加えて新2軸も書く。読みは旧statusのまま=挙動不変。
+      payment_status: "awaiting_payment", fulfillment_status: "unfulfilled",
       variant_id: variant_id || null, variant_snapshot: variantSnapshot,
       shipping_fee: serverShippingFee,
       shipping_region: resolvedShippingRegion,
