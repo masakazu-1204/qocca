@@ -1,4 +1,9 @@
 // ============================================
+// complete-order v34 (2026/6/15): v33 の order SELECT に auto_complete_at を追加 (②-1 C テストで検出)
+//   v33 で system eligibility チェックが order.auto_complete_at を見るのに SELECT に無く、
+//   常に undefined→!undefined=true で全注文を not_eligible 拒否していた (安全側だが機能不全)。
+//   修正は SELECT に列を1つ足すだけ。transfer/fee/v29/v30/v32/v33認可ロジックは1行も変えない。
+// --- 以下 v33 ---
 // complete-order v33 (2026/6/15): 自動完了 system 認可経路 追加 (②-1 B)
 //   v30 buyer認可のみを service_role 経路で迂回。pi_ガード(v32)/payouts判定/v29冪等 は全継承。
 //   識別: Authorization が service_role キー かつ body.system===true の時のみ system 扱い。
@@ -55,7 +60,7 @@ serve(async (req) => {
 
     const { data: order, error: orderErr } = await supabase
       .from("orders")
-      .select("id, order_number, amount, listing_price, buyer_protection_fee, status, escrow_status, buyer_id, seller_id, transferred_at, stripe_payment_intent_id, created_at, shipping_fee, shipping_region")
+      .select("id, order_number, amount, listing_price, buyer_protection_fee, status, escrow_status, buyer_id, seller_id, transferred_at, stripe_payment_intent_id, created_at, shipping_fee, shipping_region, auto_complete_at")
       .eq("id", order_id)
       .single();
 
