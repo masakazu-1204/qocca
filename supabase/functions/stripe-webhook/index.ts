@@ -86,6 +86,9 @@ Deno.serve(async (req: Request) => {
           .update({
             status: "working",
             escrow_status: "held",
+            // Phase2 dual-write (2軸化): 旧status不変・新2軸も書く・読みは旧statusのまま
+            payment_status: "paid",
+            fulfillment_status: "working",
             stripe_payment_intent_id: payment_intent_id || session.id,
             updated_at: new Date().toISOString(),
           })
@@ -206,6 +209,9 @@ Deno.serve(async (req: Request) => {
           .from("orders")
           .update({
             status: "cancelled",
+            // Phase2 dual-write (2軸化): 期限切れ/失敗 → 決済軸=expired, フルフィルメント軸=cancelled
+            payment_status: "expired",
+            fulfillment_status: "cancelled",
             cancelled_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -224,6 +230,8 @@ Deno.serve(async (req: Request) => {
           .update({
             status: "refunded",
             escrow_status: "refunded",
+            // Phase2 dual-write (2軸化): 決済軸のみ refunded。fulfillment_status は不変=文脈保持(納品後返金等)
+            payment_status: "refunded",
             refunded_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
