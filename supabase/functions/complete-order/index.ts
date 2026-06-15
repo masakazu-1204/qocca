@@ -1,4 +1,15 @@
 // ============================================
+// complete-order v37 (F1 再送金経路, 2026/6/16): 「固着pending」を再処理可能にする入口緩和
+//   背景: 未連携sellerの注文が completed+transfer_status=pending で固着し、後で連携しても永遠にpending(F2で見える化済・未送金)。
+//   変更3点(送金本体・防御層は1行も触らない・入口の追加許可のみ):
+//     (1) order SELECT に transfer_status を追加 (固着判定に必要・v34 と同型の列追加)。
+//     (2) 入口ガード(status IN working/delivered)に「固着pending」を追加許可:
+//         isStuck = status==='completed' && transfer_status IN ('pending','failed') && transferred_at IS NULL。
+//     (3) v33 system 認可条件に「固着の再送金」を追加許可 (cron retry-pending-payouts 経路用)。
+//   ⚠️ 二重送金防御は全継承で効く: transferred_at guard(L上)+pi_ guard(v32)+原子的クレーム(v29 .is(transferred_at,null))+Idempotency-Key。
+//   ⚠️ transfer_status='processing'(Stripe成功後DB更新前クラッシュ等)は isStuck に含めない=24h idempotency窓越えの二重送金を回避(保守)。
+//   ⚠️ payouts まだ無効なら 既存F2パスで pending 維持(空振り・送金されない)。fee計算は既存流用・新規計算なし。
+// --- 以下 v36 ---
 // complete-order v36 (F2 見える化, 2026/6/15): payouts未連携の completed+pending で seller_payout を実額保存
 //   payouts無効判定を「手数料計算の後」に移動し、pending時も seller_payout/qocca_fee/stripe_fee/fee_tier_used を保存。
 //   → seller_balances.pending_balance に「待っている売上」が表示される (出品者の見える化)。
@@ -70,7 +81,7 @@ serve(async (req) => {
 
     const { data: order, error: orderErr } = await supabase
       .from("orders")
-      .select("id, order_number, amount, listing_price, buyer_protection_fee, status, escrow_status, buyer_id, seller_id, transferred_at, stripe_payment_intent_id, created_at, shipping_fee, shipping_region, auto_complete_at")
+      .select("id, order_number, amount, listing_price, buyer_protection_fee, status, escrow_status, buyer_id, seller_id, transferred_at, transfer_status, stripe_payment_intent_id, created_at, shipping_fee, shipping_region, auto_complete_at")
       .eq("id", order_id)
       .single();
 
@@ -84,7 +95,15 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (!["working", "delivered"].includes(order.status)) {
+    // v37 (F1): 「固着pending」= 完了済だが未連携等で送金されず宙に浮いた注文。再処理を許可する。
+    //   transferred_at=null かつ transfer_status が pending/failed の completed のみ (processing は除外=保守)。
+    //   → 入口ガードに追加許可するだけ。以降の pi_/認可/payouts判定/原子的クレーム/送金は全て既存のまま通過。
+    const isStuckPending =
+      order.status === "completed" &&
+      ["pending", "failed"].includes(order.transfer_status) &&
+      !order.transferred_at;
+
+    if (!["working", "delivered"].includes(order.status) && !isStuckPending) {
       return new Response(JSON.stringify({
         error: "Order is not in transferable state", current_status: order.status,
       }), { status: 400, headers: corsHeaders });
@@ -120,11 +139,16 @@ serve(async (req) => {
       // v33: buyer認可の代わりに「自動完了の厳格条件」を課す。
       //   delivered かつ auto_complete_at が設定済かつ既に経過 でなければ system でも拒否。
       //   → working / 期限前 / auto_complete_at未設定 を system が勝手に完了することは不可能。
-      if (order.status !== "delivered" || !order.auto_complete_at || new Date(order.auto_complete_at) > new Date()) {
+      // v37 (F1): 「固着pendingの再送金」も system に許可 (cron retry-pending-payouts 経路)。
+      //   isStuckPending は上で算出済 (completed && transfer_status∈pending/failed && transferred_at=null)。
+      const isAutoCompleteEligible =
+        order.status === "delivered" && order.auto_complete_at && new Date(order.auto_complete_at) <= new Date();
+      if (!isAutoCompleteEligible && !isStuckPending) {
         return new Response(JSON.stringify({
           error: "not_eligible_for_auto_complete",
-          message: "自動完了の条件を満たしていません (delivered かつ auto_complete_at 経過が必要)",
+          message: "自動完了の条件を満たしていません (delivered かつ auto_complete_at 経過、または 固着pending が必要)",
           current_status: order.status, auto_complete_at: order.auto_complete_at || null,
+          transfer_status: order.transfer_status || null,
         }), { status: 400, headers: corsHeaders });
       }
       // → buyer認可(v30)をスキップして続行 (system = service_role を持つ信頼済呼び出し)
