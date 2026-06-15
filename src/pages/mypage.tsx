@@ -10,7 +10,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { DISPUTE_REASONS, PREFS, MOOD_TAGS, REDEEM_TIER_THEME } from "../constants/data";
-import { miniBtnStyle } from "../utils/format";
+import { miniBtnStyle, orderStatusKey } from "../utils/format";
 import { detectContacts, checkFacilityNGWords } from "../utils/moderation";
 import { resolveFontFamily } from "../constants/fonts";
 import { petLabelShort, petIcon } from "../constants/pets";
@@ -674,20 +674,22 @@ export const MyPage = ({ setPage }) => {
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
-      // 受取確認待ち（自分が購入者でstatus=delivered）
+      // 受取確認待ち（自分が購入者・決済済かつ納品済 / Phase3: 2軸読み）
       const { count: ordersCount } = await supabase
         .from("orders")
         .select("id", { count: "exact", head: true })
         .eq("buyer_id", user.id)
-        .eq("status", "delivered");
+        .eq("payment_status", "paid")
+        .eq("fulfillment_status", "delivered");
       setPendingOrdersCount(ordersCount || 0);
 
-      // 対応待ちの販売（自分が出品者でstatus=workingまたはpending）
+      // 対応待ちの販売（自分が出品者・決済済かつ作業中 / Phase3: 2軸読み・未払いは除外=S2バッジ問題も解消）
       const { count: salesCount } = await supabase
         .from("orders")
         .select("id", { count: "exact", head: true })
         .eq("seller_id", user.id)
-        .in("status", ["pending", "working"]);
+        .eq("payment_status", "paid")
+        .eq("fulfillment_status", "working");
       setPendingSalesCount(salesCount || 0);
 
       // 未読DM数（recipient_idが自分でis_read=false）
@@ -2115,7 +2117,7 @@ const OrdersTab = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("orders")
-      .select("id, status, escrow_status, amount, created_at, delivered_at, completed_at, listing_id, seller_id")
+      .select("id, status, payment_status, fulfillment_status, escrow_status, amount, created_at, delivered_at, completed_at, listing_id, seller_id")
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -2145,7 +2147,7 @@ const OrdersTab = () => {
 
   useEffect(() => { loadOrders(); }, [user?.id]);
 
-  const filtered = orders.filter(o => filter==="all" || o.status===filter);
+  const filtered = orders.filter(o => filter==="all" || orderStatusKey(o)===filter);
 
   const statusLabel = (s) => {
     const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
@@ -2202,7 +2204,7 @@ const OrdersTab = () => {
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {filtered.map(order => {
-            const st = statusLabel(order.status);
+            const st = statusLabel(orderStatusKey(order));
             const title = order.listing?.title || "（削除された商品）";
             const sellerName = order.seller?.display_name || "—";
             const img = photoUrl(order.listing);
@@ -2227,23 +2229,23 @@ const OrdersTab = () => {
                 {selected?.id===order.id && (
                   <div style={{ borderTop:`1px solid ${C.border}`, padding:"16px", background:C.lightGray }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {order.id.slice(0, 8)}</div>
-                    <OrderStatusBar status={order.status}/>
+                    <OrderStatusBar status={orderStatusKey(order)}/>
 
-                    {order.status==="disputed" && (
+                    {orderStatusKey(order)==="disputed" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
                         <div style={{ fontWeight:700, marginBottom:4 }}>⚠️ 異議申し立て中</div>
                         <div style={{ fontSize:11, color:C.warmGray }}>運営にて対応中です</div>
                       </div>
                     )}
 
-                    {order.status==="refunded" && (
+                    {orderStatusKey(order)==="refunded" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
                         <div style={{ fontWeight:700 }}>💸 返金済み</div>
                       </div>
                     )}
 
                     <div style={{ display:"flex", gap:8, marginTop:12 }}>
-                      {order.status==="delivered" && (
+                      {orderStatusKey(order)==="delivered" && (
                         <>
                           <button disabled={confirming} onClick={(e)=>{e.stopPropagation();handleConfirm(order.id);}} style={{
                             flex:2, padding:"11px", background:confirming?C.warmGray:C.green, border:"none", borderRadius:10,
@@ -2255,7 +2257,7 @@ const OrdersTab = () => {
                           }}>問題を報告</button>
                         </>
                       )}
-                      {order.status==="completed" && (
+                      {orderStatusKey(order)==="completed" && (
                         <button onClick={(e)=>{e.stopPropagation();setShowReview({...order, item:title, seller:sellerName});}} style={{
                           flex:1, padding:"11px", background:C.orange, border:"none", borderRadius:10,
                           color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
@@ -2548,7 +2550,7 @@ const SalesTab = () => {
     // 依頼書 #104 Phase B-2 (2026/6/3): shipping_fee / shipping_region / shipping_total 追加 (Phase A DDL 完了済)
     const { data, error } = await supabase
       .from("orders")
-      .select("id, order_number, status, escrow_status, transfer_status, amount, shipping_fee, shipping_region, shipping_total, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
+      .select("id, order_number, status, payment_status, fulfillment_status, escrow_status, transfer_status, amount, shipping_fee, shipping_region, shipping_total, created_at, delivered_at, completed_at, listing_id, buyer_id, shipping_address_id")
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -2579,9 +2581,10 @@ const SalesTab = () => {
 
   // フィルタ：active=対応中(pending+working+delivered+disputed) / completed=完了 / cancelled=キャンセル系
   const filtered = sales.filter(o => {
-    if (filter === "active") return ["working", "delivered", "disputed"].includes(o.status);
-    if (filter === "completed") return o.status === "completed";
-    if (filter === "cancelled") return ["cancelled", "refunded"].includes(o.status);
+    const k = orderStatusKey(o);
+    if (filter === "active") return ["working", "delivered", "disputed"].includes(k);
+    if (filter === "completed") return k === "completed";
+    if (filter === "cancelled") return ["cancelled", "refunded"].includes(k);
     return true;
   });
 
@@ -2666,7 +2669,7 @@ const SalesTab = () => {
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {filtered.map(sale => {
-            const st = statusLabel(sale.status);
+            const st = statusLabel(orderStatusKey(sale));
             const title = sale.listing?.title || "（削除された商品）";
             const buyerName = sale.buyer?.display_name || "—";
             const img = photoUrl(sale.listing);
@@ -2701,7 +2704,7 @@ const SalesTab = () => {
                 {selected?.id===sale.id && (
                   <div style={{ borderTop:`1px solid ${C.border}`, padding:"16px", background:C.lightGray }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {sale.id.slice(0, 8)}</div>
-                    <OrderStatusBar status={sale.status}/>
+                    <OrderStatusBar status={orderStatusKey(sale)}/>
 
                     {isShipping && sale.shipping_address_id && (
                       <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginTop:10, fontSize:11, color:C.dark, lineHeight:1.6 }}>
@@ -2712,29 +2715,29 @@ const SalesTab = () => {
                     )}
 
                     <div style={{ display:"flex", gap:8, marginTop:12, flexWrap:"wrap" }}>
-                      {sale.status==="pending" && (
+                      {sale.payment_status==="awaiting_payment" && (
                         <div style={{
                           flex:1, minWidth:140, padding:"11px", background:C.lightGray, borderRadius:10,
                           color:C.warmGray, fontWeight:700, fontSize:12, textAlign:"center", fontFamily:"inherit"
                         }}>⏳ 購入者の決済待ち（決済完了後に作業を開始できます）</div>
                       )}
-                      {sale.status==="working" && (
+                      {orderStatusKey(sale)==="working" && (
                         <button disabled={busy} onClick={(e)=>{e.stopPropagation();markDelivered(sale);}} style={{
                           flex:1, minWidth:140, padding:"11px", background:C.orange, border:"none", borderRadius:10,
                           color:"#fff", fontWeight:800, fontSize:13, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", opacity:busy?0.6:1
                         }}>📦 納品完了として通知</button>
                       )}
-                      {sale.status==="delivered" && (
+                      {orderStatusKey(sale)==="delivered" && (
                         <div style={{ flex:1, padding:"11px", background:"#FFF3E0", borderRadius:10, color:C.orange, fontWeight:700, fontSize:12, textAlign:"center" }}>
                           購入者の受取確認待ち（72時間後に自動完了）
                         </div>
                       )}
-                      {sale.status==="completed" && (
+                      {orderStatusKey(sale)==="completed" && (
                         <div style={{ flex:1, padding:"11px", background:C.greenPale, borderRadius:10, color:C.green, fontWeight:700, fontSize:12, textAlign:"center" }}>
                           ✅ 取引完了 · 売上反映済み
                         </div>
                       )}
-                      {sale.status==="disputed" && (
+                      {orderStatusKey(sale)==="disputed" && (
                         <div style={{ flex:1, padding:"11px", background:"#FFEBEE", borderRadius:10, color:C.red, fontWeight:700, fontSize:12, textAlign:"center" }}>
                           ⚠️ 異議申し立て中（運営にて対応中）
                         </div>
