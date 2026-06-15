@@ -22,8 +22,8 @@
 ### 🟠 MEDIUM（Dday前に対応推奨・低コスト）
 | # | 内容 | リスク | 修正 | 起因 |
 |---|---|---|---|---|
-| **S1** | `reduce_variant_stock`(SECURITY DEFINER) が **anon 実行可・内部authzなし** | anon が `reduce_variant_stock(他人のvariant, 大量)` で**在庫を0枯渇→偽sold-out**（griefing/売上妨害）。負数化は防止済だが0化は可能 | **`REVOKE EXECUTE ON FUNCTION reduce_variant_stock FROM anon, authenticated;`**（呼ぶのは create-checkout=service_role のみ） | 既存 |
-| **S2** | `profiles` の **SELECT ポリシー = `true`**（誰でも全行・全列） | `stripe_account_id`・Stripe連携ステータス が anon に露出（認証情報やemail/電話ではない＝低〜中。但し世界標準は非公開） | 公開安全列(display_name/avatar/bio)のみ公開する**列制限 or 公開ビュー**化。stripe_* は本人+adminのみ | 既存 |
+| **S1** | ✅**対応済(2026-06-15)** `reduce_variant_stock` が **anon/PUBLIC 実行可・内部authzなし** | anon が他人の**在庫を0枯渇→偽sold-out**(griefing) | ✅ `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated`（**PUBLIC含むのが肝**）。結果: anon/authed=不可・service_role=可。create-checkout購入フロー無傷確認済 | 既存 |
+| **S2** | ✅**一部対応済(2026-06-15)** `profiles` SELECT=`true` で内部列(stripe_account_id/role/fee_tier/trust_level等)が anon露出 | 内部/ビジネス情報の露出(PII/認証情報ではない=低〜中) | ✅ **列権限化**: anon/authenticated から表SELECT剥奪→公開安全列のみ列GRANT。**7列隠蔽**(role/stripe_account_id/stripe_connect_status/stripe_charges_enabled/fee_tier/suspended_until/trust_level)。anon実読みテストで stripe_account_id 拒否・公開列OK確認。service_role全列維持。<br>⚠️**残6列は post-Dday**(下記) | 既存 |
 
 ### 🟡 LOW / ハードニング（Dday後でOK）
 | # | 内容 | リスク | 修正 | 起因 |
@@ -56,8 +56,17 @@
 ---
 
 ## 4. Dday 優先度つき推奨
-- **Dday前（低コスト・実害あり）**: S1(在庫griefing 1行 REVOKE)・S2(profiles 列露出)。
-- **Dday後（ハードニング）**: S3-S11。特に S8(EXECUTE 全数棚卸し)・S7(search_path)・S4/S5(ERROR 2件の掃除)。
+- ✅ **Dday前（完了）**: S1(在庫griefing REVOKE・PUBLIC含む)・S2(profiles 7列 列権限隠蔽)。
+- **Dday後（ハードニング）**: S2残6列のビュー化 ＋ S3-S11。
+
+### ⚠️ S2 残課題（post-Dday・「中途半端にせず完全分離」）
+列権限では「anon遮断・admin/owner許可」を行スコープで分離できないため、下記6列は今回 公開列として残置。**post-Dday に `public_profiles` ビュー化＋base profiles の SELECT を owner+admin限定RLS(`auth.uid()=id OR is_admin()`)** に変え、フロントの他者profile読み(約8-10箇所)をビューへ切替して**完全分離**する：
+- `is_suspended` / `warning_count`（管理UI=authenticated admin が読む）
+- `stripe_onboarded`（商店街TOPの公開バッジ）
+- `founding_creator_fee_rate` / `early_supporter_expires_at`（owner が自分の表示用に読む）
+- `stripe_payouts_enabled`（購入導線で seller の連携状態表示）
+
 - 各修正は **確認→影響範囲→実行→結果確認**＋ロールバックで、②-1 と同じ慎重さで。
+- S3-S11: S8(EXECUTE全数棚卸し)・S7(search_path)・S4/S5(ERROR 2件掃除)・S6(bucket listing)・S9-S11。
 
 > ⚠️ 並行: K2(出品者 Stripe Connect 連携)は依然 Dday 最優先（送金成立の前提）。本セキュリティ修正はそれを後回しにしない範囲で。
