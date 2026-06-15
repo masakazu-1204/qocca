@@ -31,3 +31,4 @@ dist-ssr
 
 # ペットウォーカー元画像 (変換元・コミットしない)
 petwalker-src/
+petwalker-out/
