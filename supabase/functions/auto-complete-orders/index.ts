@@ -13,16 +13,22 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
   "Content-Type": "application/json",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // 認可: service_role を持つ呼び出し(cron/サーバ)のみ。外部からの起動を拒否。
+  // 認可(dual-auth): CRON_SECRET 一致 か service_role 一致 のどちらか。外部からの無認可起動を拒否。
+  //   ・x-cron-secret ヘッダ === CRON_SECRET (King設定の専用秘密。テスト&cron用・master鍵を使わない)
+  //   ・Authorization === Bearer <SUPABASE_SERVICE_ROLE_KEY> (fn間/サーバ経路・互換維持)
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
   const auth = req.headers.get("Authorization") || "";
-  if (auth !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+  const cronSecret = req.headers.get("x-cron-secret") || "";
+  const authorized = (CRON_SECRET.length > 0 && cronSecret === CRON_SECRET)
+                  || (auth === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
   }
 
