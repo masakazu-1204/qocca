@@ -23,6 +23,7 @@ import { SearchPage, UserProfilePage, SellPage, DetailPageWrapper, LikedPage } f
 import { MyPage } from "./pages/mypage";
 import { HomePage } from "./pages/home";
 import { FacilitiesPage } from "./pages/facilities";
+import { PetWalkerPage } from "./pages/petwalker";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
@@ -248,6 +249,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* ペットウォーカー: ペットと行きたくなる場所(宿/カフェ/観光) の情報ページ (商店街メイン機能・施設マップとは別) */}
+            <Route path="/petwalker" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <PetWalkerPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/blog" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -444,6 +454,7 @@ function QoccaAppInner() {
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog/:postId" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/communities" element={<CommunitiesPage setPage={setPage} isPC={false}/>}/>

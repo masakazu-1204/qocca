@@ -224,6 +224,27 @@ export default function MarketplacePage() {
       </header>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 12px" }}>
+        {/* ペットウォーカー入口 (ペットと行きたくなる場所: 宿/カフェ/観光) */}
+        <Link
+          to="/petwalker"
+          style={{
+            display: "block",
+            margin: "24px 0 8px",
+            padding: "22px 24px",
+            borderRadius: 16,
+            background: `linear-gradient(135deg, ${CREAM_DARK} 0%, ${WHITE} 100%)`,
+            border: `1.5px solid ${BORDER_WARM}`,
+            textDecoration: "none",
+            color: TEXT_DARK,
+          }}
+        >
+          <div style={{ fontSize: 11, letterSpacing: "0.2em", color: BRAND, marginBottom: 6 }}>PET WALKER</div>
+          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>うちの子と、出かける。</div>
+          <div style={{ fontSize: 13, color: TEXT_MUTED, lineHeight: 1.7 }}>
+            泊まれる宿、一緒に入れるカフェ、歩きたくなる場所を、エリアごとに。 →
+          </div>
+        </Link>
+
         {/* 1. 今週の人気作品 */}
         <MarketplaceSection
           title="🔥 今週の人気作品"
