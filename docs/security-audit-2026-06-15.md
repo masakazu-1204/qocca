@@ -37,6 +37,7 @@
 | S9 | `pg_trgm`/`pg_net` が public スキーマ | ハードニング | extensions スキーマへ移動 | 既存 |
 | S10 | Leaked Password Protection OFF (INFO) | 漏洩既知パスワードを許容 | Supabase Auth で HaveIBeenPwned チェック ON | 既存 |
 | S11 | Edge Function に **アプリ層レート制限なし** | 乱用/総当たり。但し Supabase gateway 既定制限＋complete-order は v29 冪等で二重送金不可 | 重要fnに rate limit 検討(post-Dday) | 既存 |
+| S12 | **CRON_SECRET が `cron.job.command` に平文**（jobid 28 auto-complete-orders・jobid 増 retry-pending-payouts も同方式・King設定） | DB読取権限者(service_role/admin SQL)に cron 認可秘密が露出。但し外部からは不可視・gateway内・edge env と同値 | post-Dday: cron 秘密を **vault化**（`vault.create_secret`＋`cron.job` から `vault.decrypted_secrets` 参照）／または service_role 経路へ統一 | 既存 (F1/②-1 で顕在化) |
 
 ---
 
@@ -67,6 +68,6 @@
 - `stripe_payouts_enabled`（購入導線で seller の連携状態表示）
 
 - 各修正は **確認→影響範囲→実行→結果確認**＋ロールバックで、②-1 と同じ慎重さで。
-- S3-S11: S8(EXECUTE全数棚卸し)・S7(search_path)・S4/S5(ERROR 2件掃除)・S6(bucket listing)・S9-S11。
+- S3-S12: S8(EXECUTE全数棚卸し)・S7(search_path)・S4/S5(ERROR 2件掃除)・S6(bucket listing)・S9-S11・S12(cron秘密 vault化)。
 
 > ⚠️ 並行: K2(出品者 Stripe Connect 連携)は依然 Dday 最優先（送金成立の前提）。本セキュリティ修正はそれを後回しにしない範囲で。
