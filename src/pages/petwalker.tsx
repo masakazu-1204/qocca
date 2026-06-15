@@ -48,8 +48,10 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   // エリア別件数
   const countByArea = (tag: string) => spots.filter((s) => s.area_tag === tag).length;
 
+  // ⚠️ モバイルは固定Navbar(position:fixed, height:60)があるため top=76 (60+余白16) でクリア。
+  //   PCは App側で paddingTop:68 済 + 固定PCNavbar(68) なので 64 でOK。(facilities の paddingTop:isPC?0:60 と同作法)
   const wrap: React.CSSProperties = {
-    maxWidth: 1080, margin: "0 auto", padding: isPC ? "64px 32px 120px" : "40px 20px 96px",
+    maxWidth: 1080, margin: "0 auto", padding: isPC ? "64px 32px 120px" : "76px 20px 96px",
     fontFamily: QC_FONT_JP, color: QC.charcoal, background: QC.warmWhite,
   };
 
