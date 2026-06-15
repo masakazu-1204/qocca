@@ -28,3 +28,7 @@ dist-ssr
 # 「git add ファイル限定指定」の運用厳格化と併せて二重防御
 .claude/scheduled_tasks.lock
 .claude/projects/
+
+# ペットウォーカー元画像 (変換元・コミットしない)
+petwalker-src/
+petwalker-out/
