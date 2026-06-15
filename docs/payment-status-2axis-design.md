@@ -167,3 +167,9 @@ WHERE payment_status IS NULL OR fulfillment_status IS NULL;
 1. `cancelled`/`expired` の扱い：上記マッピングでよいか（未決済期限切れ→payment=expired/fulfillment=cancelled）。
 2. 旧 `status` の最終形：生成列(generated)で残す vs 完全削除（推奨: 当面 生成列で残し安全確保）。
 3. 着手タイミング：K2 と並行で Phase 1 から始めるか、K2 を先に一段落させてからか。
+
+---
+
+## 追記 (2026-06-15): Phase1-3 完了・Phase4 は安定後の仕上げ
+- **Phase1(列追加+backfill)・Phase2(dual-write)・Phase3(読み切替)= 完了・本番反映済**（PR #25 マージ・実機確認OK）。挙動は新2軸ベースで稼働。
+- **Phase4(旧 `status` 縮退)= 急がない**。dual-write で旧 status も維持＝当面そのままでも無害。#25安定（実取引で2軸が正しく回るのを確認）後に、旧 `status` を生成列(generated)化 or 縮退する**最後の仕上げ**として実施。投機的に今やらない。
