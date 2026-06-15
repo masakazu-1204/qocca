@@ -1,4 +1,10 @@
 // ============================================
+// complete-order v36 (F2 見える化, 2026/6/15): payouts未連携の completed+pending で seller_payout を実額保存
+//   payouts無効判定を「手数料計算の後」に移動し、pending時も seller_payout/qocca_fee/stripe_fee/fee_tier_used を保存。
+//   → seller_balances.pending_balance に「待っている売上」が表示される (出品者の見える化)。
+//   ⚠️ 送金本体(transfer/v29/v30/v32/v33/v34 SELECT/成功パス)は1行も触らない。手数料計算は既存流用・新規計算なし。
+//   ⚠️ fee計算が payouts無効sellerでも走るようになる(純粋計算・副作用なし)。!seller(退化)は手前で早期return。
+// --- 以下 v35 ---
 // complete-order v35 (Phase2 dual-write, 2026/6/15): 完了時UPDATEに fulfillment_status='completed' を併記
 //   payouts無効/transfer失敗/送金成功 の3つの「completed」UPDATE に fulfillment_status を追加するのみ。
 //   ⚠️ transfer/fee/v29/v30/v32/v33認可/v34 SELECT は1行も変えない。payment_status は webhook が 'paid' 設定済。
@@ -148,17 +154,19 @@ serve(async (req) => {
       .eq("id", order.seller_id)
       .single();
 
-    if (!seller || !seller.stripe_account_id || !seller.stripe_payouts_enabled) {
+    // F2: seller プロフィール欠落 (退化ケース・手数料計算不可) → completed+pending (seller_payout は算出不可のため0据置)
+    if (!seller) {
       await supabase.from("orders").update({
         status: "completed", fulfillment_status: "completed", escrow_status: "held", transfer_status: "pending",
         updated_at: new Date().toISOString(),
       }).eq("id", order_id);
       return new Response(JSON.stringify({
         success: false,
-        message: "Seller has not connected Stripe yet. Order marked as completed but payout pending.",
+        message: "Seller profile not found. Order marked as completed but payout pending.",
         order_id: order.id,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // ⚠️ payouts未連携の判定は「手数料計算の後」に移動 (seller_payout を実額で保存し pending_balance に見せるため・F2)
 
     const settings = await getSettings(supabase, [
       "fee_first_transaction", "fee_within_3months", "fee_standard",
@@ -227,6 +235,26 @@ serve(async (req) => {
         error: "Calculated payout is zero or negative",
         details: { listingPrice, shippingFee, grossAmount, stripeFee, qoccaFee, sellerPayout }
       }), { status: 400, headers: corsHeaders });
+    }
+
+    // ============================================
+    // 🔒 F2 (2026/6/15): payouts未連携 → completed+pending だが seller_payout を「実額」で保存
+    //   出品者が seller_balances.pending_balance で「待っている売上」を見えるように (見える化)。
+    //   ⚠️ ここでは送金しない (transfer 一切なし)。fee 計算は上の既存ロジックを流用 (新規計算なし)。
+    //   後で連携完了したら F1(再送金経路) がこの pending を送金する。
+    // ============================================
+    if (!seller.stripe_account_id || !seller.stripe_payouts_enabled) {
+      await supabase.from("orders").update({
+        status: "completed", fulfillment_status: "completed", escrow_status: "held", transfer_status: "pending",
+        seller_payout: sellerPayout, qocca_fee: qoccaFee, stripe_fee: stripeFee, fee_tier_used: feeTierUsed,
+        updated_at: new Date().toISOString(),
+      }).eq("id", order_id);
+      return new Response(JSON.stringify({
+        success: false,
+        message: "Seller has not connected Stripe yet. Order marked as completed but payout pending.",
+        order_id: order.id,
+        pending_seller_payout: sellerPayout,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ============================================
