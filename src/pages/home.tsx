@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "../constants/theme";
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
+import { PW_AREAS } from "../constants/petwalker";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { useListings } from "../hooks";
@@ -2712,6 +2713,71 @@ const HomeEventsSection = ({ events, setPage }: { events: any[]; setPage: any })
   );
 };
 
+// ── ペットウォーカー誘導セクション (ホーム・写真ヒーロー) ───────────────
+// 8エリアの背景写真で「行きたい」感を出す。CTA → /petwalker。静けさ世界観・既存トーン準拠。
+const SectionPetWalker = ({ setPage }: any) => {
+  // チラ見せサムネ (代表4エリア) と、ヒーロー背景 (富士=最も象徴的)
+  const heroImg = PW_AREAS.find(a => a.slug === "kawaguchiko")?.img || PW_AREAS[0]?.img;
+  const thumbs = ["awaji", "shonan", "kyushu", "shimanami"]
+    .map(s => PW_AREAS.find(a => a.slug === s))
+    .filter(Boolean) as typeof PW_AREAS;
+  return (
+    <section style={{ padding: "clamp(80px, 14vw, 160px) 0", background: QC.warmWhite }}>
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 clamp(20px, 4vw, 32px)" }}>
+        <div
+          style={{
+            borderRadius: 20, overflow: "hidden", position: "relative",
+            padding: "clamp(56px, 11vw, 120px) clamp(28px, 5vw, 56px)",
+            display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+            background: `linear-gradient(180deg, rgba(44,41,38,0.28) 0%, rgba(44,41,38,0.68) 100%), url("${heroImg}") center / cover no-repeat, ${QC.softBrown}`,
+          }}
+        >
+          <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, letterSpacing: 4, color: "rgba(255,255,255,0.9)", margin: "0 0 14px", textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>
+            Pet Walker
+          </p>
+          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: "clamp(26px, 4.6vw, 40px)", lineHeight: 1.5, color: "#fff", margin: "0 0 16px", textShadow: "0 2px 14px rgba(0,0,0,0.55)" }}>
+            うちの子と、出かける。
+          </h2>
+          <p style={{ fontSize: "clamp(14px, 1.6vw, 16px)", color: "rgba(255,255,255,0.95)", fontWeight: 300, lineHeight: 2.0, maxWidth: 520, margin: "0 0 32px", textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}>
+            泊まれる宿、一緒に入れるカフェ、歩きたくなる場所。<br />
+            この子と過ごす旅を、エリアごとに。
+          </p>
+          <button
+            onClick={() => setPage("petwalker")}
+            style={{
+              padding: "14px 36px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.85)",
+              background: "rgba(255,255,255,0.12)", backdropFilter: "blur(4px)",
+              color: "#fff", fontFamily: QC_FONT_JP, fontSize: 15, fontWeight: 400, cursor: "pointer",
+              letterSpacing: 1, transition: "all 0.8s cubic-bezier(0.22,1,0.36,1)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.24)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
+          >
+            おでかけ先をさがす
+          </button>
+          {/* チラ見せサムネ (代表4エリア) */}
+          <div style={{ display: "flex", gap: "clamp(8px, 1.5vw, 14px)", marginTop: 36, flexWrap: "wrap", justifyContent: "center" }}>
+            {thumbs.map((a) => (
+              <button
+                key={a.slug}
+                onClick={() => setPage("petwalker")}
+                style={{
+                  position: "relative", width: "clamp(64px, 13vw, 100px)", height: "clamp(48px, 9vw, 70px)",
+                  borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.4)", cursor: "pointer", padding: 0,
+                  background: `linear-gradient(180deg, rgba(44,41,38,0.1) 0%, rgba(44,41,38,0.55) 100%), url("${a.img}") center / cover no-repeat, ${QC.softBrown}`,
+                  display: "flex", alignItems: "flex-end", justifyContent: "center",
+                }}
+              >
+                <span style={{ fontSize: "clamp(9px, 1.3vw, 11px)", color: "#fff", fontWeight: 400, padding: "0 0 5px", textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>{a.tag}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvents = [] }) => {
   const progress = useScrollProgress();
   const bgColor = qoccaInterpolateBackground(progress);
@@ -2734,6 +2800,8 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
       <SectionTodaysMoments setPage={setPage} />
       <SectionTownMap setPage={setPage} />
+      {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
+      <SectionPetWalker setPage={setPage} />
       <SectionResidentArtisans listings={listings} onDetail={onDetail} setPage={setPage} />
       <SectionVoices setPage={setPage} />
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
