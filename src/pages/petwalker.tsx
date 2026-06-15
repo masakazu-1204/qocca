@@ -108,14 +108,23 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
           <button onClick={() => setActiveArea(null)} style={backLinkStyle}>
             ← エリアをえらぶ
           </button>
-          <div style={{ marginTop: 24, marginBottom: 48, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
-            <p style={{ fontFamily: QC_FONT_EN, fontSize: 14, letterSpacing: 3, color: QC.sage, margin: "0 0 10px" }}>
+          <div
+            style={{
+              marginTop: 20, marginBottom: 48, borderRadius: 18, overflow: "hidden",
+              padding: isPC ? "64px 40px" : "44px 26px",
+              display: "flex", flexDirection: "column", justifyContent: "flex-end",
+              minHeight: isPC ? 280 : 200,
+              background: `linear-gradient(180deg, rgba(44,41,38,0.25) 0%, rgba(44,41,38,0.70) 100%), url("${area?.img}") center / cover no-repeat, ${QC.softBrown}`,
+              animation: `qocca-fadeInSlow 1.2s ${ease} both`,
+            }}
+          >
+            <p style={{ fontFamily: QC_FONT_EN, fontSize: 14, letterSpacing: 3, color: "rgba(255,255,255,0.9)", margin: "0 0 10px", textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>
               {area?.en}
             </p>
-            <h1 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 40 : 30, margin: "0 0 12px", color: QC.charcoal }}>
+            <h1 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 40 : 30, margin: "0 0 12px", color: "#fff", textShadow: "0 2px 14px rgba(0,0,0,0.55)" }}>
               {activeArea}
             </h1>
-            <p style={{ fontSize: isPC ? 17 : 15, color: QC.warmGray, fontWeight: 300, lineHeight: 1.9 }}>
+            <p style={{ fontSize: isPC ? 17 : 15, color: "rgba(255,255,255,0.95)", fontWeight: 300, lineHeight: 1.9, textShadow: "0 1px 10px rgba(0,0,0,0.6)", margin: 0 }}>
               {area?.blurb}
             </p>
           </div>
@@ -184,14 +193,17 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
               className="pw-tile"
               style={{
                 ...areaTileStyle,
+                // 背景: 暗幕グラデ + 画像 + フォールバック色 を background shorthand 一本で(longhand混在警告回避)。
+                // 画像欠落時は末尾の softBrown が残り白文字が読める。
+                background: `linear-gradient(180deg, rgba(44,41,38,0.20) 0%, rgba(44,41,38,0.72) 100%), url("${a.img}") center / cover no-repeat, ${QC.softBrown}`,
                 animation: `qocca-fadeInSlowUp 1s ${ease} both`,
                 animationDelay: `${0.06 * i}s`,
               }}
             >
-              <span style={{ fontFamily: QC_FONT_EN, fontSize: 11.5, letterSpacing: 2.5, color: QC.sage }}>{a.en}</span>
-              <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 24 : 19, color: QC.charcoal, margin: "6px 0 8px" }}>{a.tag}</span>
-              <span style={{ fontSize: 12.5, color: QC.warmGray, fontWeight: 300, lineHeight: 1.7 }}>{a.blurb}</span>
-              <span style={{ fontSize: 11.5, color: QC.sage, marginTop: 12 }}>
+              <span style={{ fontFamily: QC_FONT_EN, fontSize: 11.5, letterSpacing: 2.5, color: "rgba(255,255,255,0.9)", textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}>{a.en}</span>
+              <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 26 : 20, color: "#fff", margin: "6px 0 8px", textShadow: "0 1px 10px rgba(0,0,0,0.5)" }}>{a.tag}</span>
+              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.92)", fontWeight: 300, lineHeight: 1.7, textShadow: "0 1px 8px rgba(0,0,0,0.55)" }}>{a.blurb}</span>
+              <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.85)", marginTop: 12, textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
                 {loading ? "" : `${countByArea(a.tag)} スポット`}
               </span>
             </button>
@@ -219,7 +231,7 @@ const spotCardStyle: React.CSSProperties = {
 };
 
 const areaTileStyle: React.CSSProperties = {
-  display: "flex", flexDirection: "column", alignItems: "flex-start",
-  background: "#fff", border: `1px solid ${QC.lightSand}`, borderRadius: 16,
-  padding: "26px 24px", cursor: "pointer", fontFamily: QC_FONT_JP, textAlign: "left", minHeight: 150,
+  display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end",
+  border: "none", borderRadius: 16, overflow: "hidden",
+  padding: "22px 22px", cursor: "pointer", fontFamily: QC_FONT_JP, textAlign: "left", minHeight: 200,
 };
