@@ -39,13 +39,15 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const nowIso = new Date().toISOString();
 
-  // 対象抽出: delivered かつ auto_complete_at 経過 かつ 未送金。
-  //   disputed/working/cancelled/completed は status!='delivered' で自動的に対象外。
+  // 対象抽出 (Phase3: fulfillment_status ベースに切替): delivered かつ auto_complete_at 経過 かつ 未送金。
+  //   disputed/working/cancelled/completed は fulfillment_status!='delivered' で自動的に対象外。
   //   期限前(auto_complete_at 未来)は lte で対象外。
+  //   ※ status と fulfillment_status は dual-write で整合 (切替時 ドリフトゼロ確認済)。
+  //   ※ 最終送金判定は complete-order 内部ガード(status据置)で二重に守られる。
   const { data: due, error: dueErr } = await supabase
     .from("orders")
-    .select("id, order_number, buyer_id, seller_id, listing_id, status, auto_complete_at, transferred_at, stripe_payment_intent_id")
-    .eq("status", "delivered")
+    .select("id, order_number, buyer_id, seller_id, listing_id, status, fulfillment_status, payment_status, auto_complete_at, transferred_at, stripe_payment_intent_id")
+    .eq("fulfillment_status", "delivered")
     .lte("auto_complete_at", nowIso)
     .is("transferred_at", null);
 

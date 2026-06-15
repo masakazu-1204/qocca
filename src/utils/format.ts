@@ -35,6 +35,24 @@ export const stepIndex = (status) => {
   return 0;
 };
 
+// ── 2軸(payment_status × fulfillment_status)→ 表示キー導出 (Phase3 読み取り切替) ──
+// 既存 statusLabel/stepIndex のキー(pending/working/delivered/completed/disputed/refunded/cancelled)を返す。
+// 優先順位: 返金 > 決済待ち > キャンセル/期限切れ > 異議 > 完了 > 納品 > 作業中。
+// ⚠️ 新2軸が無い旧データは order.status にフォールバック。
+export const orderStatusKey = (o: any): string => {
+  const p = o?.payment_status;
+  const f = o?.fulfillment_status;
+  if (!p && !f) return o?.status || "pending";        // フォールバック(旧データ)
+  if (p === "refunded") return "refunded";            // 返金は最優先(納品後返金でも返金済み表示)
+  if (p === "awaiting_payment") return "pending";     // 決済待ち
+  if (f === "cancelled" || p === "expired") return "cancelled";
+  if (f === "disputed") return "disputed";
+  if (f === "completed") return "completed";
+  if (f === "delivered") return "delivered";
+  if (f === "working") return "working";
+  return o?.status || "pending";                      // 最終フォールバック
+};
+
 // ── 統計値フォーマット (100以上は切り下げ「+」表記) ────────────────────
 export const formatStat = (n:number, threshold:number = 100) => {
   if (n >= threshold) {
