@@ -171,6 +171,7 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
         { key: "communities", icon: "💬", label: "広場",            onClick: () => setPage("communities") },
         { key: "events",      icon: "📅", label: "イベント",        onClick: () => setPage("events") },
         { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => setPage("facilities") },
+        { key: "petwalker",   icon: "🧭", label: "おでかけ",        onClick: () => setPage("petwalker") },
         { key: "blog",        icon: "📝", label: "ブログ",          onClick: () => setPage("blog") },
       ],
     },
@@ -271,7 +272,7 @@ export const PCNavbar = ({ setPage, liked, search, setSearch }) => {
       </div>
       {/* 依頼書 #134 Phase 2 後追い (2026/6/6): 中間幅 (~960px) で折り返す問題を nowrap + clamp gap で解消 */}
       <div style={{ display:"flex", alignItems:"center", gap:"clamp(6px, 1.2vw, 16px)", marginLeft:"auto", flexWrap:"nowrap", minWidth:0 }}>
-        {[["home","ホーム"],["search","さがす"],["events","イベント"],["gallery","ギャラリー"],["liked","お気に入り"]].map(([id,label])=>(
+        {[["home","ホーム"],["search","さがす"],["events","イベント"],["gallery","ギャラリー"],["petwalker","おでかけ"],["liked","お気に入り"]].map(([id,label])=>(
           <button key={id} onClick={()=>setPage(id)} style={{
             background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
             fontSize:14, fontWeight:700, color:C.dark, padding:"4px clamp(4px, 0.6vw, 8px)",
@@ -334,6 +335,7 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
         { key: "communities", icon: "💬", label: "広場",            onClick: () => navigate("communities") },
         { key: "events",      icon: "📅", label: "イベント",        onClick: () => navigate("events") },
         { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => navigate("facilities") },
+        { key: "petwalker",   icon: "🧭", label: "おでかけ",        onClick: () => navigate("petwalker") },
         { key: "blog",        icon: "📝", label: "ブログ",          onClick: () => navigate("blog") },
       ],
     },
@@ -512,6 +514,7 @@ export const TabBar = ({ page, setPage }) => {
     { id:"communities", icon:"💬", label:"コミュニティ" },
     { id:"sell", icon:"➕", label:"" },
     { id:"events", icon:"📅", label:"イベント" },
+    { id:"petwalker", icon:"🧭", label:"おでかけ" },
     { id: user ? "mypage" : "signup", icon:"👤", label: user ? "マイページ" : "ログイン" },
   ];
   return (
