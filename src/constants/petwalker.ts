@@ -44,6 +44,7 @@ export const PW_AREAS: PWArea[] = [
   { tag: "道後温泉",      en: "Dogo",         blurb: "日本最古の、湯の里。",         slug: "dogo",        img: pwImg("dogo") },
   // テーマ特集 (地名でなく道中の休憩テーマ・2026/6/16・画像後日)
   { tag: "高速SA・ドッグラン", en: "Highway Dog Run", blurb: "道中の、ひと休み。",      slug: "driving_dogrun", img: pwImg("driving_dogrun") },
+  { tag: "道の駅・ドッグラン", en: "Roadside Station Dog Run", blurb: "立ち寄りの、ひと遊び。", slug: "michinoeki_dogrun", img: pwImg("michinoeki_dogrun") },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
