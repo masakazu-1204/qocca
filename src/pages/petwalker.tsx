@@ -101,7 +101,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                 onMouseEnter={(e) => { e.currentTarget.style.background = QC.softBrown; e.currentTarget.style.color = "#fff"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = QC.softBrown; }}
               >
-                Googleマップで開く →
+                Googleマップで探す →
               </a>
               {/* 情報鮮度の注記 (さりげなく・小さめグレー) */}
               <p style={{ fontSize: 11.5, color: QC.sage, fontWeight: 300, lineHeight: 1.7, marginTop: 20 }}>
