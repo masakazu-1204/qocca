@@ -48,6 +48,29 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   // エリア別件数
   const countByArea = (tag: string) => spots.filter((s) => s.area_tag === tag).length;
 
+  // タイル描画 (エリア/テーマ共通)。i は各セクション内の連番 (stagger 用)。
+  const renderTile = (a: typeof PW_AREAS[number], i: number) => (
+    <button
+      key={a.tag}
+      onClick={() => { setActiveArea(a.tag); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+      className="pw-tile"
+      style={{
+        ...areaTileStyle,
+        // 背景: 暗幕グラデ + 画像 + フォールバック色 を background shorthand 一本で(longhand混在警告回避)。
+        background: `linear-gradient(180deg, rgba(44,41,38,0.20) 0%, rgba(44,41,38,0.72) 100%), url("${a.img}") center / cover no-repeat, ${QC.softBrown}`,
+        animation: `qocca-fadeInSlowUp 1s ${ease} both`,
+        animationDelay: `${0.05 * i}s`,
+      }}
+    >
+      <span style={{ fontFamily: QC_FONT_EN, fontSize: 11.5, letterSpacing: 2.5, color: "rgba(255,255,255,0.9)", textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}>{a.en}</span>
+      <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 26 : 20, color: "#fff", margin: "6px 0 8px", textShadow: "0 1px 10px rgba(0,0,0,0.5)" }}>{a.tag}</span>
+      <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.92)", fontWeight: 300, lineHeight: 1.7, textShadow: "0 1px 8px rgba(0,0,0,0.55)" }}>{a.blurb}</span>
+      <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.85)", marginTop: 12, textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
+        {loading ? "" : `${countByArea(a.tag)} スポット`}
+      </span>
+    </button>
+  );
+
   // ⚠️ モバイルは固定Navbar(position:fixed, height:60)があるため top=76 (60+余白16) でクリア。
   //   PCは App側で paddingTop:68 済 + 固定PCNavbar(68) なので 64 でOK。(facilities の paddingTop:isPC?0:60 と同作法)
   const wrap: React.CSSProperties = {
@@ -201,30 +224,27 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: isPC ? 24 : 14 }}>
-          {PW_AREAS.map((a, i) => (
-            <button
-              key={a.tag}
-              onClick={() => { setActiveArea(a.tag); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className="pw-tile"
-              style={{
-                ...areaTileStyle,
-                // 背景: 暗幕グラデ + 画像 + フォールバック色 を background shorthand 一本で(longhand混在警告回避)。
-                // 画像欠落時は末尾の softBrown が残り白文字が読める。
-                background: `linear-gradient(180deg, rgba(44,41,38,0.20) 0%, rgba(44,41,38,0.72) 100%), url("${a.img}") center / cover no-repeat, ${QC.softBrown}`,
-                animation: `qocca-fadeInSlowUp 1s ${ease} both`,
-                animationDelay: `${0.06 * i}s`,
-              }}
-            >
-              <span style={{ fontFamily: QC_FONT_EN, fontSize: 11.5, letterSpacing: 2.5, color: "rgba(255,255,255,0.9)", textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}>{a.en}</span>
-              <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 26 : 20, color: "#fff", margin: "6px 0 8px", textShadow: "0 1px 10px rgba(0,0,0,0.5)" }}>{a.tag}</span>
-              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.92)", fontWeight: 300, lineHeight: 1.7, textShadow: "0 1px 8px rgba(0,0,0,0.55)" }}>{a.blurb}</span>
-              <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.85)", marginTop: 12, textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
-                {loading ? "" : `${countByArea(a.tag)} スポット`}
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* エリアで探す (地名・北→南) */}
+        <section style={{ marginBottom: isPC ? 64 : 48 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, margin: "0 0 22px", paddingBottom: 12, borderBottom: `1px solid ${QC.lightSand}` }}>
+            <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 22 : 19, margin: 0, color: QC.softBrown }}>エリアで探す</h2>
+            <span style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage }}>By Area</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: isPC ? 24 : 14 }}>
+            {PW_AREAS.filter((a) => a.kind === "area").map(renderTile)}
+          </div>
+        </section>
+
+        {/* 目的で探す (テーマ特集) */}
+        <section>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, margin: "0 0 22px", paddingBottom: 12, borderBottom: `1px solid ${QC.lightSand}` }}>
+            <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 22 : 19, margin: 0, color: QC.softBrown }}>目的で探す</h2>
+            <span style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage }}>By Purpose</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: isPC ? 24 : 14 }}>
+            {PW_AREAS.filter((a) => a.kind === "theme").map(renderTile)}
+          </div>
+        </section>
       </div>
     </div>
   );
