@@ -27,6 +27,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   const [loading, setLoading] = useState(true);
   const [activeArea, setActiveArea] = useState<string | null>(null);
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null);
+  const [activeCat, setActiveCat] = useState<string>("all"); // スポット一覧のカテゴリ絞り込み (エリア入場で all にリセット)
 
   useEffect(() => {
     let alive = true;
@@ -52,7 +53,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   const renderTile = (a: typeof PW_AREAS[number], i: number) => (
     <button
       key={a.tag}
-      onClick={() => { setActiveArea(a.tag); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+      onClick={() => { setActiveArea(a.tag); setActiveCat("all"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
       className="pw-tile"
       style={{
         ...areaTileStyle,
@@ -168,10 +169,42 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             </p>
           </div>
 
+          {/* カテゴリ絞り込み (具体的に探し始めた人向け・控えめ)。
+              そのエリアに存在するカテゴリのみ・1種以下なら非表示。デフォルト「すべて」。 */}
+          {!loading && (() => {
+            const avail = PW_CATEGORIES.filter((c) => areaSpots.some((s) => s.category === c.key));
+            if (avail.length <= 1) return null;
+            const chips = [{ key: "all", label: "すべて" }, ...avail];
+            return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 36 }}>
+                {chips.map((c) => {
+                  const on = activeCat === c.key;
+                  const cnt = c.key === "all" ? areaSpots.length : areaSpots.filter((s) => s.category === c.key).length;
+                  return (
+                    <button
+                      key={c.key}
+                      onClick={() => setActiveCat(c.key)}
+                      style={{
+                        padding: "7px 16px", borderRadius: 999, cursor: "pointer",
+                        fontFamily: QC_FONT_JP, fontSize: 13, fontWeight: 400, letterSpacing: 0.4,
+                        border: `1px solid ${on ? QC.softBrown : QC.lightSand}`,
+                        background: on ? QC.softBrown : "transparent",
+                        color: on ? "#fff" : QC.warmGray,
+                        transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                      }}
+                    >
+                      {c.label} <span style={{ fontSize: 11, opacity: 0.7 }}>{cnt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {loading ? (
             <p style={{ color: QC.warmGray, fontWeight: 300 }}>読み込んでいます。</p>
           ) : (
-            PW_CATEGORIES.map((cat) => {
+            PW_CATEGORIES.filter((cat) => activeCat === "all" || cat.key === activeCat).map((cat) => {
               const list = areaSpots.filter((s) => s.category === cat.key);
               if (list.length === 0) return null;
               return (
