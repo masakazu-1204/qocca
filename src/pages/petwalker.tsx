@@ -81,20 +81,30 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                 {s.description}
               </p>
             )}
-            {/* 地図ピン: 座標は準備中 (lat/lng が入ったら地図表示に拡張予定) */}
+            {/* 地図: Googleマップで開く (証明された方式・座標不要・name+地域で検索) */}
             <div style={{ borderTop: `1px solid ${QC.lightSand}`, paddingTop: 28 }}>
               <p style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage, margin: "0 0 8px" }}>LOCATION</p>
-              {s.latitude != null && s.longitude != null ? (
-                <p style={{ fontSize: 14, color: QC.warmGray, fontWeight: 300 }}>
-                  {s.address || [s.pref, s.city].filter(Boolean).join(" ")}（{s.latitude.toFixed(4)}, {s.longitude.toFixed(4)}）
-                </p>
-              ) : (
-                <p style={{ fontSize: 14, color: QC.warmGray, fontWeight: 300 }}>
-                  {[s.pref, s.city].filter(Boolean).join(" ")} ・ 地図は準備中です。
-                </p>
-              )}
+              <p style={{ fontSize: 14, color: QC.warmGray, fontWeight: 300, margin: "0 0 16px" }}>
+                {[s.pref, s.city].filter(Boolean).join(" ")}
+              </p>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([s.name, s.pref, s.city].filter(Boolean).join(" "))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  padding: "11px 24px", borderRadius: 999,
+                  border: `1px solid ${QC.softBrown}`, color: QC.softBrown, background: "transparent",
+                  fontFamily: QC_FONT_JP, fontSize: 14, fontWeight: 400, textDecoration: "none", letterSpacing: 0.5,
+                  transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = QC.softBrown; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = QC.softBrown; }}
+              >
+                Googleマップで開く →
+              </a>
               {/* 情報鮮度の注記 (さりげなく・小さめグレー) */}
-              <p style={{ fontSize: 11.5, color: QC.sage, fontWeight: 300, lineHeight: 1.7, marginTop: 16 }}>
+              <p style={{ fontSize: 11.5, color: QC.sage, fontWeight: 300, lineHeight: 1.7, marginTop: 20 }}>
                 ペット可の条件は変わることがあります。おでかけ前に各施設の最新情報をご確認ください。
               </p>
             </div>
