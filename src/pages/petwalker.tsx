@@ -132,6 +132,27 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                 ペット可の条件は変わることがあります。おでかけ前に各施設の最新情報をご確認ください。
               </p>
             </div>
+            {/* Qocca 紹介 + 商店街CTA (広告着地の初見ユーザー向け・控えめ) */}
+            <div style={{ marginTop: 40, paddingTop: 28, borderTop: `1px solid ${QC.lightSand}` }}>
+              <p style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, lineHeight: 2.0, maxWidth: 600, margin: "0 0 18px" }}>
+                Qocca は、ペットと暮らす人のための街。<br />
+                お出かけ情報も、うちの子のグッズも、ここで。
+              </p>
+              <button
+                onClick={() => setPage && setPage("marketplace")}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  padding: "11px 24px", borderRadius: 999,
+                  border: `1px solid ${QC.lightSand}`, background: "transparent", color: QC.softBrown,
+                  fontFamily: QC_FONT_JP, fontSize: 14, fontWeight: 400, cursor: "pointer", letterSpacing: 0.5,
+                  transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = QC.cream; e.currentTarget.style.borderColor = QC.softBrown; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = QC.lightSand; }}
+              >
+                商店街をのぞいてみる →
+              </button>
+            </div>
           </div>
         </div>
       </div>
