@@ -24,6 +24,14 @@ export const PW_AREAS: PWArea[] = [
   { tag: "南紀白浜",      en: "Shirahama",    blurb: "白い渚と、太平洋。",           slug: "shirahama",   img: pwImg("shirahama") },
   { tag: "琵琶湖",        en: "Lake Biwa",    blurb: "湖畔の風と、並木道。",         slug: "biwako",      img: pwImg("biwako") },
   { tag: "小豆島",        en: "Shodoshima",   blurb: "瀬戸内の島と、夕陽。",         slug: "shodoshima",  img: pwImg("shodoshima") },
+  // 全国7エリア (2026/6/16 追加・画像は後日投入→投入まではフォールバック背景)
+  { tag: "房総",          en: "Boso",         blurb: "潮風と、海辺の休日。",         slug: "boso",         img: pwImg("boso") },
+  { tag: "日光・那須",    en: "Nikko",        blurb: "森と湖の、高原へ。",           slug: "nikko",        img: pwImg("nikko") },
+  { tag: "浜名湖",        en: "Lake Hamana",  blurb: "湖畔で過ごす、犬旅。",         slug: "hamanako",     img: pwImg("hamanako") },
+  { tag: "出雲",          en: "Izumo",        blurb: "神話の国を、めぐる。",         slug: "izumo",        img: pwImg("izumo") },
+  { tag: "四万十",        en: "Shimanto",     blurb: "最後の清流に沿って。",         slug: "shimanto",     img: pwImg("shimanto") },
+  { tag: "飛騨高山",      en: "Hida-Takayama", blurb: "古い町並みと、山里。",        slug: "hidatakayama", img: pwImg("hidatakayama") },
+  { tag: "白馬",          en: "Hakuba",       blurb: "北アルプスを、仰ぐ。",         slug: "hakuba",       img: pwImg("hakuba") },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
