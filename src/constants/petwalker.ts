@@ -42,6 +42,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "草津温泉",      en: "Kusatsu",      blurb: "湯畑と、硫黄の香り。",         slug: "kusatsu",     img: pwImg("kusatsu") },
   { tag: "金沢",          en: "Kanazawa",     blurb: "茶屋街と、古都の風情。",       slug: "kanazawa",    img: pwImg("kanazawa") },
   { tag: "道後温泉",      en: "Dogo",         blurb: "日本最古の、湯の里。",         slug: "dogo",        img: pwImg("dogo") },
+  // テーマ特集 (地名でなく道中の休憩テーマ・2026/6/16・画像後日)
+  { tag: "高速SA・ドッグラン", en: "Highway Dog Run", blurb: "道中の、ひと休み。",      slug: "driving_dogrun", img: pwImg("driving_dogrun") },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
