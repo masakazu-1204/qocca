@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_TIMING } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
+import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 
 type Spot = {
   id: string; name: string; category: string; pref: string; city: string | null;
@@ -45,6 +46,16 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     })();
     return () => { alive = false; };
   }, []);
+
+  // Meta Pixel: スポット詳細表示 (個人情報なし=施設名/カテゴリのみ・no-op安全)
+  useEffect(() => {
+    if (activeSpot) mpTrackEvent("PetWalkerSpotView", { content_name: activeSpot.name, content_category: activeSpot.category });
+  }, [activeSpot]);
+
+  // Meta Pixel: エリア表示 (個人情報なし=エリア名のみ)
+  useEffect(() => {
+    if (activeArea) mpTrackEvent("PetWalkerAreaView", { content_name: activeArea });
+  }, [activeArea]);
 
   // エリア別件数
   const countByArea = (tag: string) => spots.filter((s) => s.area_tag === tag).length;
@@ -139,7 +150,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                 お出かけ情報も、うちの子のグッズも、ここで。
               </p>
               <button
-                onClick={() => setPage && setPage("marketplace")}
+                onClick={() => { mpTrackEvent("PetWalkerToMarket"); setPage && setPage("marketplace"); }}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   padding: "11px 24px", borderRadius: 999,
