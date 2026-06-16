@@ -93,6 +93,10 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                   {[s.pref, s.city].filter(Boolean).join(" ")} ・ 地図は準備中です。
                 </p>
               )}
+              {/* 情報鮮度の注記 (さりげなく・小さめグレー) */}
+              <p style={{ fontSize: 11.5, color: QC.sage, fontWeight: 300, lineHeight: 1.7, marginTop: 16 }}>
+                ペット可の条件は変わることがあります。おでかけ前に各施設の最新情報をご確認ください。
+              </p>
             </div>
           </div>
         </div>
