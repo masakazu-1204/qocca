@@ -45,6 +45,7 @@ export const PW_AREAS: PWArea[] = [
   // テーマ特集 (地名でなく道中の休憩テーマ・2026/6/16・画像後日)
   { tag: "高速SA・ドッグラン", en: "Highway Dog Run", blurb: "道中の、ひと休み。",      slug: "driving_dogrun", img: pwImg("driving_dogrun") },
   { tag: "道の駅・ドッグラン", en: "Roadside Station Dog Run", blurb: "立ち寄りの、ひと遊び。", slug: "michinoeki_dogrun", img: pwImg("michinoeki_dogrun") },
+  { tag: "雨の日OK・屋内あそび場", en: "Rainy Day", blurb: "雨でも、思いきり。", slug: "rainy_indoor", img: pwImg("rainy_indoor") },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
