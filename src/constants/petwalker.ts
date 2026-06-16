@@ -37,6 +37,11 @@ export const PW_AREAS: PWArea[] = [
   { tag: "箱根",          en: "Hakone",       blurb: "山の湯と、富士の眺め。",       slug: "hakone",      img: pwImg("hakone") },
   { tag: "伊豆",          en: "Izu",          blurb: "海と高原の、伊豆路。",         slug: "izu",         img: pwImg("izu") },
   { tag: "蔵王",          en: "Zao",          blurb: "樹氷と、山の湯。",             slug: "zao",         img: pwImg("zao") },
+  // 全国4エリア (2026/6/16 追加・画像は後日投入→投入まではフォールバック背景)
+  { tag: "沖縄",          en: "Okinawa",      blurb: "碧い海と、島時間。",           slug: "okinawa",     img: pwImg("okinawa") },
+  { tag: "草津温泉",      en: "Kusatsu",      blurb: "湯畑と、硫黄の香り。",         slug: "kusatsu",     img: pwImg("kusatsu") },
+  { tag: "金沢",          en: "Kanazawa",     blurb: "茶屋街と、古都の風情。",       slug: "kanazawa",    img: pwImg("kanazawa") },
+  { tag: "道後温泉",      en: "Dogo",         blurb: "日本最古の、湯の里。",         slug: "dogo",        img: pwImg("dogo") },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
