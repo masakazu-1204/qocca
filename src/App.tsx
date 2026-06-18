@@ -166,8 +166,10 @@ function QoccaAppInner() {
     </div>
   );
 
+  // ⚠️ padding は shorthand 一本に統一 (旧: paddingBottom + padding:0 が混在 → padding:0 が下余白を上書きし TabBar 裏にコンテンツが潜っていた)。
+  //    showTabBar 時のみ下に TabBar高(70)+safe-area を確保 (ノッチ機のホームインジケータ対応)。
   return (
-    <div style={{ fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", background:C.cream, minHeight:"100vh", paddingBottom: showTabBar ? 70 : 0, width:"100%", overflowX:"hidden", margin:0, padding:0 }}>
+    <div style={{ fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", background:C.cream, minHeight:"100vh", width:"100%", overflowX:"hidden", margin:0, padding: showTabBar ? "0 0 calc(70px + env(safe-area-inset-bottom, 0px)) 0" : 0 }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet"/>
 
       {isPC
