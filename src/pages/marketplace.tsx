@@ -1456,7 +1456,8 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
       <div style={{
         position:"fixed", bottom:0, left:0, right:0,
         background:C.white, borderTop:`1px solid ${C.border}`,
-        padding:"12px 16px", display:"flex", alignItems:"center", gap:12,
+        // safe-area 対応(レイアウトのみ): ホームインジケータ機で購入ボタンが潜らないよう下paddingにsafe-areaを加算
+        padding:"12px 16px calc(12px + env(safe-area-inset-bottom, 0px))", display:"flex", alignItems:"center", gap:12,
         boxShadow:"0 -4px 20px rgba(0,0,0,0.08)"
       }}>
         <div style={{ flex:1 }}>
