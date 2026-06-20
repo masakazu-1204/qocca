@@ -9,6 +9,7 @@ import { QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_TIMING } from "../const
 import { supabase } from "../supabaseClient";
 import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
+import { PetWalkerReviews } from "../components/PetWalkerReviews";
 
 type Spot = {
   id: string; name: string; category: string; pref: string; city: string | null;
@@ -143,6 +144,8 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                 ペット可の条件は変わることがあります。おでかけ前に各施設の最新情報をご確認ください。
               </p>
             </div>
+            {/* 口コミ (DB基盤に乗せるだけ・ログイン時のみ投稿/通報・公開はis_hidden=false) */}
+            <PetWalkerReviews spotId={s.id} isPC={isPC} />
             {/* Qocca 紹介 + 商店街CTA (広告着地の初見ユーザー向け・控えめ) */}
             <div style={{ marginTop: 40, paddingTop: 28, borderTop: `1px solid ${QC.lightSand}` }}>
               <p style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, lineHeight: 2.0, maxWidth: 600, margin: "0 0 18px" }}>
