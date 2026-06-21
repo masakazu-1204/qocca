@@ -514,12 +514,11 @@ export const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void
 };
 
 // ── 依頼書 #35 v2 (2026/5/31): 法人スポンサー一覧ページ /sponsors ─────────
-// 公開 view crowdfunding_public_sponsors (anon 可) から corporate_300000 のみ
-// public_display=true & redeemed_at IS NOT NULL のスポンサーをグリッド表示
+// 公開専用ビュー crowdfunding_founding_partners_public (anon可・amount/backer_id非露出) から corporate_300000 のみ
+// ビュー側で public_display=true & redeemed_at IS NOT NULL & founding_display_consent=true を内包・グリッド表示
 // 空状態は CTA 中心、登録あれば法人ロゴ + 社名 + Web リンク
 export const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
   const [sponsors, setSponsors] = useState<Array<{
-    backer_id: string;
     sponsor_logo_url: string | null;
     sponsor_company_name: string | null;
     sponsor_website_url: string | null;
@@ -530,9 +529,10 @@ export const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
 
   useEffect(() => {
     (async () => {
+      // 公開専用ビュー (同意法人のみ・amount/backer_id 非露出)
       const { data } = await supabase
-        .from("crowdfunding_public_sponsors")
-        .select("backer_id, sponsor_logo_url, sponsor_company_name, sponsor_website_url, display_name, created_at")
+        .from("crowdfunding_founding_partners_public")
+        .select("sponsor_logo_url, sponsor_company_name, sponsor_website_url, display_name, created_at")
         .eq("tier", "corporate_300000")
         .order("created_at", { ascending: true });
       setSponsors((data as any[]) || []);
@@ -581,10 +581,10 @@ export const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
         ) : (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
-              {sponsors.map(s => {
+              {sponsors.map((s, i) => {
                 const name = s.sponsor_company_name || s.display_name || "法人スポンサー";
                 return (
-                  <div key={s.backer_id} style={{ background: C.white, borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <div key={i} style={{ background: C.white, borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                     {s.sponsor_logo_url ? (
                       <img src={s.sponsor_logo_url} alt={name} style={{ maxWidth: "100%", maxHeight: 80, objectFit: "contain", marginBottom: 12 }} />
                     ) : (
