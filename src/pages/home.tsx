@@ -2546,12 +2546,12 @@ const SectionJoinTown = ({ setPage }) => {
 // CrowdfundingBanner + クラファン期間定数は components/CrowdfundingBanner.tsx へ移動 (Phase5 ②gallery 循環import回避)
 
 // ── 依頼書 #35 v2 (2026/5/31): 創業パートナー HomePage セクション ─────────
-// SELECT crowdfunding_public_sponsors (anon 可) → mayor_30000 + corporate_300000 で
-// founding_display_consent=true のみ表示 (オプトイン)
+// SELECT crowdfunding_founding_partners_public (公開専用ビュー・anon可・amount/backer_id非露出) →
+// mayor_30000 + corporate_300000 で表示。ビュー側で founding_display_consent=true (オプトイン) を内包。
 // 名前のみシンプル表示 (永続記録 #11「シンプル維持」哲学準拠)
 const FoundingPartnersSection = () => {
   const [partners, setPartners] = useState<Array<{
-    backer_id: string; tier: string; amount: number;
+    tier: string;
     founding_display_name: string | null; sponsor_company_name: string | null;
     display_name: string | null;
   }>>([]);
@@ -2559,12 +2559,13 @@ const FoundingPartnersSection = () => {
 
   useEffect(() => {
     (async () => {
+      // 公開専用ビュー (amount/backer_id/profile_id 非露出・同意者のみ・definer)。
+      // 並びは tier 昇順 (corporate_300000 → mayor_30000) → 登録順。amount は非公開のため使わない。
       const { data } = await supabase
-        .from("crowdfunding_public_sponsors")
-        .select("backer_id, tier, amount, founding_display_name, sponsor_company_name, display_name, founding_display_consent")
+        .from("crowdfunding_founding_partners_public")
+        .select("tier, founding_display_name, sponsor_company_name, display_name")
         .in("tier", ["mayor_30000", "corporate_300000"])
-        .eq("founding_display_consent", true)
-        .order("amount", { ascending: false })
+        .order("tier", { ascending: true })
         .order("created_at", { ascending: true })
         .limit(50);
       setPartners((data as any[]) || []);
@@ -2589,13 +2590,13 @@ const FoundingPartnersSection = () => {
         </p>
         {hasPartners ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 18 }}>
-            {partners.map(p => {
+            {partners.map((p, i) => {
               const name = p.tier === "corporate_300000"
                 ? (p.sponsor_company_name || p.founding_display_name || p.display_name || "法人スポンサー")
                 : (p.founding_display_name || p.display_name || "街の首長");
               const icon = p.tier === "corporate_300000" ? "🏢" : "👑";
               return (
-                <span key={p.backer_id} style={{
+                <span key={i} style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
                   padding: "6px 12px", background: "#FFF", borderRadius: 20,
                   fontSize: 12, color: "#5A4A2C", fontWeight: 600,
