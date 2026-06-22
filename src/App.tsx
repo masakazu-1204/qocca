@@ -77,6 +77,22 @@ function QoccaAppInner() {
     initMetaPixel();
   }, []);
 
+  // トラクション計測 (2026/6/22): ログインユーザーの当日アクティブを1日1行記録。
+  // DAU/MAU/リテンション/コホートの器 (daily_active_log)。共有supabase使用・新規clientは作らない。
+  // 未ログインは何もしない (user_idなし=対象外)。PK(user_id,active_date)で同日重複は自動排除。
+  // ⚠️ 計測の失敗はUXを一切ブロックしない (握り潰し・決済等の既存挙動に無影響)。
+  useEffect(() => {
+    if (!user?.id) return;
+    const jstDate = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); // JST基準の当日
+    (async () => {
+      try {
+        await supabase
+          .from("daily_active_log")
+          .upsert({ user_id: user.id, active_date: jstDate }, { onConflict: "user_id,active_date", ignoreDuplicates: true });
+      } catch { /* 計測失敗は無視 (アプリ動作に影響させない) */ }
+    })();
+  }, [user?.id]);
+
   // 依頼書 #121 (2026/6/5): SPA ルート遷移時の Meta Pixel PageView (初回二重発火防止 ref 利用)
   const mpFirstPageRef = useRef(true);
   useEffect(() => {
