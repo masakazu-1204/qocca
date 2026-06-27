@@ -154,6 +154,7 @@ export const useNav = () => {
     else if (page === "gallery") navigate("/gallery");
     else if (typeof page === "string" && page.startsWith("gallery/")) navigate("/" + page);
     else if (page === "facilities") navigate("/facilities");
+    else if (page === "petgallery") navigate("/petgallery");
     else if (page === "blog") navigate("/blog");
     else if (typeof page === "string" && page.startsWith("blog/")) navigate("/" + page);
     else if (page === "communities") navigate("/communities");
