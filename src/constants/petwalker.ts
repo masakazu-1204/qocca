@@ -48,6 +48,7 @@ export const PW_AREAS: PWArea[] = [
   { tag: "四万十",        en: "Shimanto",     blurb: "最後の清流に沿って。",         slug: "shimanto",     img: pwImg("shimanto"),    kind: "area" },
   { tag: "湘南",          en: "Shonan",       blurb: "波音のとなりで過ごす休日。",   slug: "shonan",      img: pwImg("shonan"),      kind: "area" },
   { tag: "九州",          en: "Kyushu",       blurb: "湯けむりの里をめぐる。",       slug: "kyushu",      img: pwImg("kyushu"),      kind: "area" },
+  { tag: "湯布院",        en: "Yufuin",       blurb: "盆地の朝霧と、湯の町。",       slug: "yufuin",      img: pwImg("yufuin"),      kind: "area" },
   { tag: "阿蘇",          en: "Aso",          blurb: "草原に、風がわたる。",         slug: "aso",         img: pwImg("aso"),         kind: "area" },
   { tag: "沖縄",          en: "Okinawa",      blurb: "碧い海と、島時間。",           slug: "okinawa",     img: pwImg("okinawa"),     kind: "area" },
   // ── 目的で探す: テーマ特集3 (高速SA→道の駅→雨の日) ──
