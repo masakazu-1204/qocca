@@ -29,6 +29,7 @@ export const PW_AREAS: PWArea[] = [
   { tag: "浜名湖",        en: "Lake Hamana",  blurb: "湖畔で過ごす、犬旅。",         slug: "hamanako",     img: pwImg("hamanako"),    kind: "area" },
   { tag: "名古屋・知多",  en: "Nagoya",       blurb: "街と海の、あいだで。",         slug: "nagoya",       img: pwImg("nagoya"),      kind: "area" },
   { tag: "飛騨高山",      en: "Hida-Takayama", blurb: "古い町並みと、山里。",        slug: "hidatakayama", img: pwImg("hidatakayama"), kind: "area" },
+  { tag: "奥飛騨温泉郷",  en: "Okuhida",      blurb: "湯けむりと、北アルプスの麓。", slug: "okuhida",     img: pwImg("okuhida"),     kind: "area" },
   { tag: "金沢",          en: "Kanazawa",     blurb: "茶屋街と、古都の風情。",       slug: "kanazawa",    img: pwImg("kanazawa"),    kind: "area" },
   { tag: "河口湖",        en: "Kawaguchiko",  blurb: "富士を望む、森のほとり。",     slug: "kawaguchiko", img: pwImg("kawaguchiko"), kind: "area" },
   { tag: "山中湖",        en: "Yamanakako",   blurb: "富士を映す、湖のほとり。",     slug: "yamanakako",  img: pwImg("yamanakako"),  kind: "area" },
