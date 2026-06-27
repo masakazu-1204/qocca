@@ -91,10 +91,15 @@ export const EventsPage = ({ isPC, setPage }) => {
   // DB からイベントを取得
   const fetchEvents = async () => {
     setLoading(true);
+    // 2026/6/28: 日付フィルタ追加 — 開催日が過ぎたイベントを自動で非表示に
+    //   (再発防止: 今後も event_date < today は自動的に /events 一覧から消える)
+    //   ⚠️ 履歴は events テーブルに残る (status='approved' のまま) → 後方互換・統計用
+    const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from("events")
       .select("*")
       .in("status", ["approved", "sold_out"])
+      .gte("event_date", today)
       .order("event_date", { ascending: true });
     if (!error && data) {
       // モックデータの形式に合わせて変換
