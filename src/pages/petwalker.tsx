@@ -14,8 +14,14 @@ import { PetWalkerReviews } from "../components/PetWalkerReviews";
 type Spot = {
   id: string; name: string; category: string; pref: string; city: string | null;
   pet_types: string[]; description: string | null; area_tag: string;
+  secondary_area_tags: string[] | null;
   latitude: number | null; longitude: number | null; address: string | null;
 };
+
+// 広域親エリア(九州/日光・那須など)に子エリア(湯布院/阿蘇/奥日光)のスポットも内包する。
+// 子エリア固有ページではそのエリア固有のみ。親エリアでは自身+子の合算が見える。
+const matchArea = (s: Spot, tag: string) =>
+  s.area_tag === tag || (s.secondary_area_tags || []).includes(tag);
 
 const ease = QC_TIMING.hoverEasing;
 
@@ -36,7 +42,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     (async () => {
       const { data } = await supabase
         .from("pet_walker_spots")
-        .select("id,name,category,pref,city,pet_types,description,area_tag,latitude,longitude,address")
+        .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address")
         .eq("approval_status", "approved")
         .order("category", { ascending: true })
         .order("name", { ascending: true });
@@ -58,8 +64,8 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     if (activeArea) mpTrackEvent("PetWalkerAreaView", { content_name: activeArea });
   }, [activeArea]);
 
-  // エリア別件数
-  const countByArea = (tag: string) => spots.filter((s) => s.area_tag === tag).length;
+  // エリア別件数 (親エリアは子エリア分も内包)
+  const countByArea = (tag: string) => spots.filter((s) => matchArea(s, tag)).length;
 
   // タイル描画 (エリア/テーマ共通)。i は各セクション内の連番 (stagger 用)。
   const renderTile = (a: typeof PW_AREAS[number], i: number) => (
@@ -176,7 +182,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   // ── エリア特集 (カテゴリ別) ────────────────────────────────────
   if (activeArea) {
     const area = PW_AREAS.find((a) => a.tag === activeArea);
-    const areaSpots = spots.filter((s) => s.area_tag === activeArea);
+    const areaSpots = spots.filter((s) => matchArea(s, activeArea));
     return (
       <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
         <div style={wrap}>
