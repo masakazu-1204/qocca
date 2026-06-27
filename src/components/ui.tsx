@@ -168,6 +168,7 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
       heading: "街を歩く",
       items: [
         { key: "gallery",     icon: "🐾", label: "ギャラリー",      onClick: () => setPage("gallery") },
+        { key: "petgallery",  icon: "🏡", label: "うちの子たち",    onClick: () => setPage("petgallery") },
         { key: "communities", icon: "💬", label: "広場",            onClick: () => setPage("communities") },
         { key: "events",      icon: "📅", label: "イベント",        onClick: () => setPage("events") },
         { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => setPage("facilities") },
@@ -332,6 +333,7 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
       heading: "街を歩く",
       items: [
         { key: "gallery",     icon: "🐾", label: "ギャラリー",      onClick: () => navigate("gallery") },
+        { key: "petgallery",  icon: "🏡", label: "うちの子たち",    onClick: () => navigate("petgallery") },
         { key: "communities", icon: "💬", label: "広場",            onClick: () => navigate("communities") },
         { key: "events",      icon: "📅", label: "イベント",        onClick: () => navigate("events") },
         { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => navigate("facilities") },

@@ -24,6 +24,7 @@ import { MyPage } from "./pages/mypage";
 import { HomePage } from "./pages/home";
 import { FacilitiesPage } from "./pages/facilities";
 import { PetWalkerPage } from "./pages/petwalker";
+import { PetGalleryPage } from "./pages/pet_gallery";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
@@ -276,6 +277,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* うちの子ギャラリー: 全ユーザーの公開うちの子を集約表示。各カードから飼い主の公開プロフィール /user/:owner_id へ */}
+            <Route path="/petgallery" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <PetGalleryPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/blog" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -473,6 +483,7 @@ function QoccaAppInner() {
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/petgallery" element={<PetGalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog/:postId" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/communities" element={<CommunitiesPage setPage={setPage} isPC={false}/>}/>
