@@ -2820,11 +2820,11 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <SectionWhatIsQocca setPage={setPage} />
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
       <SectionTodaysMoments setPage={setPage} />
-      <SectionTownMap setPage={setPage} />
+      {/* 2026/6/28 トップ改修第1弾 ②:「Qoccaこんな街です」(SectionTownMap) 削除 — 関数定義L1499は温存 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
       <SectionPetWalker setPage={setPage} />
       <SectionResidentArtisans listings={listings} onDetail={onDetail} setPage={setPage} />
-      <SectionVoices setPage={setPage} />
+      {/* 2026/6/28 トップ改修第1弾 ③:「街の声」(SectionVoices) 削除 — イベント二重表示解消・関数定義L2247は温存・コミュ独立化は第2弾 */}
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
       <ArkPartnershipSection />
       {/* 依頼書 #36 (5/31): 初期メンバー紹介 (ARK と 創業パートナーの間) */}
@@ -2834,6 +2834,8 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <SectionJoinTown setPage={setPage} />
       {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
       <HomeEventsSection events={homeEvents} setPage={setPage}/>
+      {/* 2026/6/28 ①再検討中: App.tsx L452 の SharedFooter は PC branchのみで Mobile branch には無し。
+          Mobile では本 SharedFooter が唯一の Footer のため温存。PC 側で起きてる二重表示は別途 King と協議。 */}
       <SharedFooter setPage={setPage}/>
     </div>
   );
