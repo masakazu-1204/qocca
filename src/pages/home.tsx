@@ -450,7 +450,7 @@ const SectionHero = () => {
 };
 
 // ============================================================================
-// SECTION 2: 今日のうちの子たち (SectionTodaysMoments)
+// SECTION 2: 街のアルバム (旧「今日のうちの子たち」・SectionTodaysMoments) — 2026/6/28 第2弾 ③: gallery_posts表示なので「街のアルバム」が実態に合う
 // ============================================================================
 
 // QC_REACTIONS は constants/data.ts へ移動 (Phase 1 ②)
@@ -1066,7 +1066,7 @@ const SectionTodaysMoments = ({ setPage }) => {
               lineHeight: 1.55,
               margin: 0,
             }}>
-              今日のうちの子たち
+              街のアルバム
             </h2>
             <div style={{
               marginTop: 40,
@@ -2669,6 +2669,88 @@ const ArkPartnershipSection = () => {
   );
 };
 
+// ── 2026/6/28 トップ改修第2弾 ②: HomeCommunitiesSection (コミュ独立化) ──────
+// 第1弾で削除した SectionVoices (communities+events 混在) のうち、communities 部分のみを抽出して独立。
+// events は HomeEventsSection に集約済。本セクションは communities テーブルの SELECT のみ・新規GRANT/RLS無し。
+// 配置: SectionJoinTown(仲間募集の誘導) → HomeCommunitiesSection(コミュ一覧) → HomeEventsSection(イベント) の自然な流れ。
+const HomeCommunitiesSection = ({ setPage }: { setPage: any }) => {
+  const [communities, setCommunities] = useState<any[]>([]);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data } = await supabase
+        .from("communities")
+        .select("id, name, description, category, member_count")
+        .order("member_count", { ascending: false })
+        .limit(6); // 旧SectionVoicesは3件・独立化に伴い6件に拡張
+      if (mounted) setCommunities(data || []);
+    })();
+    return () => { mounted = false; };
+  }, []);
+  if (communities.length === 0) return null;
+  return (
+    <section style={{ padding: "80px 16px", background: "rgba(245, 239, 230, 0.5)", borderTop: `1px solid ${QC.lightSand}`, borderBottom: `1px solid ${QC.lightSand}` }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: "italic", color: QC.warmGray, letterSpacing: 0.8, margin: "0 0 10px 0", opacity: 0.75, fontWeight: 300 }}>
+            Communities
+          </p>
+          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: QC.softBrown, letterSpacing: "0.06em", lineHeight: 1.55, margin: 0 }}>
+            広場でのおしゃべり
+          </h2>
+          <p style={{ fontFamily: QC_FONT_JP, fontSize: 12.5, fontWeight: 300, color: QC.warmGray, lineHeight: 1.8, margin: "12px 0 0", letterSpacing: 0.3 }}>
+            同じうちの子を持つ仲間と、話せる場所
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14, marginBottom: 24 }}>
+          {communities.map(c => {
+            const isHover = hoverId === c.id;
+            return (
+              <div
+                key={c.id}
+                onClick={() => setPage("communities")}
+                onMouseEnter={() => setHoverId(c.id)}
+                onMouseLeave={() => setHoverId(null)}
+                style={{
+                  background: QC.warmWhite,
+                  padding: "20px 22px",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  border: `1px solid ${QC.lightSand}`,
+                  transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transform: isHover ? "translateX(2px)" : "translateX(0)",
+                }}
+              >
+                <p style={{ fontFamily: QC_FONT_JP, fontSize: 13.5, fontWeight: 400, color: QC.charcoal, margin: "0 0 8px 0", lineHeight: 1.7 }}>
+                  {c.name}
+                </p>
+                <p style={{ fontFamily: QC_FONT_JP, fontSize: 11, fontWeight: 300, color: QC.warmGray, margin: 0, letterSpacing: 0.5 }}>
+                  {c.member_count || 0} 人が参加中
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <button onClick={() => setPage("communities")} style={{
+            padding: "10px 28px", background: "transparent", color: QC.softBrown,
+            border: `1px solid ${QC.softBrown}`, borderRadius: 999,
+            fontSize: 13, fontWeight: 400, cursor: "pointer",
+            fontFamily: QC_FONT_JP, letterSpacing: 0.5,
+            transition: "all 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = QC.softBrown; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = QC.softBrown; }}
+          >
+            広場へ →
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ── 依頼書 #116 (2026/6/5): HomePage 末尾イベントセクション (#113 最終ピース) ─────
 // 既存 events テーブル読み取りのみ (新規スキーマなし)
 // approved + event_date >= 今日 + limit 4 で取得 (L14531 のロジック流用)
@@ -2823,7 +2905,8 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       {/* 2026/6/28 トップ改修第1弾 ②:「Qoccaこんな街です」(SectionTownMap) 削除 — 関数定義L1499は温存 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
       <SectionPetWalker setPage={setPage} />
-      <SectionResidentArtisans listings={listings} onDetail={onDetail} setPage={setPage} />
+      {/* 2026/6/28 トップ改修第2弾 ①: SectionResidentArtisans(街の作家たち・大UI) 削除 — 関数定義L1951は温存。
+          作家紹介は下記 InitialMembersSection(丸アイコンUI)に一本化し、そちらの見出しを「街の作家たち」に変更。 */}
       {/* 2026/6/28 トップ改修第1弾 ③:「街の声」(SectionVoices) 削除 — イベント二重表示解消・関数定義L2247は温存・コミュ独立化は第2弾 */}
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
       <ArkPartnershipSection />
@@ -2832,6 +2915,8 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       {/* 依頼書 #35 v2 (5/31): 創業パートナー (mayor_30000 + corporate_300000) */}
       <FoundingPartnersSection />
       <SectionJoinTown setPage={setPage} />
+      {/* 2026/6/28 第2弾 ②: コミュニティ独立セクション (SectionVoices から communities 抽出) */}
+      <HomeCommunitiesSection setPage={setPage}/>
       {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
       <HomeEventsSection events={homeEvents} setPage={setPage}/>
       {/* 2026/6/28 案A実施: 自前 SharedFooter 削除。App.tsx PC L452 + Mobile L528 で全ページ共通 1個に統一されたため重複解消。 */}
@@ -2854,7 +2939,7 @@ const InitialMembersSection = () => {
         .order("is_founding_creator", { ascending: false })
         .order("approved_count", { ascending: false })
         .order("created_at", { ascending: true })
-        .limit(6);
+        .limit(12); // 2026/6/28 第2弾①: ResidentArtisans廃止に伴い作家紹介をこちらに一本化、6→12人に拡張
       setCreators((data as any[]) || []);
       setLoaded(true);
     })();
@@ -2869,7 +2954,7 @@ const InitialMembersSection = () => {
           <div style={{ fontSize: 22, marginBottom: 8 }}>🎨</div>
           {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h3 Shippori Mincho 700 */}
           <h3 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: "#3D2E1E", margin: "0 0 8px", letterSpacing: "0.04em" }}>
-            想いを込めて、置いていく人たち
+            街の作家たち
           </h3>
           <p style={{ fontSize: 11.5, color: "#8B7355", lineHeight: 1.7, margin: 0 }}>
             Qocca の街で 最初に作品を置いてくださっている方々
