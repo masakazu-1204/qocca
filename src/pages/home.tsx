@@ -871,6 +871,26 @@ const SectionTodaysMoments = ({ setPage }) => {
   const [myReactionsMap, setMyReactionsMap] = useState<Record<string, Set<string>>>({});
   const [selectedMoment, setSelectedMoment] = useState<any | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // 2026/6/28 軽傷UX: モーダル表示中の右スワイプ/戻る で別ページに飛ばずモーダルだけ閉じる。
+  //   pushState で履歴に印を積み popstate で印を見て selectedMoment=null。petwalker PR#60 と同パターン。
+  const MOMENT_MODAL_MARK = "home_moment_modal";
+  const openMoment = (m: any) => {
+    setSelectedMoment(m);
+    window.history.pushState({ [MOMENT_MODAL_MARK]: m?.id || true }, "");
+  };
+  const closeMoment = () => {
+    const marker = (window.history.state as { [k: string]: unknown } | null)?.[MOMENT_MODAL_MARK];
+    if (marker) window.history.back(); else setSelectedMoment(null);
+  };
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const marker = (e.state as { [k: string]: unknown } | null)?.[MOMENT_MODAL_MARK];
+      if (!marker) setSelectedMoment(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth < 768
@@ -1092,7 +1112,7 @@ const SectionTodaysMoments = ({ setPage }) => {
                   index={idx}
                   onMouseEnter={() => setHoveredCardId(m.id)}
                   onMouseLeave={() => setHoveredCardId(null)}
-                  onClick={() => { if (isMobile) setSelectedMoment(m); }}
+                  onClick={() => { if (isMobile) openMoment(m); }}
                   onReact={handleReact}
                 />
               );
@@ -1108,7 +1128,7 @@ const SectionTodaysMoments = ({ setPage }) => {
           counts={reactionCounts[selectedMoment.id]}
           mySet={myReactionsMap[selectedMoment.id]}
           onReact={handleReact}
-          onClose={() => setSelectedMoment(null)}
+          onClose={closeMoment}
         />
       )}
 

@@ -63,6 +63,26 @@ export const EventsPage = ({ isPC, setPage }) => {
   const [joined, setJoined] = useState({});
   const [selected, setSelected] = useState(null);
   const [showPost, setShowPost] = useState(false);
+
+  // 2026/6/28 軽傷UX: イベント詳細モーダル表示中の右スワイプ/戻る で別ページに飛ばずモーダルだけ閉じる。
+  //   pushState で履歴に印を積み popstate で印を見て selected=null。petwalker PR#60 と同パターン。
+  const EVENT_MODAL_MARK = "community_event_modal";
+  const openEvent = (ev: any) => {
+    setSelected(ev);
+    window.history.pushState({ [EVENT_MODAL_MARK]: ev?.id || true }, "");
+  };
+  const closeEvent = () => {
+    const marker = (window.history.state as { [k: string]: unknown } | null)?.[EVENT_MODAL_MARK];
+    if (marker) window.history.back(); else setSelected(null);
+  };
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const marker = (e.state as { [k: string]: unknown } | null)?.[EVENT_MODAL_MARK];
+      if (!marker) setSelected(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [form, setForm] = useState({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"" });
   const [submitting, setSubmitting] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
@@ -194,7 +214,7 @@ export const EventsPage = ({ isPC, setPage }) => {
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:14, padding: isPC ? "0 0 24px" : "0 16px 24px" }}>
         {filtered.map(ev=>(
-          <div key={ev.id} onClick={()=>setSelected(ev)} style={{ background:C.white, borderRadius:18, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.05)", display: isPC ? "flex" : "block" }}>
+          <div key={ev.id} onClick={()=>openEvent(ev)} style={{ background:C.white, borderRadius:18, overflow:"hidden", border:`1px solid ${C.border}`, cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.05)", display: isPC ? "flex" : "block" }}>
             <div style={{ height: isPC ? "auto" : 120, width: isPC ? 200 : "auto", flexShrink:0, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize: isPC ? 48 : 60, position:"relative", minHeight: isPC ? 160 : "auto" }}>
               {ev.image && ev.image.startsWith("http") 
   ? <img src={ev.image} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> 
@@ -221,13 +241,13 @@ export const EventsPage = ({ isPC, setPage }) => {
       </div>
 
       {selected && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, overflowY:"auto" }} onClick={()=>setSelected(null)}>
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, overflowY:"auto" }} onClick={closeEvent}>
           <div style={{ background:C.white, margin: isPC ? "60px auto" : "40px 16px", maxWidth:600, borderRadius:24, overflow:"hidden" }} onClick={e=>e.stopPropagation()}>
             <div style={{ height:180, background:selected.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:80, position:"relative" }}>
               {selected.image && selected.image.startsWith("http")
   ? <img src={selected.image} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
   : selected.image}
-              <button onClick={()=>setSelected(null)} style={{ position:"absolute", top:12, right:12, width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.9)", border:"none", cursor:"pointer", fontSize:18 }}>✕</button>
+              <button onClick={closeEvent} style={{ position:"absolute", top:12, right:12, width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.9)", border:"none", cursor:"pointer", fontSize:18 }}>✕</button>
             </div>
             <div style={{ padding:"20px 16px" }}>
               <div style={{ display:"flex", gap:6, marginBottom:10 }}>

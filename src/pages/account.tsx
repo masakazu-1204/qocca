@@ -250,7 +250,10 @@ export const SignupPage = ({ setPage }) => {
 export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
   const { petId } = useParams();
   const navigate = useNavigate();
-  const [authChecked, setAuthChecked] = useState(false);
+  // 2026/6/28: 認証ガードは削除 — うちの子詳細ページは未ログインで閲覧可。
+  //   理由: 作家の SNS シェア機会損失の解消。データ層は RLS で公開制限済 (pets/pet_photos=true, profiles=true)。
+  //   write系UI(健康記録の追加など)はそれぞれの onClick 側で auth.getUser() を見るためここでのgateは不要。
+  //   保護必要ページ(/mypage, /sell, /redeem, /admin, /settings/*, /update-password)の認証は不変。
   const [loading, setLoading] = useState(true);
   const [pet, setPet] = useState<{
     id: string; owner_id: string; name: string; species: string;
@@ -275,19 +278,6 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
   const [cMemo, setCMemo] = useState("");
   const [hrSaving, setHrSaving] = useState(false);
   const [hrError, setHrError] = useState("");
-
-  // 認証ガード (King 判断: ログイン必要)
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        const returnTo = encodeURIComponent(window.location.pathname);
-        navigate(`/login?returnTo=${returnTo}`, { replace: true });
-        return;
-      }
-      setAuthChecked(true);
-    })();
-  }, [navigate]);
 
   // pet + photos + owner 取得
   useEffect(() => {
@@ -388,7 +378,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
     if (!error) setClinicVisits(clinicVisits.filter(c => c.id !== id));
   };
 
-  if (!authChecked || loading) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>読み込み中...</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>読み込み中...</div>;
   if (!pet) return <div style={{ padding: 40, textAlign: "center", color: C.warmGray }}>うちの子が見つかりません</div>;
 
   const isMemorial = pet.status === "memorial";
