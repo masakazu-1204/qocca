@@ -19,6 +19,7 @@ export const PW_AREAS: PWArea[] = [
   { tag: "奥日光・中禅寺湖", en: "Oku-Nikko",  blurb: "高原と、湖と、滝。",           slug: "okunikko",    img: pwImg("okunikko"),    kind: "area" },
   { tag: "日光・那須",    en: "Nikko",        blurb: "森と湖の、高原へ。",           slug: "nikko",        img: pwImg("nikko"),       kind: "area" },
   { tag: "房総",          en: "Boso",         blurb: "潮風と、海辺の休日。",         slug: "boso",         img: pwImg("boso"),        kind: "area" },
+  { tag: "秩父・長瀞",    en: "Chichibu",     blurb: "霊峰と、岩畳の川。",           slug: "chichibu",    img: pwImg("chichibu"),    kind: "area" },
   { tag: "軽井沢",        en: "Karuizawa",    blurb: "木陰の風と、避暑地。",         slug: "karuizawa",   img: pwImg("karuizawa"),   kind: "area" },
   { tag: "草津温泉",      en: "Kusatsu",      blurb: "湯畑と、硫黄の香り。",         slug: "kusatsu",     img: pwImg("kusatsu"),     kind: "area" },
   { tag: "蓼科・八ヶ岳",  en: "Tateshina",    blurb: "高原を渡る、澄んだ風。",       slug: "tateshina",   img: pwImg("tateshina"),   kind: "area" },
