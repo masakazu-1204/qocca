@@ -42,6 +42,7 @@ export const PW_AREAS: PWArea[] = [
   { tag: "小豆島",        en: "Shodoshima",   blurb: "瀬戸内の島と、夕陽。",         slug: "shodoshima",  img: pwImg("shodoshima"),  kind: "area" },
   { tag: "しまなみ海道",  en: "Shimanami",    blurb: "島と橋をつなぐ道のり。",       slug: "shimanami",   img: pwImg("shimanami"),   kind: "area" },
   { tag: "宮島",          en: "Miyajima",     blurb: "海に浮かぶ、朱の鳥居。",       slug: "miyajima",    img: pwImg("miyajima"),    kind: "area" },
+  { tag: "山口",          en: "Yamaguchi",    blurb: "城下町と、海辺の風。",         slug: "yamaguchi",   img: pwImg("yamaguchi"),   kind: "area" },
   { tag: "道後温泉",      en: "Dogo",         blurb: "日本最古の、湯の里。",         slug: "dogo",        img: pwImg("dogo"),        kind: "area" },
   { tag: "四万十",        en: "Shimanto",     blurb: "最後の清流に沿って。",         slug: "shimanto",     img: pwImg("shimanto"),    kind: "area" },
   { tag: "湘南",          en: "Shonan",       blurb: "波音のとなりで過ごす休日。",   slug: "shonan",      img: pwImg("shonan"),      kind: "area" },
