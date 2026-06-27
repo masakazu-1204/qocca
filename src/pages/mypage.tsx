@@ -624,6 +624,30 @@ export const MyPage = ({ setPage }) => {
 
   const [activityModal, setActivityModal] = useState<string | null>(null);
 
+  // 2026/6/28 軽傷UX-④: モーダル表示中の右スワイプ/戻る で 別ページに飛ばずモーダルだけ閉じる。
+  //   pushState で履歴に印を積み、popstate で印を見て closeModal。React Router 設定不変。
+  const MYPAGE_MODAL_MARK = "mypage_activity_modal";
+  const openActivityModal = (type: string) => {
+    setActivityModal(type);
+    window.history.pushState({ [MYPAGE_MODAL_MARK]: type }, "");
+  };
+  const closeActivityModal = () => {
+    const marker = (window.history.state as { [k: string]: unknown } | null)?.[MYPAGE_MODAL_MARK];
+    if (marker) {
+      window.history.back(); // popstate ハンドラで activityModal=null
+    } else {
+      setActivityModal(null);
+    }
+  };
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const marker = (e.state as { [k: string]: unknown } | null)?.[MYPAGE_MODAL_MARK];
+      if (!marker) setActivityModal(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   // 依頼書 #138 タスク1 (2026/6/9): 公開ページ URL 共有 (8eighty8eight さん DM 起点)
   // 出品クリエイターが Instagram に貼るための URL。/user/:userId 形式 (依頼書指定)。
   const publicProfileUrl = user?.id ? `https://www.qocca.pet/user/${user.id}` : "";
@@ -1105,15 +1129,15 @@ export const MyPage = ({ setPage }) => {
                 )}
               </div>
             <div style={{ display:"flex", gap:0, marginTop:16, background:C.white, borderRadius:12, padding:"12px 0", border:`1px solid ${C.border}` }}>
-                <button onClick={()=>setActivityModal("listings")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+                <button onClick={()=>openActivityModal("listings")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.listings}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>出品</div>
                 </button>
-                <button onClick={()=>setActivityModal("completed")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+                <button onClick={()=>openActivityModal("completed")} style={{ flex:1, textAlign:"center", borderRight:`1px solid ${C.border}`, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.completed}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>取引完了</div>
                 </button>
-                <button onClick={()=>setActivityModal("reviews")} style={{ flex:1, textAlign:"center", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+                <button onClick={()=>openActivityModal("reviews")} style={{ flex:1, textAlign:"center", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
                 </button>
@@ -1121,11 +1145,11 @@ export const MyPage = ({ setPage }) => {
 
             {/* フォロー・フォロワー */}
             <div style={{ display:"flex", gap:8, marginTop:10 }}>
-              <button onClick={()=>setActivityModal("following")} style={{ flex:1, padding:"10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontFamily:"inherit" }}>
+              <button onClick={()=>openActivityModal("following")} style={{ flex:1, padding:"10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontFamily:"inherit" }}>
                 <span style={{ fontSize:15, fontWeight:800, color:C.dark }}>{activity.following}</span>
                 <span style={{ fontSize:11, color:C.warmGray, marginLeft:6 }}>フォロー中</span>
               </button>
-              <button onClick={()=>setActivityModal("followers")} style={{ flex:1, padding:"10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontFamily:"inherit" }}>
+              <button onClick={()=>openActivityModal("followers")} style={{ flex:1, padding:"10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontFamily:"inherit" }}>
                 <span style={{ fontSize:15, fontWeight:800, color:C.dark }}>{activity.followers}</span>
                 <span style={{ fontSize:11, color:C.warmGray, marginLeft:6 }}>フォロワー</span>
               </button>
@@ -1141,7 +1165,7 @@ export const MyPage = ({ setPage }) => {
                   { id:"gallery", icon:"🐾", label:"投稿したギャラリー", count:activity.gallery },
                   { id:"blog", icon:"📝", label:"投稿したブログ", count:activity.blog },
                 ].map((item, i) => (
-                  <button key={item.id} onClick={()=>setActivityModal(item.id)} style={{
+                  <button key={item.id} onClick={()=>openActivityModal(item.id)} style={{
                     width:"100%", padding:"14px 16px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
                     background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:12, fontFamily:"inherit", textAlign:"left"
                   }}>
@@ -1353,7 +1377,7 @@ export const MyPage = ({ setPage }) => {
           onSaved={() => setRefreshKey(k => k + 1)}
         />
       )}
-      {activityModal && <ActivityDetailModal type={activityModal} userId={user?.id} onClose={()=>setActivityModal(null)} setPage={setPage}/>}
+      {activityModal && <ActivityDetailModal type={activityModal} userId={user?.id} onClose={closeActivityModal} setPage={setPage}/>}
     </div>
   );
 };

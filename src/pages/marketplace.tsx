@@ -135,26 +135,14 @@ export const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
   const [reviews, setReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
   const [isFollowing, setIsFollowing] = useState(false);
 const [followCount, setFollowCount] = useState(0);
-// Phase D: 認証ガード + うちの子 state
-const [authChecked, setAuthChecked] = useState(false);
+// うちの子 state (2026/6/28: 認証ガードは削除 — 公開プロフィールは未ログインで閲覧可。
+//   理由: 集客機会損失の解消。データ層は RLS で公開制限済 (profiles/listings approved/blog published 等)。
+//   write系UI(フォロー/購入/送信)はそれぞれの onClick 側で auth.getUser() を見るためここでのgateは不要)。
 const [pets, setPets] = useState<Array<{ id: string; name: string; species: string; breed?: string | null; birthday?: string | null; bio?: string | null; avatar_url?: string | null; gender?: string | null; status: string; display_order: number }>>([]);
 const [petPhotos, setPetPhotos] = useState<Record<string, Array<{ id: string; photo_url: string; caption?: string | null }>>>({});
 // Phase D Phase 2 (5/22 夜): 公開プロフィールにギャラリー + ブログ表示
 const [userGallery, setUserGallery] = useState<Array<{ id: string; image_url: string; caption?: string | null }>>([]);
 const [userBlogPosts, setUserBlogPosts] = useState<Array<{ id: string; title: string; cover_image_url?: string | null; category?: string | null; created_at: string }>>([]);
-
-  // Phase D: 認証ガード (King 判断: ログイン必要)
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-        navigate(`/login?returnTo=${returnTo}`, { replace: true });
-        return;
-      }
-      setAuthChecked(true);
-    })();
-  }, [navigate]);
 
   useEffect(()=>{
   if (!userId) return;
@@ -284,7 +272,7 @@ const handleFollow = async () => {
     })();
   }, [userId]);
 
-  if (!authChecked || loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
   if (!profile) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>ユーザーが見つかりません</div>;
 
   const displayName = profile.display_name || "ユーザー";

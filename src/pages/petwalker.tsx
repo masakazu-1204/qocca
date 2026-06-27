@@ -30,12 +30,48 @@ const petLabel = (types: string[] | null) =>
 
 const catLabel = (key: string) => PW_CATEGORIES.find((c) => c.key === key)?.label || key;
 
+// 2026/6/28 軽傷UX-③: ブラウザ「戻る」操作で エリア→トップ・スポット→エリア と1段ずつ
+// 巻き戻すための history pushState/popstate パッチ。petwalker.tsx 内に閉じる。React Router 設定不変。
+const PW_NAV = "petwalker_nav";
+
 export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void; isPC?: boolean }) {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeArea, setActiveArea] = useState<string | null>(null);
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null);
   const [activeCat, setActiveCat] = useState<string>("all"); // スポット一覧のカテゴリ絞り込み (エリア入場で all にリセット)
+
+  // history 連動ヘルパー: setActive* を直接呼ばずこちらを使う
+  const openArea = (tag: string) => {
+    setActiveCat("all");
+    setActiveArea(tag);
+    setActiveSpot(null);
+    window.history.pushState({ [PW_NAV]: { type: "area", tag } }, "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const openSpot = (s: Spot) => {
+    setActiveSpot(s);
+    window.history.pushState({ [PW_NAV]: { type: "spot", id: s.id } }, "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goBack = () => { window.history.back(); };
+
+  // popstate: ブラウザ「戻る」(右スワイプ/戻るボタン) を捕まえて1段ずつ巻き戻す
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const marker = (e.state as { [k: string]: { type: string; tag?: string; id?: string } } | null)?.[PW_NAV];
+      if (marker?.type === "area") {
+        // area 状態に巻き戻る: spot を閉じる
+        setActiveSpot(null);
+      } else {
+        // marker 無し = /petwalker 初期状態に巻き戻る: 両方閉じる
+        setActiveSpot(null);
+        setActiveArea(null);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -71,7 +107,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   const renderTile = (a: typeof PW_AREAS[number], i: number) => (
     <button
       key={a.tag}
-      onClick={() => { setActiveArea(a.tag); setActiveCat("all"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+      onClick={() => openArea(a.tag)}
       className="pw-tile"
       style={{
         ...areaTileStyle,
@@ -103,7 +139,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     return (
       <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
         <div style={wrap}>
-          <button onClick={() => setActiveSpot(null)} style={backLinkStyle}>
+          <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>
             ← {s.area_tag} の一覧へ戻る
           </button>
           <div style={{ marginTop: 28, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
@@ -186,7 +222,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     return (
       <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
         <div style={wrap}>
-          <button onClick={() => setActiveArea(null)} style={backLinkStyle}>
+          <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>
             ← エリアをえらぶ
           </button>
           <div
@@ -256,7 +292,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: 18 }}>
                     {list.map((s) => (
-                      <button key={s.id} onClick={() => setActiveSpot(s)} style={spotCardStyle} className="pw-card">
+                      <button key={s.id} onClick={() => openSpot(s)} style={spotCardStyle} className="pw-card">
                         <div style={{ fontFamily: QC_FONT_JP, fontWeight: 500, fontSize: 16, color: QC.charcoal, marginBottom: 8, lineHeight: 1.6 }}>
                           {s.name}
                         </div>
@@ -329,6 +365,28 @@ const backLinkStyle: React.CSSProperties = {
   background: "none", border: "none", color: QC.softBrown, fontFamily: QC_FONT_JP,
   fontSize: 14, fontWeight: 400, cursor: "pointer", padding: 0, letterSpacing: 0.5,
 };
+
+// 2026/6/28 軽傷UX-②: スクロール追従する戻るボタン。常時画面左上に貼り付く。
+//   モバイル: 固定Navbar(高さ60)の下 / PC: 固定PCNavbar(高さ68)の下。半透明+blur で景色を遮らない。
+const fixedBackLinkStyle = (isPC?: boolean): React.CSSProperties => ({
+  position: "fixed",
+  top: isPC ? 80 : 70,
+  left: isPC ? 32 : 16,
+  zIndex: 20,
+  background: "rgba(250, 247, 242, 0.92)",
+  backdropFilter: "blur(8px)",
+  WebkitBackdropFilter: "blur(8px)",
+  border: `1px solid ${QC.lightSand}`,
+  borderRadius: 999,
+  color: QC.softBrown,
+  fontFamily: QC_FONT_JP,
+  fontSize: 13,
+  fontWeight: 400,
+  cursor: "pointer",
+  padding: "8px 14px",
+  letterSpacing: 0.3,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+});
 
 const tagStyle: React.CSSProperties = {
   fontSize: 12.5, color: QC.warmGray, background: QC.cream, border: `1px solid ${QC.lightSand}`,
