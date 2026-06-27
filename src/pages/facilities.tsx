@@ -118,6 +118,32 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
   const [submitted, setSubmitted] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
 
+  // 2026/6/28 軽傷UX: 施設詳細→戻るで /facilities トップ全飛ばしせず1段戻る (petwalker PR#60 と同パターン)。
+  //   pushState で履歴に印を積み、popstate で印を見て selectedFacility=null。React Router 設定不変・本ファイル内に閉じる。
+  const FAC_DETAIL_MARK = "facility_detail";
+  const openFacility = (f: any) => {
+    setSelectedFacility(f);
+    window.history.pushState({ [FAC_DETAIL_MARK]: f?.id || true }, "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const closeFacility = () => {
+    const marker = (window.history.state as { [k: string]: unknown } | null)?.[FAC_DETAIL_MARK];
+    if (marker) {
+      window.history.back(); // popstate ハンドラで selectedFacility=null
+    } else {
+      setSelectedFacility(null);
+    }
+    loadFacilities(true);
+  };
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const marker = (e.state as { [k: string]: unknown } | null)?.[FAC_DETAIL_MARK];
+      if (!marker) setSelectedFacility(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   // 依頼書 U2 (2026/6/13): 地図↔リスト切替 + 地図用データ (リストの50件ページングとは独立)
   const [viewMode, setViewMode] = useState("list");
   const [mapFacilities, setMapFacilities] = useState<any[]>([]);
@@ -248,7 +274,7 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
   const catLabel = (c) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
 
   if (selectedFacility) {
-    return <FacilityDetailView facility={selectedFacility} onBack={()=>{ setSelectedFacility(null); loadFacilities(true); }} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
+    return <FacilityDetailView facility={selectedFacility} onBack={closeFacility} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
   }
 
   return (
@@ -464,7 +490,7 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
           {mapLoading && (
             <div style={{ textAlign:"center", padding:"8px 0", color:C.warmGray, fontSize:12 }}>🗺️ 地図データ読み込み中...</div>
           )}
-          <FacilityMapView facilities={mapFacilities} isPC={isPC} onSelect={setSelectedFacility} catIcon={catIcon}/>
+          <FacilityMapView facilities={mapFacilities} isPC={isPC} onSelect={openFacility} catIcon={catIcon}/>
           {!mapLoading && (() => {
             const noCoords = mapFacilities.filter((f) => f.latitude == null || f.longitude == null).length;
             return (
@@ -515,7 +541,7 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
         ) : (
           <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:12 }}>
             {filtered.map(f => (
-              <div key={f.id} onClick={()=>setSelectedFacility(f)} style={{
+              <div key={f.id} onClick={()=>openFacility(f)} style={{
                 background:C.white, borderRadius:16, padding:"16px", border:`1px solid ${C.border}`,
                 boxShadow:"0 2px 8px rgba(0,0,0,0.04)", cursor:"pointer", transition:"transform 0.15s"
               }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
