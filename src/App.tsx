@@ -524,6 +524,9 @@ function QoccaAppInner() {
               </div>
             }/>
           </Routes>
+          {/* 2026/6/28 案A: モバイル branch にも全ページ共通 SharedFooter を1行追加 (従来PCのみ・モバイルは無かった)。
+              TabBar(fixed bottom 70px) の重なりは外側 wrapper の padding-bottom で既に確保されてるため Footer はその上に自然配置。 */}
+          <SharedFooter setPage={setPage}/>
           {showTabBar && <TabBar page={page} setPage={setPage}/>}
           <AddToHomeScreenBanner />
         </>

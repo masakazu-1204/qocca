@@ -2834,9 +2834,7 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <SectionJoinTown setPage={setPage} />
       {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
       <HomeEventsSection events={homeEvents} setPage={setPage}/>
-      {/* 2026/6/28 ①再検討中: App.tsx L452 の SharedFooter は PC branchのみで Mobile branch には無し。
-          Mobile では本 SharedFooter が唯一の Footer のため温存。PC 側で起きてる二重表示は別途 King と協議。 */}
-      <SharedFooter setPage={setPage}/>
+      {/* 2026/6/28 案A実施: 自前 SharedFooter 削除。App.tsx PC L452 + Mobile L528 で全ページ共通 1個に統一されたため重複解消。 */}
     </div>
   );
 };
