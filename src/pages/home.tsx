@@ -583,85 +583,91 @@ const SectionAnnouncement = () => {
           </a>
         </div>
 
-        <Divider />
-
-        {/* ブロック3: クラファン主導線 / 依頼書 #137 (2026/6/8): "公開中" 確定後 CTA 強化 */}
-        <div style={{
-          fontSize: isMobile ? 18 : 22,
-          fontFamily: QC_FONT_DISPLAY,
-          fontWeight: 700,
-          color: C.dark,
-          lineHeight: 1.7,
-          letterSpacing: '0.04em',
-        }}>
-          {CROWDFUNDING_ACTIVE ? (
-            <>クラウドファンディング、<br />公開中。</>
-          ) : (
-            <>6月、<br />クラウドファンディングを始めます。</>
-          )}
-        </div>
-        {CROWDFUNDING_ACTIVE && (
-          <div style={{
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: 400,
-            color: C.warmGray,
-            lineHeight: 1.85,
-            marginTop: 16,
-          }}>
-            7月1日のグランドオープンに向けて、<br />
-            創業期の住民を募集しています。
-          </div>
-        )}
-        <div style={{
-          fontSize: isMobile ? 13 : 14,
-          fontWeight: 400,
-          color: C.warmGray,
-          lineHeight: 1.8,
-          marginTop: 22,
-        }}>
-          Qoccaを、<br />
-          これからも静かに育てていくために。
-        </div>
-        <div style={{
-          fontSize: isMobile ? 13 : 14,
-          fontWeight: 400,
-          color: C.warmGray,
-          lineHeight: 1.8,
-          marginTop: 22,
-        }}>
-          もしこの街を好きだと思ってくれたら、<br />
-          一緒に見守ってもらえたら嬉しいです。
-        </div>
-
-        {/* 依頼書 #137 (2026/6/8): Hero 直下の主導線 CTA - 朱色 / Editorial Documentary */}
-        {CROWDFUNDING_ACTIVE && (
-          <a
-            href={CAMPFIRE_PROJECT_URL_WITH_UTM}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-block',
-              marginTop: 28,
-              padding: '13px 28px',
-              background: '#F5A94A',
-              color: '#fff',
-              textDecoration: 'none',
-              borderRadius: 999,
-              fontSize: isMobile ? 13 : 14,
+        {/* 2026/6/29 Dday準備: ブロック3 (クラファン主導線) + 下Divider を非表示化。
+            クラファン締切 2026/6/30 のため、7/1 グランドオープン時に終了済み表示にならないよう
+            {false &&} ガードで描画停止。コード・依頼書履歴は温存 → true に戻すだけで復活可能。
+            上のブロック2 → Divider (L586残置) で SectionAnnouncement が自然に閉じる。 */}
+        {false && (
+          <>
+            {/* ブロック3: クラファン主導線 / 依頼書 #137 (2026/6/8): "公開中" 確定後 CTA 強化 */}
+            <div style={{
+              fontSize: isMobile ? 18 : 22,
+              fontFamily: QC_FONT_DISPLAY,
               fontWeight: 700,
-              letterSpacing: '0.06em',
-              boxShadow: '0 2px 10px rgba(245,169,74,0.25)',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 14px rgba(245,169,74,0.35)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(245,169,74,0.25)'; }}
-          >
-            CAMPFIRE で支援する →
-          </a>
-        )}
+              color: C.dark,
+              lineHeight: 1.7,
+              letterSpacing: '0.04em',
+            }}>
+              {CROWDFUNDING_ACTIVE ? (
+                <>クラウドファンディング、<br />公開中。</>
+              ) : (
+                <>6月、<br />クラウドファンディングを始めます。</>
+              )}
+            </div>
+            {CROWDFUNDING_ACTIVE && (
+              <div style={{
+                fontSize: isMobile ? 13 : 14,
+                fontWeight: 400,
+                color: C.warmGray,
+                lineHeight: 1.85,
+                marginTop: 16,
+              }}>
+                7月1日のグランドオープンに向けて、<br />
+                創業期の住民を募集しています。
+              </div>
+            )}
+            <div style={{
+              fontSize: isMobile ? 13 : 14,
+              fontWeight: 400,
+              color: C.warmGray,
+              lineHeight: 1.8,
+              marginTop: 22,
+            }}>
+              Qoccaを、<br />
+              これからも静かに育てていくために。
+            </div>
+            <div style={{
+              fontSize: isMobile ? 13 : 14,
+              fontWeight: 400,
+              color: C.warmGray,
+              lineHeight: 1.8,
+              marginTop: 22,
+            }}>
+              もしこの街を好きだと思ってくれたら、<br />
+              一緒に見守ってもらえたら嬉しいです。
+            </div>
 
-        {/* 下の区切り線 ("貼り紙" の境界) */}
-        <Divider />
+            {/* 依頼書 #137 (2026/6/8): Hero 直下の主導線 CTA - 朱色 / Editorial Documentary */}
+            {CROWDFUNDING_ACTIVE && (
+              <a
+                href={CAMPFIRE_PROJECT_URL_WITH_UTM}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-block',
+                  marginTop: 28,
+                  padding: '13px 28px',
+                  background: '#F5A94A',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  borderRadius: 999,
+                  fontSize: isMobile ? 13 : 14,
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  boxShadow: '0 2px 10px rgba(245,169,74,0.25)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 14px rgba(245,169,74,0.35)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(245,169,74,0.25)'; }}
+              >
+                CAMPFIRE で支援する →
+              </a>
+            )}
+
+            {/* 下の区切り線 ("貼り紙" の境界) */}
+            <Divider />
+          </>
+        )}
       </div>
     </section>
   );
@@ -3507,8 +3513,11 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
 
       <SectionHero />
       <SectionAnnouncement />
-      {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵) */}
-      <CrowdfundingBanner />
+      {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
+          2026/6/29 Dday準備: クラファン締切 2026/6/30 のため、7/1 グランドオープン時に
+          終了済み表示にならないよう非表示化。CrowdfundingBanner 関数定義 + import は温存し、
+          {false &&} を外せば即復活可能。 */}
+      {false && <CrowdfundingBanner />}
       {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能Lucide図解) → V3Carousel(7枚画像横スク) に差し替え。
           V1 (SectionWhatIsQocca) と V2 (SectionWhatIsQoccaV2Diagram) の関数定義は温存しており、
           1行を SectionWhatIsQocca / SectionWhatIsQoccaV2Diagram / SectionWhatIsQoccaV3Carousel のいずれかに切り替えるだけで戻せる。 */}
