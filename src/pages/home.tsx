@@ -2670,26 +2670,27 @@ const ArkPartnershipSection = () => {
   );
 };
 
-// ── 2026/6/29 トップ改修第3弾: HomePetGallerySection (うちの子ギャラリー トッププレビュー) ──────
-// /petgallery (pet_gallery.tsx・PR#59) の取得ロジック/カードUIを踏襲し、トップに最大8件プレビュー + 「もっと見る→」/petgallery 遷移。
-// 公開データ(pets RLS select=true)のみ・status='active' で memorial(虹の橋) は除外・新規GRANT/RLS変更 0。
+// ── 2026/6/29 トップ改修第3弾(v2): HomePetGallerySection 横スクロール統一版 ──────
+// SectionQuietlyLoved (L1668) の横スク作法を踏襲: Mobile=flex+scroll-snap 65vw / PC=3列 grid
+// 縦長から横スクへ刷新+ /petgallery 導線「すべてのうちの子を見る」線リンク追加。
+// 公開データ(pets RLS select=true)のみ・status='active'・新規GRANT/RLS変更 0。
 const HomePetGallerySection = () => {
   const navigate = useNavigate();
   type Pet = { id: string; owner_id: string | null; name: string; species: string; breed: string | null; gender: string | null; bio: string | null; avatar_url: string | null };
   type Owner = { id: string; display_name: string | null; avatar_url: string | null };
   type Card = Pet & { owner: Owner | null };
   const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isPC, setIsPC] = useState(typeof window !== "undefined" && window.innerWidth >= 768);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [allLinkHover, setAllLinkHover] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   useEffect(() => {
-    const check = () => setIsPC(window.innerWidth >= 768);
+    const check = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true);
       const { data: pets } = await supabase
         .from("pets")
         .select("id, owner_id, name, species, breed, gender, bio, avatar_url")
@@ -2708,75 +2709,141 @@ const HomePetGallerySection = () => {
       }
       if (!alive) return;
       setCards(list.map(p => ({ ...p, owner: p.owner_id ? ownerMap[p.owner_id] ?? null : null })));
-      setLoading(false);
     })();
     return () => { alive = false; };
   }, []);
-  if (!loading && cards.length === 0) return null;
+  if (cards.length === 0) return null;
   return (
-    <section style={{ padding: "80px 16px", background: "transparent" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: "italic", color: QC.warmGray, letterSpacing: 0.8, margin: "0 0 10px", opacity: 0.75, fontWeight: 300 }}>
+    <section style={{
+      padding: 'clamp(100px, 18vw, 200px) 0',
+      background: 'transparent',
+      position: 'relative',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px' }}>
+        {/* ヘッダー(SectionQuietlyLoved と同作法) */}
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(50px, 10vw, 100px)' as any }}>
+          <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: 'italic', color: QC.warmGray, letterSpacing: 0.8, opacity: 0.75, fontWeight: 300, margin: '0 0 12px 0' }}>
             Our Pets
           </p>
-          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: QC.softBrown, letterSpacing: "0.06em", lineHeight: 1.55, margin: 0 }}>
+          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 'clamp(26px, 4.4vw, 36px)', fontWeight: 700, color: QC.softBrown, letterSpacing: '0.06em', lineHeight: 1.55, margin: 0 }}>
             うちの子ギャラリー
           </h2>
-          <p style={{ fontFamily: QC_FONT_JP, fontSize: 12.5, fontWeight: 300, color: QC.warmGray, lineHeight: 1.8, margin: "12px 0 0", letterSpacing: 0.3 }}>
-            Qoccaの街で暮らす、みんなのうちの子
-          </p>
+          <div style={{ marginTop: 40, width: 32, height: 1, background: QC.lightSand, margin: '40px auto 0' }} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${isPC ? 180 : 150}px, 1fr))`, gap: 12, marginBottom: 24 }}>
-          {cards.map(p => {
+        {/* カード(Mobile=横スク65vw / PC=3列grid・SectionQuietlyLoved L1736準拠) */}
+        <div style={{
+          display: isMobile ? 'flex' : 'grid',
+          gridTemplateColumns: isMobile ? undefined : 'repeat(3, minmax(0, 1fr))',
+          gap: isMobile ? 16 : 48,
+          overflowX: isMobile ? 'auto' : undefined,
+          scrollSnapType: isMobile ? 'x mandatory' : undefined,
+          paddingRight: isMobile ? 24 : undefined,
+          WebkitOverflowScrolling: isMobile ? 'touch' : undefined,
+        }}>
+          {cards.map((p, i) => {
+            const isHover = hoverIndex === i;
             const heroPhoto = p.avatar_url || "";
             const speciesEmoji = petIcon(p.species);
-            const genderIcon = p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "";
             return (
               <div
                 key={p.id}
                 onClick={() => p.owner_id && navigate(`/user/${p.owner_id}`)}
-                style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden", cursor: p.owner_id ? "pointer" : "default", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
-                onMouseEnter={(e) => { if (!p.owner_id) return; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
+                style={{
+                  flexShrink: isMobile ? 0 : undefined,
+                  width: isMobile ? '65vw' : undefined,
+                  scrollSnapAlign: isMobile ? 'start' : undefined,
+                  cursor: p.owner_id ? 'pointer' : 'default',
+                  transition: 'transform 1.0s cubic-bezier(0.22, 1, 0.36, 1)',
+                  transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
+                }}
               >
-                <div style={{ width: "100%", aspectRatio: "1", background: "#FFF5EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, overflow: "hidden" }}>
+                {/* 写真 (正方形・SectionQuietlyLoved と同じ視覚密度) */}
+                <div style={{ width: '100%', aspectRatio: '1', overflow: 'hidden', marginBottom: isMobile ? 8 : 20, background: QC.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>
                   {heroPhoto ? (
-                    <img src={heroPhoto} alt={p.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <img src={heroPhoto} alt={p.name} loading="lazy" decoding="async"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                        transition: 'transform 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease',
+                        transform: isHover ? 'scale(1.02)' : 'scale(1)',
+                        opacity: isHover ? 1.0 : 0.95,
+                        filter: 'saturate(0.9)' }}
+                    />
                   ) : speciesEmoji}
                 </div>
-                <div style={{ padding: "10px 12px" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                    {genderIcon && <span style={{ color: C.warmGray, fontSize: 11, fontWeight: 600 }}>{genderIcon}</span>}
-                  </div>
-                  <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {speciesEmoji} {p.breed || petLabelShort(p.species)}
-                  </div>
+                {/* 名前 */}
+                <h3 style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: isMobile ? 13 : 15,
+                  fontWeight: 400,
+                  color: QC.softBrown,
+                  letterSpacing: 0.5,
+                  lineHeight: 1.6,
+                  margin: isMobile ? '0 0 4px 0' : '0 0 8px 0',
+                  overflow: isMobile ? 'hidden' : undefined,
+                  textOverflow: isMobile ? 'ellipsis' : undefined,
+                  whiteSpace: isMobile ? 'nowrap' : undefined,
+                }}>
+                  {p.name}
+                </h3>
+                {/* 犬種 / 飼い主名 (SectionQuietlyLoved の by 〜 と同作法) */}
+                <p style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: isMobile ? 10 : 11,
+                  fontWeight: 300,
+                  color: QC.warmGray,
+                  opacity: 0.7,
+                  margin: 0,
+                  letterSpacing: 0.3,
+                  lineHeight: 1.5,
+                }}>
+                  <span style={{ display: isMobile ? 'block' : 'inline', overflow: isMobile ? 'hidden' : undefined, textOverflow: isMobile ? 'ellipsis' : undefined, whiteSpace: isMobile ? 'nowrap' : undefined }}>
+                    {p.breed || petLabelShort(p.species)}
+                  </span>
                   {p.owner && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 6, borderTop: `1px solid ${C.border}` }}>
-                      {p.owner.avatar_url ? (
-                        <img src={p.owner.avatar_url} alt="" loading="lazy" style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover" }} />
-                      ) : (
-                        <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.border }} />
-                      )}
-                      <span style={{ fontSize: 10, color: C.warmGray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {p.owner.display_name || "—"}
-                      </span>
-                    </div>
+                    <span style={{ marginLeft: isMobile ? 0 : 8, opacity: 0.6, fontStyle: 'italic', display: isMobile ? 'block' : 'inline' }}>
+                      — {p.owner.display_name || 'この街の住民'}
+                    </span>
                   )}
-                </div>
+                </p>
               </div>
             );
           })}
         </div>
-        <div style={{ textAlign: "center" }}>
-          <button onClick={() => navigate("/petgallery")} style={{ padding: "10px 28px", background: "transparent", color: QC.softBrown, border: `1px solid ${QC.softBrown}`, borderRadius: 999, fontSize: 13, fontWeight: 400, cursor: "pointer", fontFamily: QC_FONT_JP, letterSpacing: 0.5, transition: "all 0.6s cubic-bezier(0.22, 1, 0.36, 1)" }}
-            onMouseEnter={e => { e.currentTarget.style.background = QC.softBrown; e.currentTarget.style.color = "#fff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = QC.softBrown; }}
+        {/* 街の温度ナレーション + /petgallery 導線(SectionQuietlyLoved と同作法) */}
+        <div style={{ marginTop: 'clamp(50px, 10vw, 100px)' as any, textAlign: 'center', padding: '0 32px' }}>
+          <p style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 12,
+            fontStyle: 'italic',
+            fontWeight: 300,
+            color: QC.warmGray,
+            letterSpacing: 1.2,
+            opacity: 0.65,
+            margin: '0 0 24px 0',
+            lineHeight: 1.8,
+          }}>
+            今日も、この街には小さな住人たちが暮らしています。
+          </p>
+          <div style={{ width: 4, height: 4, borderRadius: '50%', background: QC.lightSand, margin: '0 auto 40px' }} />
+          <span
+            onClick={() => navigate('/petgallery')}
+            onMouseEnter={() => setAllLinkHover(true)}
+            onMouseLeave={() => setAllLinkHover(false)}
+            style={{
+              fontFamily: QC_FONT_JP,
+              fontSize: 12,
+              fontWeight: 300,
+              color: QC.softBrown,
+              letterSpacing: 1.2,
+              borderBottom: `1px solid ${allLinkHover ? QC.softBrown : 'rgba(139, 111, 92, 0.3)'}`,
+              paddingBottom: 4,
+              cursor: 'pointer',
+              transition: 'border-color 0.6s ease',
+            }}
           >
-            うちの子ギャラリーへ →
-          </button>
+            すべてのうちの子を見る
+          </span>
         </div>
       </div>
     </section>
