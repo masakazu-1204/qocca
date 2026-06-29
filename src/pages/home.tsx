@@ -1141,10 +1141,12 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
                   transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
                 }}
               >
-                {/* 画像 (縦長 4:5、焼き込み済み・コード側で文字重ねない) */}
+                {/* 画像 (実比 1003x1568 ≈ 0.6397、焼き込み済み・コード側で文字重ねない)
+                    2026/6/29 見切れ修正: 4/5 (0.8) → 1003/1568 (0.6397) に合わせて
+                    objectFit:'cover' でも上下トリミングなしで日本語サブテキストまで全表示 */}
                 <div style={{
                   width: '100%',
-                  aspectRatio: '4 / 5',
+                  aspectRatio: '1003 / 1568',
                   overflow: 'hidden',
                   background: QC.cream,
                   borderRadius: 4,
