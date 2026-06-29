@@ -1188,6 +1188,12 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth < 768
   );
+  // 2026/6/29 PC用 左右矢印ボタン: scroll コンテナ参照 + 端到達判定 (canLeft/canRight)
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(true);
+  const [arrowLeftHover, setArrowLeftHover] = useState(false);
+  const [arrowRightHover, setArrowRightHover] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -1195,6 +1201,33 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // 左右矢印の有効/無効を scrollLeft から判定。scroll/resize/初期マウント時に更新。
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const updateArrows = () => {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      setCanLeft(el.scrollLeft > 1);
+      setCanRight(el.scrollLeft < maxScroll - 1);
+    };
+    updateArrows();
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    return () => {
+      el.removeEventListener('scroll', updateArrows);
+      window.removeEventListener('resize', updateArrows);
+    };
+  }, []);
+
+  // 矢印クリック: 1カード分(幅+gap)を smooth でスクロール
+  const scrollByCard = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // PC: カード幅 max 420px + gap 24 = 444px。Mobile では呼ばれないので PC 想定固定値で十分。
+    const delta = (420 + 24) * dir;
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+  };
 
   // 2026/6/29 V3: 7枚カードの画像/遷移先/フォールバックラベル
   // 画像パスは Vite の public/ ルート絶対パス。King スマホアップ→UUID→feature_*.webp までリネーム+変換済。
@@ -1251,8 +1284,94 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
           }} />
         </div>
 
+        {/* 2026/6/29 PC矢印追加: scrollコンテナと矢印overlayを共通の relative ラッパで囲う。
+            モバイルでは矢印は非表示(指スワイプで流せるため・isMobile&&{<arrows />}=null)。
+            既存のカード横スクロール挙動 (flex/overflowX/scrollSnap) は完全不変。 */}
+        <div style={{ position: 'relative' }}>
+          {/* 左矢印 (PC のみ・端で fade) */}
+          {!isMobile && (
+            <button
+              type="button"
+              aria-label="前へ"
+              onClick={() => scrollByCard(-1)}
+              onMouseEnter={() => setArrowLeftHover(true)}
+              onMouseLeave={() => setArrowLeftHover(false)}
+              disabled={!canLeft}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: 16,
+                transform: 'translateY(-50%)',
+                zIndex: 5,
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: arrowLeftHover ? 'rgba(255, 255, 255, 0.96)' : 'rgba(255, 255, 255, 0.82)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                border: `1px solid ${arrowLeftHover ? QC.softBrown : QC.lightSand}`,
+                color: QC.softBrown,
+                fontSize: 18,
+                lineHeight: 1,
+                fontFamily: QC_FONT_JP,
+                cursor: canLeft ? 'pointer' : 'default',
+                boxShadow: arrowLeftHover ? '0 6px 18px rgba(0,0,0,0.10)' : '0 3px 10px rgba(0,0,0,0.06)',
+                opacity: canLeft ? 1 : 0,
+                pointerEvents: canLeft ? 'auto' : 'none',
+                transition: 'opacity 0.6s ease, background 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+              }}
+            >
+              ←
+            </button>
+          )}
+          {/* 右矢印 (PC のみ・端で fade) */}
+          {!isMobile && (
+            <button
+              type="button"
+              aria-label="次へ"
+              onClick={() => scrollByCard(1)}
+              onMouseEnter={() => setArrowRightHover(true)}
+              onMouseLeave={() => setArrowRightHover(false)}
+              disabled={!canRight}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 16,
+                transform: 'translateY(-50%)',
+                zIndex: 5,
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: arrowRightHover ? 'rgba(255, 255, 255, 0.96)' : 'rgba(255, 255, 255, 0.82)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                border: `1px solid ${arrowRightHover ? QC.softBrown : QC.lightSand}`,
+                color: QC.softBrown,
+                fontSize: 18,
+                lineHeight: 1,
+                fontFamily: QC_FONT_JP,
+                cursor: canRight ? 'pointer' : 'default',
+                boxShadow: arrowRightHover ? '0 6px 18px rgba(0,0,0,0.10)' : '0 3px 10px rgba(0,0,0,0.06)',
+                opacity: canRight ? 1 : 0,
+                pointerEvents: canRight ? 'auto' : 'none',
+                transition: 'opacity 0.6s ease, background 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+              }}
+            >
+              →
+            </button>
+          )}
         {/* 横スクロールカルーセル (SectionQuietlyLoved 作法を踏襲) */}
-        <div style={{
+        <div
+          ref={scrollRef}
+          style={{
           display: 'flex',
           gap: isMobile ? 16 : 24,
           overflowX: 'auto',
@@ -1351,6 +1470,7 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
             );
           })}
         </div>
+        </div>{/* /relative ラッパ閉じ (左右矢印overlay 用) */}
 
         {/* 街の温度ナレーション + 線リンク(誘導) */}
         <div style={{ marginTop: 'clamp(50px, 10vw, 100px)' as any, textAlign: 'center', padding: '0 32px' }}>
