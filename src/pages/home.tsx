@@ -1037,7 +1037,8 @@ const SectionWhatIsQoccaV2Diagram = ({ setPage }: { setPage: (page: string) => v
 // 2026/6/29 SectionWhatIsQoccaV3Carousel — 7枚画像横スクカルーセル版 (試作)
 // V1(3項目抽象) / V2(6機能Lucide図解) を温存しつつ、ちゃぴ生成のフォトリアル
 // 機能紹介カード7枚を SectionQuietlyLoved と同じ横スクロール作法で並べる。
-// 画像はリポジトリ `/public/feature-cards/feature_*.png` に King がスマホから直接アップ→クマがリネーム整理済。
+// 画像はリポジトリ `/public/feature-cards/feature_*.webp` に格納 (King スマホ PNG アップ→クマがリネーム+webp変換)。
+// 元 PNG 11.57MB → webp 0.77MB (93%削減・sharp q=85)。
 // 画像内に英語ラベル+日本語コピーが焼き込み済み → コード側で文字を重ねない。
 // 未アップでも落ちないように、画像エラー時は QC.cream 背景 + ラベルテキストでフォールバック表示。
 // ============================================================================
@@ -1057,16 +1058,16 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
   }, []);
 
   // 2026/6/29 V3: 7枚カードの画像/遷移先/フォールバックラベル
-  // 画像パスは Vite の public/ ルート絶対パス。King スマホアップ完了後 UUID→feature_*.png にリネーム済。
+  // 画像パスは Vite の public/ ルート絶対パス。King スマホアップ→UUID→feature_*.webp までリネーム+変換済。
   // (画像内に英語ラベル+日本語が焼き込み済のため、コード側 ja は alt用 / フォールバック用のみ)
   const cards = [
-    { img: '/feature-cards/feature_market.png',    en: 'MARKET',     ja: '作家さんの作品に出会う',    page: 'marketplace' },
-    { img: '/feature-cards/feature_walk.png',      en: 'WALK',       ja: '愛犬と行ける場所を探す',    page: 'petwalker' },
-    { img: '/feature-cards/feature_album.png',     en: 'ALBUM',      ja: 'うちの子の写真を共有',      page: 'gallery' },
-    { img: '/feature-cards/feature_community.png', en: 'COMMUNITY',  ja: '仲間とおしゃべり',          page: 'communities' },
-    { img: '/feature-cards/feature_event.png',     en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
-    { img: '/feature-cards/feature_places.png',    en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
-    { img: '/feature-cards/feature_blog.png',      en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
+    { img: '/feature-cards/feature_market.webp',    en: 'MARKET',     ja: '作家さんの作品に出会う',    page: 'marketplace' },
+    { img: '/feature-cards/feature_walk.webp',      en: 'WALK',       ja: '愛犬と行ける場所を探す',    page: 'petwalker' },
+    { img: '/feature-cards/feature_album.webp',     en: 'ALBUM',      ja: 'うちの子の写真を共有',      page: 'gallery' },
+    { img: '/feature-cards/feature_community.webp', en: 'COMMUNITY',  ja: '仲間とおしゃべり',          page: 'communities' },
+    { img: '/feature-cards/feature_event.webp',     en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
+    { img: '/feature-cards/feature_places.webp',    en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
+    { img: '/feature-cards/feature_blog.webp',      en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
   ];
 
   return (
