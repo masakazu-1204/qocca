@@ -683,25 +683,26 @@ const SectionWhatIsQocca = ({ setPage }) => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // 2026/6/29 案E (D): desc の改行 \n を3箇所除去(文言は完全保持、1行に流す)
   const items = [
     {
       title: 'うちの子との記憶を、形に残す',
       quote: '"あの瞬間を、長く残る形に"',
-      desc: '似顔絵、羊毛作品、記念グッズ。\n街の作家たちが、心を込めて。',
+      desc: '似顔絵、羊毛作品、記念グッズ。街の作家たちが、心を込めて。',
       linkText: '商店街を覗いてみる',
       onClick: () => setPage("marketplace"),
     },
     {
       title: 'うちの子の話で、笑い合う',
       quote: '"犬種ごとの、専門コミュニティ"',
-      desc: '毎日の発見を、分かり合える人と。\nうちの子と同じ仲間の集まり。',
+      desc: '毎日の発見を、分かり合える人と。うちの子と同じ仲間の集まり。',
       linkText: '広場でつながる',
       onClick: () => setPage("communities"),
     },
     {
       title: '街を歩いてみる',
       quote: '"クリエイター、イベント、施設"',
-      desc: 'ペットと過ごす日常を、もっと豊かに。\nお出かけ先、出会い、発見。',
+      desc: 'ペットと過ごす日常を、もっと豊かに。お出かけ先、出会い、発見。',
       linkText: '案内所へ',
       onClick: () => setPage("facilities"),
     },
@@ -709,14 +710,16 @@ const SectionWhatIsQocca = ({ setPage }) => {
 
   return (
     <section style={{
-      padding: 'clamp(80px, 14vw, 160px) 0',
+      // 2026/6/29 案E (B) #1: section padding 縮小 (Mobile 80→48px、PC 160→140px)
+      padding: 'clamp(48px, 10vw, 140px) 0',
       background: 'transparent',
       position: 'relative',
     }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 32px' }}>
 
         {/* セクションヘッダー */}
-        <div style={{ textAlign: 'center', marginBottom: 80 }}>
+        {/* 2026/6/29 案E (B) #2: ヘッダー marginBottom 80→clamp で Mobile 40px、PC 80px 維持 */}
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(40px, 7vw, 80px)' as any }}>
           <p style={{
             fontFamily: QC_FONT_EN,
             fontSize: 13,
@@ -741,20 +744,22 @@ const SectionWhatIsQocca = ({ setPage }) => {
           }}>
             Qocca、できること
           </h2>
+          {/* 2026/6/29 案E (B) #3: 区切り marginTop 40→24 */}
           <div style={{
-            marginTop: 40,
+            marginTop: 24,
             width: 32,
             height: 1,
             background: QC.lightSand,
-            margin: '40px auto 0',
+            margin: '24px auto 0',
           }} />
         </div>
 
         {/* 3カード */}
+        {/* 2026/6/29 案E (B/C) #4: Mobile gap 24→16 (PC 32 維持) */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-          gap: isMobile ? 24 : 32,
+          gap: isMobile ? 16 : 32,
         }}>
           {items.map((item, i) => {
             const isHover = hoverIndex === i;
@@ -767,7 +772,8 @@ const SectionWhatIsQocca = ({ setPage }) => {
                 style={{
                   background: QC.warmWhite,
                   borderRadius: 4,
-                  padding: isMobile ? '64px 32px' : '80px 48px',
+                  // 2026/6/29 案E (C) #5: Mobile card padding 64x32→36x28 (PC 80x48 維持)
+                  padding: isMobile ? '36px 28px' : '80px 48px',
                   textAlign: 'center',
                   cursor: 'pointer',
                   transition: 'transform 1.0s ease, border-color 0.8s ease',
@@ -779,12 +785,13 @@ const SectionWhatIsQocca = ({ setPage }) => {
                 }}
               >
                 {/* タイトル (詩的・大きく) / 依頼書 #134 Phase 2 案A改: Shippori Mincho 700 で「号」見出し化 */}
+                {/* 2026/6/29 案E (B) #6: h3 margin 18→12 */}
                 <h3 style={{
                   fontFamily: QC_FONT_DISPLAY,
                   fontSize: 20,
                   fontWeight: 700,
                   color: QC.softBrown,
-                  margin: '0 0 18px 0',
+                  margin: '0 0 12px 0',
                   letterSpacing: '0.04em',
                   lineHeight: 1.55,
                 }}>
@@ -792,13 +799,14 @@ const SectionWhatIsQocca = ({ setPage }) => {
                 </h3>
 
                 {/* 引用 (詩的・控えめ) */}
+                {/* 2026/6/29 案E (B) #7: quote margin 24→14 */}
                 <p style={{
                   fontFamily: QC_FONT_JP,
                   fontSize: 12,
                   fontStyle: 'italic',
                   fontWeight: 300,
                   color: QC.warmGray,
-                  margin: '0 0 24px 0',
+                  margin: '0 0 14px 0',
                   letterSpacing: 0.5,
                   lineHeight: 1.7,
                   opacity: 0.85,
@@ -807,13 +815,14 @@ const SectionWhatIsQocca = ({ setPage }) => {
                 </p>
 
                 {/* 機能説明 (具体的) */}
+                {/* 2026/6/29 案E (B/C) #8: desc margin 32→20、lineHeight 1.9→1.7 */}
                 <p style={{
                   fontFamily: QC_FONT_JP,
                   fontSize: 12,
                   fontWeight: 300,
                   color: QC.warmGray,
-                  margin: '0 0 32px 0',
-                  lineHeight: 1.9,
+                  margin: '0 0 20px 0',
+                  lineHeight: 1.7,
                   letterSpacing: 0.3,
                   whiteSpace: 'pre-line',
                 }}>
