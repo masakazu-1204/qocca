@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "../constants/theme";
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { PW_AREAS } from "../constants/petwalker";
+import { petIcon, petLabelShort } from "../constants/pets";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { useListings } from "../hooks";
@@ -2669,6 +2670,119 @@ const ArkPartnershipSection = () => {
   );
 };
 
+// ── 2026/6/29 トップ改修第3弾: HomePetGallerySection (うちの子ギャラリー トッププレビュー) ──────
+// /petgallery (pet_gallery.tsx・PR#59) の取得ロジック/カードUIを踏襲し、トップに最大8件プレビュー + 「もっと見る→」/petgallery 遷移。
+// 公開データ(pets RLS select=true)のみ・status='active' で memorial(虹の橋) は除外・新規GRANT/RLS変更 0。
+const HomePetGallerySection = () => {
+  const navigate = useNavigate();
+  type Pet = { id: string; owner_id: string | null; name: string; species: string; breed: string | null; gender: string | null; bio: string | null; avatar_url: string | null };
+  type Owner = { id: string; display_name: string | null; avatar_url: string | null };
+  type Card = Pet & { owner: Owner | null };
+  const [cards, setCards] = useState<Card[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPC, setIsPC] = useState(typeof window !== "undefined" && window.innerWidth >= 768);
+  useEffect(() => {
+    const check = () => setIsPC(window.innerWidth >= 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      const { data: pets } = await supabase
+        .from("pets")
+        .select("id, owner_id, name, species, breed, gender, bio, avatar_url")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      const list = (pets || []) as Pet[];
+      const ownerIds = Array.from(new Set(list.map(p => p.owner_id).filter((v): v is string => !!v)));
+      let ownerMap: Record<string, Owner> = {};
+      if (ownerIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", ownerIds);
+        ownerMap = Object.fromEntries(((profs || []) as Owner[]).map(p => [p.id, p]));
+      }
+      if (!alive) return;
+      setCards(list.map(p => ({ ...p, owner: p.owner_id ? ownerMap[p.owner_id] ?? null : null })));
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, []);
+  if (!loading && cards.length === 0) return null;
+  return (
+    <section style={{ padding: "80px 16px", background: "transparent" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: "italic", color: QC.warmGray, letterSpacing: 0.8, margin: "0 0 10px", opacity: 0.75, fontWeight: 300 }}>
+            Our Pets
+          </p>
+          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: QC.softBrown, letterSpacing: "0.06em", lineHeight: 1.55, margin: 0 }}>
+            うちの子ギャラリー
+          </h2>
+          <p style={{ fontFamily: QC_FONT_JP, fontSize: 12.5, fontWeight: 300, color: QC.warmGray, lineHeight: 1.8, margin: "12px 0 0", letterSpacing: 0.3 }}>
+            Qoccaの街で暮らす、みんなのうちの子
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${isPC ? 180 : 150}px, 1fr))`, gap: 12, marginBottom: 24 }}>
+          {cards.map(p => {
+            const heroPhoto = p.avatar_url || "";
+            const speciesEmoji = petIcon(p.species);
+            const genderIcon = p.gender === "male" ? "♂" : p.gender === "female" ? "♀" : "";
+            return (
+              <div
+                key={p.id}
+                onClick={() => p.owner_id && navigate(`/user/${p.owner_id}`)}
+                style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden", cursor: p.owner_id ? "pointer" : "default", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={(e) => { if (!p.owner_id) return; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <div style={{ width: "100%", aspectRatio: "1", background: "#FFF5EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, overflow: "hidden" }}>
+                  {heroPhoto ? (
+                    <img src={heroPhoto} alt={p.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  ) : speciesEmoji}
+                </div>
+                <div style={{ padding: "10px 12px" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                    {genderIcon && <span style={{ color: C.warmGray, fontSize: 11, fontWeight: 600 }}>{genderIcon}</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {speciesEmoji} {p.breed || petLabelShort(p.species)}
+                  </div>
+                  {p.owner && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 6, borderTop: `1px solid ${C.border}` }}>
+                      {p.owner.avatar_url ? (
+                        <img src={p.owner.avatar_url} alt="" loading="lazy" style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.border }} />
+                      )}
+                      <span style={{ fontSize: 10, color: C.warmGray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {p.owner.display_name || "—"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <button onClick={() => navigate("/petgallery")} style={{ padding: "10px 28px", background: "transparent", color: QC.softBrown, border: `1px solid ${QC.softBrown}`, borderRadius: 999, fontSize: 13, fontWeight: 400, cursor: "pointer", fontFamily: QC_FONT_JP, letterSpacing: 0.5, transition: "all 0.6s cubic-bezier(0.22, 1, 0.36, 1)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = QC.softBrown; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = QC.softBrown; }}
+          >
+            うちの子ギャラリーへ →
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ── 2026/6/28 トップ改修第2弾 ②: HomeCommunitiesSection (コミュ独立化) ──────
 // 第1弾で削除した SectionVoices (communities+events 混在) のうち、communities 部分のみを抽出して独立。
 // events は HomeEventsSection に集約済。本セクションは communities テーブルの SELECT のみ・新規GRANT/RLS無し。
@@ -2901,10 +3015,13 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <CrowdfundingBanner />
       <SectionWhatIsQocca setPage={setPage} />
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
-      <SectionTodaysMoments setPage={setPage} />
-      {/* 2026/6/28 トップ改修第1弾 ②:「Qoccaこんな街です」(SectionTownMap) 削除 — 関数定義L1499は温存 */}
+      {/* 2026/6/29 第3弾 ②: 並び順を 街で愛されている作品→ペットウォーカー→うちの子ギャラリー→街のアルバム に変更 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
       <SectionPetWalker setPage={setPage} />
+      {/* 2026/6/29 第3弾 ①: HomePetGallerySection 新設 (pet_gallery.tsx 取得ロジック/カードUI流用・8件preview + もっと見る→/petgallery) */}
+      <HomePetGallerySection />
+      <SectionTodaysMoments setPage={setPage} />
+      {/* 2026/6/28 トップ改修第1弾 ②:「Qoccaこんな街です」(SectionTownMap) 削除 — 関数定義L1499は温存 */}
       {/* 2026/6/28 トップ改修第2弾 ①: SectionResidentArtisans(街の作家たち・大UI) 削除 — 関数定義L1951は温存。
           作家紹介は下記 InitialMembersSection(丸アイコンUI)に一本化し、そちらの見出しを「街の作家たち」に変更。 */}
       {/* 2026/6/28 トップ改修第1弾 ③:「街の声」(SectionVoices) 削除 — イベント二重表示解消・関数定義L2247は温存・コミュ独立化は第2弾 */}
