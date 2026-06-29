@@ -13,6 +13,12 @@ type Props = {
   onClick?: () => void;
   /** TabBar表示中は重ねないよう少し上に逃がす (デフォルト true) */
   aboveTabBar?: boolean;
+  /**
+   * 2026/6/29 追加: 下部固定バー(注文バー等)と干渉する画面用の手動オフセット。
+   * 指定すると aboveTabBar の挙動を上書きし、bottom = calc(${bottomOffset}px + safe-area)
+   * 例: DetailPage の注文バー(高さ~90px+safe-area)を避けるなら 120 程度を渡す。
+   */
+  bottomOffset?: number;
   /** 表示位置 (デフォルト 'left') */
   side?: 'left' | 'right';
   /** aria-label (デフォルト "戻る") */
@@ -22,6 +28,7 @@ type Props = {
 export const FloatingBackButton = ({
   onClick,
   aboveTabBar = true,
+  bottomOffset,
   side = 'left',
   label = '戻る',
 }: Props) => {
@@ -38,10 +45,13 @@ export const FloatingBackButton = ({
     }
   };
 
-  // TabBar(70px) + safe-area の上に余裕 10px。aboveTabBar=false なら通常の余白だけ。
-  const bottomCalc = aboveTabBar
-    ? 'calc(80px + env(safe-area-inset-bottom, 0px))'
-    : 'calc(16px + env(safe-area-inset-bottom, 0px))';
+  // 優先順位: bottomOffset (明示) > aboveTabBar (TabBar高 80px) > デフォルト (16px)
+  // すべて safe-area-inset-bottom を加算してホームインジケータ機に対応。
+  const bottomCalc = typeof bottomOffset === 'number'
+    ? `calc(${bottomOffset}px + env(safe-area-inset-bottom, 0px))`
+    : aboveTabBar
+      ? 'calc(80px + env(safe-area-inset-bottom, 0px))'
+      : 'calc(16px + env(safe-area-inset-bottom, 0px))';
 
   return (
     <button
