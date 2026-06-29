@@ -2113,7 +2113,10 @@ export const SellPage = ({ setPage }) => {
                   <button onClick={()=>removeOption(i)} style={{ width:28, height:28, borderRadius:"50%", border:`1px solid ${C.border}`, background:C.lightGray, cursor:"pointer", fontSize:14, color:C.warmGray, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>×</button>
                 </div>
               ))}
-              {options.length < 5 && (
+              {/* 2026/6/29 案A: オプション上限 5→15 (Tails Up「選べる5個セット」要望対応・全出品者に開放)
+                  DB変更/決済影響 0。create-checkout は配列長制限なし (Stripe line_items 上限 250)。
+                  0円オプションの解禁は別案D で検証後 → 今回は有料オプションのまま上限のみ拡張。 */}
+              {options.length < 15 && (
                 <button onClick={addOption} style={{ padding:"8px 14px", background:C.orangePale, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit" }}>＋ オプションを追加</button>
               )}
             </div>
