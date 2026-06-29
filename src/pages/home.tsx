@@ -898,15 +898,11 @@ const SectionTodaysMoments = ({ setPage }) => {
   );
   const [animatingKey, setAnimatingKey] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
-  const [columnCount, setColumnCount] = useState(2);
+  const [allLinkHover, setAllLinkHover] = useState(false);
 
-  // レスポンシブ
+  // レスポンシブ (2026/6/29 横スク化: columnCount 廃止、isMobile のみ管理)
   useEffect(() => {
-    const checkSize = () => {
-      const w = window.innerWidth;
-      setIsMobile(w < 768);
-      setColumnCount(w >= 1024 ? 4 : w >= 768 ? 3 : 2);
-    };
+    const checkSize = () => setIsMobile(window.innerWidth < 768);
     checkSize();
     window.addEventListener("resize", checkSize);
     return () => window.removeEventListener("resize", checkSize);
@@ -1078,11 +1074,16 @@ const SectionTodaysMoments = ({ setPage }) => {
             }} />
           </div>
 
-          {/* Masonry ギャラリー */}
+          {/* 2026/6/29 横スク化: Masonry → Mobile=flex横スク33vw / PC=4列grid。SectionQuietlyLoved 作法を踏襲。 */}
           <div style={{
-            columnCount: columnCount,
-            columnGap: columnCount === 4 ? 24 : columnCount === 3 ? 22 : 20,
-            padding: columnCount === 4 ? "0 64px" : columnCount === 3 ? "0 48px" : "0 24px",
+            display: isMobile ? "flex" : "grid",
+            gridTemplateColumns: isMobile ? undefined : "repeat(4, minmax(0, 1fr))",
+            gap: isMobile ? 12 : 24,
+            overflowX: isMobile ? "auto" : undefined,
+            scrollSnapType: isMobile ? "x mandatory" : undefined,
+            paddingLeft: isMobile ? 24 : 64,
+            paddingRight: isMobile ? 24 : 64,
+            WebkitOverflowScrolling: isMobile ? "touch" : undefined,
             maxWidth: 1280,
             margin: "0 auto",
           }}>
@@ -1093,6 +1094,7 @@ const SectionTodaysMoments = ({ setPage }) => {
                 padding: 40,
                 fontFamily: QC_FONT_JP,
                 fontWeight: 300,
+                gridColumn: isMobile ? undefined : "1 / -1",
               }}>
                 Loading...
               </p>
@@ -1118,6 +1120,42 @@ const SectionTodaysMoments = ({ setPage }) => {
                 />
               );
             })}
+          </div>
+
+          {/* 2026/6/29 もっと見る導線追加: SectionQuietlyLoved 線リンク作法を踏襲 → /gallery */}
+          <div style={{ marginTop: "clamp(50px, 10vw, 100px)" as any, textAlign: "center", padding: "0 32px" }}>
+            <p style={{
+              fontFamily: QC_FONT_JP,
+              fontSize: 12,
+              fontStyle: "italic",
+              fontWeight: 300,
+              color: QC.warmGray,
+              letterSpacing: 1.2,
+              opacity: 0.65,
+              margin: "0 0 24px 0",
+              lineHeight: 1.8,
+            }}>
+              今日も、街には新しい思い出が置かれています。
+            </p>
+            <div style={{ width: 4, height: 4, borderRadius: "50%", background: QC.lightSand, margin: "0 auto 40px" }} />
+            <span
+              onClick={() => setPage("gallery")}
+              onMouseEnter={() => setAllLinkHover(true)}
+              onMouseLeave={() => setAllLinkHover(false)}
+              style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: 12,
+                fontWeight: 300,
+                color: QC.softBrown,
+                letterSpacing: 1.2,
+                borderBottom: `1px solid ${allLinkHover ? QC.softBrown : "rgba(139, 111, 92, 0.3)"}`,
+                paddingBottom: 4,
+                cursor: "pointer",
+                transition: "border-color 0.6s ease",
+              }}
+            >
+              街のアルバムを覗いてみる
+            </span>
           </div>
         </div>
       </section>
@@ -1162,14 +1200,16 @@ const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, in
         overflow: "hidden",
         background: QC.cream,
         border: "1px solid rgba(44, 41, 38, 0.03)",
-        marginBottom: 20,
+        // 2026/6/29 横スク化: 横並びでは marginBottom 不要(gap で間隔取る)・Mobile 33vw + scroll-snap
+        flexShrink: isMobile ? 0 : undefined,
+        width: isMobile ? "33vw" : undefined,
+        scrollSnapAlign: isMobile ? "start" : undefined,
         cursor: "pointer",
         transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 1.2s ease",
         transform: isHover
           ? "scale(1.015)"
           : (inView ? "translateY(0)" : "translateY(16px)"),
         opacity: inView ? 1 : 0,
-        breakInside: "avoid",
         display: "block",
       }}
     >
@@ -1180,7 +1220,8 @@ const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, in
         decoding="async"
         style={{
           width: "100%",
-          height: "auto",
+          // 2026/6/29 横スク化: 全カード aspectRatio 4/5 に統一(縦長/横長混在を抑えて街並み統一感)
+          aspectRatio: "4 / 5",
           display: "block",
           objectFit: "cover",
         }}
