@@ -16,6 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { useNav } from "../hooks";
 import { ListingEditModal } from "../components/ListingEditModal";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 
 export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC }) => {
   const [cat, setCat] = useState("all");
@@ -1482,6 +1483,9 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           </button>
         )}
       </div>
+      {/* 2026/6/29 案① B案: フローティング戻るボタン (スクロール中も常に押せる)。
+          DetailPage は TabBar 非表示 (showTabBar=false in App.tsx:174) のため aboveTabBar=false。 */}
+      <FloatingBackButton onClick={onBack} aboveTabBar={false} />
     </div>
   );
 };

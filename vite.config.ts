@@ -15,7 +15,12 @@ export default defineConfig({
         description: 'うちの子のための特別なものを。似顔絵・ハンドメイド服・フォト撮影・グッズ制作。ペット専門クリエイターが作る、世界にひとつだけの作品。',
         theme_color: '#F5A94A',
         background_color: '#FFFFFF',
-        display: 'standalone',
+        // 2026/6/29 案③ B案実装: 'standalone' → 'minimal-ui' に緩和
+        //   - 'standalone' (旧): ホーム画面追加組で iOS 端スワイプ・ブラウザ戻るボタンが無効化
+        //     → 戻れない問題の主原因の一つ
+        //   - 'minimal-ui' (新): 最小限のブラウザUIを残す (端スワイプ可、戻る/進む可)
+        //   - ネイティブアプリ感は若干減るが、ナビゲーション性が大幅改善
+        display: 'minimal-ui',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',

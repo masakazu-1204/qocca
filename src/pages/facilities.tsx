@@ -16,6 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, PREFS } from "../constants/data";
 import { checkFacilityNGWords } from "../utils/moderation";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 
 // 依頼書 #146 Step1 (2026/6/13): 登録番号・出典を画面非表示にする表示用フィルタ
 // ⚠️ DB の description は CC-BY の出典保持義務のため削除しない (画面表示のみフィルタ)
@@ -748,6 +749,9 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
           onClose={()=>setShowCorrectionForm(false)}
         />
       )}
+      {/* 2026/6/29 案① B案: フローティング戻るボタン (スクロール中も常に押せる)。
+          FacilityDetailView は施設一覧から開かれるモーダル(別ページ扱い) → TabBar 非表示なので aboveTabBar=false。 */}
+      <FloatingBackButton onClick={onBack} aboveTabBar={false} />
     </div>
   );
 };

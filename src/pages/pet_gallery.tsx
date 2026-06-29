@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { C } from "../constants/theme";
 import { petIcon, petLabelShort } from "../constants/pets";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 
 type Pet = {
   id: string;
@@ -201,6 +202,8 @@ export function PetGalleryPage({ isPC }: { setPage?: (p: string) => void; isPC?:
           </button>
         </div>
       )}
+      {/* 2026/6/29 案① B案: フローティング戻るボタン (PetGalleryPage 一覧 → 前ページ) */}
+      <FloatingBackButton aboveTabBar={true} />
     </div>
   );
 }
