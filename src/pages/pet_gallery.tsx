@@ -8,6 +8,7 @@ import { supabase } from "../supabaseClient";
 import { C } from "../constants/theme";
 import { petIcon, petLabelShort } from "../constants/pets";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+import { dailySeededShuffle } from "../utils/dailyShuffle";
 
 type Pet = {
   id: string;
@@ -50,7 +51,11 @@ export function PetGalleryPage({ isPC }: { setPage?: (p: string) => void; isPC?:
         .in("id", ownerIds);
       ownerMap = Object.fromEntries(((profs || []) as Owner[]).map((p) => [p.id, p]));
     }
-    const rows: Card[] = list.map((p) => ({ ...p, owner: p.owner_id ? ownerMap[p.owner_id] ?? null : null }));
+    // 2026/6/29 日替わりシャッフル: 各ページ内の並びを日付シードでシャッフル。
+    // 取得 (active + created_at desc + range) ロジックは現状維持・JS で並び替えのみ。
+    const rows: Card[] = dailySeededShuffle(
+      list.map((p) => ({ ...p, owner: p.owner_id ? ownerMap[p.owner_id] ?? null : null }))
+    );
     return { rows, finished: list.length < PAGE_SIZE };
   };
 
