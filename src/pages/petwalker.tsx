@@ -10,6 +10,7 @@ import { supabase } from "../supabaseClient";
 import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { PetWalkerReviews } from "../components/PetWalkerReviews";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 
 type Spot = {
   id: string; name: string; category: string; pref: string; city: string | null;
@@ -356,6 +357,10 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
           </div>
         </section>
       </div>
+      {/* 2026/6/29 案① B案: フローティング戻るボタン。内部 view (area一覧/スポット詳細)
+          は pushState で履歴に積まれているので navigate(-1) で popstate ハンドラが view を1段ずつ戻す。
+          area トップでは TabBar が表示されるので aboveTabBar=true。 */}
+      <FloatingBackButton aboveTabBar={true} />
     </div>
   );
 }

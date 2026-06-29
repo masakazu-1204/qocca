@@ -11,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { BLOG_CATS } from "../constants/data";
 import CommentModal from "../components/CommentModal";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 import type { CommentTargetType } from "../types";
 
 export const BlogPage = ({ setPage, isPC }) => {
@@ -206,6 +207,8 @@ export const BlogPage = ({ setPage, isPC }) => {
           title="コメント"
         />
       )}
+      {/* 2026/6/29 案① B案: フローティング戻るボタン (BlogPage 記事詳細 → 一覧) */}
+      <FloatingBackButton onClick={closeViewPost} aboveTabBar={true} />
           </div>
   );
 
@@ -347,6 +350,8 @@ export const BlogPage = ({ setPage, isPC }) => {
           title="コメント"
         />
       )}
+      {/* 2026/6/29 案① B案: フローティング戻るボタン (BlogPage 一覧 → 前ページ) */}
+      <FloatingBackButton aboveTabBar={true} />
       </div>
   );
 };
@@ -870,6 +875,8 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   />
 )}
       </div>
+      {/* 2026/6/29 案① B案: フローティング戻るボタン (GalleryPage 一覧 → 前ページ) */}
+      <FloatingBackButton aboveTabBar={true} />
     </div>
   );
 };
