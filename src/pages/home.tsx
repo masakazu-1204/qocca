@@ -6,6 +6,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+// 2026/6/29 SectionWhatIsQoccaV2Diagram 用アイコン (試作・既存V1温存)
+import { ShoppingBag, PawPrint, Image as LucideImage, MessagesSquare, Calendar, Map as LucideMap } from "lucide-react";
 import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "../constants/theme";
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { PW_AREAS } from "../constants/petwalker";
@@ -867,6 +869,163 @@ const SectionWhatIsQocca = ({ setPage }) => {
             margin: 0,
           }}>
             今日も、新しい思い出が置かれています。
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ============================================================================
+// 2026/6/29 SectionWhatIsQoccaV2Diagram — 6機能図解版 (コード版試作)
+// 既存 SectionWhatIsQocca (3項目抽象) を温存しつつ、6機能を一目で示す図解セクション。
+// 画像版と並べて King が選ぶ前提。lucide-react アイコン + 2列(Mobile)/3列(PC) grid。
+// 静けさデザイン (QC tokens / QC_FONT_JP/EN/DISPLAY / transition 0.6-1.0s) を踏襲。
+// ============================================================================
+const SectionWhatIsQoccaV2Diagram = ({ setPage }: { setPage: (page: string) => void }) => {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const items = [
+    { Icon: ShoppingBag,     label: 'マーケット',       note: '作家さんの作品に出会える',                 page: 'marketplace' },
+    { Icon: PawPrint,        label: 'ペットウォーカー', note: '愛犬と行けるお出かけスポット(全国644件)', page: 'petwalker' },
+    { Icon: LucideImage,     label: '街のアルバム',     note: 'みんなの日常スナップ',                     page: 'gallery' },
+    { Icon: MessagesSquare,  label: 'コミュニティ',     note: '仲間とおしゃべり',                         page: 'communities' },
+    { Icon: Calendar,        label: 'イベント',         note: '全国のペットイベント',                     page: 'events' },
+    { Icon: LucideMap,       label: '施設マップ',       note: 'おでかけ・施設情報',                       page: 'facilities' },
+  ];
+
+  return (
+    <section style={{
+      padding: 'clamp(48px, 10vw, 140px) 0',
+      background: 'transparent',
+      position: 'relative',
+    }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px' }}>
+
+        {/* セクションヘッダー */}
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(32px, 6vw, 64px)' as any }}>
+          <p style={{
+            fontFamily: QC_FONT_EN,
+            fontSize: 13,
+            fontStyle: 'italic',
+            color: QC.warmGray,
+            letterSpacing: 0.8,
+            margin: '0 0 12px 0',
+            opacity: 0.75,
+            fontWeight: 300,
+          }}>
+            What you can do here
+          </p>
+          <h2 style={{
+            fontFamily: QC_FONT_DISPLAY,
+            fontSize: 'clamp(26px, 4.4vw, 36px)',
+            fontWeight: 700,
+            color: QC.softBrown,
+            letterSpacing: '0.06em',
+            lineHeight: 1.55,
+            margin: 0,
+          }}>
+            Qocca、できること
+          </h2>
+          <div style={{
+            marginTop: 24,
+            width: 32,
+            height: 1,
+            background: QC.lightSand,
+            margin: '24px auto 0',
+          }} />
+        </div>
+
+        {/* 6機能図解 (Mobile=2列 / PC=3列) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+          gap: isMobile ? 12 : 20,
+        }}>
+          {items.map((it, i) => {
+            const isHover = hoverIdx === i;
+            const Ico = it.Icon;
+            return (
+              <button
+                key={i}
+                onClick={() => setPage(it.page)}
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx(null)}
+                style={{
+                  background: QC.warmWhite,
+                  borderRadius: 4,
+                  padding: isMobile ? '20px 14px' : '32px 20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'transform 1.0s ease, border-color 0.8s ease',
+                  border: `1px solid ${isHover ? QC.softBrown : QC.lightSand}`,
+                  transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: isMobile ? 8 : 12,
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+              >
+                {/* アイコン (細線、QC.softBrown、ホバーで色濃く) */}
+                <Ico
+                  size={isMobile ? 28 : 36}
+                  strokeWidth={1.2}
+                  color={isHover ? QC.softBrown : QC.warmGray}
+                  style={{ transition: 'color 0.6s ease, transform 0.8s ease', transform: isHover ? 'scale(1.05)' : 'scale(1)' }}
+                />
+                {/* 機能ラベル */}
+                <span style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: isMobile ? 13 : 14,
+                  fontWeight: 500,
+                  color: QC.softBrown,
+                  letterSpacing: 0.5,
+                  lineHeight: 1.4,
+                }}>
+                  {it.label}
+                </span>
+                {/* 一言 */}
+                <span style={{
+                  fontFamily: QC_FONT_JP,
+                  fontSize: isMobile ? 10.5 : 11,
+                  fontWeight: 300,
+                  color: QC.warmGray,
+                  letterSpacing: 0.3,
+                  lineHeight: 1.6,
+                  opacity: 0.85,
+                }}>
+                  {it.note}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 空気コピー */}
+        <div style={{ marginTop: 'clamp(32px, 6vw, 64px)' as any, textAlign: 'center' }}>
+          <p style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 11,
+            fontStyle: 'italic',
+            fontWeight: 300,
+            color: QC.warmGray,
+            letterSpacing: 1.2,
+            opacity: 0.7,
+            margin: 0,
+          }}>
+            ひとつずつ、覗いてみてください。
           </p>
         </div>
       </div>
@@ -3130,7 +3289,8 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <SectionAnnouncement />
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵) */}
       <CrowdfundingBanner />
-      <SectionWhatIsQocca setPage={setPage} />
+      {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能図解) に差し替え。V1関数定義は温存しており、SectionWhatIsQocca に1行戻すだけで切替可能。 */}
+      <SectionWhatIsQoccaV2Diagram setPage={setPage} />
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
       {/* 2026/6/29 第3弾 ②: 並び順を 街で愛されている作品→ペットウォーカー→うちの子ギャラリー→街のアルバム に変更 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
