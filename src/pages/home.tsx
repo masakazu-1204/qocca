@@ -1033,6 +1033,222 @@ const SectionWhatIsQoccaV2Diagram = ({ setPage }: { setPage: (page: string) => v
   );
 };
 
+// ============================================================================
+// 2026/6/29 SectionWhatIsQoccaV3Carousel — 7枚画像横スクカルーセル版 (試作)
+// V1(3項目抽象) / V2(6機能Lucide図解) を温存しつつ、ちゃぴ生成のフォトリアル
+// 機能紹介カード7枚を SectionQuietlyLoved と同じ横スクロール作法で並べる。
+// 画像はリポジトリ `/public/feature-cards/feature_*.jpg` に King がスマホから直接アップ。
+// 画像内に英語ラベル+日本語コピーが焼き込み済み → コード側で文字を重ねない。
+// 未アップでも落ちないように、画像エラー時は QC.cream 背景 + ラベルテキストでフォールバック表示。
+// ============================================================================
+const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => void }) => {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [allLinkHover, setAllLinkHover] = useState(false);
+  const [imgFailed, setImgFailed] = useState<Set<number>>(new Set());
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // 2026/6/29 V3: 7枚カードの画像/遷移先/フォールバックラベル
+  // 画像パスは Vite の public/ ルート絶対パス。King スマホアップ用の固定命名規則。
+  const cards = [
+    { img: '/feature-cards/feature_market.jpg',    en: 'MARKET',     ja: '作家さんの作品に出会う',    page: 'marketplace' },
+    { img: '/feature-cards/feature_walk.jpg',      en: 'WALK',       ja: '愛犬と行ける場所を探す',    page: 'petwalker' },
+    { img: '/feature-cards/feature_album.jpg',     en: 'ALBUM',      ja: '街の日常を覗く',            page: 'gallery' },
+    { img: '/feature-cards/feature_community.jpg', en: 'COMMUNITY',  ja: '仲間とおしゃべり',          page: 'communities' },
+    { img: '/feature-cards/feature_event.jpg',     en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
+    { img: '/feature-cards/feature_places.jpg',    en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
+    { img: '/feature-cards/feature_blog.jpg',      en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
+  ];
+
+  return (
+    <section style={{
+      padding: 'clamp(80px, 14vw, 160px) 0',
+      background: 'transparent',
+      position: 'relative',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+
+        {/* セクションヘッダー (SectionQuietlyLoved と同作法) */}
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(50px, 10vw, 100px)' as any, padding: '0 32px' }}>
+          <p style={{
+            fontFamily: QC_FONT_EN,
+            fontSize: 13,
+            fontStyle: 'italic',
+            color: QC.warmGray,
+            letterSpacing: 0.8,
+            margin: '0 0 12px 0',
+            opacity: 0.75,
+            fontWeight: 300,
+          }}>
+            What you can do here
+          </p>
+          <h2 style={{
+            fontFamily: QC_FONT_DISPLAY,
+            fontSize: 'clamp(26px, 4.4vw, 36px)',
+            fontWeight: 700,
+            color: QC.softBrown,
+            letterSpacing: '0.06em',
+            lineHeight: 1.55,
+            margin: 0,
+          }}>
+            Qocca、できること
+          </h2>
+          <div style={{
+            marginTop: 40,
+            width: 32,
+            height: 1,
+            background: QC.lightSand,
+            margin: '40px auto 0',
+          }} />
+        </div>
+
+        {/* 横スクロールカルーセル (SectionQuietlyLoved 作法を踏襲) */}
+        <div style={{
+          display: 'flex',
+          gap: isMobile ? 16 : 24,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          paddingLeft: isMobile ? 24 : 64,
+          paddingRight: isMobile ? 24 : 64,
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          {cards.map((c, i) => {
+            const isHover = hoverIdx === i;
+            const failed = imgFailed.has(i);
+            return (
+              <div
+                key={i}
+                onClick={() => setPage(c.page)}
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx(null)}
+                style={{
+                  // 1画面に1〜2枚見える幅感: Mobile 78vw / PC 38%
+                  flexShrink: 0,
+                  width: isMobile ? '78vw' : '38%',
+                  maxWidth: isMobile ? undefined : 420,
+                  scrollSnapAlign: 'start',
+                  cursor: 'pointer',
+                  transition: 'transform 1.0s cubic-bezier(0.22, 1, 0.36, 1)',
+                  transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
+                }}
+              >
+                {/* 画像 (縦長 4:5、焼き込み済み・コード側で文字重ねない) */}
+                <div style={{
+                  width: '100%',
+                  aspectRatio: '4 / 5',
+                  overflow: 'hidden',
+                  background: QC.cream,
+                  borderRadius: 4,
+                  border: `1px solid ${isHover ? QC.softBrown : QC.lightSand}`,
+                  transition: 'border-color 0.8s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                }}>
+                  {!failed ? (
+                    <img
+                      src={c.img}
+                      alt={`${c.en} — ${c.ja}`}
+                      loading="lazy"
+                      decoding="async"
+                      onError={() => setImgFailed(prev => { const next = new Set(prev); next.add(i); return next; })}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                        transition: 'transform 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease',
+                        transform: isHover ? 'scale(1.02)' : 'scale(1)',
+                        opacity: isHover ? 1.0 : 0.96,
+                      }}
+                    />
+                  ) : (
+                    // 画像未アップ時のフォールバック (静けさデザイン踏襲)
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 24,
+                      textAlign: 'center',
+                      width: '100%',
+                      height: '100%',
+                    }}>
+                      <p style={{
+                        fontFamily: QC_FONT_EN,
+                        fontSize: 18,
+                        fontStyle: 'italic',
+                        fontWeight: 300,
+                        color: QC.softBrown,
+                        letterSpacing: 2,
+                        margin: '0 0 12px 0',
+                      }}>{c.en}</p>
+                      <p style={{
+                        fontFamily: QC_FONT_JP,
+                        fontSize: 12,
+                        fontWeight: 300,
+                        color: QC.warmGray,
+                        letterSpacing: 0.5,
+                        margin: 0,
+                        lineHeight: 1.7,
+                      }}>{c.ja}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 街の温度ナレーション + 線リンク(誘導) */}
+        <div style={{ marginTop: 'clamp(50px, 10vw, 100px)' as any, textAlign: 'center', padding: '0 32px' }}>
+          <p style={{
+            fontFamily: QC_FONT_JP,
+            fontSize: 12,
+            fontStyle: 'italic',
+            fontWeight: 300,
+            color: QC.warmGray,
+            letterSpacing: 1.2,
+            opacity: 0.65,
+            margin: '0 0 24px 0',
+            lineHeight: 1.8,
+          }}>
+            気になるところから、街を歩いてみてください。
+          </p>
+          <div style={{ width: 4, height: 4, borderRadius: '50%', background: QC.lightSand, margin: '0 auto 40px' }} />
+          <span
+            onClick={() => setPage('marketplace')}
+            onMouseEnter={() => setAllLinkHover(true)}
+            onMouseLeave={() => setAllLinkHover(false)}
+            style={{
+              fontFamily: QC_FONT_JP,
+              fontSize: 12,
+              fontWeight: 300,
+              color: QC.softBrown,
+              letterSpacing: 1.2,
+              borderBottom: `1px solid ${allLinkHover ? QC.softBrown : 'rgba(139, 111, 92, 0.3)'}`,
+              paddingBottom: 4,
+              cursor: 'pointer',
+              transition: 'border-color 0.6s ease',
+            }}
+          >
+            街の入り口へ
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const SectionTodaysMoments = ({ setPage }) => {
   const { user } = useAuth();
   const [moments, setMoments] = useState<any[]>([]);
@@ -3289,8 +3505,10 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <SectionAnnouncement />
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵) */}
       <CrowdfundingBanner />
-      {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能図解) に差し替え。V1関数定義は温存しており、SectionWhatIsQocca に1行戻すだけで切替可能。 */}
-      <SectionWhatIsQoccaV2Diagram setPage={setPage} />
+      {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能Lucide図解) → V3Carousel(7枚画像横スク) に差し替え。
+          V1 (SectionWhatIsQocca) と V2 (SectionWhatIsQoccaV2Diagram) の関数定義は温存しており、
+          1行を SectionWhatIsQocca / SectionWhatIsQoccaV2Diagram / SectionWhatIsQoccaV3Carousel のいずれかに切り替えるだけで戻せる。 */}
+      <SectionWhatIsQoccaV3Carousel setPage={setPage} />
       <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
       {/* 2026/6/29 第3弾 ②: 並び順を 街で愛されている作品→ペットウォーカー→うちの子ギャラリー→街のアルバム に変更 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
