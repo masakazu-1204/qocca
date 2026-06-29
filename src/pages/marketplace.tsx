@@ -1484,8 +1484,10 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
         )}
       </div>
       {/* 2026/6/29 案① B案: フローティング戻るボタン (スクロール中も常に押せる)。
-          DetailPage は TabBar 非表示 (showTabBar=false in App.tsx:174) のため aboveTabBar=false。 */}
-      <FloatingBackButton onClick={onBack} aboveTabBar={false} />
+          DetailPage は TabBar 非表示 (showTabBar=false in App.tsx:174) だが、下部に注文バー
+          (position:fixed L1444・高さ ~90px + safe-area) があるため、その上に逃がす。
+          bottomOffset=120: 注文バー上端から 12px ほど余白を取って円形48px ボタンを置く位置。 */}
+      <FloatingBackButton onClick={onBack} bottomOffset={120} />
     </div>
   );
 };
