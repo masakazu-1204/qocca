@@ -471,8 +471,9 @@ const SectionHero = () => {
 
 const SectionAnnouncement = () => {
   const navigate = useNavigate();
-  const SHOW_UNTIL = new Date('2026-07-01T00:00:00+09:00');
-  const [show] = useState(() => new Date() < SHOW_UNTIL);
+  // 2026/6/29 King 要望: アナウンス(7月から、少しずつ始まります+販売手数料無料)は
+  // 日付に関係なく常時表示。元の SHOW_UNTIL = 2026-07-01 撤廃。
+  // クラファン主導線(ブロック3)は SectionDynamicCTABanner で日付切替に置き換え済(PR#77で{false&&}ガード)。
   const [linkHover, setLinkHover] = useState(false);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth < 768
@@ -485,7 +486,6 @@ const SectionAnnouncement = () => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  if (!show) return null;
 
   const Divider = () => (
     <div style={{
@@ -670,6 +670,138 @@ const SectionAnnouncement = () => {
         )}
       </div>
     </section>
+  );
+};
+
+// ============================================================================
+// 2026/6/29 SectionDynamicCTABanner — 日付で A/B 切替する動的バナー
+// クラファン締切 2026-07-26 23:59 JST(CAMPFIRE実データ)を境界に:
+//   - 〜2026-07-26: A クラファン告知 (カウントダウンなし・CAMPFIRE誘導)
+//   - 2026-07-27〜: B 住人募集 (新規会員登録 = /login へ)
+// CrowdfundingBanner のカード作法を踏襲(静けさ + オレンジ#F5A94A)。
+// 関数定義は単独で温存(切替は本関数内のみ・他から独立)。
+// 文言は King が後で簡単に微調整できるよう、定数化して上に分離。
+// ============================================================================
+const CTA_SWITCH_DATE = new Date('2026-07-27T00:00:00+09:00');
+const CAMPFIRE_PROJECT_URL_CTA = 'https://camp-fire.jp/projects/955666/view';
+
+// 文言定数 (King 微調整用に分離)
+const CTA_COPY_A = {
+  badge: 'Crowdfunding',
+  title: 'Qoccaを、街として育てるために。',
+  subtitle: 'グランドオープンを迎えても、街づくりは続きます。\n見守ってくれる方を募集しています。',
+  button: 'CAMPFIRE プロジェクトを見る →',
+};
+const CTA_COPY_B = {
+  badge: 'Become a Resident',
+  title: 'あなたも、この街の住人に。',
+  subtitle: '登録は無料。動物と暮らす毎日が、もっとあたたかくなる場所へ。',
+  button: '住人になる →',
+};
+
+const SectionDynamicCTABanner = ({ setPage }: { setPage: (page: string) => void }) => {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // 2026-07-26 23:59 まで A クラファン告知 / 2026-07-27 00:00 以降 B 住人募集
+  const now = new Date();
+  const showCrowdfunding = now < CTA_SWITCH_DATE;
+  const copy = showCrowdfunding ? CTA_COPY_A : CTA_COPY_B;
+
+  const handleClick = () => {
+    if (showCrowdfunding) {
+      window.open(CAMPFIRE_PROJECT_URL_CTA, "_blank", "noopener,noreferrer");
+    } else {
+      setPage('signup'); // useNav: signup → /login へ navigate
+    }
+  };
+
+  return (
+    <div style={{ padding: "24px 16px 48px", display: "flex", justifyContent: "center" }}>
+      <div style={{
+        background: "linear-gradient(145deg, #FFF9F0 0%, #FFF2DF 100%)",
+        border: "1px solid #F5E6D0",
+        borderRadius: 16,
+        padding: isMobile ? "28px 22px 26px" : "36px 32px 32px",
+        maxWidth: 560,
+        width: "100%",
+        textAlign: "center",
+        boxShadow: "0 2px 12px rgba(245,169,74,0.06)",
+        transition: "box-shadow 0.6s ease",
+      }}>
+        {/* Badge (Crowdfunding / Become a Resident) */}
+        <p style={{
+          fontFamily: QC_FONT_EN,
+          fontSize: 11,
+          fontStyle: 'italic',
+          color: '#C97B5F',
+          letterSpacing: 1.5,
+          margin: '0 0 14px 0',
+          fontWeight: 300,
+          opacity: 0.85,
+        }}>
+          {copy.badge}
+        </p>
+        {/* Title */}
+        <h3 style={{
+          fontFamily: QC_FONT_DISPLAY,
+          fontSize: isMobile ? 18 : 22,
+          fontWeight: 700,
+          color: '#2C2926',
+          letterSpacing: '0.04em',
+          lineHeight: 1.65,
+          margin: '0 0 14px 0',
+        }}>
+          {copy.title}
+        </h3>
+        {/* Subtitle */}
+        <p style={{
+          fontFamily: QC_FONT_JP,
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 300,
+          color: '#6B6259',
+          letterSpacing: 0.3,
+          lineHeight: 1.85,
+          margin: '0 0 24px 0',
+          whiteSpace: 'pre-line',
+        }}>
+          {copy.subtitle}
+        </p>
+        {/* CTA Button */}
+        <button
+          onClick={handleClick}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          style={{
+            display: 'inline-block',
+            padding: '13px 28px',
+            background: '#F5A94A',
+            color: '#fff',
+            textDecoration: 'none',
+            border: 'none',
+            borderRadius: 999,
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            fontFamily: QC_FONT_JP,
+            cursor: 'pointer',
+            boxShadow: hovered ? '0 4px 14px rgba(245,169,74,0.35)' : '0 2px 10px rgba(245,169,74,0.25)',
+            transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
+            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          }}
+        >
+          {copy.button}
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -3513,10 +3645,13 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
 
       <SectionHero />
       <SectionAnnouncement />
+      {/* 2026/6/29 アナウンス直下に日付動的CTAバナー配置。
+          〜2026-07-26 = クラファン告知(CAMPFIRE誘導)、2026-07-27〜 = 住人募集(/login誘導)。
+          切替は SectionDynamicCTABanner 内部の日付判定で自動。 */}
+      <SectionDynamicCTABanner setPage={setPage} />
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
-          2026/6/29 Dday準備: クラファン締切 2026/6/30 のため、7/1 グランドオープン時に
-          終了済み表示にならないよう非表示化。CrowdfundingBanner 関数定義 + import は温存し、
-          {false &&} を外せば即復活可能。 */}
+          2026/6/29 Dday準備: 上の SectionDynamicCTABanner に置き換え済。
+          CrowdfundingBanner 関数定義 + import は温存し、{false &&} を外せば即復活可能。 */}
       {false && <CrowdfundingBanner />}
       {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能Lucide図解) → V3Carousel(7枚画像横スク) に差し替え。
           V1 (SectionWhatIsQocca) と V2 (SectionWhatIsQoccaV2Diagram) の関数定義は温存しており、
