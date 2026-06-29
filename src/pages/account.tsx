@@ -1050,6 +1050,19 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
 // PhoneVerificationPage (v3.2 第29-30章: 1人=1アカウント、Stripe JCB違反者再登録防止)
 // Twilio Verify API 経由で SMS OTP 認証、住民の任意機能 (出品者推奨)
 // ============================================================================
+// 2026/6/30 Twilio Inactive 対応: SMS送信不可のため新規認証フローを「準備中」案内に置換。
+// 既に verified_at がある住民(Step 3)は通常通り「認証済み」表示 → 既存ユーザーは無影響。
+// 認証本体(AuthContext)・メール認証フロー・Edge Function(send-verification-code / verify-code)
+// は1文字も触らない。Twilio 復旧後は SMS_VERIFICATION_AVAILABLE = true に戻すだけで完全復活。
+const SMS_VERIFICATION_AVAILABLE = false;
+
+// 文言定数 (King 微調整用に分離)
+const SMS_UNAVAILABLE_COPY = {
+  title: '電話番号認証は現在準備中です',
+  body: 'メール認証で、Qoccaの全ての機能をご利用いただけます。\n電話番号認証は近日中に再開予定です。\nご不便をおかけしますが、しばしお待ちください。',
+  buttonLabel: 'マイページへ戻る',
+};
+
 export const PhoneVerificationPage = ({ setPage }: any) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -1193,13 +1206,50 @@ export const PhoneVerificationPage = ({ setPage }: any) => {
             電話番号の認証
           </h1>
           <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.7, margin: 0 }}>
-            出品をはじめる方には認証をおすすめしています。<br/>
-            安心して使える街のための、ささやかな手続きです。
+            {SMS_VERIFICATION_AVAILABLE ? (
+              <>
+                出品をはじめる方には認証をおすすめしています。<br/>
+                安心して使える街のための、ささやかな手続きです。
+              </>
+            ) : (
+              <>
+                電話番号認証は現在準備中です。<br/>
+                メール認証で、すべての機能をご利用いただけます。
+              </>
+            )}
           </p>
         </div>
 
-        {/* Step 1: 電話番号入力 */}
-        {step === 1 && alreadyVerified === false && (
+        {/* 2026/6/30 Twilio Inactive 対応: SMS_VERIFICATION_AVAILABLE=false の間は
+            Step 1 (新規認証フォーム) を「準備中」カードに差し替え。
+            Step 2/3 のロジックは温存 → フラグ true 復帰時に即元通り動作。
+            既に verified_at がある住民は alreadyVerified=true → Step 3 表示で本ブロックを通らず無影響。 */}
+        {step === 1 && alreadyVerified === false && !SMS_VERIFICATION_AVAILABLE && (
+          <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "28px 22px", textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: 14, opacity: 0.6 }}>🌿</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: C.dark, marginBottom: 12, lineHeight: 1.6 }}>
+              {SMS_UNAVAILABLE_COPY.title}
+            </div>
+            <div style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.85, marginBottom: 24, whiteSpace: "pre-line" }}>
+              {SMS_UNAVAILABLE_COPY.body}
+            </div>
+            <button
+              onClick={() => navigate("/mypage")}
+              style={{
+                minHeight: 44, padding: "12px 24px",
+                background: "transparent", color: C.orange,
+                border: `1.5px solid ${C.orange}`, borderRadius: 22,
+                fontSize: 13, fontWeight: 700, cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.3s ease, color 0.3s ease",
+              }}
+            >
+              {SMS_UNAVAILABLE_COPY.buttonLabel} →
+            </button>
+          </div>
+        )}
+        {/* Step 1: 電話番号入力 (SMS_VERIFICATION_AVAILABLE=true の時のみ表示) */}
+        {step === 1 && alreadyVerified === false && SMS_VERIFICATION_AVAILABLE && (
           <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "20px" }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: C.dark, marginBottom: 8 }}>1 / 2 — 電話番号を入力</div>
             <label style={{ display: "block", fontSize: 12, color: C.warmGray, marginBottom: 6 }}>
