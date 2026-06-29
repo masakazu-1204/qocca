@@ -11,6 +11,7 @@ import { ShoppingBag, PawPrint, Image as LucideImage, MessagesSquare, Calendar, 
 import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "../constants/theme";
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { PW_AREAS } from "../constants/petwalker";
+import { dailySeededShuffle } from "../utils/dailyShuffle";
 import { petIcon, petLabelShort } from "../constants/pets";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
@@ -2246,9 +2247,10 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // 新着順 (useListings hook で created_at DESC 取得済み) の先頭 6 件
-  // status は useListings hook で approved/sold_out に絞り済み
-  const items = (listings || []).slice(0, 6);
+  // 2026/6/29 日替わりシャッフル: 公開中の全 listings から日付シードでシャッフルし先頭6件。
+  // 同じ日内は同じ並び・日付が変わると並びが変わる → 全作品に均等な露出が回る。
+  // status は useListings hook で approved/sold_out に絞り済み (取得ロジック不変)。
+  const items = dailySeededShuffle(listings || []).slice(0, 6);
 
   if (items.length === 0) return null;
 
@@ -3258,13 +3260,17 @@ const HomePetGallerySection = () => {
   useEffect(() => {
     let alive = true;
     (async () => {
+      // 2026/6/29 日替わりシャッフル: 全active pets(最大100件)から取得し、日付シードで
+      // シャッフル → 先頭8件をトッププレビューに表示。全うちの子に均等な露出が回る。
+      // limit(8)→limit(100) は「母集団拡大」目的 (status='active' フィルタは現状維持)。
       const { data: pets } = await supabase
         .from("pets")
         .select("id, owner_id, name, species, breed, gender, bio, avatar_url")
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(8);
-      const list = (pets || []) as Pet[];
+        .limit(100);
+      const allActive = (pets || []) as Pet[];
+      const list = dailySeededShuffle(allActive).slice(0, 8);
       const ownerIds = Array.from(new Set(list.map(p => p.owner_id).filter((v): v is string => !!v)));
       let ownerMap: Record<string, Owner> = {};
       if (ownerIds.length) {
