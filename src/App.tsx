@@ -40,6 +40,8 @@ import { initMetaPixel, trackPageView as mpTrackPageView, trackPurchaseOnce as m
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
+// 2026/7/4 あしあとUI第1弾: デイリー付与トースト (自己完結・起動時1回grant→新規付与時のみ表示)
+import { AshiatoDailyGrant } from "./components/AshiatoGrantToast";
 import { SignupPage, PetDetailPage, ProfileMeRedirect, UpdatePasswordPage, RedeemPage, PhoneVerificationPage, DeletionStatusPage } from "./pages/account";
 import { XConnectionPage, ThreadsConnectionPage, InstagramConnectionPage } from "./pages/connections";
 
@@ -450,6 +452,8 @@ function QoccaAppInner() {
             <Route path="/help/:slug" element={<HelpPage/>}/>
           </Routes>
           <SharedFooter setPage={setPage}/>
+          {/* 2026/7/4 あしあとUI第1弾: デイリー付与トースト (PC branch) */}
+          <AshiatoDailyGrant />
         </div>
       ) : (
         <>
@@ -529,6 +533,8 @@ function QoccaAppInner() {
           <SharedFooter setPage={setPage}/>
           {showTabBar && <TabBar page={page} setPage={setPage}/>}
           <AddToHomeScreenBanner />
+          {/* 2026/7/4 あしあとUI第1弾: デイリーログイン付与 (冪等・新規付与時のみトースト) */}
+          <AshiatoDailyGrant />
         </>
       )}
 
