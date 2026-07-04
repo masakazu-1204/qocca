@@ -13,6 +13,8 @@ import { DISPUTE_REASONS, PREFS, MOOD_TAGS, REDEEM_TIER_THEME } from "../constan
 import { miniBtnStyle, orderStatusKey } from "../utils/format";
 import { detectContacts, checkFacilityNGWords } from "../utils/moderation";
 import { resolveFontFamily } from "../constants/fonts";
+// 2026/7/4 あしあとUI第1弾: 残高カード (プロフィールタブに配置)
+import { AshiatoBalanceCard } from "../components/AshiatoBalanceCard";
 import { petLabelShort, petIcon } from "../constants/pets";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
@@ -886,6 +888,8 @@ export const MyPage = ({ setPage }) => {
                 </button>
               </div>
             </div>
+            {/* 2026/7/4 あしあとUI第1弾: 残高カード (本人のみ・プロフィールカード直下) */}
+            <AshiatoBalanceCard userId={user?.id} />
             {/* 創業期出品者バッジ (King 哲学: 本人のみ見える、公開プロフィールには出さない) */}
             {profile?.early_supporter_expires_at && (() => {
               const expiresAt = new Date(profile.early_supporter_expires_at!);
