@@ -3903,6 +3903,72 @@ const SectionPetWalker = ({ setPage }: any) => {
   );
 };
 
+// ----------------------------------------------------------------------------
+// 2026/7/5 下セクション磨き上げ (P5): スクロール連動リビール
+//   Heroの「静かに動く品格」を下まで延長する。opacity+わずかな上昇(28px)のみ・1.2s。
+//   - IntersectionObserver: 発火後 disconnect (監視は1回きり・スクロールハンドラなし=軽量)
+//   - prefers-reduced-motion: reduce 環境ではアニメ完全スキップ (酔い対策)
+//   - 表示完了後は style を undefined に戻す:
+//       transform が残ると内部の position:fixed (MomentModal/LoginPromptModal 等) の
+//       座標系がラッパー基準になるバグを踏むため、settle 後は素のdivに戻す
+//   - variant "fade": fixedモーダルを含むセクション用 (transformを一切使わない保険)
+// ----------------------------------------------------------------------------
+const QOCCA_REDUCED_MOTION =
+  typeof window !== "undefined" &&
+  !!window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const Reveal = ({ children, variant = "rise" }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(QOCCA_REDUCED_MOTION);
+  const [settled, setSettled] = useState(QOCCA_REDUCED_MOTION);
+
+  useEffect(() => {
+    if (QOCCA_REDUCED_MOTION) return;
+    const el = ref.current;
+    if (!el) return;
+    // IntersectionObserver 未対応環境 (古いWebView等) は即表示にフォールバック
+    if (typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      setSettled(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.06, rootMargin: "0px 0px -6% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shown || settled) return;
+    const t = setTimeout(() => setSettled(true), 1300);
+    return () => clearTimeout(t);
+  }, [shown, settled]);
+
+  return (
+    <div
+      ref={ref}
+      style={settled ? undefined : {
+        opacity: shown ? 1 : 0,
+        transform: variant === "rise"
+          ? (shown ? "translateY(0)" : "translateY(28px)")
+          : undefined,
+        transition: "opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1)",
+        willChange: shown ? undefined : "opacity, transform",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvents = [] }) => {
   const progress = useScrollProgress();
   const bgColor = qoccaInterpolateBackground(progress);
@@ -3918,11 +3984,13 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <QoccaNoiseOverlay />
 
       <SectionHero setPage={setPage} />
-      <SectionAnnouncement />
+      {/* 2026/7/5 P5: Hero以下は Reveal でスクロール連動の静かな出現に統一 (機能・props は無変更)。
+          貼り紙(Announcement)/街のアルバム(fixedモーダル内包)/ARK は variant="fade" — 紙と誠実さは滑らず、静かに現れる。 */}
+      <Reveal variant="fade"><SectionAnnouncement /></Reveal>
       {/* 2026/6/29 アナウンス直下に日付動的CTAバナー配置。
           〜2026-07-26 = クラファン告知(CAMPFIRE誘導)、2026-07-27〜 = 住人募集(/login誘導)。
           切替は SectionDynamicCTABanner 内部の日付判定で自動。 */}
-      <SectionDynamicCTABanner setPage={setPage} />
+      <Reveal><SectionDynamicCTABanner setPage={setPage} /></Reveal>
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
           2026/6/29 Dday準備: 上の SectionDynamicCTABanner に置き換え済。
           CrowdfundingBanner 関数定義 + import は温存し、{false &&} を外せば即復活可能。 */}
@@ -3930,29 +3998,30 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能Lucide図解) → V3Carousel(7枚画像横スク) に差し替え。
           V1 (SectionWhatIsQocca) と V2 (SectionWhatIsQoccaV2Diagram) の関数定義は温存しており、
           1行を SectionWhatIsQocca / SectionWhatIsQoccaV2Diagram / SectionWhatIsQoccaV3Carousel のいずれかに切り替えるだけで戻せる。 */}
-      <SectionWhatIsQoccaV3Carousel setPage={setPage} />
-      <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
+      <Reveal><SectionWhatIsQoccaV3Carousel setPage={setPage} /></Reveal>
+      <Reveal><SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} /></Reveal>
       {/* 2026/6/29 第3弾 ②: 並び順を 街で愛されている作品→ペットウォーカー→うちの子ギャラリー→街のアルバム に変更 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
-      <SectionPetWalker setPage={setPage} />
+      <Reveal><SectionPetWalker setPage={setPage} /></Reveal>
       {/* 2026/6/29 第3弾 ①: HomePetGallerySection 新設 (pet_gallery.tsx 取得ロジック/カードUI流用・8件preview + もっと見る→/petgallery) */}
-      <HomePetGallerySection />
-      <SectionTodaysMoments setPage={setPage} />
+      <Reveal><HomePetGallerySection /></Reveal>
+      {/* 街のアルバム: MomentModal / LoginPromptModal (position:fixed) を内包するため transform を使わない fade */}
+      <Reveal variant="fade"><SectionTodaysMoments setPage={setPage} /></Reveal>
       {/* 2026/6/28 トップ改修第1弾 ②:「Qoccaこんな街です」(SectionTownMap) 削除 — 関数定義L1499は温存 */}
       {/* 2026/6/28 トップ改修第2弾 ①: SectionResidentArtisans(街の作家たち・大UI) 削除 — 関数定義L1951は温存。
           作家紹介は下記 InitialMembersSection(丸アイコンUI)に一本化し、そちらの見出しを「街の作家たち」に変更。 */}
       {/* 2026/6/28 トップ改修第1弾 ③:「街の声」(SectionVoices) 削除 — イベント二重表示解消・関数定義L2247は温存・コミュ独立化は第2弾 */}
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
-      <ArkPartnershipSection />
+      <Reveal variant="fade"><ArkPartnershipSection /></Reveal>
       {/* 依頼書 #36 (5/31): 初期メンバー紹介 (ARK と 創業パートナーの間) */}
-      <InitialMembersSection />
+      <Reveal><InitialMembersSection /></Reveal>
       {/* 依頼書 #35 v2 (5/31): 創業パートナー (mayor_30000 + corporate_300000) */}
-      <FoundingPartnersSection />
-      <SectionJoinTown setPage={setPage} />
+      <Reveal><FoundingPartnersSection /></Reveal>
+      <Reveal><SectionJoinTown setPage={setPage} /></Reveal>
       {/* 2026/6/28 第2弾 ②: コミュニティ独立セクション (SectionVoices から communities 抽出) */}
-      <HomeCommunitiesSection setPage={setPage}/>
+      <Reveal><HomeCommunitiesSection setPage={setPage}/></Reveal>
       {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
-      <HomeEventsSection events={homeEvents} setPage={setPage}/>
+      <Reveal><HomeEventsSection events={homeEvents} setPage={setPage}/></Reveal>
       {/* 2026/6/28 案A実施: 自前 SharedFooter 削除。App.tsx PC L452 + Mobile L528 で全ページ共通 1個に統一されたため重複解消。 */}
     </div>
   );
