@@ -51,6 +51,20 @@ const HERO_IMAGES_CINEMA = [
   },
 ];
 
+// 2026/7/5 Hero磨き上げP1: SectionHero 専用ローカルkeyframes (theme.ts の QC_KEYFRAMES は不変更)
+//   qocca-hero-peek   … クオッカ案内人が下端からひょっこり (2.6s遅延で発火・fill forwards)
+//   qocca-hero-cap-in … 詩キャプションのフェードイン (写真切替と同期・key={currentIndex}で再発火)
+const HERO_POLISH_KEYFRAMES = `
+@keyframes qocca-hero-peek {
+  from { opacity: 0; transform: translateY(78%); }
+  to   { opacity: 1; transform: translateY(40%); }
+}
+@keyframes qocca-hero-cap-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+`;
+
 // ----------------------------------------------------------------------------
 // useScrollProgress hook - スクロール量を 0-1 で取得
 // ----------------------------------------------------------------------------
@@ -151,9 +165,13 @@ const QoccaNoiseOverlay = () => (
   />
 );
 
-const SectionHero = () => {
+const SectionHero = ({ setPage }: { setPage: (page: string) => void }) => {
+  // 2026/7/5 Hero磨き上げP1: ログイン済みユーザーには Hero内CTA を出さない (静けさ維持)
+  const { user } = useAuth();
   const [images, setImages] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [ctaHover, setCtaHover] = useState(false);
+  const [walkHover, setWalkHover] = useState(false);
   const [isPC, setIsPC] = useState(
     typeof window !== "undefined" && window.innerWidth >= QC_PC_BREAKPOINT
   );
@@ -195,6 +213,9 @@ const SectionHero = () => {
         caption: c.caption,
       }))
     : images;
+
+  // 2026/7/5 P1: 現在表示中の写真の詩キャプション (PC=シネマ7本 / モバイル=gallery_posts.caption・無ければ非表示)
+  const currentCaption = displayImages[currentIndex]?.caption || "";
 
   // プリロード
   useEffect(() => {
@@ -239,6 +260,7 @@ const SectionHero = () => {
       background: QC.charcoal,
     }}>
       <style>{QC_KEYFRAMES}</style>
+      <style>{HERO_POLISH_KEYFRAMES}</style>
 
       {/* 画像レイヤー */}
       {displayImages.map((img, i) => {
@@ -297,88 +319,163 @@ const SectionHero = () => {
         );
       })}
 
-      {/* 中央下キャッチコピー (PC: メイン+サブコピー / Mobile: 既存維持) */}
+      {/* 2026/7/5 Hero磨き上げP1 ①: キャッチコピー 中央揃え → 左下非対称 + 縦罫線 (編集の背骨)
+          文言・Shippori Mincho 700・フェード(2.4s/1s遅延) は既存のまま。変えたのは「置き方」だけ。 */}
       <div style={{
         position: "absolute",
-        bottom: "20%",
-        left: "50%",
-        transform: "translateX(-50%)",
-        textAlign: "center",
-        width: "85%",
+        left: isPC ? "clamp(32px, 6vw, 88px)" : 24,
+        right: isPC ? undefined : 24,
+        bottom: isPC ? "clamp(96px, 15vh, 150px)" : "24%",
+        textAlign: "left",
         maxWidth: 720,
-        padding: 0,
+        paddingLeft: isPC ? "clamp(18px, 2.4vw, 30px)" : 16,
+        borderLeft: "1px solid rgba(250, 247, 242, 0.4)",
         background: "transparent",
         zIndex: 10,
         opacity: 0,
         animation: "qocca-fadeInSlow 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards",
       }}>
-        {isPC ? (
-          <>
-            {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): メインキャッチ Shippori Mincho 700 */}
-            <p style={{
-              fontSize: "clamp(28px, 4.4vw, 56px)",
-              fontFamily: QC_FONT_DISPLAY,
-              fontWeight: 700,
-              color: QC.warmWhite,
-              letterSpacing: "0.06em",
-              lineHeight: 1.55,
-              opacity: 0.97,
-              margin: 0,
-              textShadow: "0 2px 24px rgba(44, 41, 38, 0.55), 0 1px 4px rgba(44, 41, 38, 0.35)",
-            }}>
-              想いを形にして、
-              <br />
-              ふたりをつなぐ。
-            </p>
-            {/* サブ: 控えめに Noto Sans JP Light を維持 (本文・モバイル可読性優先) */}
-            <p style={{
-              fontSize: "clamp(13px, 1.2vw, 16px)",
-              fontFamily: QC_FONT_JP,
-              fontWeight: 300,
-              color: QC.warmWhite,
-              letterSpacing: "0.14em",
-              lineHeight: 1.9,
-              opacity: 0.78,
-              margin: "28px 0 0 0",
-              textShadow: "0 2px 16px rgba(44, 41, 38, 0.5)",
-            }}>
-              うちの子との時間を、ちゃんと残せる場所。
-            </p>
-          </>
-        ) : (
-          <>
-            {/* 依頼書 #134 Phase 2 案A改: モバイル メインキャッチ Shippori Mincho 700 */}
-            <p style={{
-              fontSize: "clamp(22px, 6.5vw, 32px)",
-              fontFamily: QC_FONT_DISPLAY,
-              fontWeight: 700,
-              color: QC.warmWhite,
-              letterSpacing: "0.05em",
-              lineHeight: 1.65,
-              opacity: 0.96,
-              margin: 0,
-              textShadow: "0 2px 24px rgba(44, 41, 38, 0.55), 0 1px 4px rgba(44, 41, 38, 0.35)",
-            }}>
-              想いを形にして、
-              <br />
-              ふたりをつなぐ。
-            </p>
-            <p style={{
-              fontSize: "clamp(11px, 3vw, 13px)",
-              fontFamily: QC_FONT_JP,
-              fontWeight: 300,
-              color: QC.warmWhite,
-              letterSpacing: "0.14em",
-              lineHeight: 1.9,
-              opacity: 0.78,
-              margin: "18px 0 0 0",
-              textShadow: "0 2px 16px rgba(44, 41, 38, 0.5)",
-            }}>
-              うちの子と暮らす街。
-            </p>
-          </>
+        {/* 英字キッカー: 新ロゴ (#F5A94A) と同色で1行だけ — オレンジはここと右上ロゴのみ */}
+        <p style={{
+          fontFamily: QC_FONT_EN,
+          fontStyle: "italic",
+          fontSize: isPC ? "clamp(12px, 1.2vw, 15px)" : 10.5,
+          fontWeight: 300,
+          color: "#F5A94A",
+          letterSpacing: "0.14em",
+          margin: isPC ? "0 0 18px 0" : "0 0 12px 0",
+          textShadow: "0 1px 8px rgba(44, 41, 38, 0.45)",
+        }}>
+          The town for every pet owner
+        </p>
+        {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): メインキャッチ Shippori Mincho 700 (文言・書体は不変) */}
+        <p style={{
+          fontSize: isPC ? "clamp(28px, 4.4vw, 56px)" : "clamp(22px, 6.5vw, 32px)",
+          fontFamily: QC_FONT_DISPLAY,
+          fontWeight: 700,
+          color: QC.warmWhite,
+          letterSpacing: isPC ? "0.06em" : "0.05em",
+          lineHeight: isPC ? 1.55 : 1.65,
+          opacity: 0.97,
+          margin: 0,
+          textShadow: "0 2px 24px rgba(44, 41, 38, 0.55), 0 1px 4px rgba(44, 41, 38, 0.35)",
+        }}>
+          想いを形にして、
+          <br />
+          ふたりをつなぐ。
+        </p>
+        {/* サブ: 控えめに Noto Sans JP Light を維持 (本文・モバイル可読性優先・文言不変) */}
+        <p style={{
+          fontSize: isPC ? "clamp(13px, 1.2vw, 16px)" : "clamp(11px, 3vw, 13px)",
+          fontFamily: QC_FONT_JP,
+          fontWeight: 300,
+          color: QC.warmWhite,
+          letterSpacing: "0.14em",
+          lineHeight: 1.9,
+          opacity: 0.78,
+          margin: isPC ? "24px 0 0 0" : "16px 0 0 0",
+          textShadow: "0 2px 16px rgba(44, 41, 38, 0.5)",
+        }}>
+          {isPC ? "うちの子との時間を、ちゃんと残せる場所。" : "うちの子と暮らす街。"}
+        </p>
+        {/* P1 ⑤: Hero内CTA (未ログイン時のみ)。白ピル + 線リンク — 押しつけない導線 */}
+        {!user && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isPC ? 22 : 16,
+            flexWrap: "wrap",
+            marginTop: isPC ? 32 : 22,
+          }}>
+            <button
+              onClick={() => setPage("signup")}
+              onMouseEnter={() => setCtaHover(true)}
+              onMouseLeave={() => setCtaHover(false)}
+              style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: isPC ? 13 : 12.5,
+                fontWeight: 500,
+                letterSpacing: "0.12em",
+                color: QC.charcoal,
+                background: QC.warmWhite,
+                border: "none",
+                borderRadius: 100,
+                padding: isPC ? "14px 32px" : "12px 26px",
+                cursor: "pointer",
+                boxShadow: ctaHover
+                  ? "0 10px 28px rgba(44, 41, 38, 0.3)"
+                  : "0 4px 18px rgba(44, 41, 38, 0.25)",
+                transform: ctaHover ? "translateY(-2px)" : "none",
+                transition: "all 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              住民になる — 無料
+            </button>
+            <button
+              onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+              onMouseEnter={() => setWalkHover(true)}
+              onMouseLeave={() => setWalkHover(false)}
+              style={{
+                fontFamily: QC_FONT_JP,
+                fontSize: 12,
+                fontWeight: 300,
+                letterSpacing: "0.1em",
+                color: "rgba(250, 247, 242, 0.85)",
+                background: "transparent",
+                border: "none",
+                borderBottom: walkHover
+                  ? "1px solid rgba(245, 169, 74, 0.8)"
+                  : "1px solid rgba(250, 247, 242, 0.35)",
+                padding: "0 0 3px 0",
+                cursor: "pointer",
+                transition: "border-color 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              まずは街を歩いてみる
+            </button>
+          </div>
         )}
       </div>
+
+      {/* 2026/7/5 P1 ②: 眠っていた詩キャプションの露出 — SCENE番号 + 詩 (写真切替と同期・案内人の頭上) */}
+      {currentCaption && (
+        <div
+          key={currentIndex}
+          style={{
+            position: "absolute",
+            right: isPC ? "clamp(32px, 6vw, 96px)" : 18,
+            bottom: isPC ? "clamp(128px, 16vh, 168px)" : 100,
+            textAlign: "right",
+            zIndex: 11,
+            opacity: 0,
+            animation: "qocca-hero-cap-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards",
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{
+            fontFamily: QC_FONT_EN,
+            fontStyle: "italic",
+            fontSize: isPC ? 11 : 10,
+            fontWeight: 300,
+            color: "rgba(250, 247, 242, 0.6)",
+            letterSpacing: "0.24em",
+            textShadow: "0 1px 6px rgba(44, 41, 38, 0.4)",
+          }}>
+            {`SCENE ${String(currentIndex + 1).padStart(2, "0")} / ${String(displayImages.length).padStart(2, "0")}`}
+          </div>
+          <div style={{
+            fontFamily: QC_FONT_DISPLAY,
+            fontWeight: 500,
+            fontSize: isPC ? "clamp(11.5px, 1.1vw, 13.5px)" : 11.5,
+            color: "rgba(250, 247, 242, 0.88)",
+            letterSpacing: "0.12em",
+            marginTop: 6,
+            textShadow: "0 1px 8px rgba(44, 41, 38, 0.45)",
+          }}>
+            {currentCaption}
+          </div>
+        </div>
+      )}
 
       {/* 右上ロゴ + ブランドスローガン (フェードイン 0.5s遅延 + 2s)
           依頼書 #33 / マーケ・ブランド戦略書 v1.0 §1:
@@ -392,11 +489,14 @@ const SectionHero = () => {
         position: "absolute",
         top: "max(env(safe-area-inset-top, 0px), 56px)",
         right: "max(env(safe-area-inset-right, 0px), 32px)",
-        textAlign: "right",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
         opacity: 0,
         zIndex: 20,
         animation: "qocca-fadeInSlow 2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards",
       }}>
+      <div style={{ textAlign: "right" }}>
         {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): ロゴ Shippori Mincho 700 (italic解除・Editorial らしい品位) */}
         <div style={{
           fontFamily: QC_FONT_DISPLAY,
@@ -436,6 +536,54 @@ const SectionHero = () => {
           動物を飼ったら、<br/>当たり前に入れる街。
         </div>
       </div>
+      {/* 2026/7/5 P1 ③: 新ロゴマーク (/qocca_logo.png 犬猫+Q・透過・#F5A94A)
+          画像は 585px キャンバス中央にマークが約27%幅で置かれているため、
+          固定ボックス+中央寄せの拡大表示で余白を視覚的にトリム (画像加工はしない) */}
+      <div style={{
+        width: isPC ? 44 : 38,
+        height: isPC ? 44 : 38,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "visible",
+        marginTop: 2,
+        pointerEvents: "none",
+      }}>
+        <img
+          src="/qocca_logo.png"
+          alt="Qocca ロゴ"
+          decoding="async"
+          style={{
+            width: isPC ? 148 : 128,
+            maxWidth: "none",
+            flexShrink: 0,
+            filter: "drop-shadow(0 1px 6px rgba(44, 41, 38, 0.35))",
+          }}
+        />
+      </div>
+      </div>
+
+      {/* 2026/7/5 P1 ④: クオッカ案内人 (/qocca_character.png ふわふわ全身・透過)
+          全身立ち姿のため translateY(40%) で上半分だけ下端から覗かせる (qocca-hero-peek・2.6s遅延)
+          詩キャプションが頭上に来る配置 = 案内人が今日のシーンを語っている構図 */}
+      <img
+        src="/qocca_character.png"
+        alt="Qoccaの案内人クオッカ"
+        loading="lazy"
+        decoding="async"
+        style={{
+          position: "absolute",
+          right: isPC ? "clamp(32px, 6vw, 96px)" : 14,
+          bottom: 0,
+          width: isPC ? "clamp(96px, 9vw, 132px)" : 84,
+          zIndex: 12,
+          pointerEvents: "none",
+          filter: "drop-shadow(0 6px 16px rgba(44, 41, 38, 0.3))",
+          opacity: 0,
+          transform: "translateY(78%)",
+          animation: "qocca-hero-peek 1.4s cubic-bezier(0.22, 1, 0.36, 1) 2.6s forwards",
+        }}
+      />
 
       {/* 下中央スクロール誘導 (呼吸4秒) */}
       <div style={{
@@ -3769,7 +3917,7 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <style>{QC_KEYFRAMES}</style>
       <QoccaNoiseOverlay />
 
-      <SectionHero />
+      <SectionHero setPage={setPage} />
       <SectionAnnouncement />
       {/* 2026/6/29 アナウンス直下に日付動的CTAバナー配置。
           〜2026-07-26 = クラファン告知(CAMPFIRE誘導)、2026-07-27〜 = 住人募集(/login誘導)。
