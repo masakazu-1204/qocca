@@ -1,8 +1,9 @@
 // 「あしあと」🐾 残高カード (Phase C-1 UI第1弾)
 // マイページ プロフィールタブ用。#F5A94A基調 (機能画面=Cトークン系・設計書§0)。
 // props は {free, paid?} で C-3 の paid_balance 分離に備える (設計書§1-2)。
-// ショップ導線は第2弾 (/ashiato-shop 実装後に有効化) — 今はティザー文言のみ。
+// 2026/7/5 UI第2弾: ティザー「つかいみちは もうすぐ」→ /ashiato-shop 導線に差替え。
 
+import { useNavigate } from "react-router-dom";
 import { AshiatoIcon } from "./AshiatoIcon";
 import { useAshiatoBalance } from "../hooks/useAshiato";
 import { C } from "../constants/theme";
@@ -13,6 +14,7 @@ type Props = {
 
 export const AshiatoBalanceCard = ({ userId }: Props) => {
   const { free, loading } = useAshiatoBalance(userId);
+  const navigate = useNavigate();
 
   return (
     <div style={{
@@ -40,10 +42,17 @@ export const AshiatoBalanceCard = ({ userId }: Props) => {
           </div>
         </div>
       </div>
-      {/* 第2弾でショップ導線に差し替え: <button onClick={() => navigate('/ashiato-shop')}>ショップへ →</button> */}
-      <div style={{ fontSize: 10, color: C.warmGray, textAlign: "right", lineHeight: 1.5 }}>
-        つかいみちは<br />もうすぐ
-      </div>
+      <button
+        onClick={() => navigate("/ashiato-shop")}
+        style={{
+          fontSize: 11, fontWeight: 600, color: C.orange,
+          background: "transparent", border: `1px solid ${C.orangeLight}`,
+          borderRadius: 999, padding: "8px 14px", cursor: "pointer",
+          whiteSpace: "nowrap", flexShrink: 0,
+        }}
+      >
+        ショップへ →
+      </button>
     </div>
   );
 };
