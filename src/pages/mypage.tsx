@@ -15,6 +15,8 @@ import { detectContacts, checkFacilityNGWords } from "../utils/moderation";
 import { resolveFontFamily } from "../constants/fonts";
 // 2026/7/4 あしあとUI第1弾: 残高カード (プロフィールタブに配置)
 import { AshiatoBalanceCard } from "../components/AshiatoBalanceCard";
+// 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター
+import { DecoratedAvatar } from "../components/DecoratedAvatar";
 import { petLabelShort, petIcon } from "../constants/pets";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
@@ -827,7 +829,8 @@ export const MyPage = ({ setPage }) => {
         {tab==="profile" && (
           <>
             <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:20 }}>
-              <div style={{ width:72, height:72, borderRadius:"50%", background: profile?.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>{!profile?.avatar_url && initial}</div>
+              {/* 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (装飾なしなら既存と同一表示) */}
+              <DecoratedAvatar userId={user?.id} avatarUrl={profile?.avatar_url} initial={initial} margin="0 auto 12px" fontWeight={900} />
               <div style={{ fontSize:18, fontWeight:700, color:C.dark, marginBottom:4, fontFamily: resolveFontFamily(profile?.font_display_name) }}>{displayName}</div>
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>

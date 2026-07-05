@@ -17,6 +17,8 @@ import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { useNav } from "../hooks";
 import { ListingEditModal } from "../components/ListingEditModal";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+// 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (公開プロフィール・equipped=trueはRLSで他人も閲覧可)
+import { DecoratedAvatar } from "../components/DecoratedAvatar";
 
 export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC }) => {
   const [cat, setCat] = useState("all");
@@ -282,7 +284,8 @@ const handleFollow = async () => {
   return (
     <div style={{ maxWidth:600, margin:"0 auto" }}>
       <div style={{ background:C.white, borderRadius:20, padding:"28px 20px", border:`1px solid ${C.border}`, textAlign:"center", marginBottom:16 }}>
-        <div style={{ width:72, height:72, borderRadius:"50%", background: profile.avatar_url ? `url(${profile.avatar_url}) center/cover` : C.orange, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, fontWeight:800, color:"#fff" }}>{!profile.avatar_url && initial}</div>
+        {/* 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (装飾なしなら既存と同一表示) */}
+        <DecoratedAvatar userId={userId} avatarUrl={profile.avatar_url} initial={initial} margin="0 auto 16px" fontWeight={800} />
         <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4, fontFamily: resolveFontFamily(profile.font_display_name) }}>{displayName}</div>
         {profile.bio && (
           <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word", fontFamily: resolveFontFamily(profile.font_bio) }}>{profile.bio}</div>
