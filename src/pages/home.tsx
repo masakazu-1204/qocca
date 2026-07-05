@@ -3777,59 +3777,82 @@ const HomeCommunitiesSection = ({ setPage }: { setPage: any }) => {
 // 既存 events テーブル読み取りのみ (新規スキーマなし)
 // approved + event_date >= 今日 + limit 4 で取得 (L14531 のロジック流用)
 // 0件のときはセクションごと非表示
+// 2026/7/5 P6: 旧世代様式 (旧Cトークン・絵文字・fontWeight 700/800・0.15s transition) を
+// QC様式に磨き上げ (HomeCommunitiesSection と同一文法)。
+// fetch/props/データ構造/遷移先 (setPage("events")) は無変更 — 見せ方のみ。
 const HomeEventsSection = ({ events, setPage }: { events: any[]; setPage: any }) => {
+  const [hoverId, setHoverId] = useState<string | null>(null);
   if (!events || events.length === 0) return null;
-  const petEmoji = (pt: string | null) => pt === "dog" ? "🐶" : pt === "cat" ? "🐱" : pt === "both" ? "🐾" : "🐾";
+  // 絵文字廃止 → 静かなテキストラベル (dog/cat/both/null)
+  const petLabel = (pt: string | null) => pt === "dog" ? "犬" : pt === "cat" ? "猫" : pt === "both" ? "犬・猫" : "すべての子";
   return (
-    <section style={{ padding: "48px 16px", background: C.white, borderTop: `1px solid ${C.border}` }}>
+    <section style={{ padding: "80px 16px", background: "transparent" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 */}
-          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 28, fontWeight: 700, color: C.dark, margin: "0 0 8px", letterSpacing: "0.04em" }}>
-            🐾 全国のペットイベント
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: "italic", color: QC.warmGray, letterSpacing: 0.8, margin: "0 0 10px 0", opacity: 0.75, fontWeight: 300 }}>
+            Events in Town
+          </p>
+          {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): h2 Shippori Mincho 700 (King承認済み見出し例外) */}
+          <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: QC.softBrown, letterSpacing: "0.06em", lineHeight: 1.55, margin: 0 }}>
+            全国のペットイベント
           </h2>
-          <p style={{ fontSize: 12, color: C.warmGray, margin: 0, lineHeight: 1.7 }}>
-            お近くのイベント、のぞいてみませんか
+          <p style={{ fontFamily: QC_FONT_JP, fontSize: 12.5, fontWeight: 300, color: QC.warmGray, lineHeight: 1.8, margin: "12px 0 0", letterSpacing: 0.3 }}>
+            お近くのイベント、のぞいてみませんか。
           </p>
         </div>
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
           gap: 14,
-          marginBottom: 20,
+          marginBottom: 32,
         }}>
-          {events.map((e: any) => (
-            <div key={e.id} onClick={() => setPage("events")} style={{
-              background: C.cream, borderRadius: 14, padding: 16,
-              border: `1px solid ${C.border}`, cursor: "pointer",
-              transition: "transform 0.15s, box-shadow 0.15s",
-            }}
-              onMouseEnter={ev => { (ev.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; (ev.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 16px rgba(245,169,74,0.12)"; }}
-              onMouseLeave={ev => { (ev.currentTarget as HTMLDivElement).style.transform = ""; (ev.currentTarget as HTMLDivElement).style.boxShadow = ""; }}>
-              <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, marginBottom: 6, letterSpacing: 0.3 }}>
-                {petEmoji(e.pet_type)} {e.category || "イベント"}
+          {events.map((e: any) => {
+            const isHover = hoverId === e.id;
+            return (
+              <div
+                key={e.id}
+                onClick={() => setPage("events")}
+                onMouseEnter={() => setHoverId(e.id)}
+                onMouseLeave={() => setHoverId(null)}
+                style={{
+                  background: QC.warmWhite,
+                  borderRadius: 4,
+                  padding: "20px 22px",
+                  border: `1px solid ${isHover ? QC.softBrown : QC.lightSand}`,
+                  cursor: "pointer",
+                  transition: "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transform: isHover ? "translateY(-2px)" : "translateY(0)",
+                }}
+              >
+                <p style={{ fontFamily: QC_FONT_JP, fontSize: 11, fontWeight: 400, color: QC.mutedGreen, margin: "0 0 8px 0", letterSpacing: "0.08em" }}>
+                  {petLabel(e.pet_type)} — {e.category || "イベント"}
+                </p>
+                <p style={{
+                  fontFamily: QC_FONT_JP, fontSize: 14, fontWeight: 400, color: QC.charcoal, margin: "0 0 10px 0", lineHeight: 1.6,
+                  overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: 44,
+                }}>
+                  {e.title}
+                </p>
+                <p style={{ fontFamily: QC_FONT_JP, fontSize: 11, fontWeight: 300, color: QC.warmGray, margin: 0, lineHeight: 1.8, letterSpacing: 0.3 }}>
+                  {e.event_date}{e.event_time ? ` ${e.event_time}` : ""}
+                  <br />
+                  {e.prefecture || "—"}{e.city ? ` / ${e.city}` : ""}
+                </p>
               </div>
-              <div style={{
-                fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8, lineHeight: 1.4,
-                overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: 38,
-              }}>
-                {e.title}
-              </div>
-              <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
-                📅 {e.event_date}{e.event_time ? ` ${e.event_time}` : ""}
-              </div>
-              <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
-                📍 {e.prefecture || "—"}{e.city ? ` / ${e.city}` : ""}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div style={{ textAlign: "center" }}>
           <button onClick={() => setPage("events")} style={{
-            padding: "10px 24px", background: C.orange, color: "#fff", border: "none",
-            borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit",
-          }}>
+            padding: "10px 28px", background: "transparent", color: QC.softBrown,
+            border: `1px solid ${QC.softBrown}`, borderRadius: 999,
+            fontSize: 13, fontWeight: 400, cursor: "pointer",
+            fontFamily: QC_FONT_JP, letterSpacing: 0.5,
+            transition: "all 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = QC.softBrown; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = QC.softBrown; }}
+          >
             イベントをもっと見る →
           </button>
         </div>
@@ -3903,6 +3926,72 @@ const SectionPetWalker = ({ setPage }: any) => {
   );
 };
 
+// ----------------------------------------------------------------------------
+// 2026/7/5 下セクション磨き上げ (P5): スクロール連動リビール
+//   Heroの「静かに動く品格」を下まで延長する。opacity+わずかな上昇(28px)のみ・1.2s。
+//   - IntersectionObserver: 発火後 disconnect (監視は1回きり・スクロールハンドラなし=軽量)
+//   - prefers-reduced-motion: reduce 環境ではアニメ完全スキップ (酔い対策)
+//   - 表示完了後は style を undefined に戻す:
+//       transform が残ると内部の position:fixed (MomentModal/LoginPromptModal 等) の
+//       座標系がラッパー基準になるバグを踏むため、settle 後は素のdivに戻す
+//   - variant "fade": fixedモーダルを含むセクション用 (transformを一切使わない保険)
+// ----------------------------------------------------------------------------
+const QOCCA_REDUCED_MOTION =
+  typeof window !== "undefined" &&
+  !!window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const Reveal = ({ children, variant = "rise" }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(QOCCA_REDUCED_MOTION);
+  const [settled, setSettled] = useState(QOCCA_REDUCED_MOTION);
+
+  useEffect(() => {
+    if (QOCCA_REDUCED_MOTION) return;
+    const el = ref.current;
+    if (!el) return;
+    // IntersectionObserver 未対応環境 (古いWebView等) は即表示にフォールバック
+    if (typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      setSettled(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.06, rootMargin: "0px 0px -6% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shown || settled) return;
+    const t = setTimeout(() => setSettled(true), 1300);
+    return () => clearTimeout(t);
+  }, [shown, settled]);
+
+  return (
+    <div
+      ref={ref}
+      style={settled ? undefined : {
+        opacity: shown ? 1 : 0,
+        transform: variant === "rise"
+          ? (shown ? "translateY(0)" : "translateY(28px)")
+          : undefined,
+        transition: "opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1)",
+        willChange: shown ? undefined : "opacity, transform",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvents = [] }) => {
   const progress = useScrollProgress();
   const bgColor = qoccaInterpolateBackground(progress);
@@ -3918,11 +4007,13 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <QoccaNoiseOverlay />
 
       <SectionHero setPage={setPage} />
-      <SectionAnnouncement />
+      {/* 2026/7/5 P5: Hero以下は Reveal でスクロール連動の静かな出現に統一 (機能・props は無変更)。
+          貼り紙(Announcement)/街のアルバム(fixedモーダル内包)/ARK は variant="fade" — 紙と誠実さは滑らず、静かに現れる。 */}
+      <Reveal variant="fade"><SectionAnnouncement /></Reveal>
       {/* 2026/6/29 アナウンス直下に日付動的CTAバナー配置。
           〜2026-07-26 = クラファン告知(CAMPFIRE誘導)、2026-07-27〜 = 住人募集(/login誘導)。
           切替は SectionDynamicCTABanner 内部の日付判定で自動。 */}
-      <SectionDynamicCTABanner setPage={setPage} />
+      <Reveal><SectionDynamicCTABanner setPage={setPage} /></Reveal>
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
           2026/6/29 Dday準備: 上の SectionDynamicCTABanner に置き換え済。
           CrowdfundingBanner 関数定義 + import は温存し、{false &&} を外せば即復活可能。 */}
@@ -3930,29 +4021,30 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       {/* 2026/6/29 試作: V1(3項目抽象) → V2Diagram(6機能Lucide図解) → V3Carousel(7枚画像横スク) に差し替え。
           V1 (SectionWhatIsQocca) と V2 (SectionWhatIsQoccaV2Diagram) の関数定義は温存しており、
           1行を SectionWhatIsQocca / SectionWhatIsQoccaV2Diagram / SectionWhatIsQoccaV3Carousel のいずれかに切り替えるだけで戻せる。 */}
-      <SectionWhatIsQoccaV3Carousel setPage={setPage} />
-      <SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} />
+      <Reveal><SectionWhatIsQoccaV3Carousel setPage={setPage} /></Reveal>
+      <Reveal><SectionQuietlyLoved listings={listings} onDetail={onDetail} setPage={setPage} /></Reveal>
       {/* 2026/6/29 第3弾 ②: 並び順を 街で愛されている作品→ペットウォーカー→うちの子ギャラリー→街のアルバム に変更 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
-      <SectionPetWalker setPage={setPage} />
+      <Reveal><SectionPetWalker setPage={setPage} /></Reveal>
       {/* 2026/6/29 第3弾 ①: HomePetGallerySection 新設 (pet_gallery.tsx 取得ロジック/カードUI流用・8件preview + もっと見る→/petgallery) */}
-      <HomePetGallerySection />
-      <SectionTodaysMoments setPage={setPage} />
+      <Reveal><HomePetGallerySection /></Reveal>
+      {/* 街のアルバム: MomentModal / LoginPromptModal (position:fixed) を内包するため transform を使わない fade */}
+      <Reveal variant="fade"><SectionTodaysMoments setPage={setPage} /></Reveal>
       {/* 2026/6/28 トップ改修第1弾 ②:「Qoccaこんな街です」(SectionTownMap) 削除 — 関数定義L1499は温存 */}
       {/* 2026/6/28 トップ改修第2弾 ①: SectionResidentArtisans(街の作家たち・大UI) 削除 — 関数定義L1951は温存。
           作家紹介は下記 InitialMembersSection(丸アイコンUI)に一本化し、そちらの見出しを「街の作家たち」に変更。 */}
       {/* 2026/6/28 トップ改修第1弾 ③:「街の声」(SectionVoices) 削除 — イベント二重表示解消・関数定義L2247は温存・コミュ独立化は第2弾 */}
       {/* 依頼書 #10 (5/25): ARK 連携 誠実セクション (常時表示) */}
-      <ArkPartnershipSection />
+      <Reveal variant="fade"><ArkPartnershipSection /></Reveal>
       {/* 依頼書 #36 (5/31): 初期メンバー紹介 (ARK と 創業パートナーの間) */}
-      <InitialMembersSection />
+      <Reveal><InitialMembersSection /></Reveal>
       {/* 依頼書 #35 v2 (5/31): 創業パートナー (mayor_30000 + corporate_300000) */}
-      <FoundingPartnersSection />
-      <SectionJoinTown setPage={setPage} />
+      <Reveal><FoundingPartnersSection /></Reveal>
+      <Reveal><SectionJoinTown setPage={setPage} /></Reveal>
       {/* 2026/6/28 第2弾 ②: コミュニティ独立セクション (SectionVoices から communities 抽出) */}
-      <HomeCommunitiesSection setPage={setPage}/>
+      <Reveal><HomeCommunitiesSection setPage={setPage}/></Reveal>
       {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
-      <HomeEventsSection events={homeEvents} setPage={setPage}/>
+      <Reveal><HomeEventsSection events={homeEvents} setPage={setPage}/></Reveal>
       {/* 2026/6/28 案A実施: 自前 SharedFooter 削除。App.tsx PC L452 + Mobile L528 で全ページ共通 1個に統一されたため重複解消。 */}
     </div>
   );
