@@ -42,6 +42,8 @@ import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
 // 2026/7/4 あしあとUI第1弾: デイリー付与トースト (自己完結・起動時1回grant→新規付与時のみ表示)
 import { AshiatoDailyGrant } from "./components/AshiatoGrantToast";
+// あしあとUI第2弾 (2026/7/5): ショップ画面 (/ashiato-shop)
+import { AshiatoShopPage } from "./pages/ashiato_shop";
 import { SignupPage, PetDetailPage, ProfileMeRedirect, UpdatePasswordPage, RedeemPage, PhoneVerificationPage, DeletionStatusPage } from "./pages/account";
 import { XConnectionPage, ThreadsConnectionPage, InstagramConnectionPage } from "./pages/connections";
 
@@ -288,6 +290,15 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* あしあとUI第2弾 (2026/7/5): あしあとショップ (装飾交換・equipは第3弾) */}
+            <Route path="/ashiato-shop" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <AshiatoShopPage setPage={setPage} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/blog" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -488,6 +499,8 @@ function QoccaAppInner() {
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false}/>}/>
             <Route path="/petgallery" element={<PetGalleryPage setPage={setPage} isPC={false}/>}/>
+            {/* あしあとUI第2弾 (2026/7/5): あしあとショップ (装飾交換・equipは第3弾) */}
+            <Route path="/ashiato-shop" element={<AshiatoShopPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/blog/:postId" element={<BlogPage setPage={setPage} isPC={false}/>}/>
             <Route path="/communities" element={<CommunitiesPage setPage={setPage} isPC={false}/>}/>
