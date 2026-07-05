@@ -12,6 +12,7 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { AshiatoIcon } from "../components/AshiatoIcon";
 import { useAshiatoBalance } from "../hooks/useAshiato";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 import { C } from "../constants/theme";
 
 type DecoItem = {
@@ -152,6 +153,7 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
         >
           ログインして始める
         </button>
+        <FloatingBackButton aboveTabBar={true} />
       </div>
     );
   }
@@ -358,6 +360,9 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
           {toast}
         </div>
       )}
+
+      {/* 2026/7/6 King指摘: 前のページへ戻る導線 (他ページと同じフローティング戻るボタン) */}
+      <FloatingBackButton aboveTabBar={true} />
     </div>
   );
 };
