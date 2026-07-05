@@ -17,6 +17,8 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { useListings } from "../hooks";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
+// 2026/7/5 トップ改善①: ブログ最新記事セクション (既存ブログ機能の表示枠のみ・本体無変更)
+import { HomeBlogSection } from "../components/HomeBlogSection";
 import { SharedFooter } from "../components/ui";
 import type { FoundingCreator } from "../types";
 
@@ -1377,6 +1379,60 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
     el.scrollBy({ left: delta, behavior: 'smooth' });
   };
 
+  // 2026/7/5 トップ改善②: 自動スライド — Heroのシネマローテと同じ「静かに巡る」文法
+  //   - 5秒ごとに1カード送り・端まで来たら最初へ滑らかにループ
+  //   - ホバー中は停止 / タッチ・ドラッグ・ホイール操作後6秒は再開しない (見たい時は止まる)
+  //   - 画面内にある時だけ動く (IntersectionObserver・画面外の無駄なスクロールなし)
+  //   - prefers-reduced-motion: reduce では自動送りを完全停止 (酔い対策)
+  //   - 既存の手動矢印・スワイプ・scrollSnap は無変更 (自動を足しただけ)
+  const hoverPauseRef = useRef(false);
+  const lastInteractRef = useRef(0);
+  const [carouselInView, setCarouselInView] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") { setCarouselInView(true); return; }
+    const io = new IntersectionObserver(
+      (entries) => setCarouselInView(entries[0].isIntersecting),
+      { threshold: 0.3 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const reduced =
+      typeof window !== "undefined" &&
+      !!window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || !carouselInView) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const markInteract = () => { lastInteractRef.current = Date.now(); };
+    el.addEventListener("pointerdown", markInteract, { passive: true });
+    el.addEventListener("wheel", markInteract, { passive: true });
+    el.addEventListener("touchstart", markInteract, { passive: true });
+    const timer = setInterval(() => {
+      if (hoverPauseRef.current) return;                       // ホバー中は動かない
+      if (Date.now() - lastInteractRef.current < 6000) return; // 操作直後は動かない
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 2) {
+        el.scrollTo({ left: 0, behavior: "smooth" });          // 最後 → 最初へループ
+      } else {
+        const card = el.children[0] as HTMLElement | undefined;
+        const delta = card ? card.getBoundingClientRect().width + (isMobile ? 16 : 24) : 444;
+        el.scrollBy({ left: delta, behavior: "smooth" });
+      }
+    }, 5000);
+    return () => {
+      clearInterval(timer);
+      el.removeEventListener("pointerdown", markInteract);
+      el.removeEventListener("wheel", markInteract);
+      el.removeEventListener("touchstart", markInteract);
+    };
+  }, [carouselInView, isMobile]);
+
   // 2026/6/29 V3: 7枚カードの画像/遷移先/フォールバックラベル
   // 画像パスは Vite の public/ ルート絶対パス。King スマホアップ→UUID→feature_*.webp までリネーム+変換済。
   // (画像内に英語ラベル+日本語が焼き込み済のため、コード側 ja は alt用 / フォールバック用のみ)
@@ -1516,9 +1572,12 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
               →
             </button>
           )}
-        {/* 横スクロールカルーセル (SectionQuietlyLoved 作法を踏襲) */}
+        {/* 横スクロールカルーセル (SectionQuietlyLoved 作法を踏襲)
+            2026/7/5 改善②: onMouseEnter/Leave は自動スライドの一時停止用 (見たい時は止まる) */}
         <div
           ref={scrollRef}
+          onMouseEnter={() => { hoverPauseRef.current = true; }}
+          onMouseLeave={() => { hoverPauseRef.current = false; }}
           style={{
           display: 'flex',
           gap: isMobile ? 16 : 24,
@@ -4043,6 +4102,8 @@ export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvent
       <Reveal><SectionJoinTown setPage={setPage} /></Reveal>
       {/* 2026/6/28 第2弾 ②: コミュニティ独立セクション (SectionVoices から communities 抽出) */}
       <Reveal><HomeCommunitiesSection setPage={setPage}/></Reveal>
+      {/* 2026/7/5 トップ改善①: 街の読みもの (blog_posts 最新3件・0件時非表示・詳細/一覧は既存ブログへ) */}
+      <Reveal><HomeBlogSection setPage={setPage}/></Reveal>
       {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
       <Reveal><HomeEventsSection events={homeEvents} setPage={setPage}/></Reveal>
       {/* 2026/6/28 案A実施: 自前 SharedFooter 削除。App.tsx PC L452 + Mobile L528 で全ページ共通 1個に統一されたため重複解消。 */}
