@@ -133,6 +133,18 @@ const ITEMS = [
   { key: "spot_ikeda_orchard",  path: "spots/ikeda_orchard.webp",  prompt: "Strawberry greenhouse orchard with rows of red strawberries and a rest area, bright interior, cheerful farm atmosphere" },
   { key: "spot_hoho_inn",       path: "spots/hoho_inn.webp",       prompt: "Countryside inn overlooking a wide rice plain and a mountain range at dusk, warm room lights, peaceful rural Niigata" },
   { key: "spot_petemo",         path: "spots/petemo_niigata.webp", prompt: "Bright modern indoor dog run facility with rubber flooring and agility toys, large windows, clean pet complex, no dogs visible" },
+  // ── Phase C 空白県潰し: 富山・雨晴海岸 2026/7/7 ──
+  { key: "toyama_amaharashi",   path: "toyama_amaharashi.webp",    prompt: "Amaharashi coast in Toyama with snow-capped Tateyama mountain range rising across the sea, rocky islet with pine tree, morning light on calm water" },
+  { key: "spot_amaharashi",     path: "spots/amaharashi_beach.webp", prompt: "Sandy beach with a small rocky island and pine trees, snow mountains across the bay, gentle waves, early morning walk scene" },
+  { key: "spot_kansui_park",    path: "spots/kansui_park.webp",    prompt: "Modern canal-side park with an elegant footbridge and glass tower, landscaped lawns and walking paths, blue sky reflections" },
+  { key: "spot_sbux_kansui",    path: "spots/sbux_kansui.webp",    prompt: "Glass-walled cafe by a canal park with an open terrace facing the water, evening illumination reflected on the canal, serene urban scene" },
+  { key: "spot_dadada",         path: "spots/dadada_cafe.webp",    prompt: "Small stylish countryside cafe with a wooden terrace facing rice fields, minimal modern design, soft afternoon light" },
+  { key: "spot_iox_arosa",      path: "spots/iox_arosa.webp",      prompt: "Mountain resort green slope in summer with a fenced dog run area, gondola line above, forested hills, fresh alpine air" },
+  { key: "spot_merhen_oyabe",   path: "spots/merhen_oyabe.webp",   prompt: "Roadside station with a large grass dog run, fairy-tale style clock tower building, parking and green lawns, sunny" },
+  { key: "spot_taikouyama",     path: "spots/taikouyama.webp",     prompt: "Large prefectural park with a lake, forest paths and open lawns, observation tower in distance, families' green space, bright day" },
+  { key: "spot_niemon",         path: "spots/niemon_ryokan.webp",  prompt: "Small traditional Japanese hot spring inn in a mountain village, wooden facade, steam rising, quiet evening, warm lantern" },
+  { key: "spot_suigetsuro",     path: "spots/suigetsuro.webp",     prompt: "Historic Japanese ryokan with elegant tatami rooms and a garden, lantern-lit entrance at dusk, refined traditional atmosphere" },
+  { key: "spot_doubletree_tym", path: "spots/doubletree_toyama.webp", prompt: "Modern city hotel room with a small pet bed and bowls near the window, city lights of Toyama outside, warm minimal interior" },
 ];
 
 async function gen(prompt) {
