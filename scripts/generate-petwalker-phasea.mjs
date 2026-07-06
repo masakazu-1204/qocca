@@ -78,6 +78,16 @@ const ITEMS = [
   { key: "spot_mitake_shrine",  path: "spots/mitake_shrine.webp",  prompt: "Ancient mountain shrine with vermilion gate and stone wolf guardian statues, tall cedar trees, mist, sacred quiet atmosphere, Japan" },
   { key: "spot_rock_garden",    path: "spots/rock_garden.webp",    prompt: "Moss covered rocks along a clear mountain stream with small waterfalls, wooden footbridge, deep green forest gorge, cool summer light" },
   { key: "spot_kamenoi_ome",    path: "spots/kamenoi_ome.webp",    prompt: "Riverside onsen resort hotel terrace overlooking a clear river valley with green mountains, private lawn dog run beside the room, dusk" },
+  // ── Phase A 第6マス: 奈良・生駒 (奈良北) 2026/7/7 ──
+  { key: "nara_ikoma",          path: "nara_ikoma.webp",           prompt: "Nara Park meadow with wild deer resting under autumn trees, historic pagoda in the misty distance, golden afternoon light, ancient capital atmosphere" },
+  { key: "spot_nara_park",      path: "spots/nara_park.webp",      prompt: "Wide grassy park with tame deer and tall trees, stone lanterns along a path, soft morning light, Nara Japan" },
+  { key: "spot_todaiji",        path: "spots/todaiji.webp",        prompt: "Grand wooden Buddhist temple hall with sweeping tiled roof behind a stone plaza, tall trees, clear sky, Todaiji Nara" },
+  { key: "spot_umami",          path: "spots/umami_park.webp",     prompt: "Expansive flower park with colorful tulip fields and rolling green lawns, walking paths, spring blue sky, Japan" },
+  { key: "spot_ikoma_sanroku",  path: "spots/ikoma_sanroku.webp",  prompt: "Mountainside forest park with a nature trail through cedar and broadleaf trees, valley view over the plains, summer greenery" },
+  { key: "spot_ikoma_sanjo",    path: "spots/ikoma_sanjo.webp",    prompt: "Retro mountaintop amusement park at dusk overlooking a vast city night view below, ferris wheel silhouette, nostalgic mood" },
+  { key: "spot_yamato_minzoku", path: "spots/yamato_minzoku.webp", prompt: "Open-air folk museum park with old thatched-roof farmhouses among trees and a plum grove, quiet grassy grounds, gentle light" },
+  { key: "spot_dogbase",        path: "spots/dogbase.webp",        prompt: "Enormous natural grass dog run field under a wide open sky, mountains in the distance, no dogs visible, Kansai countryside, sunny" },
+  { key: "spot_naramachi_cafe", path: "spots/naramachi_cafe.webp", prompt: "Cozy cafe terrace in a traditional Japanese townhouse district with wooden lattice facades, small tables outside, warm afternoon, Naramachi" },
 ];
 
 async function gen(prompt) {

@@ -46,6 +46,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "山中湖",        en: "Yamanakako",   blurb: "富士を映す、湖のほとり。",     slug: "yamanakako",  img: pwImg("yamanakako"),  kind: "area" },
   { tag: "伊勢志摩",      en: "Ise-Shima",    blurb: "海辺の聖地をたずねて。",       slug: "iseshima",    img: pwImg("iseshima"),    kind: "area" },
   { tag: "京都",          en: "Kyoto",        blurb: "古都の、しずかな路地。",       slug: "kyoto",       img: pwImg("kyoto"),       kind: "area" },
+  // 2026/7/7 188計画 Phase A 第6マス (奈良北): 奈良・生駒
+  { tag: "奈良・生駒",    en: "Nara / Ikoma", blurb: "古都と、鹿と、山あいの緑。",   slug: "nara_ikoma",  img: pwImg("nara_ikoma"),  kind: "area" },
   { tag: "神戸",          en: "Kobe",         blurb: "港と、坂のある街。",           slug: "kobe",        img: pwImg("kobe"),        kind: "area" },
   // 2026/7/6 188計画 Phase A 第2マス (大阪南): 堺・りんくう
   { tag: "堺・りんくう",  en: "Sakai / Rinku", blurb: "海辺のまちと、南大阪の風。",  slug: "sakai_rinku", img: pwImg("sakai_rinku"), kind: "area" },
