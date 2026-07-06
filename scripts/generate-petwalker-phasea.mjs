@@ -37,6 +37,16 @@ const ITEMS = [
   { key: "spot_dogdept_cafe",   path: "spots/dogdept_cafe.webp",   prompt: "Bright casual dog-friendly cafe interior with wooden tables near large windows facing the sea, empty seats, cozy American casual style" },
   { key: "spot_ushisuke",       path: "spots/ushisuke.webp",       prompt: "Cozy Japanese yakiniku restaurant interior with grill tables, warm lantern light, clean wooden decor, empty and calm" },
   { key: "spot_hilton_odaiba",  path: "spots/hilton_odaiba.webp",  prompt: "Elegant bayside hotel room in Tokyo with balcony view of Rainbow Bridge at dusk, soft interior lighting, pet bed subtly near window" },
+  // ── Phase A 第2マス: 堺・りんくう (大阪南) 2026/7/6 ──
+  { key: "sakai_rinku",         path: "sakai_rinku.webp",          prompt: "Rinku town waterfront in southern Osaka at sunset, white marble pebble beach and calm sea, Kansai airport bridge silhouette in far distance, warm orange sky" },
+  { key: "spot_rinku_outlet",   path: "spots/rinku_outlet.webp",   prompt: "Open-air American west coast style outlet mall promenade by the sea in Japan, palm trees, low white buildings, bright blue sky" },
+  { key: "spot_harvest_hill",   path: "spots/harvest_hill.webp",   prompt: "Rolling farm park hills with colorful flower fields and a small ferris wheel in distance, green meadows, family farm atmosphere, sunny day" },
+  { key: "spot_hamadera",       path: "spots/hamadera_park.webp",  prompt: "Historic pine tree forest park in Japan with wide walking paths through tall pines, dappled sunlight, calm morning" },
+  { key: "spot_sennan_lp",      path: "spots/sennan_longpark.webp", prompt: "Long seaside boardwalk park with grass lawns and palm trees along Osaka bay, glamping domes in distance, golden hour" },
+  { key: "spot_canmore",        path: "spots/canmore_glamping.webp", prompt: "Stylish glamping resort at dusk, illuminated dome tents and wooden decks, cozy outdoor lounge with lanterns, no people" },
+  { key: "spot_wanto",          path: "spots/wanto_cafe.webp",     prompt: "Huge natural grass dog run field in a Japanese park with colorful agility equipment and a wooden deck cafe at the edge, bright day, no dogs visible" },
+  { key: "spot_tonboike",       path: "spots/tonboike_park.webp",  prompt: "Large Japanese prefectural park with a pond shaped garden, rose garden and grassy hills, wide walking paths, soft afternoon light" },
+  { key: "spot_whatawon",       path: "spots/whatawon.webp",       prompt: "Modern overseas-style open-air shopping mall with wooden terraces, string lights and relaxed outdoor seating areas, southern California vibes in Japan, clear sky" },
 ];
 
 async function gen(prompt) {
