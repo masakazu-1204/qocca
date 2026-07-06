@@ -12,6 +12,7 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { AshiatoIcon } from "../components/AshiatoIcon";
 import { useAshiatoBalance } from "../hooks/useAshiato";
+import { FloatingBackButton } from "../components/FloatingBackButton";
 import { C } from "../constants/theme";
 
 type DecoItem = {
@@ -34,10 +35,12 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
   const { free, loading: balLoading } = useAshiatoBalance(user?.id);
 
   const [items, setItems] = useState<DecoItem[]>([]);
-  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+  // 所持一覧: item_id → { decoId (user_decorations.id), equipped } — 第3弾で equipped 込みに拡張
+  const [ownedMap, setOwnedMap] = useState<Record<string, { decoId: string; equipped: boolean }>>({});
   const [loaded, setLoaded] = useState(false);
   const [selected, setSelected] = useState<DecoItem | null>(null); // 確認モーダル対象
   const [busy, setBusy] = useState(false);                          // 交換中 (連打ガード①)
+  const [equipBusyId, setEquipBusyId] = useState<string | null>(null); // 装備切替中の item_id (連打ガード)
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -50,11 +53,13 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
         .order("price", { ascending: true })
         .order("name", { ascending: true }),
       user?.id
-        ? supabase.from("user_decorations").select("item_id").eq("user_id", user.id)
-        : Promise.resolve({ data: [] as { item_id: string }[] } as any),
+        ? supabase.from("user_decorations").select("id, item_id, equipped").eq("user_id", user.id)
+        : Promise.resolve({ data: [] as any[] } as any),
     ]);
     setItems((itemsRes.data as DecoItem[]) || []);
-    setOwnedIds(new Set(((ownedRes.data as { item_id: string }[]) || []).map((r) => r.item_id)));
+    const map: Record<string, { decoId: string; equipped: boolean }> = {};
+    ((ownedRes.data as any[]) || []).forEach((r) => { map[r.item_id] = { decoId: r.id, equipped: !!r.equipped }; });
+    setOwnedMap(map);
     setLoaded(true);
   }, [user?.id]);
 
@@ -75,8 +80,8 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
         return;
       }
       if (data?.success) {
-        // duplicated=true (既に交換済み) も所持扱いにして静かに整合
-        setOwnedIds((prev) => new Set(prev).add(selected.id));
+        // duplicated=true (既に交換済み) の場合も含め fetchAll で所持を再取得 (decoId が要るため)
+        fetchAll();
         window.dispatchEvent(new Event("ashiatoChanged")); // 残高カード等へ反映
         setSelected(null);
         setToast(`「${selected.name}」を交換しました`);
@@ -91,6 +96,42 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
       }
     } finally {
       setBusy(false);
+    }
+  };
+
+  // 2026/7/6 第3弾: 装備切替 (equip_decoration RPC・1カテゴリ1装備はサーバ側で担保)
+  const handleEquip = async (item: DecoItem) => {
+    const owned = ownedMap[item.id];
+    if (!owned || !user?.id || equipBusyId) return; // 連打・多重実行ガード
+    setEquipBusyId(item.id);
+    try {
+      const willEquip = !owned.equipped;
+      const { data, error } = await supabase.rpc("equip_decoration", {
+        p_decoration_id: owned.decoId,
+        p_equip: willEquip,
+      });
+      if (error || !data?.success) {
+        setToast("切り替えできませんでした");
+        setTimeout(() => setToast(null), 3200);
+        fetchAll(); // 表示とDBのズレを解消
+        return;
+      }
+      // ローカル反映: 装備時は同カテゴリの他アイテムをOFF (サーバと同じ規則)
+      setOwnedMap((prev) => {
+        const next = { ...prev };
+        if (willEquip) {
+          items.forEach((i) => {
+            if (i.category === item.category && next[i.id]) next[i.id] = { ...next[i.id], equipped: false };
+          });
+        }
+        next[item.id] = { ...next[item.id], equipped: willEquip };
+        return next;
+      });
+      window.dispatchEvent(new Event("ashiatoEquipChanged")); // DecoratedAvatar へ即反映
+      setToast(willEquip ? `「${item.name}」を飾りました` : `「${item.name}」をはずしました`);
+      setTimeout(() => setToast(null), 3200);
+    } finally {
+      setEquipBusyId(null);
     }
   };
 
@@ -112,6 +153,7 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
         >
           ログインして始める
         </button>
+        <FloatingBackButton aboveTabBar={true} />
       </div>
     );
   }
@@ -153,8 +195,7 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
               {CATEGORY_LABELS[cat] || cat}
             </h2>
             <p style={{ fontSize: 11, color: C.warmGray, margin: "0 0 14px" }}>
-              {cat === "stamp" ? "コミュニティやプロフィールで使える、小さな彩り。" : "プロフィールを飾る、うちの子の額縁。"}
-              {cat === "profile_deco" && " (飾る機能は準備中)"}
+              {cat === "stamp" ? "プロフィールに飾れる、小さな彩り。" : "プロフィールを飾る、うちの子の額縁。"}
             </p>
             <div style={{
               display: "grid",
@@ -162,7 +203,8 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
               gap: 12,
             }}>
               {list.map((item) => {
-                const owned = ownedIds.has(item.id);
+                const ownedInfo = ownedMap[item.id];
+                const owned = !!ownedInfo;
                 const affordable = free >= item.price;
                 const tappable = !owned && affordable;
                 return (
@@ -207,9 +249,19 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
                         <span style={{ fontSize: 14, fontWeight: 800, color: C.orange, lineHeight: 1 }}>{item.price}</span>
                       </div>
                       {owned ? (
-                        <span style={{ fontSize: 10, fontWeight: 600, color: C.green, background: C.greenPale, borderRadius: 999, padding: "4px 10px" }}>
-                          所持済み
-                        </span>
+                        /* 第3弾: 所持済み → 飾る/はずす トグル (equip_decoration RPC) */
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEquip(item); }}
+                          disabled={equipBusyId !== null}
+                          style={{
+                            fontSize: 10, fontWeight: 600, cursor: equipBusyId ? "default" : "pointer",
+                            color: ownedInfo.equipped ? "#fff" : C.green,
+                            background: ownedInfo.equipped ? C.green : C.greenPale,
+                            border: "none", borderRadius: 999, padding: "5px 12px",
+                          }}
+                        >
+                          {equipBusyId === item.id ? "…" : ownedInfo.equipped ? "はずす" : "飾る"}
+                        </button>
                       ) : affordable ? (
                         <span style={{ fontSize: 10, fontWeight: 600, color: C.orange, border: `1px solid ${C.orangeLight}`, borderRadius: 999, padding: "4px 10px" }}>
                           交換する
@@ -308,6 +360,9 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
           {toast}
         </div>
       )}
+
+      {/* 2026/7/6 King指摘: 前のページへ戻る導線 (他ページと同じフローティング戻るボタン) */}
+      <FloatingBackButton aboveTabBar={true} />
     </div>
   );
 };
