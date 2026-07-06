@@ -88,6 +88,20 @@ const ITEMS = [
   { key: "spot_yamato_minzoku", path: "spots/yamato_minzoku.webp", prompt: "Open-air folk museum park with old thatched-roof farmhouses among trees and a plum grove, quiet grassy grounds, gentle light" },
   { key: "spot_dogbase",        path: "spots/dogbase.webp",        prompt: "Enormous natural grass dog run field under a wide open sky, mountains in the distance, no dogs visible, Kansai countryside, sunny" },
   { key: "spot_naramachi_cafe", path: "spots/naramachi_cafe.webp", prompt: "Cozy cafe terrace in a traditional Japanese townhouse district with wooden lattice facades, small tables outside, warm afternoon, Naramachi" },
+  // ── Phase C 空白県潰し: 鹿児島・桜島 2026/7/7 ──
+  { key: "kagoshima_sakurajima", path: "kagoshima_sakurajima.webp", prompt: "Sakurajima active volcano across Kinko Bay at sunset, gentle smoke from the summit, calm sea in foreground, southern Japan, warm sky" },
+  { key: "spot_nagisa",          path: "spots/nagisa_park.webp",    prompt: "Coastal lava rock walking trail beside the sea with an active volcano towering behind, black volcanic rocks, footbath steam, bright day" },
+  { key: "spot_sakura_ferry",    path: "spots/sakurajima_ferry.webp", prompt: "Ferry boat crossing a calm bay toward a volcanic island, open sea deck, seagulls, sunny maritime scene, southern Japan" },
+  { key: "spot_sakura_sa",       path: "spots/sakurajima_sa.webp",  prompt: "Small grassy fenced dog run at a highway service area with a volcano view in the distance, sunny, no dogs visible" },
+  { key: "spot_shiroyama",       path: "spots/shiroyama.webp",      prompt: "Hilltop observation deck overlooking a city and a smoking volcano across the bay, lush green foreground, panoramic view, clear day" },
+  { key: "spot_jigenji",         path: "spots/jigenji_park.webp",   prompt: "Green valley park with a clear mountain stream and stone bridges, tall trees, dappled light, peaceful Japanese park" },
+  { key: "spot_ikeda_lake",      path: "spots/ikeda_lake.webp",     prompt: "Large caldera lake with a conical mountain peak reflected on calm water, yellow rape flowers along the shore, spring, southern Kyushu" },
+  { key: "spot_ora_cafe",        path: "spots/ora_cafe.webp",       prompt: "Bright stylish dog-friendly cafe interior with wooden tables and a shelf of dog treats, large windows, no people, cozy" },
+  { key: "spot_mother_ibusuki",  path: "spots/mother_ibusuki.webp", prompt: "Cafe terrace with a small grassy dog run beside it, southern seaside town greenery, relaxed sunny afternoon" },
+  { key: "spot_shippo",          path: "spots/shippo_cafe.webp",    prompt: "Cute crepe cafe with an outdoor grass dog run, colorful casual exterior, countryside of Kirishima, sunny day" },
+  { key: "spot_maruo",           path: "spots/maruo_falls.webp",    prompt: "Wide waterfall of pale turquoise hot spring water cascading down forested rocks, steam rising faintly, lush green gorge" },
+  { key: "spot_lavista",         path: "spots/lavista_kirishima.webp", prompt: "Hilltop onsen hotel terrace with open-air bath overlooking green mountains and valley mist at dusk, warm lantern light" },
+  { key: "spot_fairfield",       path: "spots/fairfield_tarumizu.webp", prompt: "Modern roadside hotel with a volcano view across the bay, clean minimalist exterior, palm trees, bright southern light" },
 ];
 
 async function gen(prompt) {
