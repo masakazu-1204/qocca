@@ -102,6 +102,14 @@ const ITEMS = [
   { key: "spot_maruo",           path: "spots/maruo_falls.webp",    prompt: "Wide waterfall of pale turquoise hot spring water cascading down forested rocks, steam rising faintly, lush green gorge" },
   { key: "spot_lavista",         path: "spots/lavista_kirishima.webp", prompt: "Hilltop onsen hotel terrace with open-air bath overlooking green mountains and valley mist at dusk, warm lantern light" },
   { key: "spot_fairfield",       path: "spots/fairfield_tarumizu.webp", prompt: "Modern roadside hotel with a volcano view across the bay, clean minimalist exterior, palm trees, bright southern light" },
+  // ── Phase C 空白県潰し: 長崎・ハウステンボス 2026/7/7 ──
+  { key: "nagasaki_htb",        path: "nagasaki_htb.webp",         prompt: "European-style canal town with brick buildings, windmill and tulip gardens at dusk, warm lights reflecting on the canal, Dutch townscape in Japan" },
+  { key: "spot_htb_park",       path: "spots/htb_park.webp",       prompt: "Wide European boulevard with brick facades and flower beds, canal boats, spring flowers everywhere, no people, theme park townscape" },
+  { key: "spot_htb_villa",      path: "spots/htb_villa.webp",      prompt: "Cozy lakeside cottage villas among tall forest trees at evening, warm cabin lights, wooden porches, quiet resort atmosphere" },
+  { key: "spot_inasayama",      path: "spots/inasayama_dogrun.webp", prompt: "Hillside park dog run with a panoramic night view city and harbor far below, green lawn and fences, twilight" },
+  { key: "spot_iland_bark",     path: "spots/iland_bark.webp",     prompt: "Seaside resort lodge with long natural grass dog run along the ocean, terrace rooms opening to the lawn, island sunset" },
+  { key: "spot_aguri",          path: "spots/aguri_dogrun.webp",   prompt: "Farm park dog run on a green hill with wooden fences, countryside scenery and sea in far distance, sunny pastoral day" },
+  { key: "spot_omurawan_pa",    path: "spots/omurawan_pa.webp",    prompt: "Small grass dog run at a highway rest area overlooking a calm blue bay, heart-shaped stone monument nearby, gentle afternoon" },
 ];
 
 async function gen(prompt) {
