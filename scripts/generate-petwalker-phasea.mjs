@@ -110,6 +110,17 @@ const ITEMS = [
   { key: "spot_iland_bark",     path: "spots/iland_bark.webp",     prompt: "Seaside resort lodge with long natural grass dog run along the ocean, terrace rooms opening to the lawn, island sunset" },
   { key: "spot_aguri",          path: "spots/aguri_dogrun.webp",   prompt: "Farm park dog run on a green hill with wooden fences, countryside scenery and sea in far distance, sunny pastoral day" },
   { key: "spot_omurawan_pa",    path: "spots/omurawan_pa.webp",    prompt: "Small grass dog run at a highway rest area overlooking a calm blue bay, heart-shaped stone monument nearby, gentle afternoon" },
+  // ── Phase C 空白県潰し: 会津・裏磐梯 2026/7/7 ──
+  { key: "aizu_urabandai",      path: "aizu_urabandai.webp",       prompt: "Cobalt blue and emerald green ponds of Urabandai reflecting autumn forest with Mount Bandai behind, clear crisp highland light, Fukushima" },
+  { key: "spot_goshikinuma",    path: "spots/goshikinuma.webp",    prompt: "Vivid turquoise pond surrounded by autumn foliage with a forest walking trail alongside, still water reflection, crisp morning" },
+  { key: "spot_michinoeki_ina", path: "spots/michinoeki_inawashiro.webp", prompt: "Roadside station with a grass dog run and Mount Bandai in the background, green lawn, blue sky, rural Fukushima" },
+  { key: "spot_tsurugajo",      path: "spots/tsurugajo.webp",      prompt: "Japanese castle with red-tiled roof surrounded by cherry blossom trees and a green park, wide lawn in foreground, spring, Aizu" },
+  { key: "spot_ouchijuku",      path: "spots/ouchijuku.webp",      prompt: "Historic post town street lined with traditional thatched-roof houses, unpaved road, mountains behind, nostalgic Edo-era atmosphere" },
+  { key: "spot_angelforest",    path: "spots/angelforest.webp",    prompt: "Highland lakeside resort with cottages and a large natural grass dog run, forest and calm lake, summer, no people" },
+  { key: "spot_mercure_ub",     path: "spots/mercure_urabandai.webp", prompt: "Modern resort hotel among tall trees near colorful ponds, highland forest setting, warm afternoon light" },
+  { key: "spot_akimotoya",      path: "spots/akimotoya.webp",      prompt: "Cozy Japanese lakeside inn with a grassy dog run, mountains and lake view, quiet highland resort, sunny" },
+  { key: "spot_akabeko",        path: "spots/akabeko_cottage.webp", prompt: "Wooden forest cottage with a fenced dog run in the yard, tall trees, dappled sunlight, peaceful highland retreat" },
+  { key: "spot_kyukamura_ub",   path: "spots/kyukamura_urabandai.webp", prompt: "Forest campsite with tents among tall trees at dusk, campfire glow, starry sky beginning, quiet mountain campground" },
 ];
 
 async function gen(prompt) {
