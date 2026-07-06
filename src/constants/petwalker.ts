@@ -13,13 +13,19 @@ const pwImg = (slug: string) => `${PW_IMG_BASE}/${slug}.webp`;
 //   tag は DB の area_tag と完全一致。slug = Storage ファイル名。en/blurb/slug は不変(並び替えのみ)。
 export const PW_AREAS: PWArea[] = [
   // ── エリアで探す: 地名27 (北→南) ──
-  { tag: "北海道",        en: "Hokkaido",     blurb: "大地と温泉、ひろい空。",       slug: "hokkaido",    img: pwImg("hokkaido"),    kind: "area" },
+  // 2026/7/6 188計画 土台固め: 超広域「北海道」を実態4分割 (DB更新済・裏タグ=北海道西/北/南)
+  { tag: "富良野・美瑛",  en: "Furano-Biei",  blurb: "丘と花畑を、ゆく夏。",         slug: "furano_biei", img: pwImg("furano_biei"), kind: "area" },
+  { tag: "札幌・小樽",    en: "Sapporo-Otaru", blurb: "都会と運河、北の週末。",      slug: "sapporo_otaru", img: pwImg("sapporo_otaru"), kind: "area" },
+  { tag: "ニセコ・洞爺",  en: "Niseko-Toya",  blurb: "山と湖の、澄んだ空気。",       slug: "niseko_toya", img: pwImg("niseko_toya"), kind: "area" },
+  { tag: "函館・大沼",    en: "Hakodate",     blurb: "港町の坂と、湖のほとり。",     slug: "hakodate_onuma", img: pwImg("hakodate_onuma"), kind: "area" },
   { tag: "蔵王",          en: "Zao",          blurb: "樹氷と、山の湯。",             slug: "zao",         img: pwImg("zao"),         kind: "area" },
   { tag: "仙台",          en: "Sendai",       blurb: "杜の都の、しずかな時間。",     slug: "sendai",      img: pwImg("sendai"),      kind: "area" },
   { tag: "奥日光・中禅寺湖", en: "Oku-Nikko",  blurb: "高原と、湖と、滝。",           slug: "okunikko",    img: pwImg("okunikko"),    kind: "area" },
   { tag: "日光・那須",    en: "Nikko",        blurb: "森と湖の、高原へ。",           slug: "nikko",        img: pwImg("nikko"),       kind: "area" },
   { tag: "房総",          en: "Boso",         blurb: "潮風と、海辺の休日。",         slug: "boso",         img: pwImg("boso"),        kind: "area" },
   { tag: "秩父・長瀞",    en: "Chichibu",     blurb: "霊峰と、岩畳の川。",           slug: "chichibu",    img: pwImg("chichibu"),    kind: "area" },
+  // 2026/7/6 188計画 Phase A 第1マス (東京南): お台場・東京ベイ
+  { tag: "お台場・東京ベイ", en: "Odaiba / Tokyo Bay", blurb: "海風わたる、都会の水辺。", slug: "odaiba", img: pwImg("odaiba"), kind: "area" },
   { tag: "軽井沢",        en: "Karuizawa",    blurb: "木陰の風と、避暑地。",         slug: "karuizawa",   img: pwImg("karuizawa"),   kind: "area" },
   { tag: "草津温泉",      en: "Kusatsu",      blurb: "湯畑と、硫黄の香り。",         slug: "kusatsu",     img: pwImg("kusatsu"),     kind: "area" },
   { tag: "蓼科・八ヶ岳",  en: "Tateshina",    blurb: "高原を渡る、澄んだ風。",       slug: "tateshina",   img: pwImg("tateshina"),   kind: "area" },
@@ -50,7 +56,9 @@ export const PW_AREAS: PWArea[] = [
   { tag: "道後温泉",      en: "Dogo",         blurb: "日本最古の、湯の里。",         slug: "dogo",        img: pwImg("dogo"),        kind: "area" },
   { tag: "四万十",        en: "Shimanto",     blurb: "最後の清流に沿って。",         slug: "shimanto",     img: pwImg("shimanto"),    kind: "area" },
   { tag: "湘南",          en: "Shonan",       blurb: "波音のとなりで過ごす休日。",   slug: "shonan",      img: pwImg("shonan"),      kind: "area" },
-  { tag: "九州",          en: "Kyushu",       blurb: "湯けむりの里をめぐる。",       slug: "kyushu",      img: pwImg("kyushu"),      kind: "area" },
+  // 2026/7/6 188計画 土台固め: 超広域「九州」を実態分割 (福岡・糸島 / 別府 / 湯布院へ3件編入・DB更新済)
+  { tag: "福岡・糸島",    en: "Fukuoka-Itoshima", blurb: "海辺のカフェと、街の元気。", slug: "fukuoka_itoshima", img: pwImg("fukuoka_itoshima"), kind: "area" },
+  { tag: "別府",          en: "Beppu",        blurb: "湯けむりの向こうに、海。",     slug: "beppu",       img: pwImg("beppu"),       kind: "area" },
   { tag: "湯布院",        en: "Yufuin",       blurb: "盆地の朝霧と、湯の町。",       slug: "yufuin",      img: pwImg("yufuin"),      kind: "area" },
   { tag: "阿蘇",          en: "Aso",          blurb: "草原に、風がわたる。",         slug: "aso",         img: pwImg("aso"),         kind: "area" },
   { tag: "沖縄",          en: "Okinawa",      blurb: "碧い海と、島時間。",           slug: "okinawa",     img: pwImg("okinawa"),     kind: "area" },
