@@ -47,6 +47,17 @@ const ITEMS = [
   { key: "spot_wanto",          path: "spots/wanto_cafe.webp",     prompt: "Huge natural grass dog run field in a Japanese park with colorful agility equipment and a wooden deck cafe at the edge, bright day, no dogs visible" },
   { key: "spot_tonboike",       path: "spots/tonboike_park.webp",  prompt: "Large Japanese prefectural park with a pond shaped garden, rose garden and grassy hills, wide walking paths, soft afternoon light" },
   { key: "spot_whatawon",       path: "spots/whatawon.webp",       prompt: "Modern overseas-style open-air shopping mall with wooden terraces, string lights and relaxed outdoor seating areas, southern California vibes in Japan, clear sky" },
+  // ── Phase A 第3マス: 北摂・箕面 (大阪北) 2026/7/6 ──
+  { key: "hokusetsu_minoh",     path: "hokusetsu_minoh.webp",      prompt: "Minoh waterfall in northern Osaka surrounded by maple trees in early autumn, stone path along a mountain stream, soft forest light" },
+  { key: "spot_hattori",        path: "spots/hattori_ryokuchi.webp", prompt: "Large Japanese metropolitan park with wide lawn, pond and tall trees, families' picnic area empty in early morning, gentle sunlight" },
+  { key: "spot_fureai",         path: "spots/fureai_ryokuchi.webp",  prompt: "Grass field park under a wide sky with an airplane flying low overhead approaching an airport, fenced dog run area at the edge, afternoon" },
+  { key: "spot_satsukiyama",    path: "spots/satsukiyama.webp",    prompt: "Hillside park overlooking an Osaka suburban town, cherry trees and winding walking trails up the mountain, observation deck view, spring" },
+  { key: "spot_minoh_falls",    path: "spots/minoh_falls.webp",    prompt: "A beautiful waterfall cascading over red rocks framed by bright red maple leaves, wooden viewing area, japanese mountain gorge" },
+  { key: "spot_settsukyo",      path: "spots/settsukyo.webp",      prompt: "River gorge with clear shallow stream over smooth rocks, forest hiking path along the water, summer greenery, northern Osaka" },
+  { key: "spot_expocity",       path: "spots/expocity.webp",       prompt: "Modern large shopping complex exterior with a giant ferris wheel, wide plaza with trees, bright day, Osaka suburbs" },
+  { key: "spot_banpaku_gaishu", path: "spots/banpaku_gaishu.webp", prompt: "Tree-lined perimeter walking path around a large park, iconic tower silhouette visible above the trees in distance, jogging path, morning" },
+  { key: "spot_nose_toriko",    path: "spots/nose_toriko.webp",    prompt: "Countryside dog cafe with wooden interior and a grassy dog run outside, rural satoyama landscape of Nose, relaxed rustic vibe" },
+  { key: "spot_mori_terrace",   path: "spots/mori_terrace.webp",   prompt: "Forest glamping site at dusk with illuminated bell tents among tall cedar trees, campfire glow, quiet mountain village in northern Osaka" },
 ];
 
 async function gen(prompt) {
