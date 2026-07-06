@@ -22,6 +22,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "仙台",          en: "Sendai",       blurb: "杜の都の、しずかな時間。",     slug: "sendai",      img: pwImg("sendai"),      kind: "area" },
   // 2026/7/7 188計画 Phase C 空白県潰し (福島): 会津・裏磐梯
   { tag: "会津・裏磐梯",  en: "Aizu / Urabandai", blurb: "湖と高原と、城下町。",       slug: "aizu_urabandai", img: pwImg("aizu_urabandai"), kind: "area" },
+  // 2026/7/7 188計画 Phase C 空白県潰し (新潟): 越後湯沢・新潟
+  { tag: "越後湯沢・新潟", en: "Echigo-Yuzawa / Niigata", blurb: "雪国の湯と、信濃川の街。", slug: "niigata_yuzawa", img: pwImg("niigata_yuzawa"), kind: "area" },
   { tag: "奥日光・中禅寺湖", en: "Oku-Nikko",  blurb: "高原と、湖と、滝。",           slug: "okunikko",    img: pwImg("okunikko"),    kind: "area" },
   { tag: "日光・那須",    en: "Nikko",        blurb: "森と湖の、高原へ。",           slug: "nikko",        img: pwImg("nikko"),       kind: "area" },
   { tag: "房総",          en: "Boso",         blurb: "潮風と、海辺の休日。",         slug: "boso",         img: pwImg("boso"),        kind: "area" },
