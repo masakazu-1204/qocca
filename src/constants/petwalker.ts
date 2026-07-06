@@ -71,6 +71,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "別府",          en: "Beppu",        blurb: "湯けむりの向こうに、海。",     slug: "beppu",       img: pwImg("beppu"),       kind: "area" },
   { tag: "湯布院",        en: "Yufuin",       blurb: "盆地の朝霧と、湯の町。",       slug: "yufuin",      img: pwImg("yufuin"),      kind: "area" },
   { tag: "阿蘇",          en: "Aso",          blurb: "草原に、風がわたる。",         slug: "aso",         img: pwImg("aso"),         kind: "area" },
+  // 2026/7/7 188計画 Phase C 空白県潰し (鹿児島): 桜島・霧島
+  { tag: "鹿児島・桜島",  en: "Kagoshima", blurb: "火の島と、湯けむりの南国。",      slug: "kagoshima_sakurajima", img: pwImg("kagoshima_sakurajima"), kind: "area" },
   { tag: "沖縄",          en: "Okinawa",      blurb: "碧い海と、島時間。",           slug: "okinawa",     img: pwImg("okinawa"),     kind: "area" },
   // ── 目的で探す: テーマ特集3 (高速SA→道の駅→雨の日) ──
   { tag: "高速SA・ドッグラン", en: "Highway Dog Run", blurb: "道中の、ひと休み。",      slug: "driving_dogrun", img: pwImg("driving_dogrun"), kind: "theme" },
