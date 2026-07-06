@@ -121,6 +121,18 @@ const ITEMS = [
   { key: "spot_akimotoya",      path: "spots/akimotoya.webp",      prompt: "Cozy Japanese lakeside inn with a grassy dog run, mountains and lake view, quiet highland resort, sunny" },
   { key: "spot_akabeko",        path: "spots/akabeko_cottage.webp", prompt: "Wooden forest cottage with a fenced dog run in the yard, tall trees, dappled sunlight, peaceful highland retreat" },
   { key: "spot_kyukamura_ub",   path: "spots/kyukamura_urabandai.webp", prompt: "Forest campsite with tents among tall trees at dusk, campfire glow, starry sky beginning, quiet mountain campground" },
+  // ── Phase C 空白県潰し: 越後湯沢・新潟 2026/7/7 ──
+  { key: "niigata_yuzawa",      path: "niigata_yuzawa.webp",       prompt: "Snow country highland in green summer with ropeway climbing a lush mountain, valley town below, layered peaks, crisp bright air, Echigo-Yuzawa" },
+  { key: "spot_yuzawa_kogen",   path: "spots/yuzawa_kogen.webp",   prompt: "Alpine botanical garden on a mountain plateau with colorful flowers and walking paths, a large ropeway cabin arriving, panoramic valley view" },
+  { key: "spot_dragondola",     path: "spots/dragondola.webp",     prompt: "Long gondola cabin gliding high over a vast valley of red and gold autumn foliage, mountains stretching to horizon, aerial view" },
+  { key: "spot_yutorelo",       path: "spots/yutorelo_yuzawa.webp", prompt: "Cozy hot spring resort hotel with a small grassy dog run, snow country mountains behind, warm evening light" },
+  { key: "spot_kkr_yuzawa",     path: "spots/kkr_yuzawa.webp",     prompt: "Traditional Japanese onsen inn among green mountains with a summer dog run area, calm rural resort scene" },
+  { key: "spot_shimami",        path: "spots/shimami_ryokuchi.webp", prompt: "Large seaside green park with a fenced grass dog run, pine trees and coastal dunes nearby, wide open sky, bright day" },
+  { key: "spot_ikutopia",       path: "spots/ikutopia.webp",       prompt: "Beautiful themed flower gardens with winding paths and seasonal blooms, greenhouse in distance, families' park, sunny afternoon" },
+  { key: "spot_water_shuttle",  path: "spots/shinano_shuttle.webp", prompt: "Small river water bus cruising down a wide river through a modern Japanese city, open deck, bridges and buildings along the banks" },
+  { key: "spot_ikeda_orchard",  path: "spots/ikeda_orchard.webp",  prompt: "Strawberry greenhouse orchard with rows of red strawberries and a rest area, bright interior, cheerful farm atmosphere" },
+  { key: "spot_hoho_inn",       path: "spots/hoho_inn.webp",       prompt: "Countryside inn overlooking a wide rice plain and a mountain range at dusk, warm room lights, peaceful rural Niigata" },
+  { key: "spot_petemo",         path: "spots/petemo_niigata.webp", prompt: "Bright modern indoor dog run facility with rubber flooring and agility toys, large windows, clean pet complex, no dogs visible" },
 ];
 
 async function gen(prompt) {
