@@ -69,6 +69,15 @@ const ITEMS = [
   { key: "spot_uni_coffee",     path: "spots/uni_coffee.webp",     prompt: "Cozy modern coffee roastery cafe interior inside a historic red brick building, espresso bar, warm lights, no people" },
   { key: "spot_bills_akarenga", path: "spots/bills_akarenga.webp", prompt: "Bright glass box terrace dining space attached to a red brick warehouse, pancakes cafe table setting, harbor view through glass, morning light" },
   { key: "spot_omo7_yokohama",  path: "spots/omo7_yokohama.webp",  prompt: "Modern city hotel room with playful colorful interior and a small pet bed by the window, Yokohama city night view outside, cozy lighting" },
+  // ── Phase A 第5マス: 高尾・奥多摩 (東京西) 2026/7/7 ──
+  { key: "takao_okutama",       path: "takao_okutama.webp",        prompt: "Mount Takao forest trail in soft morning mist, sunbeams through tall cedar trees, mountain path with wooden steps, serene green mountains of west Tokyo" },
+  { key: "spot_takao_trail",    path: "spots/takao_trail.webp",    prompt: "Gentle mountain hiking trail through cedar forest with stone lanterns and a temple gate glimpse, dappled light, Mount Takao Japan" },
+  { key: "spot_takao_cable",    path: "spots/takao_cable.webp",    prompt: "Historic funicular cable car climbing a steep forested mountain slope, green canopy tunnel, small mountain station, bright day" },
+  { key: "spot_showakinen",     path: "spots/showakinen.webp",     prompt: "Vast national park lawn with giant zelkova tree in the center, flower fields in distance, wide open sky, families absent, morning" },
+  { key: "spot_mitake_cable",   path: "spots/mitake_cable.webp",   prompt: "Red cable car ascending a lush green mountain with valley view behind, forest ropeway in Okutama Tokyo, summer" },
+  { key: "spot_mitake_shrine",  path: "spots/mitake_shrine.webp",  prompt: "Ancient mountain shrine with vermilion gate and stone wolf guardian statues, tall cedar trees, mist, sacred quiet atmosphere, Japan" },
+  { key: "spot_rock_garden",    path: "spots/rock_garden.webp",    prompt: "Moss covered rocks along a clear mountain stream with small waterfalls, wooden footbridge, deep green forest gorge, cool summer light" },
+  { key: "spot_kamenoi_ome",    path: "spots/kamenoi_ome.webp",    prompt: "Riverside onsen resort hotel terrace overlooking a clear river valley with green mountains, private lawn dog run beside the room, dusk" },
 ];
 
 async function gen(prompt) {

@@ -26,6 +26,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "秩父・長瀞",    en: "Chichibu",     blurb: "霊峰と、岩畳の川。",           slug: "chichibu",    img: pwImg("chichibu"),    kind: "area" },
   // 2026/7/6 188計画 Phase A 第1マス (東京南): お台場・東京ベイ
   { tag: "お台場・東京ベイ", en: "Odaiba / Tokyo Bay", blurb: "海風わたる、都会の水辺。", slug: "odaiba", img: pwImg("odaiba"), kind: "area" },
+  // 2026/7/7 188計画 Phase A 第5マス (東京西): 高尾・奥多摩
+  { tag: "高尾・奥多摩",   en: "Takao / Okutama", blurb: "山の空気と、犬の神様。",    slug: "takao_okutama", img: pwImg("takao_okutama"), kind: "area" },
   { tag: "軽井沢",        en: "Karuizawa",    blurb: "木陰の風と、避暑地。",         slug: "karuizawa",   img: pwImg("karuizawa"),   kind: "area" },
   { tag: "草津温泉",      en: "Kusatsu",      blurb: "湯畑と、硫黄の香り。",         slug: "kusatsu",     img: pwImg("kusatsu"),     kind: "area" },
   { tag: "蓼科・八ヶ岳",  en: "Tateshina",    blurb: "高原を渡る、澄んだ風。",       slug: "tateshina",   img: pwImg("tateshina"),   kind: "area" },
