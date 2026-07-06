@@ -20,6 +20,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "函館・大沼",    en: "Hakodate",     blurb: "港町の坂と、湖のほとり。",     slug: "hakodate_onuma", img: pwImg("hakodate_onuma"), kind: "area" },
   { tag: "蔵王",          en: "Zao",          blurb: "樹氷と、山の湯。",             slug: "zao",         img: pwImg("zao"),         kind: "area" },
   { tag: "仙台",          en: "Sendai",       blurb: "杜の都の、しずかな時間。",     slug: "sendai",      img: pwImg("sendai"),      kind: "area" },
+  // 2026/7/7 188計画 Phase C 空白県潰し (福島): 会津・裏磐梯
+  { tag: "会津・裏磐梯",  en: "Aizu / Urabandai", blurb: "湖と高原と、城下町。",       slug: "aizu_urabandai", img: pwImg("aizu_urabandai"), kind: "area" },
   { tag: "奥日光・中禅寺湖", en: "Oku-Nikko",  blurb: "高原と、湖と、滝。",           slug: "okunikko",    img: pwImg("okunikko"),    kind: "area" },
   { tag: "日光・那須",    en: "Nikko",        blurb: "森と湖の、高原へ。",           slug: "nikko",        img: pwImg("nikko"),       kind: "area" },
   { tag: "房総",          en: "Boso",         blurb: "潮風と、海辺の休日。",         slug: "boso",         img: pwImg("boso"),        kind: "area" },
