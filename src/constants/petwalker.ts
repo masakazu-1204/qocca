@@ -31,6 +31,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "蓼科・八ヶ岳",  en: "Tateshina",    blurb: "高原を渡る、澄んだ風。",       slug: "tateshina",   img: pwImg("tateshina"),   kind: "area" },
   { tag: "白馬",          en: "Hakuba",       blurb: "北アルプスを、仰ぐ。",         slug: "hakuba",       img: pwImg("hakuba"),      kind: "area" },
   { tag: "箱根",          en: "Hakone",       blurb: "山の湯と、富士の眺め。",       slug: "hakone",      img: pwImg("hakone"),      kind: "area" },
+  // 2026/7/6 188計画 Phase A 第4マス (神奈川東): 横浜・みなとみらい
+  { tag: "横浜・みなとみらい", en: "Yokohama", blurb: "港と汽笛と、海沿いの散歩。",   slug: "yokohama_mm", img: pwImg("yokohama_mm"), kind: "area" },
   { tag: "鎌倉",          en: "Kamakura",     blurb: "古都を、犬とあるく。",         slug: "kamakura",    img: pwImg("kamakura"),    kind: "area" },
   { tag: "伊豆",          en: "Izu",          blurb: "海と高原の、伊豆路。",         slug: "izu",         img: pwImg("izu"),         kind: "area" },
   { tag: "浜名湖",        en: "Lake Hamana",  blurb: "湖畔で過ごす、犬旅。",         slug: "hamanako",     img: pwImg("hamanako"),    kind: "area" },
