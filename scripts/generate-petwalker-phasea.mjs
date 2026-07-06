@@ -58,6 +58,17 @@ const ITEMS = [
   { key: "spot_banpaku_gaishu", path: "spots/banpaku_gaishu.webp", prompt: "Tree-lined perimeter walking path around a large park, iconic tower silhouette visible above the trees in distance, jogging path, morning" },
   { key: "spot_nose_toriko",    path: "spots/nose_toriko.webp",    prompt: "Countryside dog cafe with wooden interior and a grassy dog run outside, rural satoyama landscape of Nose, relaxed rustic vibe" },
   { key: "spot_mori_terrace",   path: "spots/mori_terrace.webp",   prompt: "Forest glamping site at dusk with illuminated bell tents among tall cedar trees, campfire glow, quiet mountain village in northern Osaka" },
+  // ── Phase A 第4マス: 横浜・みなとみらい (神奈川東) 2026/7/6 ──
+  { key: "yokohama_mm",         path: "yokohama_mm.webp",          prompt: "Yokohama Minato Mirai waterfront skyline at dusk, ferris wheel and landmark tower lights reflected in the harbor, seaside promenade in foreground" },
+  { key: "spot_yamashita",      path: "spots/yamashita_park.webp", prompt: "Seaside park promenade along Yokohama harbor with flower beds and a classic ocean liner moored nearby, morning walk atmosphere" },
+  { key: "spot_minato_oka",     path: "spots/minato_oka.webp",     prompt: "Hilltop garden park overlooking Yokohama port and bay bridge, western style historic house among trees, rose garden edge, soft light" },
+  { key: "spot_rinko",          path: "spots/rinko_park.webp",     prompt: "Wide harbor-front lawn park in Minato Mirai Yokohama, gentle grassy slopes meeting the sea wall, city towers behind, afternoon" },
+  { key: "spot_marine_walk",    path: "spots/marine_walk.webp",    prompt: "Stylish open-air seaside shopping street with brick and white wood facades, ocean visible between buildings, string lights, west coast mood in Yokohama" },
+  { key: "spot_akarenga",       path: "spots/akarenga.webp",       prompt: "Historic red brick warehouses by Yokohama harbor at golden hour, wide plaza between the buildings, harbor cranes in distance" },
+  { key: "spot_hakkeijima",     path: "spots/hakkeijima.webp",     prompt: "Island leisure park promenade by the sea with palm trees and pleasure boats, aquarium pyramid glass building in distance, bright marine day" },
+  { key: "spot_uni_coffee",     path: "spots/uni_coffee.webp",     prompt: "Cozy modern coffee roastery cafe interior inside a historic red brick building, espresso bar, warm lights, no people" },
+  { key: "spot_bills_akarenga", path: "spots/bills_akarenga.webp", prompt: "Bright glass box terrace dining space attached to a red brick warehouse, pancakes cafe table setting, harbor view through glass, morning light" },
+  { key: "spot_omo7_yokohama",  path: "spots/omo7_yokohama.webp",  prompt: "Modern city hotel room with playful colorful interior and a small pet bed by the window, Yokohama city night view outside, cozy lighting" },
 ];
 
 async function gen(prompt) {
