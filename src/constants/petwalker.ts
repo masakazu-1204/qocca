@@ -43,6 +43,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "伊勢志摩",      en: "Ise-Shima",    blurb: "海辺の聖地をたずねて。",       slug: "iseshima",    img: pwImg("iseshima"),    kind: "area" },
   { tag: "京都",          en: "Kyoto",        blurb: "古都の、しずかな路地。",       slug: "kyoto",       img: pwImg("kyoto"),       kind: "area" },
   { tag: "神戸",          en: "Kobe",         blurb: "港と、坂のある街。",           slug: "kobe",        img: pwImg("kobe"),        kind: "area" },
+  // 2026/7/6 188計画 Phase A 第2マス (大阪南): 堺・りんくう
+  { tag: "堺・りんくう",  en: "Sakai / Rinku", blurb: "海辺のまちと、南大阪の風。",  slug: "sakai_rinku", img: pwImg("sakai_rinku"), kind: "area" },
   { tag: "淡路島",        en: "Awaji",        blurb: "海に抱かれた、島の時間。",     slug: "awaji",       img: pwImg("awaji"),       kind: "area" },
   { tag: "城崎温泉",      en: "Kinosaki",     blurb: "湯けむりと、柳のまち。",       slug: "kinosaki",    img: pwImg("kinosaki"),    kind: "area" },
   { tag: "琵琶湖",        en: "Lake Biwa",    blurb: "湖畔の風と、並木道。",         slug: "biwako",      img: pwImg("biwako"),      kind: "area" },
