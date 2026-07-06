@@ -45,6 +45,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "名古屋・知多",  en: "Nagoya",       blurb: "街と海の、あいだで。",         slug: "nagoya",       img: pwImg("nagoya"),      kind: "area" },
   { tag: "飛騨高山",      en: "Hida-Takayama", blurb: "古い町並みと、山里。",        slug: "hidatakayama", img: pwImg("hidatakayama"), kind: "area" },
   { tag: "奥飛騨温泉郷",  en: "Okuhida",      blurb: "湯けむりと、北アルプスの麓。", slug: "okuhida",     img: pwImg("okuhida"),     kind: "area" },
+  // 2026/7/7 188計画 Phase C 空白県潰し (富山): 富山・雨晴海岸
+  { tag: "富山・雨晴海岸", en: "Toyama / Amaharashi", blurb: "立山を望む、海辺の街。", slug: "toyama_amaharashi", img: pwImg("toyama_amaharashi"), kind: "area" },
   { tag: "金沢",          en: "Kanazawa",     blurb: "茶屋街と、古都の風情。",       slug: "kanazawa",    img: pwImg("kanazawa"),    kind: "area" },
   { tag: "河口湖",        en: "Kawaguchiko",  blurb: "富士を望む、森のほとり。",     slug: "kawaguchiko", img: pwImg("kawaguchiko"), kind: "area" },
   { tag: "山中湖",        en: "Yamanakako",   blurb: "富士を映す、湖のほとり。",     slug: "yamanakako",  img: pwImg("yamanakako"),  kind: "area" },
