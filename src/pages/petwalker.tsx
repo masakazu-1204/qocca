@@ -17,7 +17,12 @@ type Spot = {
   pet_types: string[]; description: string | null; area_tag: string;
   secondary_area_tags: string[] | null;
   latitude: number | null; longitude: number | null; address: string | null;
+  image_urls: string[] | null;
 };
+
+// スポット画像 (Supabase Storage petwalker/spots/*.webp を image_urls に配線)。未配線なら null。
+const firstImage = (s: Spot): string | null =>
+  Array.isArray(s.image_urls) && s.image_urls.length > 0 ? s.image_urls[0] : null;
 
 // 広域親エリア(九州/日光・那須など)に子エリア(湯布院/阿蘇/奥日光)のスポットも内包する。
 // 子エリア固有ページではそのエリア固有のみ。親エリアでは自身+子の合算が見える。
@@ -79,7 +84,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     (async () => {
       const { data } = await supabase
         .from("pet_walker_spots")
-        .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address")
+        .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address,image_urls")
         .eq("approval_status", "approved")
         .order("category", { ascending: true })
         .order("name", { ascending: true });
@@ -143,6 +148,21 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
           <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>
             ← {s.area_tag} の一覧へ戻る
           </button>
+          {firstImage(s) && (
+            <div style={{ marginTop: 20, animation: `qocca-fadeInSlow 1.2s ${ease} both` }}>
+              <div style={{ borderRadius: 18, overflow: "hidden", aspectRatio: isPC ? "16 / 9" : "3 / 2", background: QC.cream }}>
+                <img
+                  src={firstImage(s) as string}
+                  alt=""
+                  loading="lazy"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              </div>
+              <p style={{ fontSize: 11, color: QC.sage, fontWeight: 300, textAlign: "right", margin: "6px 2px 0", letterSpacing: 0.3 }}>
+                ※画像はイメージです。実際の施設とは異なります。
+              </p>
+            </div>
+          )}
           <div style={{ marginTop: 28, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
             <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, letterSpacing: 2, color: QC.sage, margin: "0 0 10px" }}>
               {PW_CATEGORIES.find((c) => c.key === s.category)?.en || ""}
@@ -294,17 +314,32 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                   <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: 18 }}>
                     {list.map((s) => (
                       <button key={s.id} onClick={() => openSpot(s)} style={spotCardStyle} className="pw-card">
-                        <div style={{ fontFamily: QC_FONT_JP, fontWeight: 500, fontSize: 16, color: QC.charcoal, marginBottom: 8, lineHeight: 1.6 }}>
-                          {s.name}
-                        </div>
-                        <div style={{ fontSize: 12.5, color: QC.sage, marginBottom: 10 }}>
-                          {[s.pref, s.city].filter(Boolean).join(" ")}
-                        </div>
-                        {s.description && (
-                          <div style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, lineHeight: 1.85, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                            {s.description}
+                        {firstImage(s) && (
+                          <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", background: QC.cream }}>
+                            <img
+                              src={firstImage(s) as string}
+                              alt=""
+                              loading="lazy"
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                            />
+                            <span style={{ position: "absolute", right: 8, bottom: 8, background: "rgba(44,41,38,0.52)", color: "rgba(255,255,255,0.92)", fontSize: 10, letterSpacing: 0.5, padding: "3px 8px", borderRadius: 999, fontFamily: QC_FONT_JP, fontWeight: 400 }}>
+                              イメージ
+                            </span>
                           </div>
                         )}
+                        <div style={{ padding: "18px 20px" }}>
+                          <div style={{ fontFamily: QC_FONT_JP, fontWeight: 500, fontSize: 16, color: QC.charcoal, marginBottom: 8, lineHeight: 1.6 }}>
+                            {s.name}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: QC.sage, marginBottom: 10 }}>
+                            {[s.pref, s.city].filter(Boolean).join(" ")}
+                          </div>
+                          {s.description && (
+                            <div style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, lineHeight: 1.85, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {s.description}
+                            </div>
+                          )}
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -400,7 +435,7 @@ const tagStyle: React.CSSProperties = {
 
 const spotCardStyle: React.CSSProperties = {
   textAlign: "left", background: "#fff", border: `1px solid ${QC.lightSand}`, borderRadius: 14,
-  padding: "20px 22px", cursor: "pointer", fontFamily: QC_FONT_JP, width: "100%", display: "block",
+  padding: 0, overflow: "hidden", cursor: "pointer", fontFamily: QC_FONT_JP, width: "100%", display: "block",
 };
 
 const areaTileStyle: React.CSSProperties = {
