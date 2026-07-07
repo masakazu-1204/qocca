@@ -78,6 +78,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "湘南",          en: "Shonan",       blurb: "波音のとなりで過ごす休日。",   slug: "shonan",      img: pwImg("shonan"),      kind: "area" },
   // 2026/7/6 188計画 土台固め: 超広域「九州」を実態分割 (福岡・糸島 / 別府 / 湯布院へ3件編入・DB更新済)
   { tag: "福岡・糸島",    en: "Fukuoka-Itoshima", blurb: "海辺のカフェと、街の元気。", slug: "fukuoka_itoshima", img: pwImg("fukuoka_itoshima"), kind: "area" },
+  // 2026/7/7 188計画 Phase C 空白県潰し (佐賀): 唐津・嬉野
+  { tag: "唐津・嬉野",    en: "Karatsu / Ureshino", blurb: "松原の海と、美肌の湯。",   slug: "karatsu_ureshino", img: pwImg("karatsu_ureshino"), kind: "area" },
   { tag: "別府",          en: "Beppu",        blurb: "湯けむりの向こうに、海。",     slug: "beppu",       img: pwImg("beppu"),       kind: "area" },
   { tag: "湯布院",        en: "Yufuin",       blurb: "盆地の朝霧と、湯の町。",       slug: "yufuin",      img: pwImg("yufuin"),      kind: "area" },
   { tag: "阿蘇",          en: "Aso",          blurb: "草原に、風がわたる。",         slug: "aso",         img: pwImg("aso"),         kind: "area" },
