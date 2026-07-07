@@ -18,6 +18,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "札幌・小樽",    en: "Sapporo-Otaru", blurb: "都会と運河、北の週末。",      slug: "sapporo_otaru", img: pwImg("sapporo_otaru"), kind: "area" },
   { tag: "ニセコ・洞爺",  en: "Niseko-Toya",  blurb: "山と湖の、澄んだ空気。",       slug: "niseko_toya", img: pwImg("niseko_toya"), kind: "area" },
   { tag: "函館・大沼",    en: "Hakodate",     blurb: "港町の坂と、湖のほとり。",     slug: "hakodate_onuma", img: pwImg("hakodate_onuma"), kind: "area" },
+  // 2026/7/7 188計画 Phase C 空白県潰し (青森): 奥入瀬・弘前
+  { tag: "奥入瀬・弘前",  en: "Oirase / Hirosaki", blurb: "渓流と、桜の城と。",         slug: "oirase_hirosaki", img: pwImg("oirase_hirosaki"), kind: "area" },
   { tag: "蔵王",          en: "Zao",          blurb: "樹氷と、山の湯。",             slug: "zao",         img: pwImg("zao"),         kind: "area" },
   { tag: "仙台",          en: "Sendai",       blurb: "杜の都の、しずかな時間。",     slug: "sendai",      img: pwImg("sendai"),      kind: "area" },
   // 2026/7/7 188計画 Phase C 空白県潰し (福島): 会津・裏磐梯
