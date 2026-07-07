@@ -230,6 +230,15 @@ const ITEMS = [
   { key: "spot_calistoga",      path: "spots/calistoga.webp",      prompt: "Stylish restaurant terrace overlooking the sea from a coastal hillside, fusion dining atmosphere, sunset light, Shichirigahama" },
   { key: "spot_the_table",      path: "spots/the_table_kamakura.webp", prompt: "Covered terrace cafe near a sandy beach with wooden tables and plants, ocean breeze, relaxed sunny setting" },
   { key: "spot_seedless",       path: "spots/seedless_bar.webp",   prompt: "California-style beach bar interior with large windows facing the ocean, casual bright decor, coastal vibe, daytime" },
+  // ── Phase B 深掘り: 山中湖 追加 2026/7/7 ──
+  { key: "spot_panoramadai",    path: "spots/yamanakako_panorama.webp", prompt: "Panoramic viewpoint overlooking a lake with Mount Fuji towering behind, grassy hillside foreground, clear blue sky, Yamanakako" },
+  { key: "spot_nagaike",        path: "spots/nagaike_park.webp",   prompt: "Lakeside park with a calm reflective lake mirroring Mount Fuji, walking path along the shore, morning light, autumn trees" },
+  { key: "spot_wildpark",       path: "spots/wildpark_cafe.webp",  prompt: "Forest dog cafe with a red container building and a grassy dog run among trees, birdsong resort atmosphere, sunny" },
+  { key: "spot_koshiji",        path: "spots/koshiji_sausage.webp", prompt: "Rustic sausage restaurant cabin in a forest with wooden outdoor terrace seating, cozy woodland dining, dappled light" },
+  { key: "spot_totonoi",        path: "spots/totonoi_glamping.webp", prompt: "Glamping domes with Mount Fuji view and a private dog run, sauna barrel nearby, evening lantern glow, lakeside resort" },
+  { key: "spot_rgarden",        path: "spots/rgarden_cabin.webp",  prompt: "Forest cabins around a central courtyard garden, wooden cottages among tall trees, warm evening lights, quiet retreat" },
+  { key: "spot_chipmunk",       path: "spots/chipmunk_inn.webp",   prompt: "Small lakeside forest inn with a wooden facade among trees, cozy warm entrance, peaceful highland evening near a lake" },
+  { key: "spot_semika",         path: "spots/semika_villa.webp",   prompt: "Rental villa and pension in a forest clearing near a lake, wooden lodge architecture, garden with trees, sunny day" },
 ];
 
 async function gen(prompt) {
