@@ -145,6 +145,18 @@ const ITEMS = [
   { key: "spot_niemon",         path: "spots/niemon_ryokan.webp",  prompt: "Small traditional Japanese hot spring inn in a mountain village, wooden facade, steam rising, quiet evening, warm lantern" },
   { key: "spot_suigetsuro",     path: "spots/suigetsuro.webp",     prompt: "Historic Japanese ryokan with elegant tatami rooms and a garden, lantern-lit entrance at dusk, refined traditional atmosphere" },
   { key: "spot_doubletree_tym", path: "spots/doubletree_toyama.webp", prompt: "Modern city hotel room with a small pet bed and bowls near the window, city lights of Toyama outside, warm minimal interior" },
+  // ── Phase C 空白県潰し: 奥入瀬・弘前 2026/7/7 ──
+  { key: "oirase_hirosaki",     path: "oirase_hirosaki.webp",      prompt: "Oirase mountain stream in early autumn with mossy rocks and small waterfalls among red and gold foliage, forest walking path, soft misty light, Aomori" },
+  { key: "spot_hirosaki_park",  path: "spots/hirosaki_park.webp",  prompt: "Japanese castle with a moat full of cherry blossoms and snow-capped Mount Iwaki behind, pink petals everywhere, spring, Hirosaki" },
+  { key: "spot_tanesashi",      path: "spots/tanesashi.webp",      prompt: "Coastal natural grassland meeting the sea, green lawn stretching to rocky shore and Pacific Ocean, wide sky, summer, Hachinohe" },
+  { key: "spot_ashigezaki",     path: "spots/ashigezaki.webp",     prompt: "Clifftop observation point overlooking the Pacific Ocean with a coastal walking trail and wild grass, bright sea horizon" },
+  { key: "spot_oirase_stream",  path: "spots/oirase_stream.webp",  prompt: "Clear mountain stream tumbling over mossy green rocks through a lush forest gorge, small waterfall, sunlight filtering through leaves" },
+  { key: "spot_towadako",       path: "spots/towadako.webp",       prompt: "Vast calm caldera lake surrounded by green forested hills, a sightseeing boat on the water, lakeside promenade, clear day" },
+  { key: "spot_towada_art",     path: "spots/towada_art.webp",     prompt: "Open-air art plaza in a city with colorful modern sculptures on a paved square, trees and benches, bright sunny day" },
+  { key: "spot_hoshino_oirase", path: "spots/hoshino_oirase.webp", prompt: "Riverside resort hotel among autumn forest along a mountain stream, warm terrace with a dog-friendly area, evening glow" },
+  { key: "spot_satsuki_asamushi", path: "spots/satsuki_asamushi.webp", prompt: "Traditional Japanese seaside hot spring inn overlooking a calm bay, wooden architecture, quiet evening, warm lights" },
+  { key: "spot_chocolat_aomori", path: "spots/chocolat_aomori.webp", prompt: "Cozy cottage-style lodge with warm interior lighting among trees, small yard, peaceful northern town, dusk" },
+  { key: "spot_aomori_beach",   path: "spots/aomori_beach.webp",   prompt: "Urban waterfront artificial beach beside a harbor with a triangular glass building and bridge in the background, gentle waves, sunset" },
 ];
 
 async function gen(prompt) {
