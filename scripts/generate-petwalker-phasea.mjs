@@ -193,6 +193,13 @@ const ITEMS = [
   { key: "spot_budou",          path: "spots/budou_guesthouse.webp", prompt: "Cozy mountain town guesthouse with a wooden facade among green hills, warm entrance, quiet rural Takachiho, afternoon" },
   { key: "spot_aoshima_picnic", path: "spots/aoshima_picnic.webp", prompt: "Beachfront glamping site with tents and a grass dog run near a palm-lined tropical shore, sunset over the sea, relaxed resort" },
   { key: "spot_hokedake",       path: "spots/hokedake_glamping.webp", prompt: "Countryside glamping domes with private dog runs on a green lawn, forested hills behind, warm evening lantern light" },
+  // ── Phase B 深掘り: 神戸 追加 2026/7/7 ──
+  { key: "spot_ffp",            path: "spots/kobe_ffp.webp",       prompt: "Flower and fruit theme park with colorful seasonal flower beds, european-style buildings and green lawns, sunny day, Kobe hills" },
+  { key: "spot_hotel_ff",       path: "spots/hotel_fruitflower.webp", prompt: "European-style resort hotel among flower gardens and green hills, elegant facade at dusk, warm lighting, countryside Kobe" },
+  { key: "spot_maiko",          path: "spots/maiko_park.webp",     prompt: "Seaside park beneath a massive white suspension bridge spanning the strait, walking promenade along the water, bright blue sky" },
+  { key: "spot_agripark",       path: "spots/kobe_agripark.webp",  prompt: "Green agricultural park with vineyards and open lawns on rolling hills, distant sea and a bridge on the horizon, sunny afternoon" },
+  { key: "spot_umie_mosaic",    path: "spots/umie_mosaic.webp",    prompt: "Waterfront shopping complex with a giant ferris wheel beside a harbor, wooden boardwalk and boats, evening city lights reflecting on water, Kobe" },
+  { key: "spot_hopstand",       path: "spots/hopstand_kobe.webp",  prompt: "Casual harborside beer stand with an open terrace facing the port and ferris wheel, string lights, relaxed evening atmosphere" },
 ];
 
 async function gen(prompt) {
