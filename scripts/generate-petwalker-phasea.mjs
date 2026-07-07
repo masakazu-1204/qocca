@@ -239,6 +239,15 @@ const ITEMS = [
   { key: "spot_rgarden",        path: "spots/rgarden_cabin.webp",  prompt: "Forest cabins around a central courtyard garden, wooden cottages among tall trees, warm evening lights, quiet retreat" },
   { key: "spot_chipmunk",       path: "spots/chipmunk_inn.webp",   prompt: "Small lakeside forest inn with a wooden facade among trees, cozy warm entrance, peaceful highland evening near a lake" },
   { key: "spot_semika",         path: "spots/semika_villa.webp",   prompt: "Rental villa and pension in a forest clearing near a lake, wooden lodge architecture, garden with trees, sunny day" },
+  // ── Phase B 深掘り: 河口湖 追加 2026/7/7 ──
+  { key: "spot_kg_miuscafe",    path: "spots/kawaguchi_miuscafe.webp", prompt: "Forest cafe near Lake Kawaguchi with a wooden terrace among tall trees, cozy modern interior seen through large windows, dappled sunlight, quiet woodland, Mount Fuji region" },
+  { key: "spot_kg_moosehills",  path: "spots/kawaguchi_moosehills.webp", prompt: "Rustic gourmet burger restaurant with a log cabin exterior and an outdoor wooden terrace among trees, casual American diner mood, sunny lakeside town near Mount Fuji" },
+  { key: "spot_kg_cisco",       path: "spots/kawaguchi_cisco.webp", prompt: "Stylish west-coast coffee stand beside a calm lake with an open terrace facing the water and Mount Fuji in the distance, sunny morning, San Francisco vibe" },
+  { key: "spot_kg_olson",       path: "spots/kawaguchi_olson.webp", prompt: "Whimsical storybook cafe terrace beside a small art museum in a lakeside forest, strawberry desserts on a wooden table, gentle afternoon light, fairy-tale atmosphere" },
+  { key: "spot_hoto_dogs",      path: "spots/kawaguchi_hoto_dogs.webp", prompt: "Spacious artificial-grass dog run beside a Japanese noodle restaurant, agility play equipment and a small pool, Mount Fuji rising in the distance, sunny, no dogs visible" },
+  { key: "spot_yagizaki",       path: "spots/yagizaki_park.webp",  prompt: "Lakeside lawn park with rows of purple lavender in early summer and Mount Fuji rising across the calm lake, walking path, clear bright morning, Kawaguchiko" },
+  { key: "spot_kg_cruise",      path: "spots/kawaguchi_cruise.webp", prompt: "Sightseeing pleasure boat cruising on a calm blue lake with Mount Fuji towering behind, open passenger deck, bright sky, gentle ripples on the water" },
+  { key: "spot_herb_fuji",      path: "spots/herb_fuji_garden.webp", prompt: "Large ornamental herb and flower garden with a glass greenhouse, colorful flower beds and walking paths, Mount Fuji and a lake in the background, sunny day" },
 ];
 
 async function gen(prompt) {
