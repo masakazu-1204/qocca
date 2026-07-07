@@ -208,6 +208,19 @@ const ITEMS = [
   { key: "spot_prince_cottage", path: "spots/karuizawa_prince_cottage.webp", prompt: "Resort cottages among larch forest with a private lawn dog run, warm cabin lights at dusk, upscale highland resort, Karuizawa" },
   { key: "spot_la_tegola",      path: "spots/la_tegola.webp",      prompt: "Cozy italian restaurant with a summer garden terrace among trees, elegant table setting outdoors, warm afternoon light, Karuizawa" },
   { key: "spot_soyokaze",       path: "spots/hotel_soyokaze.webp", prompt: "Small dog-friendly forest hotel with a wooden facade among larch trees, warm entrance lighting, quiet highland evening" },
+  // ── Phase B 深掘り: 箱根 追加 2026/7/7 ──
+  { key: "spot_odakyu_highland", path: "spots/odakyu_highland.webp", prompt: "Elegant resort hotel among pampas grass fields and forest at the foot of a volcano, warm evening lights, upscale highland retreat, Hakone" },
+  { key: "spot_hyatt_hakone",   path: "spots/hyatt_hakone.webp",   prompt: "Modern luxury mountain resort hotel with wood and stone architecture among tall trees, soft dusk lighting, refined Hakone hillside" },
+  { key: "spot_fujimi_cafe",    path: "spots/fujimi_cafe.webp",    prompt: "Cafe with a wooden terrace overlooking Mount Fuji across a valley, casual outdoor seating, clear sunny day" },
+  { key: "spot_ashiyu",         path: "spots/hakone_ashiyu.webp",  prompt: "Outdoor hot spring footbath area in a forest with wooden benches and steam rising, autumn leaves, peaceful mountain setting" },
+  { key: "spot_gorapark",       path: "spots/gora_park.webp",      prompt: "French formal garden on a hillside with symmetrical flower beds, a fountain and a glass greenhouse, mountains behind, sunny" },
+  { key: "spot_hakone_aqua",    path: "spots/hakone_aquarium.webp", prompt: "Lakeside aquarium building beside a calm mountain lake, green hills around, bright day, family leisure spot, Hakone" },
+  { key: "spot_pola_trail",     path: "spots/pola_forest_trail.webp", prompt: "Forest walking trail with wooden boardwalk winding through tall trees near a modern museum building, dappled sunlight, serene" },
+  { key: "spot_taikanzan",      path: "spots/taikanzan_dogrun.webp", prompt: "Mountaintop observation deck dog run overlooking a caldera lake and Mount Fuji in the distance, panoramic view, grass, clear sky" },
+  { key: "spot_hakone_ropeway", path: "spots/hakone_ropeway.webp", prompt: "Gondola cable car crossing over a volcanic valley with steam vents and a lake beyond, aerial mountain view, bright day" },
+  { key: "spot_box_burger",     path: "spots/box_burger.webp",     prompt: "Casual burger stand with a tent-style covered terrace and wood stove, string lights and leash hooks, cozy outdoor dining" },
+  { key: "spot_karatto",        path: "spots/hakone_karatto.webp", prompt: "Small casual eatery near a lake with wooden interior and outdoor seats, relaxed lakeside dining atmosphere, sunny" },
+  { key: "spot_tenku_terrace",  path: "spots/tenku_terrace.webp",  prompt: "Open cafe terrace on a hillside overlooking mountains with many outdoor tables, bright airy atmosphere, pancakes and drinks, sunny" },
 ];
 
 async function gen(prompt) {
