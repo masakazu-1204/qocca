@@ -149,19 +149,18 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             ← {s.area_tag} の一覧へ戻る
           </button>
           {firstImage(s) && (
-            <div
-              style={{
-                marginTop: 20, borderRadius: 18, overflow: "hidden",
-                aspectRatio: isPC ? "16 / 9" : "3 / 2", background: QC.cream,
-                animation: `qocca-fadeInSlow 1.2s ${ease} both`,
-              }}
-            >
-              <img
-                src={firstImage(s) as string}
-                alt=""
-                loading="lazy"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
+            <div style={{ marginTop: 20, animation: `qocca-fadeInSlow 1.2s ${ease} both` }}>
+              <div style={{ borderRadius: 18, overflow: "hidden", aspectRatio: isPC ? "16 / 9" : "3 / 2", background: QC.cream }}>
+                <img
+                  src={firstImage(s) as string}
+                  alt=""
+                  loading="lazy"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              </div>
+              <p style={{ fontSize: 11, color: QC.sage, fontWeight: 300, textAlign: "right", margin: "6px 2px 0", letterSpacing: 0.3 }}>
+                ※画像はイメージです。実際の施設とは異なります。
+              </p>
             </div>
           )}
           <div style={{ marginTop: 28, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
@@ -316,13 +315,16 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                     {list.map((s) => (
                       <button key={s.id} onClick={() => openSpot(s)} style={spotCardStyle} className="pw-card">
                         {firstImage(s) && (
-                          <div style={{ width: "100%", aspectRatio: "16 / 9", overflow: "hidden", background: QC.cream }}>
+                          <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", background: QC.cream }}>
                             <img
                               src={firstImage(s) as string}
                               alt=""
                               loading="lazy"
                               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                             />
+                            <span style={{ position: "absolute", right: 8, bottom: 8, background: "rgba(44,41,38,0.52)", color: "rgba(255,255,255,0.92)", fontSize: 10, letterSpacing: 0.5, padding: "3px 8px", borderRadius: 999, fontFamily: QC_FONT_JP, fontWeight: 400 }}>
+                              イメージ
+                            </span>
                           </div>
                         )}
                         <div style={{ padding: "18px 20px" }}>
