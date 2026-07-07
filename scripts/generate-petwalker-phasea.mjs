@@ -180,6 +180,19 @@ const ITEMS = [
   { key: "spot_yobuko_onoue",   path: "spots/yobuko_onoue.webp",   prompt: "Hilltop ryokan overlooking a calm sea, terrace with a grassy dog run and ocean panorama, sunset over the water, Kyushu coast" },
   { key: "spot_urari_takeo",    path: "spots/urari_takeo.webp",    prompt: "Modern all-suite spa resort with private hot spring rooms and a garden dog park, sleek architecture, warm dusk lighting" },
   { key: "spot_ohyakusho",      path: "spots/ohyakusho_cafe.webp", prompt: "Rustic farm restaurant with a wide grass dog run and outdoor dining terrace, countryside fields around, sunny pastoral day" },
+  // ── Phase C 空白県潰し: 青島・高千穂 2026/7/7 ★47県フルカバー ──
+  { key: "aoshima_takachiho",   path: "aoshima_takachiho.webp",    prompt: "Subtropical island shrine surrounded by wave-cut rock formations and palm trees under a bright blue sky, southern sea, Miyazaki Japan" },
+  { key: "spot_aoshima",        path: "spots/aoshima.webp",        prompt: "Small subtropical island connected by a bridge, dense palm and betel trees, vermilion shrine gate, turquoise sea, sunny" },
+  { key: "spot_oninosentaku",   path: "spots/oninosentakuita.webp", prompt: "Unique wave-shaped rock platform stretching along a shoreline at low tide, ribbed rock pattern, blue sea and sky, natural monument" },
+  { key: "spot_takachiho_gorge", path: "spots/takachiho_gorge.webp", prompt: "Dramatic V-shaped gorge with a tall waterfall falling into emerald water between mossy basalt cliffs, forest walking path, mystical light" },
+  { key: "spot_takachiho_shrine", path: "spots/takachiho_shrine.webp", prompt: "Ancient Shinto shrine among towering cedar trees, wooden torii and stone lanterns along a mossy approach path, sacred quiet atmosphere" },
+  { key: "spot_obi",            path: "spots/obi_castle_town.webp", prompt: "Historic castle town street with a large wooden main gate, samurai residence walls and stone paths, small Kyoto of Kyushu, sunny day" },
+  { key: "spot_sunmesse",       path: "spots/sunmesse_nichinan.webp", prompt: "Row of Easter Island moai statues on a green hilltop overlooking a bright blue ocean coastline, clear sky, dramatic seaside" },
+  { key: "spot_ldk_aoshima",    path: "spots/ldk_aoshima.webp",    prompt: "Beachside italian cafe with an open terrace facing a palm-lined tropical beach, casual seaside dining, bright sunny day" },
+  { key: "spot_shimoaso",       path: "spots/shimoaso_cafe.webp",  prompt: "Seaside cafe with a natural grass dog run and terrace tables overlooking the ocean, palm trees, relaxed coastal vibe" },
+  { key: "spot_budou",          path: "spots/budou_guesthouse.webp", prompt: "Cozy mountain town guesthouse with a wooden facade among green hills, warm entrance, quiet rural Takachiho, afternoon" },
+  { key: "spot_aoshima_picnic", path: "spots/aoshima_picnic.webp", prompt: "Beachfront glamping site with tents and a grass dog run near a palm-lined tropical shore, sunset over the sea, relaxed resort" },
+  { key: "spot_hokedake",       path: "spots/hokedake_glamping.webp", prompt: "Countryside glamping domes with private dog runs on a green lawn, forested hills behind, warm evening lantern light" },
 ];
 
 async function gen(prompt) {
