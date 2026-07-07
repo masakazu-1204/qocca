@@ -168,6 +168,18 @@ const ITEMS = [
   { key: "spot_nyudozaki",      path: "spots/nyudozaki.webp",      prompt: "Cape with a black-and-white striped lighthouse on a wide grassy meadow overlooking the sea, open sky, coastal wind, bright day" },
   { key: "spot_godzilla_rock",  path: "spots/godzilla_rock.webp",  prompt: "Rocky coastline with a jagged rock shaped like a dinosaur silhouette against a fiery sunset sky over the sea, dramatic dusk" },
   { key: "spot_michinoeki_oga", path: "spots/michinoeki_oga.webp", prompt: "Seaside roadside station building with a harbor view, outdoor plaza and local produce market, clear coastal day, northern Japan" },
+  // ── Phase C 空白県潰し: 唐津・嬉野 2026/7/7 ──
+  { key: "karatsu_ureshino",    path: "karatsu_ureshino.webp",     prompt: "Long coastal black pine forest along a curved white sandy bay under a bright sky, dense green pines meeting the sea, Kyushu coast" },
+  { key: "spot_nijinomatsubara", path: "spots/nijinomatsubara.webp", prompt: "Dense black pine grove with a sandy path winding through, sunlight filtering through the pines toward the sea, coastal breeze" },
+  { key: "spot_karatsu_castle", path: "spots/karatsu_castle.webp",  prompt: "White Japanese castle on a green hilltop overlooking a bay, stone walls and a park with trees below, clear blue sky" },
+  { key: "spot_hadomisaki",     path: "spots/hadomisaki.webp",     prompt: "Rugged cape jutting into a blue sea with grassy clifftop and rocky shore, wide ocean horizon, bright windy day, Kyushu" },
+  { key: "spot_kagamiyama",     path: "spots/kagamiyama.webp",     prompt: "Mountaintop observation deck overlooking a bay and a long pine forest coastline far below, panoramic view, sunny" },
+  { key: "spot_yumekaido",      path: "spots/hizen_yumekaido.webp", prompt: "Edo-era themed village street with traditional wooden buildings and ninja-era atmosphere, lantern signs, nostalgic town, daytime" },
+  { key: "spot_ureshino88",     path: "spots/ureshino88.webp",     prompt: "Elegant modern hot spring resort building with a private villa annex and garden, warm evening lighting, refined Japanese design" },
+  { key: "spot_suginoya_dog",   path: "spots/suginoya_dog.webp",   prompt: "Traditional inn villa room with a private semi-open-air hot spring bath and a small attached dog run on a wooden deck, cozy evening" },
+  { key: "spot_yobuko_onoue",   path: "spots/yobuko_onoue.webp",   prompt: "Hilltop ryokan overlooking a calm sea, terrace with a grassy dog run and ocean panorama, sunset over the water, Kyushu coast" },
+  { key: "spot_urari_takeo",    path: "spots/urari_takeo.webp",    prompt: "Modern all-suite spa resort with private hot spring rooms and a garden dog park, sleek architecture, warm dusk lighting" },
+  { key: "spot_ohyakusho",      path: "spots/ohyakusho_cafe.webp", prompt: "Rustic farm restaurant with a wide grass dog run and outdoor dining terrace, countryside fields around, sunny pastoral day" },
 ];
 
 async function gen(prompt) {
