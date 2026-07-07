@@ -248,6 +248,19 @@ const ITEMS = [
   { key: "spot_yagizaki",       path: "spots/yagizaki_park.webp",  prompt: "Lakeside lawn park with rows of purple lavender in early summer and Mount Fuji rising across the calm lake, walking path, clear bright morning, Kawaguchiko" },
   { key: "spot_kg_cruise",      path: "spots/kawaguchi_cruise.webp", prompt: "Sightseeing pleasure boat cruising on a calm blue lake with Mount Fuji towering behind, open passenger deck, bright sky, gentle ripples on the water" },
   { key: "spot_herb_fuji",      path: "spots/herb_fuji_garden.webp", prompt: "Large ornamental herb and flower garden with a glass greenhouse, colorful flower beds and walking paths, Mount Fuji and a lake in the background, sunny day" },
+  // ── 河口湖 既存12件(2026-06-15投入・画像未生成分)埋め 2026/7/7 ──
+  { key: "spot_kg_awaumi",      path: "spots/kawaguchi_awaumi.webp",     prompt: "Modern lakeside resort villa near Lake Kawaguchi with a private terrace facing Mount Fuji, wood and glass architecture, warm dusk lighting, quiet premium retreat" },
+  { key: "spot_kg_glampvillage", path: "spots/kawaguchi_glampvillage.webp", prompt: "Glamping village with dome tents on a green lawn facing Mount Fuji across a calm lake, wooden decks and lanterns, evening glow, no people" },
+  { key: "spot_kg_dogvilla",    path: "spots/kawaguchi_dogvilla.webp",   prompt: "Private vacation villa with a fenced natural-grass dog run in the garden, Mount Fuji in the distance, wooden cabin architecture, sunny day, no dogs visible" },
+  { key: "spot_kg_wanvillage",  path: "spots/kawaguchi_wanvillage.webp", prompt: "Upscale resort cottages with private lawn dog runs among tall trees, Mount Fuji view, warm evening lights, quiet premium pet retreat" },
+  { key: "spot_kg_yukari",      path: "spots/kawaguchi_yukari.webp",     prompt: "Cozy pet-focused cottage with a wooden porch and a small fenced dog yard, forested lakeside setting near Mount Fuji, warm afternoon light" },
+  { key: "spot_kg_oishi",       path: "spots/kawaguchi_oishi_park.webp", prompt: "Lakeside flower park with rows of red kochia bushes and lavender beds, Mount Fuji rising across the calm lake, walking path, clear bright day" },
+  { key: "spot_kg_subaru",      path: "spots/kawaguchi_subaruland.webp", prompt: "Forest adventure park at the foot of Mount Fuji with woodland trails and wooden play structures among tall cedar trees, dappled sunlight, family nature park" },
+  { key: "spot_kg_hanaterasu",  path: "spots/kawaguchi_hanaterasu.webp", prompt: "Charming garden shopping village with small cottage-style shops and colorful flower beds, Mount Fuji and a lake in the background, sunny, European countryside vibe" },
+  { key: "spot_kg_panorama",    path: "spots/kawaguchi_panorama.webp",   prompt: "Mountaintop observation deck reached by a ropeway overlooking Lake Kawaguchi and Mount Fuji, wooden viewing platform, panoramic view, clear sky" },
+  { key: "spot_kg_asama",       path: "spots/kawaguchi_asama_shrine.webp", prompt: "Ancient Shinto shrine among towering cedar trees with a vermilion torii gate and stone lanterns on a mossy approach path, sacred quiet atmosphere" },
+  { key: "spot_kg_craftpark",   path: "spots/kawaguchi_craftpark.webp",  prompt: "Craft experience park building beside Lake Kawaguchi with workshop cottages and a garden lawn, Mount Fuji view, calm sunny day" },
+  { key: "spot_kg_trail",       path: "spots/kawaguchi_trail.webp",      prompt: "Lakeside walking trail along Lake Kawaguchi with a paved path, benches and Mount Fuji reflected on the calm water, gentle morning light, autumn trees" },
 ];
 
 async function gen(prompt) {
