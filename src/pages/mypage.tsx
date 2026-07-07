@@ -7,7 +7,7 @@
 // export: MyPage のみ (他14部品 + PetCategory型 は module-private intra)。
 
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { C } from "../constants/theme";
 import { DISPUTE_REASONS, PREFS, MOOD_TAGS, REDEEM_TIER_THEME } from "../constants/data";
 import { miniBtnStyle, orderStatusKey } from "../utils/format";
@@ -477,8 +477,22 @@ const BlogComposeForm = ({ user, editing, onClose }: any) => {
 export const MyPage = ({ setPage }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("profile");
+  const location = useLocation();
+  // 2026/7/7 設定タブ消失バグ修正: ヘッダーのドロップダウン「設定」等が navigate state で
+  //   開くタブを渡す。マウント時に確実に読めるため setTimeout レースが起きない (初期値として反映)。
+  const [tab, setTab] = useState<string>(() => {
+    const t = (location.state as { tab?: string } | null)?.tab;
+    return typeof t === "string" && t.length > 0 ? t : "profile";
+  });
   const [isPC, setIsPC] = useState(typeof window !== "undefined" ? window.innerWidth >= 768 : false);
+
+  // 2026/7/7 設定タブ消失バグ修正: 既に /mypage 表示中に「設定」等を押した場合、MyPage は
+  //   再マウントされず useState 初期化も走らないため、navigate state の変化 (location.key) を
+  //   監視して開くタブへ切り替える。これで「別ページから」も「/mypage 内から」も確実。
+  useEffect(() => {
+    const t = (location.state as { tab?: string } | null)?.tab;
+    if (typeof t === "string" && t.length > 0) setTab(t);
+  }, [location.key]);
 
   useEffect(() => {
     const handleResize = () => setIsPC(window.innerWidth >= 768);
