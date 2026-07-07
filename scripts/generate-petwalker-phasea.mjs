@@ -157,6 +157,17 @@ const ITEMS = [
   { key: "spot_satsuki_asamushi", path: "spots/satsuki_asamushi.webp", prompt: "Traditional Japanese seaside hot spring inn overlooking a calm bay, wooden architecture, quiet evening, warm lights" },
   { key: "spot_chocolat_aomori", path: "spots/chocolat_aomori.webp", prompt: "Cozy cottage-style lodge with warm interior lighting among trees, small yard, peaceful northern town, dusk" },
   { key: "spot_aomori_beach",   path: "spots/aomori_beach.webp",   prompt: "Urban waterfront artificial beach beside a harbor with a triangular glass building and bridge in the background, gentle waves, sunset" },
+  // ── Phase C 空白県潰し: 田沢湖・角館 2026/7/7 ──
+  { key: "tazawako_kakunodate", path: "tazawako_kakunodate.webp",  prompt: "Deep cobalt-blue caldera lake with a golden statue on the shore, forested mountains around, calm reflective water, clear day, Akita" },
+  { key: "spot_tatsuko",        path: "spots/tatsuko.webp",        prompt: "Golden bronze statue of a maiden standing at the edge of a brilliant blue lake, forested shoreline, bright reflective water" },
+  { key: "spot_kakunodate",     path: "spots/kakunodate.webp",     prompt: "Historic samurai district street lined with black wooden fences and weeping cherry blossoms, traditional houses, spring, small Kyoto of Tohoku" },
+  { key: "spot_enishi",         path: "spots/enishi_inn.webp",     prompt: "Renovated old Japanese folk house inn on a samurai street, wooden facade with dark fence, cozy traditional entrance, afternoon" },
+  { key: "spot_orae",           path: "spots/orae_restaurant.webp", prompt: "Lakeside restaurant with a garden terrace facing a white sand beach and blue lake, outdoor tables, summer, craft beer vibe" },
+  { key: "spot_akitainu_sato",  path: "spots/akitainu_sato.webp",  prompt: "Retro red-brick station-style building in a town plaza modeled on an old railway station, clock tower, sunny public square" },
+  { key: "spot_senshu_park",    path: "spots/senshu_park.webp",    prompt: "Castle ruin park in a city with stone walls, moat and cherry trees, walking paths on a green hill, spring afternoon" },
+  { key: "spot_nyudozaki",      path: "spots/nyudozaki.webp",      prompt: "Cape with a black-and-white striped lighthouse on a wide grassy meadow overlooking the sea, open sky, coastal wind, bright day" },
+  { key: "spot_godzilla_rock",  path: "spots/godzilla_rock.webp",  prompt: "Rocky coastline with a jagged rock shaped like a dinosaur silhouette against a fiery sunset sky over the sea, dramatic dusk" },
+  { key: "spot_michinoeki_oga", path: "spots/michinoeki_oga.webp", prompt: "Seaside roadside station building with a harbor view, outdoor plaza and local produce market, clear coastal day, northern Japan" },
 ];
 
 async function gen(prompt) {
