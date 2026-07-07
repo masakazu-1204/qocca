@@ -221,6 +221,15 @@ const ITEMS = [
   { key: "spot_box_burger",     path: "spots/box_burger.webp",     prompt: "Casual burger stand with a tent-style covered terrace and wood stove, string lights and leash hooks, cozy outdoor dining" },
   { key: "spot_karatto",        path: "spots/hakone_karatto.webp", prompt: "Small casual eatery near a lake with wooden interior and outdoor seats, relaxed lakeside dining atmosphere, sunny" },
   { key: "spot_tenku_terrace",  path: "spots/tenku_terrace.webp",  prompt: "Open cafe terrace on a hillside overlooking mountains with many outdoor tables, bright airy atmosphere, pancakes and drinks, sunny" },
+  // ── Phase B 深掘り: 鎌倉 追加 2026/7/7 ──
+  { key: "spot_yuigahama",      path: "spots/yuigahama.webp",      prompt: "Wide sandy beach at sunset with gentle waves, sky and sea glowing in orange gradient, distant headland, romantic coastal evening, Kamakura" },
+  { key: "spot_zaimokuza",      path: "spots/zaimokuza.webp",      prompt: "Quiet sandy beach in the off-season with calm waves and few people, soft daylight, peaceful shoreline walk, Kamakura" },
+  { key: "spot_kaihin_park",    path: "spots/kamakura_kaihin.webp", prompt: "Seaside park with a promenade along a sandy beach, palm trees and benches, ocean view, bright sunny day" },
+  { key: "spot_awkitchen",      path: "spots/awkitchen_kamakura.webp", prompt: "Italian garden cafe with a terrace beside a small local train line, greenery and outdoor tables, sunny relaxed afternoon" },
+  { key: "spot_cafe75th",       path: "spots/zaimokuza_cafe.webp", prompt: "Beachfront cafe with an open terrace facing the ocean, casual seaside seating with leash hooks, bright coastal day" },
+  { key: "spot_calistoga",      path: "spots/calistoga.webp",      prompt: "Stylish restaurant terrace overlooking the sea from a coastal hillside, fusion dining atmosphere, sunset light, Shichirigahama" },
+  { key: "spot_the_table",      path: "spots/the_table_kamakura.webp", prompt: "Covered terrace cafe near a sandy beach with wooden tables and plants, ocean breeze, relaxed sunny setting" },
+  { key: "spot_seedless",       path: "spots/seedless_bar.webp",   prompt: "California-style beach bar interior with large windows facing the ocean, casual bright decor, coastal vibe, daytime" },
 ];
 
 async function gen(prompt) {
