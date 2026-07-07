@@ -123,9 +123,11 @@ export const UserMenu = ({ setPage }) => {
             <div style={{ fontSize:11, color:C.warmGray, marginTop:2, overflow:"hidden", textOverflow:"ellipsis" }}>{user?.email}</div>
           </div>
           {[
+            // 2026/7/7 設定タブ消失バグ修正: setTimeout+CustomEvent の取りこぼしレースを廃し、
+            //   navigate state (setPage 第2引数 {tab}) でマウント時に確実にタブを開く。
             { icon:"👤", label:"マイページ", action:()=>{ setPage("mypage"); setOpen(false); }},
-            { icon:"📦", label:"注文履歴", action:()=>{ setPage("mypage"); setOpen(false); setTimeout(()=>{ window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab: "orders" } })); }, 100); }},
-            { icon:"⚙️", label:"設定", action:()=>{ setPage("mypage"); setOpen(false); setTimeout(()=>{ window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab: "addresses" } })); }, 100); }},
+            { icon:"📦", label:"注文履歴", action:()=>{ setPage("mypage", { tab: "orders" }); setOpen(false); }},
+            { icon:"⚙️", label:"設定", action:()=>{ setPage("mypage", { tab: "addresses" }); setOpen(false); }},
           ].map(item=>(
             <button key={item.label} onClick={item.action} style={{
               width:"100%", padding:"10px 14px", border:"none", borderRadius:10,
@@ -156,11 +158,9 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
   const [hoverKey, setHoverKey] = useState<string | null>(null);
 
   // MyPage の特定タブを開く (Sidebar 「管理する」用)
+  // 2026/7/7 設定タブ消失バグ修正: setTimeout+CustomEvent レースを廃し navigate state で確実に開く。
   const openMyPageTab = (tab: string) => {
-    setPage("mypage");
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab } }));
-    }, 100);
+    setPage("mypage", { tab });
   };
 
   const sections: Array<{ heading: string; items: Array<{ key: string; icon: string; label: string; onClick: () => void }> }> = [
@@ -311,12 +311,10 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
   }, []);
 
   // MyPage の特定タブを開く (「管理する」用、PC Sidebar と共通)
+  // 2026/7/7 設定タブ消失バグ修正: setTimeout+CustomEvent レースを廃し navigate state で確実に開く。
   const openMyPageTab = (tab: string) => {
-    setPage("mypage");
+    setPage("mypage", { tab });
     setMenuOpen(false);
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("openMyPageTab", { detail: { tab } }));
-    }, 100);
   };
 
   const navigate = (page: string) => {

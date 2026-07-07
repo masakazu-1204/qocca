@@ -148,7 +148,11 @@ export const useNav = () => {
     else if (page === "marketplace") navigate("/marketplace");
     else if (page === "sell") navigate("/sell");
     else if (page === "signup") navigate("/login");
-    else if (page === "mypage") navigate("/mypage");
+    // 2026/7/7 設定タブ消失バグ修正: mypage 遷移時に開くタブを navigate state で確実に渡す。
+    //   従来の setTimeout(100ms)+CustomEvent 方式は、遷移直後の MyPage マウント/リスナー登録が
+    //   100ms に間に合わないとイベントを取りこぼし、tab が初期値 profile のまま = 「設定が消える/省略版」。
+    //   state で渡せばマウント時に確実に読めるためレースが原理的に消える。
+    else if (page === "mypage") navigate("/mypage", data?.tab ? { state: { tab: data.tab } } : undefined);
     else if (page === "liked") navigate("/favorites");
     else if (page === "events") navigate("/events");
     else if (page === "gallery") navigate("/gallery");
