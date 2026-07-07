@@ -200,6 +200,14 @@ const ITEMS = [
   { key: "spot_agripark",       path: "spots/kobe_agripark.webp",  prompt: "Green agricultural park with vineyards and open lawns on rolling hills, distant sea and a bridge on the horizon, sunny afternoon" },
   { key: "spot_umie_mosaic",    path: "spots/umie_mosaic.webp",    prompt: "Waterfront shopping complex with a giant ferris wheel beside a harbor, wooden boardwalk and boats, evening city lights reflecting on water, Kobe" },
   { key: "spot_hopstand",       path: "spots/hopstand_kobe.webp",  prompt: "Casual harborside beer stand with an open terrace facing the port and ferris wheel, string lights, relaxed evening atmosphere" },
+  // ── Phase B 深掘り: 軽井沢 追加 2026/7/7 ──
+  { key: "spot_taliesin",       path: "spots/taliesin.webp",       prompt: "Cultural resort around a calm lake with lakeside promenade and green lawns, small rowboats, autumn trees reflected in the water, Karuizawa" },
+  { key: "spot_lakegarden",     path: "spots/karuizawa_lakegarden.webp", prompt: "Natural english garden around a small pond with roses and perennials in bloom, winding paths and a wooden bridge, soft summer light" },
+  { key: "spot_muse",           path: "spots/muse_no_mori.webp",   prompt: "Storybook museum building in a forest with tall larch trees, european cottage architecture, quiet woodland path, dappled sunlight" },
+  { key: "spot_yukawa_dogrun",  path: "spots/yukawa_dogrun.webp",  prompt: "Riverside free dog run with grass and low fences along a clear mountain stream, forested highland, sunny day, no dogs visible" },
+  { key: "spot_prince_cottage", path: "spots/karuizawa_prince_cottage.webp", prompt: "Resort cottages among larch forest with a private lawn dog run, warm cabin lights at dusk, upscale highland resort, Karuizawa" },
+  { key: "spot_la_tegola",      path: "spots/la_tegola.webp",      prompt: "Cozy italian restaurant with a summer garden terrace among trees, elegant table setting outdoors, warm afternoon light, Karuizawa" },
+  { key: "spot_soyokaze",       path: "spots/hotel_soyokaze.webp", prompt: "Small dog-friendly forest hotel with a wooden facade among larch trees, warm entrance lighting, quiet highland evening" },
 ];
 
 async function gen(prompt) {
