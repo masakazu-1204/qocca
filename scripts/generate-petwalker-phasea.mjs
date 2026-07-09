@@ -997,6 +997,16 @@ const ITEMS = [
   { key: "ns_milky",       path: "spots/niseko_milky.webp",       prompt: "Country inn in the Niseko forest with a dog run and foot-wash area, wooden lodge, sunny, no dogs visible" },
   { key: "ns_hanazono",    path: "spots/niseko_hanazono.webp",    prompt: "Luxury resort hotel at Hanazono Niseko with a Mount Yotei view deck and walking path, warm dusk" },
   { key: "ns_shirokuma",   path: "spots/niseko_shirokuma.webp",   prompt: "Pet-friendly cottage in the Niseko area among trees, wooden cabin, sunny" },
+  // ── Phase B 深掘り: 函館・大沼 追加 2026/7/9 ──
+  { key: "hk_dogcom",      path: "spots/hakodate_dogcom.webp",    prompt: "A dome-shaped log-house dog cafe with high open ceiling and a wood-chip dog run beside wooden deck tables, Nanae Hokkaido, sunny, no dogs visible" },
+  { key: "hk_nanairo",     path: "spots/hakodate_nanairo.webp",   prompt: "A modern roadside station building with apple orchards nearby and an outdoor terrace under open sky in Nanae, sunny" },
+  { key: "hk_peche",       path: "spots/hakodate_peche.webp",     prompt: "An elegant French patisserie with a flower-filled garden terrace and pastel cakes in a green Hakodate neighborhood, sunny" },
+  { key: "hk_woods",       path: "spots/hakodate_woods.webp",     prompt: "A rustic lakeside eatery with a wooden deck terrace near forest walking trails at Onuma park, casual plates, sunny" },
+  { key: "hk_yusen",       path: "spots/hakodate_yusen.webp",     prompt: "A small sightseeing cruise boat on a calm lake dotted with tiny pine islands and Mount Komagatake behind, Onuma, sunny" },
+  { key: "hk_kijihiki",    path: "spots/hakodate_kijihiki.webp",  prompt: "A grassy highland campground at 560m with sweeping panoramic views over sea, mountains and a lake, Hokuto Hokkaido, sunny" },
+  { key: "hk_danshaku",    path: "spots/hakodate_danshaku.webp",  prompt: "A spacious condominium-style hotel suite with kitchen and balcony near Hakodate port, warm interior, dusk" },
+  { key: "hk_wanwan",      path: "spots/hakodate_wanwan.webp",    prompt: "A wooden forest cottage with an entrance terrace and a fenced dog run surrounded by tall trees at Onuma, sunny, no dogs visible" },
+  { key: "hk_greenpia",    path: "spots/hakodate_greenpia.webp",  prompt: "A large forest resort with glamping tents, cottages and a fenced dog run near a national park in Mori Hokkaido, sunny, no dogs visible" },
 ];
 
 async function gen(prompt) {
