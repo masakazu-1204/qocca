@@ -1007,6 +1007,15 @@ const ITEMS = [
   { key: "hk_danshaku",    path: "spots/hakodate_danshaku.webp",  prompt: "A spacious condominium-style hotel suite with kitchen and balcony near Hakodate port, warm interior, dusk" },
   { key: "hk_wanwan",      path: "spots/hakodate_wanwan.webp",    prompt: "A wooden forest cottage with an entrance terrace and a fenced dog run surrounded by tall trees at Onuma, sunny, no dogs visible" },
   { key: "hk_greenpia",    path: "spots/hakodate_greenpia.webp",  prompt: "A large forest resort with glamping tents, cottages and a fenced dog run near a national park in Mori Hokkaido, sunny, no dogs visible" },
+  // ── 旧バックログ画像埋め (ニセコ・洞爺/函館・大沼) 2026/7/10 ──
+  { key: "ns_lakeview",    path: "spots/niseko_lakeview.webp",    prompt: "A lakeside hot-spring resort hotel with an open-air terrace overlooking Lake Toya at dusk, calm water, warm lights" },
+  { key: "ns_yutorelo",    path: "spots/niseko_yutorelo.webp",    prompt: "A relaxed hot-spring inn on the shore of Lake Toya with a garden and lake view, warm evening light" },
+  { key: "ns_kamui",       path: "spots/niseko_kamui.webp",       prompt: "A dramatic cape jutting into a vivid blue sea, Shakotan Blue, cliff walking path and lighthouse, clear sky, sunny" },
+  { key: "ns_hilton",      path: "spots/niseko_hilton.webp",      prompt: "A large mountain resort hotel with a wide deck facing Mount Yotei, green summer field and forest, sunny" },
+  { key: "hk_onumapark",   path: "spots/hakodate_onumapark.webp", prompt: "A tranquil lake park with tiny pine-covered islands connected by wooden bridges and Mount Komagatake behind, walking path, sunny" },
+  { key: "fr_shirahige",   path: "spots/furano_shirahige.webp",   prompt: "A white multi-stream waterfall pouring from a mossy cliff into a vivid blue river in Biei, forest, sunny" },
+  { key: "fr_aoiike",      path: "spots/furano_aoiike.webp",      prompt: "A surreal turquoise-blue pond with bare pale tree trunks standing in still water at Shirogane Biei, calm reflection, sunny" },
+  { key: "fr_dogcottage",  path: "spots/furano_dogcottage.webp",  prompt: "A wooden cottage with a private fenced dog run set among rolling Biei hills and flower fields, sunny, no dogs visible" },
 ];
 
 async function gen(prompt) {
