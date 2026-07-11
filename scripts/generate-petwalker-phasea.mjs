@@ -6,10 +6,13 @@
 // 実行: FAL_KEY / SUPABASE_SERVICE_ROLE_KEY を env に入れて node scripts/generate-petwalker-phasea.mjs [--dry-run] [--only slug]
 // ============================================================================
 import sharp from "sharp";
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 
-const FAL_KEY = process.env.FAL_KEY;
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// キーは env 優先、無ければ gitignore 済み scripts/.*.local から読む
+const readLocal = async (f) => { try { return (await readFile(new URL(f, import.meta.url), "utf8")).trim(); } catch { return undefined; } };
+// ローカルファイルがあれば優先(stale な env を上書きできるように)
+const FAL_KEY = await readLocal("./.falkey.local") || process.env.FAL_KEY;
+const SB_KEY = await readLocal("./.sbkey.local") || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SB_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
 const DRY_RUN = process.argv.includes("--dry-run");
 const ONLY = (() => { const i = process.argv.indexOf("--only"); return i >= 0 ? process.argv[i+1].split(",").map(s=>s.trim()) : null; })();
@@ -1016,6 +1019,22 @@ const ITEMS = [
   { key: "fr_shirahige",   path: "spots/furano_shirahige.webp",   prompt: "A white multi-stream waterfall pouring from a mossy cliff into a vivid blue river in Biei, forest, sunny" },
   { key: "fr_aoiike",      path: "spots/furano_aoiike.webp",      prompt: "A surreal turquoise-blue pond with bare pale tree trunks standing in still water at Shirogane Biei, calm reflection, sunny" },
   { key: "fr_dogcottage",  path: "spots/furano_dogcottage.webp",  prompt: "A wooden cottage with a private fenced dog run set among rolling Biei hills and flower fields, sunny, no dogs visible" },
+  // ── Phase B 深掘り: 会津・裏磐梯 追加 2026/7/11 ──
+  { key: "az_kstyle",       path: "spots/aizu_kstyle.webp",        prompt: "A cozy homey dog-friendly cafe interior near a downtown shopping street in Aizu, warm wooden decor, a small water bowl and dog treats on the counter, a trimming corner in the back, no dogs visible, soft light" },
+  { key: "az_ilregalo",     path: "spots/aizu_ilregalo.webp",      prompt: "A highland Italian restaurant terrace overlooking Mount Bandai near the Goshikinuma ponds, a wood-fired pizza oven, rustic wooden terrace tables, green forest around, sunny" },
+  { key: "az_footloose",    path: "spots/aizu_footloose.webp",     prompt: "A small alpine petit hotel with a lawn dog run near forest ponds and a lake in Urabandai, wooden building, a private open-air bath, tall trees, sunny, no dogs visible" },
+  { key: "az_nijinouta",    path: "spots/aizu_nijinouta.webp",     prompt: "A cozy wine-themed country inn welcoming dogs in the Urabandai highlands, warm dining room with wine glasses and a fireplace, Mount Bandai view through the window, dusk" },
+  { key: "az_felice",       path: "spots/aizu_felice.webp",        prompt: "An alpine Tyrolean-style pension surrounded by highland forest in Aizu Kogen, wooden chalet with a green meadow, distant mountains, sunny" },
+  { key: "az_arvin",        path: "spots/aizu_arvin.webp",         prompt: "A pension with a wide 100-tsubo lawn dog run near forest ponds in Urabandai, wooden lodge and a large green grass field ringed by trees, sunny, no dogs visible" },
+  { key: "az_sundays",      path: "spots/aizu_sundays.webp",       prompt: "A modern Japanese-style hilltop guesthouse overlooking a calm lake and Mount Bandai, refined natural-wood and earthen-wall interior, luxury ryokan atmosphere, soft morning light" },
+  { key: "az_wonderful",    path: "spots/aizu_wonderful.webp",     prompt: "A pension overlooking the large Lake Hibara in Urabandai with a lawn dog run, wooden building, calm lake and green forest beyond, sunny, no dogs visible" },
+  { key: "az_morinosora",   path: "spots/aizu_morinosora.webp",    prompt: "A secluded detached soba cafe surrounded by forest in Inawashiro, wooden terrace seating and a free forest dog run among tall trees, dappled light, no dogs visible" },
+  { key: "az_heros",        path: "spots/aizu_heros.webp",         prompt: "An American-style burger diner with a second-floor terrace overlooking Mount Bandai and Lake Inawashiro, retro casual decor, bright sunny day" },
+  { key: "az_raimu",        path: "spots/aizu_raimu.webp",         prompt: "A Kitakata ramen shop with a parasol-shaded artificial-turf terrace surrounded by green trees, casual outdoor seating, wide parking, sunny" },
+  { key: "az_oohori",       path: "spots/aizu_oohori.webp",        prompt: "A traditional handmade soba restaurant in Inawashiro with garden-view tatami seating, calm Japanese wooden interior, a green garden outside, soft light" },
+  { key: "az_grandeco_rw",  path: "spots/aizu_grandeco_rw.webp",   prompt: "A sightseeing gondola ropeway climbing a green highland mountain slope in Urabandai, alpine wetland and forest below, summer, clear sky" },
+  { key: "az_grandeco_dr",  path: "spots/aizu_grandeco_dr.webp",   prompt: "A vast highland dog run field at a mountain resort at 1000m elevation, a wide green summer ski slope surrounded by mountains, sunny, no dogs visible" },
+  { key: "az_yuransen",     path: "spots/aizu_yuransen.webp",      prompt: "A sightseeing cruise boat touring a large lake dotted with small forested islands, Mount Bandai behind, open deck, calm blue water, sunny" },
 ];
 
 async function gen(prompt) {
