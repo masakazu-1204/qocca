@@ -31,6 +31,17 @@ const matchArea = (s: Spot, tag: string) =>
 
 const ease = QC_TIMING.hoverEasing;
 
+// 2026/7/12 GPS Phase2 (docs/petwalker-gps-design.md): 距離計算 (client haversine)。
+// 現在地は端末内でのみ使用 (サーバー送信・保存・ログなし)。
+const rad = (d: number) => (d * Math.PI) / 180;
+const distKm = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+  const R = 6371, dLat = rad(bLat - aLat), dLng = rad(bLng - aLng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+};
+// 表示は丸めて「約」を付ける (過度な精密演出をしない)
+const distLabel = (km: number) => (km < 1 ? `約${Math.max(10, Math.round((km * 1000) / 10) * 10)}m` : `約${km.toFixed(1)}km`);
+
 const petLabel = (types: string[] | null) =>
   (types || []).map((t) => PW_PET_LABELS[t] || t).join("・");
 
@@ -46,6 +57,11 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   const [activeArea, setActiveArea] = useState<string | null>(null);
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null);
   const [activeCat, setActiveCat] = useState<string>("all"); // スポット一覧のカテゴリ絞り込み (エリア入場で all にリセット)
+  // 2026/7/12 GPS Phase2: 現在地から近い順。位置情報はボタンタップ時のみ取得 (ロード時自動リクエスト禁止)。
+  const [nearbyOn, setNearbyOn] = useState(false);
+  const [nearbyStatus, setNearbyStatus] = useState<"locating" | "ready" | "denied" | "error">("locating");
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyLimit, setNearbyLimit] = useState(30); // 近い順の表示件数 (「もうすこし遠くまで」で+30)
 
   // history 連動ヘルパー: setActive* を直接呼ばずこちらを使う
   const openArea = (tag: string) => {
@@ -61,6 +77,21 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const goBack = () => { window.history.back(); };
+  // GPS Phase2: nearby view を開く。geolocation はここ (明示タップ) でのみ発火。
+  const openNearby = () => {
+    setActiveCat("all");
+    setNearbyLimit(30);
+    setNearbyOn(true);
+    setNearbyStatus("locating");
+    window.history.pushState({ [PW_NAV]: { type: "nearby" } }, "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!("geolocation" in navigator)) { setNearbyStatus("error"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setNearbyStatus("ready"); },
+      (err) => { setNearbyStatus(err.code === 1 ? "denied" : "error"); },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  };
 
   // popstate: ブラウザ「戻る」(右スワイプ/戻るボタン) を捕まえて1段ずつ巻き戻す
   useEffect(() => {
@@ -69,10 +100,14 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
       if (marker?.type === "area") {
         // area 状態に巻き戻る: spot を閉じる
         setActiveSpot(null);
+      } else if (marker?.type === "nearby") {
+        // nearby 状態に巻き戻る: spot を閉じる (nearby は維持)
+        setActiveSpot(null);
       } else {
-        // marker 無し = /petwalker 初期状態に巻き戻る: 両方閉じる
+        // marker 無し = /petwalker 初期状態に巻き戻る: 全て閉じる
         setActiveSpot(null);
         setActiveArea(null);
+        setNearbyOn(false);
       }
     };
     window.addEventListener("popstate", onPop);
@@ -82,14 +117,24 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data } = await supabase
-        .from("pet_walker_spots")
-        .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address,image_urls")
-        .eq("approval_status", "approved")
-        .order("category", { ascending: true })
-        .order("name", { ascending: true });
+      // 2026/7/12 バグ修正: supabase-js デフォルト上限1000行のため、1,551件時代に
+      // 後半カテゴリ(spot等)が丸ごと欠落していた (道の駅0件表示等)。range ページングで全件取得。
+      const PAGE = 1000;
+      let all: Spot[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data } = await supabase
+          .from("pet_walker_spots")
+          .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address,image_urls")
+          .eq("approval_status", "approved")
+          .order("category", { ascending: true })
+          .order("name", { ascending: true })
+          .range(from, from + PAGE - 1);
+        const rows = (data as Spot[]) || [];
+        all = all.concat(rows);
+        if (rows.length < PAGE) break;
+      }
       if (alive) {
-        setSpots((data as Spot[]) || []);
+        setSpots(all);
         setLoading(false);
       }
     })();
@@ -105,6 +150,11 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   useEffect(() => {
     if (activeArea) mpTrackEvent("PetWalkerAreaView", { content_name: activeArea });
   }, [activeArea]);
+
+  // Meta Pixel: 近く検索表示 (⚠️座標・位置情報は一切送らない)
+  useEffect(() => {
+    if (nearbyOn) mpTrackEvent("PetWalkerNearbyView");
+  }, [nearbyOn]);
 
   // エリア別件数 (親エリアは子エリア分も内包)
   const countByArea = (tag: string) => spots.filter((s) => matchArea(s, tag)).length;
@@ -146,7 +196,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
       <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
         <div style={wrap}>
           <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>
-            ← {s.area_tag} の一覧へ戻る
+            ← {nearbyOn ? "ちかくの一覧へ戻る" : `${s.area_tag} の一覧へ戻る`}
           </button>
           {firstImage(s) && (
             <div style={{ marginTop: 20, animation: `qocca-fadeInSlow 1.2s ${ease} both` }}>
@@ -232,6 +282,142 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ── いまいる場所のちかくで (GPS Phase2) ─────────────────────────
+  // 座標あり (1,531/1,551件) のみ距離ソートで表示。座標なしは従来どおりエリアから。
+  if (nearbyOn) {
+    const withDist = userLoc
+      ? spots
+          .filter((s) => s.latitude != null && s.longitude != null)
+          .map((s) => ({ s, d: distKm(userLoc.lat, userLoc.lng, s.latitude as number, s.longitude as number) }))
+          .sort((a, b) => a.d - b.d)
+      : [];
+    const catFiltered = withDist.filter(({ s }) => activeCat === "all" || s.category === activeCat);
+    const shown = catFiltered.slice(0, nearbyLimit);
+    const avail = PW_CATEGORIES.filter((c) => withDist.some(({ s }) => s.category === c.key));
+    return (
+      <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
+        <style>{`.pw-card{transition: all ${QC_TIMING.hoverDuration} ${ease};} .pw-card:hover{transform: translateY(-3px); box-shadow: 0 10px 30px rgba(44,41,38,0.08);}`}</style>
+        <div style={wrap}>
+          <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>← もどる</button>
+          <div style={{ marginTop: 20, marginBottom: 40, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
+            <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, letterSpacing: 3, color: QC.sage, margin: "0 0 10px" }}>NEARBY</p>
+            <h1 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 34 : 26, margin: "0 0 12px", color: QC.charcoal }}>
+              いまいる場所のちかくで
+            </h1>
+            <p style={{ fontSize: 13, color: QC.sage, fontWeight: 300, margin: 0 }}>
+              位置情報は、この端末の中だけで使います。
+            </p>
+          </div>
+
+          {nearbyStatus === "locating" && (
+            <p style={{ color: QC.warmGray, fontWeight: 300, lineHeight: 2.0 }}>いまの場所をたずねています。</p>
+          )}
+          {(nearbyStatus === "denied" || nearbyStatus === "error") && (
+            <div style={{ animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
+              <p style={{ color: QC.warmGray, fontWeight: 300, lineHeight: 2.0, margin: "0 0 20px" }}>
+                {nearbyStatus === "denied"
+                  ? "位置情報が使えないときは、エリアからどうぞ。"
+                  : "うまく取得できませんでした。エリアからもさがせます。"}
+              </p>
+              <button
+                onClick={goBack}
+                style={{
+                  padding: "11px 24px", borderRadius: 999, cursor: "pointer",
+                  border: `1px solid ${QC.softBrown}`, color: QC.softBrown, background: "transparent",
+                  fontFamily: QC_FONT_JP, fontSize: 14, fontWeight: 400, letterSpacing: 0.5,
+                  transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                }}
+              >
+                エリアからさがす →
+              </button>
+            </div>
+          )}
+
+          {nearbyStatus === "ready" && (
+            <>
+              {avail.length > 1 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 36 }}>
+                  {[{ key: "all", label: "すべて" }, ...avail].map((c) => {
+                    const on = activeCat === c.key;
+                    const cnt = c.key === "all" ? withDist.length : withDist.filter(({ s }) => s.category === c.key).length;
+                    return (
+                      <button
+                        key={c.key}
+                        onClick={() => { setActiveCat(c.key); setNearbyLimit(30); }}
+                        style={{
+                          padding: "7px 16px", borderRadius: 999, cursor: "pointer",
+                          fontFamily: QC_FONT_JP, fontSize: 13, fontWeight: 400, letterSpacing: 0.4,
+                          border: `1px solid ${on ? QC.softBrown : QC.lightSand}`,
+                          background: on ? QC.softBrown : "transparent",
+                          color: on ? "#fff" : QC.warmGray,
+                          transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                        }}
+                      >
+                        {c.label} <span style={{ fontSize: 11, opacity: 0.7 }}>{cnt}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: 18 }}>
+                {shown.map(({ s, d }) => (
+                  <button key={s.id} onClick={() => openSpot(s)} style={spotCardStyle} className="pw-card">
+                    {firstImage(s) && (
+                      <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", background: QC.cream }}>
+                        <img
+                          src={firstImage(s) as string}
+                          alt=""
+                          loading="lazy"
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        />
+                        <span style={{ position: "absolute", right: 8, bottom: 8, background: "rgba(44,41,38,0.52)", color: "rgba(255,255,255,0.92)", fontSize: 10, letterSpacing: 0.5, padding: "3px 8px", borderRadius: 999, fontFamily: QC_FONT_JP, fontWeight: 400 }}>
+                          イメージ
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ padding: "18px 20px" }}>
+                      <div style={{ fontFamily: QC_FONT_JP, fontWeight: 500, fontSize: 16, color: QC.charcoal, marginBottom: 8, lineHeight: 1.6 }}>
+                        {s.name}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: QC.sage, marginBottom: 10, display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <span>{[s.pref, s.city].filter(Boolean).join(" ")}</span>
+                        <span style={{ whiteSpace: "nowrap" }}>{distLabel(d)}</span>
+                      </div>
+                      {s.description && (
+                        <div style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, lineHeight: 1.85, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                          {s.description}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {catFiltered.length > nearbyLimit && (
+                <div style={{ textAlign: "center", marginTop: 36 }}>
+                  <button
+                    onClick={() => setNearbyLimit((n) => n + 30)}
+                    style={{
+                      padding: "11px 28px", borderRadius: 999, cursor: "pointer",
+                      border: `1px solid ${QC.lightSand}`, color: QC.softBrown, background: "transparent",
+                      fontFamily: QC_FONT_JP, fontSize: 14, fontWeight: 400, letterSpacing: 0.5,
+                      transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                    }}
+                  >
+                    もうすこし遠くまで
+                  </button>
+                </div>
+              )}
+              <p style={{ fontSize: 12, color: QC.sage, fontWeight: 300, lineHeight: 1.8, marginTop: 40, textAlign: "center" }}>
+                座標が未整備の場所は、エリアからさがせます。
+              </p>
+            </>
+          )}
+        </div>
+        <FloatingBackButton aboveTabBar={true} />
       </div>
     );
   }
@@ -369,6 +555,30 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             この子と過ごす旅を、エリアごとに。
           </p>
         </div>
+
+        {/* いまいる場所から (GPS Phase2・位置情報は明示タップ時のみ取得) */}
+        {"geolocation" in navigator && (
+          <section style={{ marginBottom: isPC ? 48 : 36, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
+            <button
+              onClick={openNearby}
+              className="pw-card"
+              style={{
+                width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6,
+                padding: isPC ? "26px 30px" : "20px 22px",
+                background: "#fff", border: `1px solid ${QC.lightSand}`, borderRadius: 16,
+                cursor: "pointer", fontFamily: QC_FONT_JP, textAlign: "left",
+              }}
+            >
+              <span style={{ fontFamily: QC_FONT_EN, fontSize: 11.5, letterSpacing: 2.5, color: QC.sage }}>NEARBY</span>
+              <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 22 : 18, color: QC.charcoal }}>
+                いまいる場所のちかくで
+              </span>
+              <span style={{ fontSize: 12.5, color: QC.warmGray, fontWeight: 300 }}>
+                位置情報は、この端末の中だけで使います。
+              </span>
+            </button>
+          </section>
+        )}
 
         {/* エリアで探す (地名・北→南) */}
         <section style={{ marginBottom: isPC ? 64 : 48 }}>
