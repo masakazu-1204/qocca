@@ -1035,6 +1035,25 @@ const ITEMS = [
   { key: "az_grandeco_rw",  path: "spots/aizu_grandeco_rw.webp",   prompt: "A sightseeing gondola ropeway climbing a green highland mountain slope in Urabandai, alpine wetland and forest below, summer, clear sky" },
   { key: "az_grandeco_dr",  path: "spots/aizu_grandeco_dr.webp",   prompt: "A vast highland dog run field at a mountain resort at 1000m elevation, a wide green summer ski slope surrounded by mountains, sunny, no dogs visible" },
   { key: "az_yuransen",     path: "spots/aizu_yuransen.webp",      prompt: "A sightseeing cruise boat touring a large lake dotted with small forested islands, Mount Bandai behind, open deck, calm blue water, sunny" },
+  // ── Phase B 深掘り: 別府 埋め残し 2026/7/11 ──
+  { key: "bp_koraku",      path: "spots/beppu_koraku.webp",       prompt: "A traditional onsen ryokan in Beppu with a small private pet bath and a dog grooming corner, near the sea coast, warm evening light, no dogs visible" },
+  { key: "bp_gransia",     path: "spots/beppu_gransia.webp",      prompt: "An outdoor glamping resort in Beppu Kannawa onsen area with large dome tents, steam rising from the hillside behind, warm dusk, no dogs visible" },
+  { key: "bp_ooga",        path: "spots/beppu_ooga.webp",         prompt: "An herb and rose garden park in Beppu with blooming colorful flower beds and a fenced grass dog run, bright summer flowers, sunny, no dogs visible" },
+  { key: "bp_jigoku",      path: "spots/beppu_jigoku.webp",       prompt: "The Beppu Jigoku hot spring hells, thick steam rising from a vivid cobalt-blue boiling pond, stone viewing path, dramatic mist, day" },
+  { key: "bp_ropeway",     path: "spots/beppu_ropeway.webp",      prompt: "A ropeway gondola climbing Mount Tsurumi in Beppu with a sweeping view of Beppu bay and the city below, green slopes, clear day" },
+  // ── Phase B 深掘り: 札幌・小樽 埋め残し 2026/7/11 ──
+  { key: "sp_escon",       path: "spots/sapporo_escon.webp",      prompt: "A modern cottage area beside a large ballpark stadium at dusk, the illuminated stadium glowing across a green field, warm evening, no dogs visible" },
+  { key: "sp_odori",       path: "spots/sapporo_odori.webp",      prompt: "A modern city hotel room in central Sapporo with a small pet bed by the window, Odori park greenery and city lights outside, warm evening light" },
+  { key: "sp_tsuruga",     path: "spots/sapporo_tsuruga.webp",    prompt: "A luxury onsen resort at Jozankei surrounded by forested mountains with a dog garden terrace, warm wooden interior, soft evening light, no dogs visible" },
+  { key: "sp_northsafari", path: "spots/sapporo_northsafari.webp", prompt: "A glamping cottage with a private fenced yard beside a nature park in Sapporo, a dome tent and BBQ deck among tall trees, sunny, no dogs visible" },
+  { key: "sp_canal",       path: "spots/sapporo_canal.webp",      prompt: "The Otaru canal lined with old stone warehouses and gas lamps, a stone promenade along the calm reflecting water, warm dusk" },
+  { key: "sp_hippies",     path: "spots/sapporo_hippies.webp",    prompt: "A stylish cafe and dining space overlooking a small river in Susukino Sapporo, warm interior with a summer riverside terrace, soft light, no people" },
+  { key: "sp_bernard",     path: "spots/sapporo_bernard.webp",    prompt: "An espresso specialty cafe with an attached grass dog run in Sapporo, bright modern interior and a spacious lawn outside, sunny, no dogs visible" },
+  { key: "sp_morihico",    path: "spots/sapporo_morihico.webp",   prompt: "An open renovated-warehouse cafe attached to a hotel near Kikusui Sapporo, high ceilings, plants and an entrance terrace, warm industrial decor, no people" },
+  // ── Phase B 深掘り: 福岡・糸島 埋め残し 2026/7/11 ──
+  { key: "fk_wonderful",   path: "spots/fukuoka_wonderful.webp",  prompt: "A large dog run park with an attached cafe on a spacious open ground in Fukuoka, a wide fenced grass field and a casual cafe deck, sunny, no dogs visible" },
+  { key: "fk_manly",       path: "spots/fukuoka_manly.webp",      prompt: "A bright open-terrace cafe near a city station in central Fukuoka, casual seating spilling onto a sunny street terrace, no people" },
+  { key: "fk_withdog",     path: "spots/fukuoka_withdog.webp",    prompt: "A dog run cafe surrounded by green nature in Itoshima Nijo, wooden terrace seating beside a fenced grass run, sunny, no dogs visible" },
 ];
 
 async function gen(prompt) {
