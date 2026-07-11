@@ -1676,6 +1676,32 @@ const ITEMS = [
   { key: "kn_chirihama",  path: "spots/kanazawa_chirihama.webp", prompt: "A long sandy beach where cars can drive along the water's edge at Chirihama, golden sunset over the Sea of Japan, no people" },
   { key: "kn_castle",     path: "spots/kanazawa_castle.webp", prompt: "The perimeter of Kanazawa castle park with beautiful white stone walls and a wooden gate, green walking paths, soft light, no people" },
   { key: "kn_kanazawaya", path: "spots/kanazawa_kanazawaya.webp", prompt: "A specialty coffee shop with a terrace near the black gate of Kanazawa castle, coffee and wagashi, soft light, no people" },
+  // ── Phase B 埋め残し: 日光・那須 2026/7/12 ──
+  { key: "nk_nasuwan",    path: "spots/nasu_nasuwan.webp",    prompt: "A dog-friendly hotel in Nasu with an undulating grass dog run and an indoor dog run, warm interior, soft light, no dogs visible" },
+  { key: "nk_minamigaoka", path: "spots/nasu_minamigaoka.webp", prompt: "A sightseeing dairy farm in Nasu highland with grazing animals and green pastures, wide meadow under open sky, sunny, no people" },
+  { key: "nk_outlet",     path: "spots/nasu_outlet.webp",     prompt: "An open-air outlet mall in Nasu with wide walkways and lawns, bright day, no people" },
+  { key: "nk_dogresort",  path: "spots/nasu_dogresort.webp",  prompt: "A highland inn in Nasu with a large natural-grass dog run, wooden lodge and mountain view, sunny, no dogs visible" },
+  { key: "nk_toshogu",    path: "spots/nasu_toshogu.webp",    prompt: "A cedar-lined approach path to an ornate World Heritage shrine gate in Nikko, tall trees and stone lanterns, soft light, no people" },
+  { key: "nk_oya",        path: "spots/nasu_oya.webp",        prompt: "A vast mysterious underground stone-quarry cavern with carved rock walls and dramatic lighting at Oya, cool atmosphere, no people" },
+  { key: "nk_teddy",      path: "spots/nasu_teddy.webp",      prompt: "A British-style museum building surrounded by gardens in Nasu highland, elegant architecture, soft light, no people" },
+  { key: "nk_senbonmatsu", path: "spots/nasu_senbonmatsu.webp", prompt: "A vast historic farm in Nasu with a large natural-grass dog run and green pastures, wide open field, sunny, no dogs visible" },
+  { key: "nk_kinugawa",   path: "spots/nasu_kinugawa.webp",   prompt: "An onsen town with inns lining a river gorge at Kinugawa, forested cliffs and a walking path, soft light, no people" },
+  { key: "nk_doubutsu",   path: "spots/nasu_doubutsu.webp",   prompt: "A highland animal-park farm area in Nasu with green meadows and grass dog runs, wide open highland, sunny, no dogs visible" },
+  { key: "nk_rindoko",    path: "spots/nasu_rindoko.webp",    prompt: "A sightseeing farm around a calm lake in Nasu highland with a lakeside walking path and dog run, bright day, no dogs visible" },
+  // ── Phase B 埋め残し: 沖縄 2026/7/12 ──
+  { key: "on_daisekirinzan", path: "spots/okinawa_daisekirinzan.webp", prompt: "A subtropical forest trekking course among strange karst rock formations at Daisekirinzan in northern Okinawa, ancient nature, bright day, no people" },
+  { key: "on_nagura",     path: "spots/okinawa_nagura.webp",  prompt: "A cottage overlooking a calm bay at sunset in Ishigaki with a BBQ deck, golden sky over the sea, no dogs visible" },
+  { key: "on_onna",       path: "spots/okinawa_onna.webp",    prompt: "A seaside villa on the west coast of Onna Okinawa with a terrace overlooking turquoise sea, bright tropical day, no dogs visible" },
+  { key: "on_churaumi",   path: "spots/okinawa_churaumi.webp", prompt: "A beautiful white-sand beach with turquoise water in the Ocean Expo Park area of northern Okinawa, bright day, no people" },
+  { key: "on_sesoko",     path: "spots/okinawa_sesoko.webp",  prompt: "An island cafe surrounded by tropical nature on Sesoko island Okinawa, taco rice and sea grapes on a terrace, bright day, no people" },
+  { key: "on_kai",        path: "spots/okinawa_kai.webp",     prompt: "A resort cafe with a terrace overlooking a panoramic turquoise beach at Toyosaki Okinawa, tropical resort vibe, bright day, no people" },
+  { key: "on_nanjo",      path: "spots/okinawa_nanjo.webp",   prompt: "A garden villa facing a white beach in Nanjo Okinawa with a lawn and terrace, turquoise sea, bright day, no dogs visible" },
+  { key: "on_ou",         path: "spots/okinawa_ou.webp",      prompt: "A small fishing island connected by a bridge with a harbor and clear sea in Okinawa, bright day, no people" },
+  { key: "on_umikaji",    path: "spots/okinawa_umikaji.webp", prompt: "A hillside complex of white Mediterranean-style buildings on Senagajima island Okinawa overlooking the sea, an airplane in the sky, bright day, no people" },
+  { key: "on_chinen",     path: "spots/okinawa_chinen.webp",  prompt: "A cape park jutting into the Pacific with a walking path and a pavilion overlooking the turquoise sea at Chinen Okinawa, bright morning, no people" },
+  { key: "on_banta",      path: "spots/okinawa_banta.webp",   prompt: "A seaside cafe spread across a rocky shore in Okinawa with terraces overlooking the sea at sunset, warm golden light, no people" },
+  { key: "on_fukugi",     path: "spots/okinawa_fukugi.webp",  prompt: "A shaded avenue of thousands of old fukugi trees through a traditional village at Bise Okinawa, dappled light, quiet, no people" },
+  { key: "on_kouri",      path: "spots/okinawa_kouri.webp",   prompt: "A long bridge stretching over emerald-green sea toward an island at Kouri Okinawa, brilliant turquoise water, bright day, no people" },
 ];
 
 async function gen(prompt) {
