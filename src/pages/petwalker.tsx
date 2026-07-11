@@ -201,7 +201,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
       <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
         <div style={wrap}>
           <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>
-            ← {nearbyOn ? "ちかくの一覧へ戻る" : `${s.area_tag} の一覧へ戻る`}
+            ← {nearbyOn ? "近くの一覧へ戻る" : `${s.area_tag} の一覧へ戻る`}
           </button>
           {firstImage(s) && (
             <div style={{ marginTop: 20, animation: `qocca-fadeInSlow 1.2s ${ease} both` }}>
@@ -311,7 +311,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
           <div style={{ marginTop: 20, marginBottom: 40, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
             <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, letterSpacing: 3, color: QC.sage, margin: "0 0 10px" }}>NEARBY</p>
             <h1 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 34 : 26, margin: "0 0 12px", color: QC.charcoal }}>
-              いまいる場所のちかくで
+              近くのおでかけ先
             </h1>
             <p style={{ fontSize: 13, color: QC.sage, fontWeight: 300, margin: 0 }}>
               位置情報は、この端末の中だけで使います。
@@ -612,7 +612,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             >
               <span style={{ fontFamily: QC_FONT_EN, fontSize: 11.5, letterSpacing: 2.5, color: QC.sage }}>NEARBY</span>
               <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 22 : 18, color: QC.charcoal }}>
-                いまいる場所のちかくで
+                近くのおでかけ先
               </span>
               <span style={{ fontSize: 12.5, color: QC.warmGray, fontWeight: 300 }}>
                 位置情報は、この端末の中だけで使います。
