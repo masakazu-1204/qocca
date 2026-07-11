@@ -4,13 +4,16 @@
 // 構成: エリアタイル一覧 → エリア特集(カテゴリ別) → スポット詳細。view 状態は内部 useState。
 // ⚠️ 決済・施設マップ・既存テーブルには一切触れない (読むのは pet_walker_spots のみ)。
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_TIMING } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { PetWalkerReviews } from "../components/PetWalkerReviews";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+
+// GPS Phase3: 近隣マップ (Leaflet は地図表示時のみロード = lazy)
+const PetWalkerMapView = lazy(() => import("../components/PetWalkerMapView"));
 
 type Spot = {
   id: string; name: string; category: string; pref: string; city: string | null;
@@ -62,6 +65,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   const [nearbyStatus, setNearbyStatus] = useState<"locating" | "ready" | "denied" | "error">("locating");
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyLimit, setNearbyLimit] = useState(30); // 近い順の表示件数 (「もうすこし遠くまで」で+30)
+  const [nearbyMode, setNearbyMode] = useState<"list" | "map">("list"); // GPS Phase3: リスト/地図トグル
 
   // history 連動ヘルパー: setActive* を直接呼ばずこちらを使う
   const openArea = (tag: string) => {
@@ -81,6 +85,7 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
   const openNearby = () => {
     setActiveCat("all");
     setNearbyLimit(30);
+    setNearbyMode("list");
     setNearbyOn(true);
     setNearbyStatus("locating");
     window.history.pushState({ [PW_NAV]: { type: "nearby" } }, "");
@@ -339,6 +344,28 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
 
           {nearbyStatus === "ready" && (
             <>
+              {/* GPS Phase3: リスト/地図トグル (控えめ2択) */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+                {([["list", "リスト"], ["map", "地図"]] as const).map(([key, label]) => {
+                  const on = nearbyMode === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setNearbyMode(key)}
+                      style={{
+                        padding: "7px 18px", borderRadius: 999, cursor: "pointer",
+                        fontFamily: QC_FONT_JP, fontSize: 13, fontWeight: 400, letterSpacing: 0.4,
+                        border: `1px solid ${on ? QC.softBrown : QC.lightSand}`,
+                        background: on ? QC.softBrown : "transparent",
+                        color: on ? "#fff" : QC.warmGray,
+                        transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
               {avail.length > 1 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 36 }}>
                   {[{ key: "all", label: "すべて" }, ...avail].map((c) => {
@@ -363,6 +390,18 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                   })}
                 </div>
               )}
+              {nearbyMode === "map" ? (
+                <Suspense fallback={<p style={{ color: QC.warmGray, fontWeight: 300 }}>地図をよういしています。</p>}>
+                  <PetWalkerMapView
+                    items={catFiltered}
+                    userLoc={userLoc as { lat: number; lng: number }}
+                    isPC={isPC}
+                    distLabel={distLabel}
+                    onSelect={(m) => { const hit = spots.find((x) => x.id === m.id); if (hit) openSpot(hit); }}
+                  />
+                </Suspense>
+              ) : (
+                <>
               <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: 18 }}>
                 {shown.map(({ s, d }) => (
                   <button key={s.id} onClick={() => openSpot(s)} style={spotCardStyle} className="pw-card">
@@ -410,6 +449,8 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
                     もうすこし遠くまで
                   </button>
                 </div>
+              )}
+                </>
               )}
               <p style={{ fontSize: 12, color: QC.sage, fontWeight: 300, lineHeight: 1.8, marginTop: 40, textAlign: "center" }}>
                 座標が未整備の場所は、エリアからさがせます。
