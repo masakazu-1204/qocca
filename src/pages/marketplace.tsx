@@ -310,8 +310,10 @@ const handleFollow = async () => {
           <button onClick={handleFollow} style={{ padding:"8px 20px", background: isFollowing ? C.white : C.orange, border: isFollowing ? `1.5px solid ${C.orange}` : "none", borderRadius:20, color: isFollowing ? C.orange : C.white, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
             {isFollowing ? "フォロー中" : "フォローする"}
           </button>
+          {/* 2026/7/13 週次点検バグ1修正: setTimeout+CustomEvent の取りこぼしレース(設定バグPR#107と同型)を廃し、
+              navigate state で messages タブ + DM相手をマウント時に確実に渡す。CustomEvent 経路は mypage 側で後方互換温存。 */}
           {isFollowing && (
-            <button onClick={()=>{ navigate("/mypage"); setTimeout(()=>{ const evt = new CustomEvent("openDM", { detail: { partnerId: userId } }); window.dispatchEvent(evt); }, 100); }} style={{ padding:"8px 20px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:20, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={()=>{ navigate("/mypage", { state: { tab: "messages", dm: userId } }); }} style={{ padding:"8px 20px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:20, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
               💬 メッセージ
             </button>
           )}

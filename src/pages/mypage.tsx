@@ -505,15 +505,8 @@ export const MyPage = ({ setPage }) => {
     window.addEventListener("openDM", handleOpenDM);
     return () => window.removeEventListener("openDM", handleOpenDM);
   }, []);
-  useEffect(() => {
-    // Sidebar の「管理する」等から特定タブを強制で開く汎用イベント
-    const handleOpenTab = (e: any) => {
-      const t = e?.detail?.tab;
-      if (typeof t === "string" && t.length > 0) setTab(t);
-    };
-    window.addEventListener("openMyPageTab", handleOpenTab);
-    return () => window.removeEventListener("openMyPageTab", handleOpenTab);
-  }, []);
+  // 2026/7/13 週次点検バグ3修正: openMyPageTab リスナーを削除 (死にコード)。
+  //   PR#107 で送信側 (UserMenu/Sidebar/PCNavbar) を navigate state 方式に全廃済みで dispatch 元ゼロ。
   // 暮らしの空気 (v3.2 第23章): MyPage 内だけの "模様替え"
   // - 初回ログイン時に DB から読み込み (default: atatakai)
   // - 切替時に即反映 (保存ボタンなし)、DB は非同期で更新
@@ -698,7 +691,28 @@ export const MyPage = ({ setPage }) => {
     }
   };
 
-  if (!user) return null;
+  // 2026/7/13 週次点検バグ2修正: 未ログイン時に完全空白 (return null) だったのを
+  //   /sell と同じ静かなログイン誘導に。文言はKing確認対象 (A案)。
+  if (!user) {
+    return (
+      <div style={{ textAlign: "center", padding: "72px 24px 80px", maxWidth: 480, margin: "0 auto" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: C.dark, marginBottom: 12, lineHeight: 1.6 }}>
+          マイページは、ログインするとひらきます。
+        </h2>
+        <p style={{ fontSize: 14, color: C.warmGray, lineHeight: 1.9, marginBottom: 28 }}>
+          うちの子の記録も、お気に入りも、メッセージも。<br />
+          あなたの部屋が、ここにできます。
+        </p>
+        <button
+          onClick={() => navigate("/login")}
+          style={{ padding: "13px 36px", background: C.orange, border: "none", borderRadius: 24, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}
+        >
+          ログイン / 新規登録
+        </button>
+        <p style={{ fontSize: 12, color: C.warmGray, marginTop: 14 }}>30秒で街の住民になれます</p>
+      </div>
+    );
+  }
 
   const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "ユーザー";
   const initial = displayName.charAt(0).toUpperCase();
@@ -3182,27 +3196,39 @@ const DirectMessagesTab = () => {
 
   useEffect(() => { fetchConvos(); }, [user?.id]);
 
-  // プロフィールページからの「💬 メッセージ」イベントを受信
+  // 2026/7/13 週次点検バグ1修正: 相手の会話を開く処理を共通化。
+  //   navigate state { dm } (レースなし・マウント時に確実) と CustomEvent (後方互換) の両経路から呼ぶ。
+  const openPartner = async (partnerId: string) => {
+    if (!partnerId || !user) return;
+    // プロフィール取得
+    const { data: prof } = await supabase.from("profiles").select("id, display_name, avatar_url").eq("id", partnerId).single();
+    // フォロー状況確認
+    const { data: fol } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", partnerId).maybeSingle();
+    setSelected({
+      partner_id: partnerId,
+      partner_name: prof?.display_name || "ユーザー",
+      partner_avatar: prof?.avatar_url,
+      is_following: !!fol,
+      last_msg: "",
+      last_msg_date: new Date().toISOString(),
+      unread: 0,
+    });
+  };
+
+  // プロフィール「💬 メッセージ」→ navigate state { dm } をマウント時/再遷移時に読む (PR#107方式)
+  const location = useLocation();
   useEffect(() => {
-    const handleOpenDM = async (e: any) => {
-      const partnerId = e.detail?.partnerId;
-      if (!partnerId || !user) return;
-      // プロフィール取得
-      const { data: prof } = await supabase.from("profiles").select("id, display_name, avatar_url").eq("id", partnerId).single();
-      // フォロー状況確認
-      const { data: fol } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", partnerId).maybeSingle();
-      setSelected({
-        partner_id: partnerId,
-        partner_name: prof?.display_name || "ユーザー",
-        partner_avatar: prof?.avatar_url,
-        is_following: !!fol,
-        last_msg: "",
-        last_msg_date: new Date().toISOString(),
-        unread: 0,
-      });
-    };
+    const dm = (location.state as { dm?: string } | null)?.dm;
+    if (dm) openPartner(dm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key, user?.id]);
+
+  // CustomEvent 経路は後方互換で温存 (他の発火元を壊さない)
+  useEffect(() => {
+    const handleOpenDM = (e: any) => { const p = e.detail?.partnerId; if (p) openPartner(p); };
     window.addEventListener("openDM", handleOpenDM);
     return () => window.removeEventListener("openDM", handleOpenDM);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const fetchMessages = async (partnerId:string) => {
@@ -3358,8 +3384,18 @@ const DirectMessagesTab = () => {
 
 // ── メッセージタブ（取引メッセージ + DMの切り替え） ──────────────────────
 const MessagesTab = () => {
-  const [subTab, setSubTab] = useState<"order" | "dm">("order");
+  // 2026/7/13 週次点検バグ1修正: プロフィール「💬 メッセージ」からは navigate state { dm } で来る。
+  //   マウント時に確実に読めるため setTimeout+CustomEvent レース(PR#107と同型)が起きない。
+  const location = useLocation();
+  const [subTab, setSubTab] = useState<"order" | "dm">(() =>
+    (location.state as { dm?: string } | null)?.dm ? "dm" : "order"
+  );
+  // /mypage 表示中の再遷移 (再マウントなし) にも location.key 監視で対応
   useEffect(() => {
+    if ((location.state as { dm?: string } | null)?.dm) setSubTab("dm");
+  }, [location.key]);
+  useEffect(() => {
+    // CustomEvent 経路は後方互換で温存 (他の発火元を壊さない)
     const handleOpenDM = () => setSubTab("dm");
     window.addEventListener("openDM", handleOpenDM);
     return () => window.removeEventListener("openDM", handleOpenDM);
