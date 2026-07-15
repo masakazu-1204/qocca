@@ -15,11 +15,9 @@ import { dailySeededShuffle } from "../utils/dailyShuffle";
 import { petIcon, petLabelShort } from "../constants/pets";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { useListings } from "../hooks";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 // 2026/7/5 トップ改善①: ブログ最新記事セクション (既存ブログ機能の表示枠のみ・本体無変更)
 import { HomeBlogSection } from "../components/HomeBlogSection";
-import { SharedFooter } from "../components/ui";
 import type { FoundingCreator } from "../types";
 
 const HERO_IMAGES_CINEMA = [
@@ -863,7 +861,6 @@ const SectionDynamicCTABanner = ({ setPage }: { setPage: (page: string) => void 
   }, []);
 
   // 2026-07-26 23:59 まで A クラファン告知 / 2026-07-27 00:00 以降 B 住人募集
-  const now = new Date();
   const showCrowdfunding = now < CTA_SWITCH_DATE;
   const copy = showCrowdfunding ? CTA_COPY_A : CTA_COPY_B;
 
@@ -3539,7 +3536,6 @@ const FoundingPartnersSection = () => {
 };
 
 const ArkPartnershipSection = () => {
-  const now = new Date();
   // 6/3 以降は SectionAnnouncement や CrowdfundingBanner が ARK 言及するので重複回避で薄める
   // ただし誠実な常時表示として残す
   return (
@@ -4051,7 +4047,7 @@ const Reveal = ({ children, variant = "rise" }) => {
   );
 };
 
-export const HomePage = ({ setPage, listings, liked, onLike, onDetail, homeEvents = [] }) => {
+export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, onDetail, homeEvents = [] }) => {
   const progress = useScrollProgress();
   const bgColor = qoccaInterpolateBackground(progress);
 

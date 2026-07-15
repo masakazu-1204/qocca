@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 // Leaflet (L/CSS/markercluster) は施設マップ専用のため pages/facilities.tsx へ移設 (Phase5 ④facilities)
 import AboutPage from "./pages/AboutPage";
-import AboutSection from "./components/AboutSection";
 // 依頼書 #108 (2026/6/4): ARK 透明性機能 Phase C - Admin 寄付管理画面
 import AdminArkDonations from "./pages/AdminArkDonations";
 // 依頼書 #109 (2026/6/4): 法人スポンサー (¥300,000) Phase B - Admin 管理画面
@@ -13,10 +12,6 @@ import MarketplacePage from "./pages/MarketplacePage";
 import AdminAnalytics from "./pages/AdminAnalytics";
 // 依頼書 #113 (2026/6/4): 全国小規模動物イベント自動収集 v2 - source 管理 UI
 import AdminEventSources from "./pages/AdminEventSources";
-import HomeNewsSection from "./components/HomeNewsSection";
-import QoccaUniverseSection from "./components/QoccaUniverseSection";
-import CommunityShowcase from "./components/CommunityShowcase";
-import FacilityMapPromo from "./components/FacilityMapPromo";
 import { BlogPage, GalleryPage } from "./pages/gallery";
 import { EventsPage, CommunitiesPage, CommunityDetailPage } from "./pages/community";
 import { SearchPage, UserProfilePage, SellPage, DetailPageWrapper, LikedPage } from "./pages/marketplace";
@@ -28,7 +23,7 @@ import { PetGalleryPage } from "./pages/pet_gallery";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
-import { TokushoPage, TermsPage, PrivacyPage, ContactPage, QoccaTownGuide, FirstStepGuide, FoundingCreatorsPage, SponsorsPage, LegalPage, FAQPage } from "./pages/static";
+import { TokushoPage, PrivacyPage, ContactPage, FoundingCreatorsPage, SponsorsPage, LegalPage, FAQPage } from "./pages/static";
 import { C } from "./constants/theme";
 import { LISTINGS } from "./constants/data";
 // ── Supabase Client ───────────────────────────────────────────────────────
@@ -170,7 +165,7 @@ function QoccaAppInner() {
   }, [location.search]);
 
   // Supabase data hooks
-  const { listings: dbListings, dbLoading, refetch } = useListings();
+  const { listings: dbListings } = useListings();
   const { liked, likedSpots, toggleLike } = useFavorites(user?.id);
 
   // DBにデータがあればDBを使い、なければモックデータをフォールバック

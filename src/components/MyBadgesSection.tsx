@@ -129,7 +129,7 @@ export default function MyBadgesSection({ userId, isOwn = true }: Props) {
   });
 
   // バッジ1個のレンダリング（全画面モーダル用）
-  const renderBadge = (b: Badge, size: "sm" | "md" = "md") => {
+  const renderBadge = (b: Badge) => {
     const tierColor = TIER_COLORS[b.tier] || TIER_COLORS.bronze;
     return (
       <button

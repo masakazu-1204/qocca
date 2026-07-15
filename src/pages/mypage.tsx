@@ -9,9 +9,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { C } from "../constants/theme";
-import { DISPUTE_REASONS, PREFS, MOOD_TAGS, REDEEM_TIER_THEME } from "../constants/data";
+import { DISPUTE_REASONS, REDEEM_TIER_THEME } from "../constants/data";
 import { miniBtnStyle, orderStatusKey } from "../utils/format";
-import { detectContacts, checkFacilityNGWords } from "../utils/moderation";
+import { detectContacts } from "../utils/moderation";
 import { resolveFontFamily } from "../constants/fonts";
 // 2026/7/4 あしあとUI第1弾: 残高カード (プロフィールタブに配置)
 import { AshiatoBalanceCard } from "../components/AshiatoBalanceCard";
@@ -722,7 +722,7 @@ export const MyPage = ({ setPage }) => {
   const handleSignOut = async () => { await signOut(); setPage("home"); };
 
   // バッジ用の未読数（DBから取得、初期値0）
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [unreadNotifs] = useState(0);
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0); // 受取確認待ちの注文数（購入者として）
   const [pendingSalesCount, setPendingSalesCount] = useState(0); // 対応待ちの販売（出品者として）
@@ -2332,7 +2332,7 @@ const OrdersTab = () => {
       )}
 
       {/* Dispute Modal */}
-      {showDispute && <DisputeModal order={{...showDispute, item: showDispute.listing?.title || ""}} onClose={()=>setShowDispute(null)} onSubmit={async (orderId, reason, desc)=>{
+      {showDispute && <DisputeModal order={{...showDispute, item: showDispute.listing?.title || ""}} onClose={()=>setShowDispute(null)} onSubmit={async (orderId, _reason, _desc)=>{
         try {
           // status のみ更新（dispute_reason/dispute_status カラムは未実装）
           await supabase.from("orders").update({ status:"disputed", updated_at: new Date().toISOString() }).eq("id", orderId);
@@ -2650,17 +2650,6 @@ const SalesTab = () => {
   const statusLabel = (s) => {
     const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
     return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
-  };
-
-  const startWork = async (orderId: string) => {
-    if (!confirm("作業を開始しますか？")) return;
-    setBusy(true);
-    try {
-      const { error } = await supabase.from("orders").update({ status: "working", updated_at: new Date().toISOString() }).eq("id", orderId);
-      if (error) throw error;
-      await loadSales();
-    } catch(e: any) { alert("エラー: "+e.message); }
-    finally { setBusy(false); }
   };
 
   const markDelivered = async (sale: any) => {

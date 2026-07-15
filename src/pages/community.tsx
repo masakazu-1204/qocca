@@ -9,47 +9,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { useHeroStats } from "../hooks";
 import { PET_CATEGORIES, evPetLabel, evPetColor, evPetBg } from "../constants/pets";
 import { EVENT_CATS, PREFS_47_ORDER, COMMUNITY_CATEGORIES } from "../constants/data";
 import { detectContacts, detectNGWords } from "../utils/moderation";
 import CommentModal from "../components/CommentModal";
 import type { CommentTargetType } from "../types";
 
-// ── PC Hero ──────────────────────────────────────────────────────────────
-const PCHeroSection = ({ setPage }) => {
-  const heroStats = useHeroStats();
-  return (
-  <section style={{
-    background:`linear-gradient(145deg, ${C.dark} 0%, ${C.darkBrown} 55%, #3D2810 100%)`,
-    position:"relative", overflow:"hidden"
-  }}>
-    <div style={{ position:"absolute", left:-60, top:-40, fontSize:280, opacity:0.03, pointerEvents:"none" }}>🐾</div>
-    <div style={{ position:"absolute", right:-40, bottom:-60, fontSize:200, opacity:0.03, pointerEvents:"none" }}>🏘</div>
-    <div style={{ maxWidth:1280, margin:"0 auto", padding:"80px 48px", display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center" }}>
-      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 16px", background:"rgba(245,169,74,0.15)", borderRadius:20, border:"1px solid rgba(245,169,74,0.3)", marginBottom:24 }}>
-        <span>🐨</span><span style={{ fontSize:13, color:C.orange, fontWeight:700 }}>ペット好きが集まる、温かい街 · 住民募集中</span>
-      </div>
-      <h1 style={{ fontSize:52, fontWeight:900, color:"#fff", lineHeight:1.15, marginBottom:18, letterSpacing:"-1px" }}>
-        うちの子の話で、<span style={{ color:C.orange }}>つながる場所。</span>
-      </h1>
-      <p style={{ fontSize:16, color:"rgba(255,255,255,0.65)", lineHeight:1.9, marginBottom:32, maxWidth:620 }}>
-        同じ犬種の仲間と話せる広場、想いのこもった一点物が並ぶ商店街、<br/>
-        全国のドッグランや施設の案内所。ぜんぶ、ここにある街です 🐾
-      </p>
-      <div style={{ display:"flex", gap:12, marginBottom:36 }}>
-        <button onClick={()=>setPage("communities")} style={{ padding:"14px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>👋 仲間と話す</button>
-        <button onClick={()=>setPage("search")} style={{ padding:"14px 28px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:12, color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>街を歩く →</button>
-      </div>
-      <div style={{ display:"flex", gap:40 }}>
-        {[[heroStats.users,"住民"],[heroStats.listings,"出品"],[heroStats.communities,"💬 広場"],["¥0","初回手数料"]].map(([v,l])=>(
-          <div key={l}><div style={{ fontSize:24, fontWeight:900, color:C.orange }}>{v}</div><div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginTop:4 }}>{l}</div></div>
-        ))}
-      </div>
-    </div>
-  </section>
-  );
-};
 
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
 export const EventsPage = ({ isPC, setPage }) => {

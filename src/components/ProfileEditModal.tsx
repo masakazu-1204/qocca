@@ -40,7 +40,7 @@ type Props = {
   onSaved?: () => void;
 };
 
-export default function ProfileEditModal({ open, onClose, userId, onSaved }: Props) {
+export default function ProfileEditModal({ open, onClose, userId }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);

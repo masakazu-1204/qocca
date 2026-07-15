@@ -1,11 +1,8 @@
 // src/components/QoccaUniverseSection.tsx
-import React from "react";
 import { useNavigate } from "react-router-dom";
 
 const BRAND = "#F5A94A";
-const BRAND_DEEP = "#B27820";
 const CREAM = "#FFF9F0";
-const CREAM_DARK = "#FFF2DF";
 const TEXT_DARK = "#2C2C2A";
 const TEXT_MUTED = "#888780";
 const BORDER = "#F1EFE8";
