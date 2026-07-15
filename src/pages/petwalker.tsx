@@ -718,6 +718,36 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
                 </span>
               </div>
             </button>
+            {/* 2026/7/16 特集2本目以降: 小さめカードの横並び (設計書の非対称レイアウト) */}
+            {magazines.length > 1 && (
+              <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: isPC ? 18 : 12, marginTop: isPC ? 18 : 12 }}>
+                {magazines.slice(1, 3).map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => openMagazine(m)}
+                    className="pw-tile"
+                    style={{ border: "none", padding: 0, cursor: "pointer", textAlign: "left", borderRadius: 16, overflow: "hidden", display: "block", fontFamily: QC_FONT_JP }}
+                  >
+                    <div
+                      style={{
+                        position: "relative", width: "100%", minHeight: isPC ? 170 : 140,
+                        display: "flex", flexDirection: "column", justifyContent: "flex-end",
+                        background: `linear-gradient(180deg, rgba(44,41,38,0.12) 0%, rgba(44,41,38,0.70) 100%), url("${m.hero_image_url || ""}") center / cover no-repeat, ${QC.softBrown}`,
+                        padding: isPC ? "22px 24px" : "18px 18px",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <span style={{ fontFamily: QC_FONT_EN, fontSize: 10.5, letterSpacing: 2.5, color: "rgba(255,255,255,0.85)", marginBottom: 8, textShadow: "0 1px 5px rgba(0,0,0,0.4)" }}>
+                        FEATURE
+                      </span>
+                      <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 18 : 16, lineHeight: 1.7, color: "#fff", textShadow: "0 1px 10px rgba(0,0,0,0.5)" }}>
+                        {m.title}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
