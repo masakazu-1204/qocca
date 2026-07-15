@@ -1,5 +1,5 @@
 // src/components/CommentModal.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { X, Heart, MessageCircle, Trash2, Send } from "lucide-react";
 

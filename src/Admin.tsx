@@ -2686,7 +2686,7 @@ const FacilityModerationPage = () => {
     // ⚠️ 一括は confirm 必須 (件数明示) / 「絞り込んだ表示分」に限定 (全pending一発はUI上不可能)
     if (ids.length > 1 && !confirm(`${ids.length}件を「${label}」します。よろしいですか？`)) return;
     setBusy(true);
-    const { data, error } = await supabase.rpc("admin_moderate_facilities", { p_ids: ids, p_status: newStatus });
+    const { error } = await supabase.rpc("admin_moderate_facilities", { p_ids: ids, p_status: newStatus });
     setBusy(false);
     if (error) return alert("エラー: " + error.message);
     await loadStats();

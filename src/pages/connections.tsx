@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
 import { C } from "../constants/theme";
-import { SharedFooter } from "../components/ui";
 
 // Phase8 8b: SNS連携3ページを App.tsx から byte同一 line-slice 移動 (元 App.tsx 1515-2342)
 

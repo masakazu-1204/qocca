@@ -399,7 +399,7 @@ export const FirstStepGuide = ({ setPage }) => {
 // 公開 view founding_creators_view (anon 可) から ORDER で並ぶ
 // FoundingCreator 型は src/types.ts へ移動 (Phase5 ①static / InitialMembersSection と共有のため中立化)
 
-export const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
+export const FoundingCreatorsPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
   const navigate = useNavigate();
   const [creators, setCreators] = useState<FoundingCreator[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -517,7 +517,7 @@ export const FoundingCreatorsPage = ({ setPage }: { setPage: (p: string) => void
 // 公開専用ビュー crowdfunding_founding_partners_public (anon可・amount/backer_id非露出) から corporate_300000 のみ
 // ビュー側で public_display=true & redeemed_at IS NOT NULL & founding_display_consent=true を内包・グリッド表示
 // 空状態は CTA 中心、登録あれば法人ロゴ + 社名 + Web リンク
-export const SponsorsPage = ({ setPage }: { setPage: (p: string) => void }) => {
+export const SponsorsPage = ({ setPage: _setPage }: { setPage: (p: string) => void }) => {
   const [sponsors, setSponsors] = useState<Array<{
     sponsor_logo_url: string | null;
     sponsor_company_name: string | null;

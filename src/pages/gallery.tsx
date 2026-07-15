@@ -359,8 +359,6 @@ export const BlogPage = ({ setPage, isPC }) => {
 
 export const GalleryPage = ({ setPage, isPC }) => {
   const { user } = useAuth();
-  const { itemId: galleryItemId } = useParams();
-  const galleryNavigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -551,12 +549,6 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   };
 
   // 依頼書 #30: 大判タイル判定 (display_priority>0 || 7投稿に1回パターン or top-liked)
-  const isBigTile = (post: any, index: number) => {
-    if (post.display_priority && post.display_priority > 0) return true;
-    // 0番目と7番目 (index % 7 === 0 で index !== 0) を大判に / トップは大判で目を引く
-    return index === 0 || (index > 0 && index % 7 === 0);
-  };
-
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       {/* ヘッダー */}

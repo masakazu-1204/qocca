@@ -128,14 +128,14 @@ export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearc
   );
 };
 
-export const UserProfilePage = ({ setPage }:{ setPage:(p:string)=>void }) => {
+export const UserProfilePage = ({ setPage: _setPage }:{ setPage:(p:string)=>void }) => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
   const [loading, setLoading] = useState(true);
   const [userListings, setUserListings] = useState<Array<{ id:string; title:string; price:number; image_urls?:string[] }>>([]);
-  const [reviews, setReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
+  const [, setReviews] = useState<Array<{ id:string; rating:number; comment:string; created_at:string; reviewer_id:string; reviewer_name?:string; reviewer_avatar?:string }>>([]);
   const [isFollowing, setIsFollowing] = useState(false);
 const [followCount, setFollowCount] = useState(0);
 // うちの子 state (2026/6/28: 認証ガードは削除 — 公開プロフィールは未ログインで閲覧可。
@@ -624,7 +624,7 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
 const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   const { user } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
-  const [ordered, setOrdered] = useState(false);
+  const [ordered] = useState(false);
   const [ordering, setOrdering] = useState(false);
   const [showAddressStep, setShowAddressStep] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -1534,7 +1534,6 @@ export const SellPage = ({ setPage }) => {
   const [isFoundingCreator, setIsFoundingCreator] = useState(false);
   const [foundingFeeRate, setFoundingFeeRate] = useState<number | null>(null);
   const [categoryPriceStats, setCategoryPriceStats] = useState<Record<string, { avg: number; min: number; max: number; count: number }>>({});
-  const [priceHelpOpen, setPriceHelpOpen] = useState(false);
   const up = (k,v) => setForm(p=>({...p,[k]:v}));
   const fileRef = useRef(null);
   const addOption = () => setOptions(prev => [...prev, { name:"", price:"" }]);

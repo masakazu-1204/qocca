@@ -1,5 +1,5 @@
 // src/components/CommunityShowcase.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 
@@ -9,7 +9,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const BRAND = "#F5A94A";
 const BRAND_DEEP = "#B27820";
-const CREAM = "#FFF9F0";
 const TEXT_DARK = "#2C2C2A";
 const TEXT_MUTED = "#888780";
 const BORDER = "#F1EFE8";

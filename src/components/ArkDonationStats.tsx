@@ -9,7 +9,7 @@
 // 永続記録 #20 ARK連携運用 v2.1 ⑦透明性 体現
 // ─────────────────────────────────────────────────────────────────
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Heart, PawPrint } from "lucide-react";
 

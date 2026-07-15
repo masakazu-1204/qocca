@@ -253,7 +253,7 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
 };
 
 // ── PC用ナビバー ───────────────────────────────────────────────────────────
-export const PCNavbar = ({ setPage, liked, search, setSearch }) => {
+export const PCNavbar = ({ setPage, search, setSearch }) => {
   const { user } = useAuth();
   return (
     <nav style={{

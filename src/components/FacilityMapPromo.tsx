@@ -1,11 +1,6 @@
 // src/components/FacilityMapPromo.tsx
-import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const BRAND = "#F5A94A";
-const BRAND_DEEP = "#B27820";
-const TEXT_DARK = "#2C2C2A";
-const TEXT_MUTED = "#888780";
 
 const FACILITY_TYPES = [
   { icon: "☕", label: "カフェ" },

@@ -806,10 +806,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
 }
 
 // ── スタイル ─────────────────────────────────────────────────────
-const backLinkStyle: React.CSSProperties = {
-  background: "none", border: "none", color: QC.softBrown, fontFamily: QC_FONT_JP,
-  fontSize: 14, fontWeight: 400, cursor: "pointer", padding: 0, letterSpacing: 0.5,
-};
+// (backLinkStyle は 2026/7/16 型負債返済で削除: 未使用・fixedBackLinkStyle に置換済みだった)
 
 // 2026/6/28 軽傷UX-②: スクロール追従する戻るボタン。常時画面左上に貼り付く。
 //   モバイル: 固定Navbar(高さ60)の下 / PC: 固定PCNavbar(高さ68)の下。半透明+blur で景色を遮らない。

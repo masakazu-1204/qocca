@@ -1065,7 +1065,7 @@ const SMS_UNAVAILABLE_COPY = {
   buttonLabel: 'マイページへ戻る',
 };
 
-export const PhoneVerificationPage = ({ setPage }: any) => {
+export const PhoneVerificationPage = ({ setPage: _setPage }: any) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
