@@ -142,7 +142,7 @@ function QoccaAppInner() {
 
   // Supabase data hooks
   const { listings: dbListings, dbLoading, refetch } = useListings();
-  const { liked, toggleLike } = useFavorites(user?.id);
+  const { liked, likedSpots, toggleLike } = useFavorites(user?.id);
 
   // DBにデータがあればDBを使い、なければモックデータをフォールバック
   const listings = dbListings.length > 0 ? dbListings : LISTINGS;
@@ -152,6 +152,11 @@ function QoccaAppInner() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const onLike = (id) => {
     if (user) { toggleLike(id); }
+    else { setShowLoginPrompt(true); }
+  };
+  // 2026/7/13 横断お気に入り Phase2: スポット保存 (未ログインは Phase1 と同じ誘導へ)
+  const onLikeSpot = (spotId: string) => {
+    if (user) { toggleLike(spotId, "spot"); }
     else { setShowLoginPrompt(true); }
   };
   const onDetail = (item) => { setPage("detail", item); };
@@ -282,7 +287,7 @@ function QoccaAppInner() {
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
                 <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
-                  <PetWalkerPage setPage={setPage} isPC={true}/>
+                  <PetWalkerPage setPage={setPage} isPC={true} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>
                 </div>
               </div>
             }/>
@@ -504,7 +509,7 @@ function QoccaAppInner() {
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
-            <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>}/>
             <Route path="/petgallery" element={<PetGalleryPage setPage={setPage} isPC={false}/>}/>
             {/* あしあとUI第2弾 (2026/7/5): あしあとショップ (装飾交換・equipは第3弾) */}
             <Route path="/ashiato-shop" element={<AshiatoShopPage setPage={setPage} isPC={false}/>}/>

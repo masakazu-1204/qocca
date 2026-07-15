@@ -54,7 +54,11 @@ const catLabel = (key: string) => PW_CATEGORIES.find((c) => c.key === key)?.labe
 // 巻き戻すための history pushState/popstate パッチ。petwalker.tsx 内に閉じる。React Router 設定不変。
 const PW_NAV = "petwalker_nav";
 
-export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void; isPC?: boolean }) {
+export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
+  setPage?: (p: string) => void; isPC?: boolean;
+  // 2026/7/13 横断お気に入り Phase2: スポット保存 (未接続でも動くよう任意プロップ)
+  likedSpots?: Record<string, boolean>; onLikeSpot?: (spotId: string) => void;
+}) {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeArea, setActiveArea] = useState<string | null>(null);
@@ -225,11 +229,33 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             <h1 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 34 : 26, lineHeight: 1.5, margin: "0 0 16px", color: QC.charcoal }}>
               {s.name}
             </h1>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
               <span style={tagStyle}>{catLabel(s.category)}</span>
               <span style={tagStyle}>{[s.pref, s.city].filter(Boolean).join(" ")}</span>
               {petLabel(s.pet_types) && <span style={tagStyle}>{petLabel(s.pet_types)} と</span>}
             </div>
+            {/* 2026/7/13 横断お気に入り Phase2: スポット保存 (静けさ世界観・絵文字なし・状態は文言で示す) */}
+            {onLikeSpot && (() => {
+              const saved = !!likedSpots?.[s.id];
+              return (
+                <button
+                  onClick={() => onLikeSpot(s.id)}
+                  aria-pressed={saved}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "10px 22px", borderRadius: 999, cursor: "pointer",
+                    border: `1px solid ${saved ? QC.softBrown : QC.lightSand}`,
+                    background: saved ? QC.softBrown : "transparent",
+                    color: saved ? "#fff" : QC.softBrown,
+                    fontFamily: QC_FONT_JP, fontSize: 13.5, fontWeight: 400, letterSpacing: 0.5,
+                    marginBottom: 28,
+                    transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                  }}
+                >
+                  {saved ? "保存済み" : "この場所を保存"}
+                </button>
+              );
+            })()}
             {s.description && (
               <p style={{ fontSize: isPC ? 17 : 15, lineHeight: 2.0, color: QC.warmGray, fontWeight: 300, maxWidth: 720, margin: "0 0 36px" }}>
                 {s.description}
@@ -596,6 +622,36 @@ export function PetWalkerPage({ setPage, isPC }: { setPage?: (p: string) => void
             この子と過ごす旅を、エリアごとに。
           </p>
         </div>
+
+        {/* 2026/7/13 お気に入り Phase3: 保存した場所を優先表示 (一覧トップ・保存が1件以上ある時だけ) */}
+        {(() => {
+          const savedSpots = spots.filter((s) => likedSpots?.[s.id]);
+          if (savedSpots.length === 0) return null;
+          return (
+            <section style={{ marginBottom: isPC ? 56 : 44, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12, margin: "0 0 22px", paddingBottom: 12, borderBottom: `1px solid ${QC.lightSand}` }}>
+                <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 22 : 19, margin: 0, color: QC.softBrown }}>保存した場所</h2>
+                <span style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage }}>Saved</span>
+                <span style={{ fontSize: 12, color: QC.sage, marginLeft: "auto" }}>{savedSpots.length}</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: 18 }}>
+                {savedSpots.slice(0, 6).map((s) => (
+                  <button key={s.id} onClick={() => openSpot(s)} style={spotCardStyle} className="pw-card">
+                    {firstImage(s) && (
+                      <div style={{ width: "100%", aspectRatio: "16 / 9", overflow: "hidden", background: QC.cream }}>
+                        <img src={firstImage(s) as string} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </div>
+                    )}
+                    <div style={{ padding: "18px 20px" }}>
+                      <div style={{ fontFamily: QC_FONT_JP, fontWeight: 500, fontSize: 16, color: QC.charcoal, marginBottom: 8, lineHeight: 1.6 }}>{s.name}</div>
+                      <div style={{ fontSize: 12.5, color: QC.sage }}>{[s.pref, s.city].filter(Boolean).join(" ")}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* いまいる場所から (GPS Phase2・位置情報は明示タップ時のみ取得) */}
         {"geolocation" in navigator && (

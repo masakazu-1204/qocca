@@ -2428,21 +2428,96 @@ export const DetailPageWrapper = ({ listings, liked, onLike }) => {
 };
 
 // Phase8 8b: LikedPage を App.tsx から移動 (元 App.tsx 2343-2361 / C・Card は既import)
+// 2026/7/13 お気に入り Phase3: 横断お気に入り一覧をタブ化 (作品 / おでかけ)。イベントは将来枠。
+//   スポットは自前で favorites(item_type='spot') → pet_walker_spots を引く (App.tsx を肥大させない)。
 export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<"listing" | "spot">("listing");
+  const [spots, setSpots] = useState<any[]>([]);
+  const [spotsLoading, setSpotsLoading] = useState(false);
+
   const items = listings.filter(l => liked[l.id]);
+
+  useEffect(() => {
+    if (!user?.id) { setSpots([]); return; }
+    let alive = true;
+    (async () => {
+      setSpotsLoading(true);
+      const { data: favs } = await supabase.from("favorites")
+        .select("item_id").eq("user_id", user.id).eq("item_type", "spot");
+      const ids = (favs || []).map((f: any) => f.item_id);
+      if (ids.length === 0) { if (alive) { setSpots([]); setSpotsLoading(false); } return; }
+      const { data } = await supabase.from("pet_walker_spots")
+        .select("id,name,pref,city,area_tag,image_urls").in("id", ids);
+      if (alive) { setSpots(data || []); setSpotsLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [user?.id]);
+
+  const tabs: { key: "listing" | "spot"; label: string; count: number }[] = [
+    { key: "listing", label: "作品", count: items.length },
+    { key: "spot", label: "おでかけ", count: spots.length },
+  ];
+
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream, padding: isPC ? "0 0 40px" : "80px 16px 40px" }}>
-      <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:6 }}>❤️ お気に入り</h1>
-      <p style={{ color:C.warmGray, marginBottom:20, fontSize:14 }}>{items.length}件</p>
-      {items.length===0?(
-        <div style={{ textAlign:"center", padding:"60px 20px" }}>
-          <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
-          <div style={{ fontSize:16, fontWeight:800, color:C.dark }}>まだお気に入りがありません</div>
-        </div>
-      ):(
-        <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(3,1fr)" : "1fr 1fr", gap: isPC ? 16 : 12 }}>
-          {items.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
-        </div>
+      <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:14 }}>❤️ お気に入り</h1>
+      <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={()=>setTab(t.key)} style={{
+            padding:"8px 18px", borderRadius:999, cursor:"pointer", fontFamily:"inherit",
+            fontSize:13, fontWeight:800,
+            border:`1.5px solid ${tab===t.key ? C.orange : C.border}`,
+            background: tab===t.key ? C.orange : C.white,
+            color: tab===t.key ? C.white : C.warmGray,
+          }}>
+            {t.label} <span style={{ fontSize:11, opacity:0.8 }}>{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {tab === "listing" && (
+        items.length===0 ? (
+          <div style={{ textAlign:"center", padding:"60px 20px" }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.dark }}>まだお気に入りがありません</div>
+          </div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(3,1fr)" : "1fr 1fr", gap: isPC ? 16 : 12 }}>
+            {items.map(item=><Card key={item.id} item={item} onClick={onDetail} liked={liked[item.id]} onLike={onLike}/>)}
+          </div>
+        )
+      )}
+
+      {tab === "spot" && (
+        spotsLoading ? (
+          <p style={{ color:C.warmGray, fontSize:14, padding:"40px 0", textAlign:"center" }}>読み込んでいます。</p>
+        ) : spots.length===0 ? (
+          <div style={{ textAlign:"center", padding:"60px 20px" }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:8 }}>まだ保存した場所がありません</div>
+            <button onClick={()=>navigate("/petwalker")} style={{ marginTop:10, padding:"10px 24px", borderRadius:999, border:`1.5px solid ${C.orange}`, background:C.white, color:C.orange, fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+              おでかけ先をさがす →
+            </button>
+          </div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(3,1fr)" : "1fr", gap: isPC ? 16 : 12 }}>
+            {spots.map((s:any)=>(
+              <button key={s.id} onClick={()=>navigate("/petwalker")} style={{ textAlign:"left", background:C.white, border:`1px solid ${C.border}`, borderRadius:14, padding:0, overflow:"hidden", cursor:"pointer", fontFamily:"inherit", width:"100%", display:"block" }}>
+                {Array.isArray(s.image_urls) && s.image_urls[0] && (
+                  <div style={{ width:"100%", aspectRatio:"16 / 9", overflow:"hidden", background:C.lightGray }}>
+                    <img src={s.image_urls[0]} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+                  </div>
+                )}
+                <div style={{ padding:"14px 16px" }}>
+                  <div style={{ fontSize:15, fontWeight:800, color:C.dark, marginBottom:6, lineHeight:1.5 }}>{s.name}</div>
+                  <div style={{ fontSize:12, color:C.warmGray }}>{[s.pref, s.city].filter(Boolean).join(" ")}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )
       )}
     </div>
   );
