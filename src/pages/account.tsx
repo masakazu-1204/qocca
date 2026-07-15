@@ -6,7 +6,7 @@ import { C, QC_FONT_DISPLAY } from "../constants/theme";
 import { REDEEM_TIER_THEME } from "../constants/data";
 import { petLabelShort, petIcon } from "../constants/pets";
 import { resolveFontFamily } from "../constants/fonts";
-import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
+// 2026/7/15 CV精度修正: CompleteRegistration の発火は App.tsx (初回ログイン検知) へ移設したため import 不要に。
 import { Logo } from "../components/ui";
 import { MyPage } from "./mypage";
 
@@ -74,8 +74,10 @@ export const SignupPage = ({ setPage }) => {
           setError("このメールアドレスは既に登録されています。");
         } else {
           setMessage("✉️ 確認メールを送信しました！メール内のリンクをクリックして登録を完了してください。");
-          // 依頼書 #121 (2026/6/5): Meta Pixel CompleteRegistration (個人情報なし)
-          try { mpTrackEvent("CompleteRegistration"); } catch (_) { /* no-op */ }
+          // 2026/7/15 CV精度修正: ここでの CompleteRegistration 発火は廃止。
+          //   確認メール"送信"時点の発火 = メール未認証もCVに計上(過大計上)だった。
+          //   さらに Google(OAuth)経由はここを通らず計測漏れ(過少計上)。
+          //   → 両方を App.tsx の「初回ログイン成功時1回だけ」に統一 (経路を問わず正確に1件)。
         }
       }
     } catch (e) {
