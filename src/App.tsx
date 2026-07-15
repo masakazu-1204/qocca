@@ -42,6 +42,7 @@ import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
 // 2026/7/4 あしあとUI第1弾: デイリー付与トースト (自己完結・起動時1回grant→新規付与時のみ表示)
 import { AshiatoDailyGrant } from "./components/AshiatoGrantToast";
+import { LoginPromptToast } from "./components/LoginPromptToast";
 // あしあとUI第2弾 (2026/7/5): ショップ画面 (/ashiato-shop)
 import { AshiatoShopPage } from "./pages/ashiato_shop";
 import { SignupPage, PetDetailPage, ProfileMeRedirect, UpdatePasswordPage, RedeemPage, PhoneVerificationPage, DeletionStatusPage } from "./pages/account";
@@ -146,8 +147,12 @@ function QoccaAppInner() {
   // DBにデータがあればDBを使い、なければモックデータをフォールバック
   const listings = dbListings.length > 0 ? dbListings : LISTINGS;
 
+  // 2026/7/13 お気に入り拡張 Phase1: 未ログインで♡が「無反応」だったのを ログイン誘導に。
+  //   会員登録動線の復活 (押した意思を拾ってログインへ送る)。
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const onLike = (id) => {
     if (user) { toggleLike(id); }
+    else { setShowLoginPrompt(true); }
   };
   const onDetail = (item) => { setPage("detail", item); };
   const [homeEvents, setHomeEvents] = useState<any[]>([]);
@@ -465,6 +470,8 @@ function QoccaAppInner() {
           <SharedFooter setPage={setPage}/>
           {/* 2026/7/4 あしあとUI第1弾: デイリー付与トースト (PC branch) */}
           <AshiatoDailyGrant />
+          {/* 2026/7/13 お気に入りPhase1: 未ログイン♡→ログイン誘導 (PC branch) */}
+          <LoginPromptToast show={showLoginPrompt} onDone={() => setShowLoginPrompt(false)} />
         </div>
       ) : (
         <>
@@ -548,6 +555,8 @@ function QoccaAppInner() {
           <AddToHomeScreenBanner />
           {/* 2026/7/4 あしあとUI第1弾: デイリーログイン付与 (冪等・新規付与時のみトースト) */}
           <AshiatoDailyGrant />
+          {/* 2026/7/13 お気に入りPhase1: 未ログイン♡→ログイン誘導 (mobile branch) */}
+          <LoginPromptToast show={showLoginPrompt} onDone={() => setShowLoginPrompt(false)} />
         </>
       )}
 
