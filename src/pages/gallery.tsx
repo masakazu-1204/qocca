@@ -38,6 +38,7 @@ export const BlogPage = ({ setPage, isPC }) => {
       .from("blog_posts")
       .select("*")
       .eq("published", true)
+      .neq("post_type", "magazine") // 2026/7/16 特集Phase1: PW特集はブログ一覧に混ぜない (完全分離)
       .order("created_at", { ascending: false });
     if (!error && data) {
       const authorIds = [...new Set(data.map(p => p.author_id))];

@@ -11,6 +11,8 @@ import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { PetWalkerReviews } from "../components/PetWalkerReviews";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+// 2026/7/16 特集 Phase1: 雑誌レイアウトの特集記事 (blog_posts post_type='magazine')
+import { PetWalkerMagazine, type MagazineArticle } from "../components/PetWalkerMagazine";
 
 // GPS Phase3: 近隣マップ (Leaflet は地図表示時のみロード = lazy)
 const PetWalkerMapView = lazy(() => import("../components/PetWalkerMapView"));
@@ -21,6 +23,7 @@ type Spot = {
   secondary_area_tags: string[] | null;
   latitude: number | null; longitude: number | null; address: string | null;
   image_urls: string[] | null;
+  source_note: string | null; // 2026/7/16 特集Phase1: 記事内で「ペット可条件+公式根拠」を最新表示するため
 };
 
 // スポット画像 (Supabase Storage petwalker/spots/*.webp を image_urls に配線)。未配線なら null。
@@ -70,6 +73,9 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyLimit, setNearbyLimit] = useState(30); // 近い順の表示件数 (「もうすこし遠くまで」で+30)
   const [nearbyMode, setNearbyMode] = useState<"list" | "map">("list"); // GPS Phase3: リスト/地図トグル
+  // 2026/7/16 特集 Phase1: 公開済み特集記事 (published=true のみ。draft は棚に出ない)
+  const [magazines, setMagazines] = useState<MagazineArticle[]>([]);
+  const [activeMagazine, setActiveMagazine] = useState<MagazineArticle | null>(null);
 
   // history 連動ヘルパー: setActive* を直接呼ばずこちらを使う
   const openArea = (tag: string) => {
@@ -85,6 +91,13 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const goBack = () => { window.history.back(); };
+  // 特集 Phase1: 記事を開く (PW_NAV pushState パターン踏襲)
+  const openMagazine = (m: MagazineArticle) => {
+    setActiveMagazine(m);
+    setActiveSpot(null);
+    window.history.pushState({ [PW_NAV]: { type: "magazine", id: m.id } }, "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   // GPS Phase2: nearby view を開く。geolocation はここ (明示タップ) でのみ発火。
   const openNearby = () => {
     setActiveCat("all");
@@ -112,11 +125,15 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
       } else if (marker?.type === "nearby") {
         // nearby 状態に巻き戻る: spot を閉じる (nearby は維持)
         setActiveSpot(null);
+      } else if (marker?.type === "magazine") {
+        // 特集記事に巻き戻る: spot を閉じる (記事は維持)
+        setActiveSpot(null);
       } else {
         // marker 無し = /petwalker 初期状態に巻き戻る: 全て閉じる
         setActiveSpot(null);
         setActiveArea(null);
         setNearbyOn(false);
+        setActiveMagazine(null);
       }
     };
     window.addEventListener("popstate", onPop);
@@ -133,7 +150,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
       for (let from = 0; ; from += PAGE) {
         const { data } = await supabase
           .from("pet_walker_spots")
-          .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address,image_urls")
+          .select("id,name,category,pref,city,pet_types,description,area_tag,secondary_area_tags,latitude,longitude,address,image_urls,source_note")
           .eq("approval_status", "approved")
           .order("category", { ascending: true })
           .order("name", { ascending: true })
@@ -164,6 +181,28 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
   useEffect(() => {
     if (nearbyOn) mpTrackEvent("PetWalkerNearbyView");
   }, [nearbyOn]);
+
+  // 特集 Phase1: 公開済み特集を取得 (published=true のみ = RLS とも一致。0件なら棚ごと非表示)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("blog_posts")
+        .select("id,title,content,hero_image_url,spot_ids,meta_description")
+        .eq("post_type", "magazine")
+        .eq("published", true)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      if (alive) setMagazines((data as MagazineArticle[]) || []);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // Meta Pixel: 特集表示 (記事タイトルのみ・個人情報なし)
+  useEffect(() => {
+    if (activeMagazine) mpTrackEvent("PetWalkerMagazineView", { content_name: activeMagazine.title });
+  }, [activeMagazine]);
 
   // エリア別件数 (親エリアは子エリア分も内包)
   const countByArea = (tag: string) => spots.filter((s) => matchArea(s, tag)).length;
@@ -205,7 +244,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
       <div style={{ background: QC.warmWhite, minHeight: "60vh" }}>
         <div style={wrap}>
           <button onClick={goBack} style={fixedBackLinkStyle(isPC)}>
-            ← {nearbyOn ? "近くの一覧へ戻る" : `${s.area_tag} の一覧へ戻る`}
+            ← {activeMagazine ? "特集へ戻る" : nearbyOn ? "近くの一覧へ戻る" : `${s.area_tag} の一覧へ戻る`}
           </button>
           {firstImage(s) && (
             <div style={{ marginTop: 20, animation: `qocca-fadeInSlow 1.2s ${ease} both` }}>
@@ -314,6 +353,22 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // ── 特集記事 (Phase1・雑誌レイアウト) ────────────────────────────
+  if (activeMagazine) {
+    return (
+      <>
+        <PetWalkerMagazine
+          article={activeMagazine}
+          spots={spots}
+          isPC={isPC}
+          onBack={goBack}
+          onSpotClick={(id) => { const s = spots.find((x) => x.id === id); if (s) openSpot(s); }}
+        />
+        <FloatingBackButton aboveTabBar={true} />
+      </>
     );
   }
 
@@ -622,6 +677,49 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
             この子と過ごす旅を、エリアごとに。
           </p>
         </div>
+
+        {/* 2026/7/16 特集 Phase1: 特集棚 (雑誌の表紙)。published の特集がある時だけ。1本目を大きく */}
+        {magazines.length > 0 && (
+          <section style={{ marginBottom: isPC ? 72 : 52, animation: `qocca-fadeInSlowUp 1s ${ease} both` }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, margin: "0 0 22px", paddingBottom: 12, borderBottom: `1px solid ${QC.lightSand}` }}>
+              <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 22 : 19, margin: 0, color: QC.softBrown }}>特集</h2>
+              <span style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage }}>Feature</span>
+            </div>
+            <button
+              onClick={() => openMagazine(magazines[0])}
+              className="pw-tile"
+              style={{
+                width: "100%", border: "none", padding: 0, cursor: "pointer", textAlign: "left",
+                borderRadius: 18, overflow: "hidden", display: "block", fontFamily: QC_FONT_JP,
+              }}
+            >
+              <div
+                style={{
+                  position: "relative", width: "100%", minHeight: isPC ? 340 : 240,
+                  display: "flex", flexDirection: "column", justifyContent: "flex-end",
+                  background: `linear-gradient(180deg, rgba(44,41,38,0.10) 0%, rgba(44,41,38,0.72) 100%), url("${magazines[0].hero_image_url || ""}") center / cover no-repeat, ${QC.softBrown}`,
+                  padding: isPC ? "48px 40px" : "32px 22px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <span style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 3, color: "rgba(255,255,255,0.88)", marginBottom: 12, textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}>
+                  FEATURE
+                </span>
+                <span style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 30 : 21, lineHeight: 1.7, color: "#fff", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+                  {magazines[0].title}
+                </span>
+                {magazines[0].meta_description && (
+                  <span style={{ fontSize: isPC ? 13.5 : 12.5, color: "rgba(255,255,255,0.9)", fontWeight: 300, lineHeight: 1.9, marginTop: 12, maxWidth: 560, textShadow: "0 1px 8px rgba(0,0,0,0.55)" }}>
+                    {magazines[0].meta_description}
+                  </span>
+                )}
+                <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.85)", marginTop: 16, letterSpacing: 0.5 }}>
+                  特集を読む →
+                </span>
+              </div>
+            </button>
+          </section>
+        )}
 
         {/* 2026/7/13 お気に入り Phase3: 保存した場所を優先表示 (一覧トップ・保存が1件以上ある時だけ) */}
         {(() => {

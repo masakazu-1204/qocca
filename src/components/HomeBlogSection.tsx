@@ -37,6 +37,7 @@ export const HomeBlogSection = ({ setPage }: { setPage: (page: string) => void }
         .from("blog_posts")
         .select("id, title, cover_image_url, category, created_at")
         .eq("published", true)
+        .neq("post_type", "magazine") // 2026/7/16 特集Phase1: PW特集は「街の読みもの」に混ぜない (完全分離)
         .order("created_at", { ascending: false })
         .limit(3);
       if (mounted) setPosts((data as BlogCard[]) || []);
