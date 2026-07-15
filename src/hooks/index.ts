@@ -78,34 +78,40 @@ export const useListings = () => {
 };
 
 // お気に入りをSupabaseで管理
+// 2026/7/13 横断お気に入り(Phase2): favorites を item_type('listing'|'spot')/item_id のポリモーフィックに拡張。
+//   - liked      : 作品の互換マップ {listing_id: true} (既存の Card/Home/Search/Detail はこのまま動く)
+//   - likedSpots : スポット用マップ {spot_id: true}
+//   - toggleLike(id, type='listing') : 種別付きトグル (旧シグネチャ互換)
 export const useFavorites = (userId) => {
-  const [liked, setLiked] = useState({});
+  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [likedSpots, setLikedSpots] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (!userId) { setLiked({}); return; }
-    const fetchFavs = async () => {
-      const { data } = await supabase.from("favorites").select("listing_id").eq("user_id", userId);
-      if (data) {
-        const map = {};
-        data.forEach(f => { map[f.listing_id] = true; });
-        setLiked(map);
-      }
-    };
-    fetchFavs();
-  }, [userId]);
-
-  const toggleLike = async (listingId) => {
-    if (!userId) return;
-    const isLiked = liked[listingId];
-    setLiked(p => ({ ...p, [listingId]: !isLiked }));
-    if (isLiked) {
-      await supabase.from("favorites").delete().eq("user_id", userId).eq("listing_id", listingId);
-    } else {
-      await supabase.from("favorites").insert({ user_id: userId, listing_id: listingId });
+  const fetchFavs = async () => {
+    if (!userId) { setLiked({}); setLikedSpots({}); return; }
+    const { data } = await supabase.from("favorites").select("item_type, item_id").eq("user_id", userId);
+    if (data) {
+      const l: Record<string, boolean> = {}, s: Record<string, boolean> = {};
+      data.forEach(f => { (f.item_type === "spot" ? s : l)[f.item_id] = true; });
+      setLiked(l); setLikedSpots(s);
     }
   };
 
-  return { liked, toggleLike };
+  useEffect(() => { fetchFavs(); }, [userId]);
+
+  const toggleLike = async (itemId: string, itemType: "listing" | "spot" = "listing") => {
+    if (!userId) return;
+    const isSpot = itemType === "spot";
+    const current = isSpot ? likedSpots : liked;
+    const setter = isSpot ? setLikedSpots : setLiked;
+    const isLiked = !!current[itemId];
+    setter(p => ({ ...p, [itemId]: !isLiked })); // 楽観更新
+    const { error } = isLiked
+      ? await supabase.from("favorites").delete().eq("user_id", userId).eq("item_type", itemType).eq("item_id", itemId)
+      : await supabase.from("favorites").insert({ user_id: userId, item_type: itemType, item_id: itemId });
+    if (error) setter(p => ({ ...p, [itemId]: isLiked })); // 失敗時ロールバック
+  };
+
+  return { liked, likedSpots, toggleLike, refetchFavorites: fetchFavs };
 };
 
 export const useIsPC = () => {

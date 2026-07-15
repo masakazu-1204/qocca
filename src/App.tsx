@@ -42,6 +42,7 @@ import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
 // 2026/7/4 あしあとUI第1弾: デイリー付与トースト (自己完結・起動時1回grant→新規付与時のみ表示)
 import { AshiatoDailyGrant } from "./components/AshiatoGrantToast";
+import { LoginPromptToast } from "./components/LoginPromptToast";
 // あしあとUI第2弾 (2026/7/5): ショップ画面 (/ashiato-shop)
 import { AshiatoShopPage } from "./pages/ashiato_shop";
 import { SignupPage, PetDetailPage, ProfileMeRedirect, UpdatePasswordPage, RedeemPage, PhoneVerificationPage, DeletionStatusPage } from "./pages/account";
@@ -141,13 +142,22 @@ function QoccaAppInner() {
 
   // Supabase data hooks
   const { listings: dbListings, dbLoading, refetch } = useListings();
-  const { liked, toggleLike } = useFavorites(user?.id);
+  const { liked, likedSpots, toggleLike } = useFavorites(user?.id);
 
   // DBにデータがあればDBを使い、なければモックデータをフォールバック
   const listings = dbListings.length > 0 ? dbListings : LISTINGS;
 
+  // 2026/7/13 お気に入り拡張 Phase1: 未ログインで♡が「無反応」だったのを ログイン誘導に。
+  //   会員登録動線の復活 (押した意思を拾ってログインへ送る)。
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const onLike = (id) => {
     if (user) { toggleLike(id); }
+    else { setShowLoginPrompt(true); }
+  };
+  // 2026/7/13 横断お気に入り Phase2: スポット保存 (未ログインは Phase1 と同じ誘導へ)
+  const onLikeSpot = (spotId: string) => {
+    if (user) { toggleLike(spotId, "spot"); }
+    else { setShowLoginPrompt(true); }
   };
   const onDetail = (item) => { setPage("detail", item); };
   const [homeEvents, setHomeEvents] = useState<any[]>([]);
@@ -277,7 +287,7 @@ function QoccaAppInner() {
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
                 <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
-                  <PetWalkerPage setPage={setPage} isPC={true}/>
+                  <PetWalkerPage setPage={setPage} isPC={true} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>
                 </div>
               </div>
             }/>
@@ -465,6 +475,8 @@ function QoccaAppInner() {
           <SharedFooter setPage={setPage}/>
           {/* 2026/7/4 あしあとUI第1弾: デイリー付与トースト (PC branch) */}
           <AshiatoDailyGrant />
+          {/* 2026/7/13 お気に入りPhase1: 未ログイン♡→ログイン誘導 (PC branch) */}
+          <LoginPromptToast show={showLoginPrompt} onDone={() => setShowLoginPrompt(false)} />
         </div>
       ) : (
         <>
@@ -497,7 +509,7 @@ function QoccaAppInner() {
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
-            <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false}/>}/>
+            <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>}/>
             <Route path="/petgallery" element={<PetGalleryPage setPage={setPage} isPC={false}/>}/>
             {/* あしあとUI第2弾 (2026/7/5): あしあとショップ (装飾交換・equipは第3弾) */}
             <Route path="/ashiato-shop" element={<AshiatoShopPage setPage={setPage} isPC={false}/>}/>
@@ -548,6 +560,8 @@ function QoccaAppInner() {
           <AddToHomeScreenBanner />
           {/* 2026/7/4 あしあとUI第1弾: デイリーログイン付与 (冪等・新規付与時のみトースト) */}
           <AshiatoDailyGrant />
+          {/* 2026/7/13 お気に入りPhase1: 未ログイン♡→ログイン誘導 (mobile branch) */}
+          <LoginPromptToast show={showLoginPrompt} onDone={() => setShowLoginPrompt(false)} />
         </>
       )}
 
