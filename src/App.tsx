@@ -36,7 +36,7 @@ import { LISTINGS } from "./constants/data";
 import { supabase } from "./supabaseClient";
 // 依頼書 #121 (2026/6/5): Meta Pixel + コンバージョン計測 (7/1 Meta 広告稼働準備)
 // ID 未設定で完全 no-op、localhost で発火しない fail-safe 設計
-import { initMetaPixel, trackPageView as mpTrackPageView, trackPurchaseOnce as mpTrackPurchase } from "./lib/metaPixel";
+import { initMetaPixel, trackPageView as mpTrackPageView, trackPurchaseOnce as mpTrackPurchase, trackEvent as mpTrackEvent } from "./lib/metaPixel";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
@@ -109,6 +109,35 @@ function QoccaAppInner() {
     }
     mpTrackPageView();
   }, [location.pathname, location.search]);
+
+  // 2026/7/15 CV精度修正: CompleteRegistration を「初回ログイン成功時に1回だけ」へ統一。
+  //   旧: account.tsx で "確認メール送信時" に発火 → ①メール未認証もCV計上(過大) ②Google(OAuth)は
+  //       リダイレクト離脱でそこを通らず計測漏れ(過少)。
+  //   新: セッションが確立した user を検知して発火するため、メール経路(=認証済みでないと
+  //       セッションが出ない)も OAuth 経路も、経路を問わず「登録が実際に完了した瞬間」に1件だけ乗る。
+  //   ⚠️ AuthContext は非接触 (公開済みの user を読むだけ)。個人情報は Pixel に送らない。
+  useEffect(() => {
+    const uid = user?.id;
+    const createdAtRaw = (user as any)?.created_at;
+    if (!uid || !createdAtRaw) return;
+    const createdAt = new Date(createdAtRaw).getTime();
+    if (!Number.isFinite(createdAt)) return;
+    // 新規登録の判定: アカウント作成が24時間以内 (確認メールのリンク期限内に収まる)。
+    //   既存ユーザーの再ログインは created_at が古いため発火しない = CV二重計上を防ぐ。
+    const NEW_USER_WINDOW_MS = 24 * 60 * 60 * 1000;
+    if (Date.now() - createdAt > NEW_USER_WINDOW_MS) return;
+    // 二重発火ガード (Purchase の order_id ガードと同思想): user.id 単位で1回だけ
+    const key = `qocca_mp_reg_${uid}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      mpTrackEvent("CompleteRegistration");
+      localStorage.setItem(key, "1");
+    } catch (_) {
+      // localStorage 不可環境 (Safari Private 等): この useEffect は user.id 変化時のみ走るため
+      //   同一セッション内での多重発火はしない。計測ゼロを避けるため1回だけ発火する。
+      try { mpTrackEvent("CompleteRegistration"); } catch (__) { /* no-op */ }
+    }
+  }, [user?.id]);
 
   // 依頼書 #121 (2026/6/5): Stripe 決済成功からの戻り検知 → Purchase 発火 (order_id 単位で重複ガード)
   // create-checkout の success_url = /mypage?order=success&order_id={uuid}
