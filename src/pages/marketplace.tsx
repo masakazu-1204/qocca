@@ -225,6 +225,7 @@ const handleFollow = async () => {
           .select("id, title, cover_image_url, category, created_at")
           .eq("author_id", userId)
           .eq("published", true)
+          .neq("post_type", "magazine") // 2026/7/16 特集Phase1: PW特集はプロフィールのブログ欄に混ぜない
           .order("created_at", { ascending: false })
           .limit(3),
       ]);
