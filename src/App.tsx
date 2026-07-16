@@ -32,6 +32,7 @@ import { supabase } from "./supabaseClient";
 // 依頼書 #121 (2026/6/5): Meta Pixel + コンバージョン計測 (7/1 Meta 広告稼働準備)
 // ID 未設定で完全 no-op、localhost で発火しない fail-safe 設計
 import { initMetaPixel, trackPageView as mpTrackPageView, trackPurchaseOnce as mpTrackPurchase, trackEvent as mpTrackEvent } from "./lib/metaPixel";
+import { captureAttribution, saveRegistrationSource } from "./lib/attribution";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
@@ -78,6 +79,12 @@ function QoccaAppInner() {
     initMetaPixel();
   }, []);
 
+  // UTM GO (2026/7/17): 初回ロード時の URL utm_* / 外部リファラーをファーストタッチで保存。
+  // SPA 遷移で search が消える前に、起動時1回だけ拾う。直接訪問なら何も残さない。
+  useEffect(() => {
+    captureAttribution();
+  }, []);
+
   // トラクション計測 (2026/6/22): ログインユーザーの当日アクティブを1日1行記録。
   // DAU/MAU/リテンション/コホートの器 (daily_active_log)。共有supabase使用・新規clientは作らない。
   // 未ログインは何もしない (user_idなし=対象外)。PK(user_id,active_date)で同日重複は自動排除。
@@ -122,6 +129,9 @@ function QoccaAppInner() {
     const NEW_USER_WINDOW_MS = 24 * 60 * 60 * 1000;
     if (Date.now() - createdAt > NEW_USER_WINDOW_MS) return;
     // 二重発火ガード (Purchase の order_id ガードと同思想): user.id 単位で1回だけ
+    // UTM GO (2026/7/17): 同じ「初回ログイン」タイミングで流入元を DB に1回だけ記録。
+    //   Pixel とは独立に動く (片方が失敗してももう片方に影響しない)。fire-and-forget。
+    saveRegistrationSource(uid);
     const key = `qocca_mp_reg_${uid}`;
     try {
       if (localStorage.getItem(key)) return;
