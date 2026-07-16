@@ -17,11 +17,11 @@ type MapSpot = {
 };
 
 type Props = {
-  items: { s: MapSpot; d: number }[];   // 距離昇順 (nearby view と同じ並び)
-  userLoc: { lat: number; lng: number };
+  items: { s: MapSpot; d: number }[];   // 距離昇順 (nearby view と同じ並び)。特集モードでは d=0
+  userLoc?: { lat: number; lng: number } | null;  // 省略時 = 特集のコース地図 (現在地なし・全ピンにフィット)
   isPC?: boolean;
   onSelect: (s: MapSpot) => void;
-  distLabel: (km: number) => string;
+  distLabel?: (km: number) => string;   // 省略時はポップアップに距離を出さない
 };
 
 export default function PetWalkerMapView({ items, userLoc, isPC, onSelect, distLabel }: Props) {
@@ -31,20 +31,25 @@ export default function PetWalkerMapView({ items, userLoc, isPC, onSelect, distL
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, { center: [userLoc.lat, userLoc.lng], zoom: 12 });
+    const map = L.map(containerRef.current, {
+      center: userLoc ? [userLoc.lat, userLoc.lng] : [36.2048, 137.7], // 現在地なし時は日本の中心付近 (fitBounds が直後に上書き)
+      zoom: userLoc ? 12 : 5,
+    });
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
     const cluster = (L as any).markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false, maxClusterRadius: 60 });
     map.addLayer(cluster);
-    // 現在地: さらに控えめな点 (sage・パルスなし)
-    const youIcon = L.divIcon({
-      className: "",
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:${QC.sage};border:3px solid #fff;box-shadow:0 1px 5px rgba(44,41,38,0.35)"></div>`,
-      iconSize: [14, 14], iconAnchor: [7, 7],
-    });
-    L.marker([userLoc.lat, userLoc.lng], { icon: youIcon, interactive: false }).addTo(map);
+    // 現在地: さらに控えめな点 (sage・パルスなし)。特集モードでは出さない
+    if (userLoc) {
+      const youIcon = L.divIcon({
+        className: "",
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:${QC.sage};border:3px solid #fff;box-shadow:0 1px 5px rgba(44,41,38,0.35)"></div>`,
+        iconSize: [14, 14], iconAnchor: [7, 7],
+      });
+      L.marker([userLoc.lat, userLoc.lng], { icon: youIcon, interactive: false }).addTo(map);
+    }
     mapRef.current = map;
     clusterRef.current = cluster;
     requestAnimationFrame(() => map.invalidateSize());
@@ -74,7 +79,7 @@ export default function PetWalkerMapView({ items, userLoc, isPC, onSelect, distL
       title.textContent = s.name;
       const meta = document.createElement("div");
       meta.style.cssText = `font-size:11.5px;color:${QC.warmGray};font-weight:300;margin-bottom:10px`;
-      meta.textContent = `${[s.pref, s.city].filter(Boolean).join(" ")}・${distLabel(d)}`;
+      meta.textContent = [s.pref, s.city].filter(Boolean).join(" ") + (userLoc && distLabel ? `・${distLabel(d)}` : "");
       const btn = document.createElement("button");
       btn.textContent = "くわしく見る →";
       btn.style.cssText = `padding:7px 16px;background:transparent;color:${QC.softBrown};border:1px solid ${QC.softBrown};border-radius:999px;font-weight:400;font-size:12px;cursor:pointer;font-family:${QC_FONT_JP};letter-spacing:0.4px`;
@@ -83,14 +88,15 @@ export default function PetWalkerMapView({ items, userLoc, isPC, onSelect, distL
       m.bindPopup(pop);
       cluster.addLayer(m);
     });
-    // 初期表示: 現在地 + 近い順30件を収める (遠方まで一気に引かない)
+    // 初期表示: 現在地 + 近い順30件を収める (遠方まで一気に引かない)。特集モードは全ピンにフィット
     const near = items.slice(0, 30)
       .filter(({ s }) => s.latitude != null && s.longitude != null)
       .map(({ s }) => [Number(s.latitude), Number(s.longitude)] as [number, number]);
     if (near.length > 0) {
-      map.fitBounds(L.latLngBounds([[userLoc.lat, userLoc.lng], ...near]).pad(0.1), { maxZoom: 14 });
+      const pts: [number, number][] = userLoc ? [[userLoc.lat, userLoc.lng], ...near] : near;
+      map.fitBounds(L.latLngBounds(pts).pad(0.1), { maxZoom: 14 });
     }
-  }, [items, onSelect, distLabel, userLoc.lat, userLoc.lng]);
+  }, [items, onSelect, distLabel, userLoc?.lat, userLoc?.lng]);
 
   return (
     <div

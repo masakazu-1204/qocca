@@ -10,10 +10,15 @@
 //
 // ⚠️ 静けさ世界観: QCトークン・絵文字なし・見出しは Shippori Mincho (QC_FONT_DISPLAY)・
 //    weight<=500・transition 0.8s+・本文1段組 maxWidth 640 / 写真は全幅⇄半幅の交互リズム。
+import { lazy, Suspense } from "react";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_TIMING } from "../constants/theme";
+
+// コース地図: Leaflet は地図表示時のみロード (petwalker.tsx の近隣マップと同じ作法)
+const PetWalkerMapView = lazy(() => import("./PetWalkerMapView"));
 
 type MagazineSpot = {
   id: string; name: string; category: string; pref: string; city: string | null;
+  latitude: number | null; longitude: number | null;
   description: string | null; source_note: string | null; image_urls: string[] | null;
 };
 
@@ -52,6 +57,13 @@ export function PetWalkerMagazine({ article, spots, isPC, onSpotClick, onBack }:
   const sections = article.content.split("\n---\n").map(parseSection);
   const lead = sections[0];
   const chapters = sections.slice(1);
+
+  // コース地図: 記事に登場するスポットのうち座標があるもの (2件以上で表示)
+  const mapSpots = article.spot_ids
+    .map((id) => spotById.get(id))
+    .filter((s): s is MagazineSpot =>
+      !!s && s.latitude != null && s.longitude != null && !(Number(s.latitude) === 0 && Number(s.longitude) === 0)
+    );
 
   const bodyStyle: React.CSSProperties = {
     fontFamily: QC_FONT_JP, fontWeight: 300, fontSize: isPC ? 16.5 : 15,
@@ -161,6 +173,34 @@ export function PetWalkerMagazine({ article, spots, isPC, onSpotClick, onBack }:
             </section>
           );
         })}
+
+        {/* コース地図: 記事のスポットをひとつの地図で。座標2件以上の時だけ (Leaflet は表示時のみロード) */}
+        {mapSpots.length >= 2 && (
+          <section style={{ marginTop: isPC ? 140 : 88 }}>
+            <div style={{ maxWidth: 640, margin: "0 auto 36px" }}>
+              <p style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 3, color: QC.sage, margin: "0 0 10px" }}>MAP</p>
+              <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 28 : 21, lineHeight: 1.8, color: QC.charcoal, margin: 0 }}>
+                この特集の、地図
+              </h2>
+              <p style={{ fontFamily: QC_FONT_JP, fontSize: 13, color: QC.warmGray, fontWeight: 300, lineHeight: 2.0, margin: "12px 0 0" }}>
+                旅の順番に、場所をたどれます。ピンを押すと、それぞれの案内へ。
+              </p>
+            </div>
+            <Suspense
+              fallback={
+                <div style={{ height: isPC ? 560 : "60vh", borderRadius: 16, background: QC.cream, border: `1px solid ${QC.lightSand}`, display: "flex", alignItems: "center", justifyContent: "center", color: QC.warmGray, fontFamily: QC_FONT_JP, fontSize: 13, fontWeight: 300 }}>
+                  地図を用意しています…
+                </div>
+              }
+            >
+              <PetWalkerMapView
+                items={mapSpots.map((s) => ({ s, d: 0 }))}
+                isPC={isPC}
+                onSelect={(s) => onSpotClick && onSpotClick(s.id)}
+              />
+            </Suspense>
+          </section>
+        )}
       </div>
     </div>
   );

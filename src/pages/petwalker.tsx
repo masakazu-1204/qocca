@@ -193,7 +193,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
         .eq("published", true)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false })
-        .limit(4);
+        .limit(12);
       if (alive) setMagazines((data as MagazineArticle[]) || []);
     })();
     return () => { alive = false; };
@@ -721,7 +721,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
             {/* 2026/7/16 特集2本目以降: 小さめカードの横並び (設計書の非対称レイアウト) */}
             {magazines.length > 1 && (
               <div style={{ display: "grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap: isPC ? 18 : 12, marginTop: isPC ? 18 : 12 }}>
-                {magazines.slice(1, 3).map((m) => (
+                {magazines.slice(1).map((m) => (
                   <button
                     key={m.id}
                     onClick={() => openMagazine(m)}
