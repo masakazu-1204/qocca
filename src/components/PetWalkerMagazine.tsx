@@ -25,6 +25,7 @@ type MagazineSpot = {
 export type MagazineArticle = {
   id: string; title: string; content: string;
   hero_image_url: string | null; spot_ids: string[]; meta_description: string | null;
+  slug?: string | null; // 2026/7/17 共有可能URL (/petwalker/feature/<slug>)。未設定なら id で開ける
 };
 
 const ease = QC_TIMING.hoverEasing;
