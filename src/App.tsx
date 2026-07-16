@@ -317,7 +317,11 @@ function QoccaAppInner() {
               </div>
             }/>
             {/* ペットウォーカー: ペットと行きたくなる場所(宿/カフェ/観光) の情報ページ (商店街メイン機能・施設マップとは別) */}
-            <Route path="/petwalker" element={
+            {/* 2026/7/17 共有可能URL: /petwalker/area|spot|feature/... を同一ルートで受ける。
+                ワイルドカード1本にすることで、URL が変わっても React Router 的には同じルート
+                = 再マウントなし (スポット1,551件の再取得や戻る挙動の劣化が起きない)。
+                どのビューを開くかは petwalker.tsx がマウント時の URL を1度読んで決める。 */}
+            <Route path="/petwalker/*" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
                 <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
@@ -543,7 +547,8 @@ function QoccaAppInner() {
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
-            <Route path="/petwalker" element={<PetWalkerPage setPage={setPage} isPC={false} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>}/>
+            {/* 2026/7/17 共有可能URL (PC側と同じくワイルドカード1本・再マウント回避) */}
+            <Route path="/petwalker/*" element={<PetWalkerPage setPage={setPage} isPC={false} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>}/>
             <Route path="/petgallery" element={<PetGalleryPage setPage={setPage} isPC={false}/>}/>
             {/* あしあとUI第2弾 (2026/7/5): あしあとショップ (装飾交換・equipは第3弾) */}
             <Route path="/ashiato-shop" element={<AshiatoShopPage setPage={setPage} isPC={false}/>}/>

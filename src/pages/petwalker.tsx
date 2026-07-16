@@ -4,7 +4,7 @@
 // 構成: エリアタイル一覧 → エリア特集(カテゴリ別) → スポット詳細。view 状態は内部 useState。
 // ⚠️ 決済・施設マップ・既存テーブルには一切触れない (読むのは pet_walker_spots のみ)。
 
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_TIMING } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
@@ -54,8 +54,33 @@ const petLabel = (types: string[] | null) =>
 const catLabel = (key: string) => PW_CATEGORIES.find((c) => c.key === key)?.label || key;
 
 // 2026/6/28 軽傷UX-③: ブラウザ「戻る」操作で エリア→トップ・スポット→エリア と1段ずつ
-// 巻き戻すための history pushState/popstate パッチ。petwalker.tsx 内に閉じる。React Router 設定不変。
+// 巻き戻すための history pushState/popstate パッチ。petwalker.tsx 内に閉じる。
 const PW_NAV = "petwalker_nav";
+
+// ── 共有可能URL (2026/7/17) ──────────────────────────────────────
+// 目的: 広告の着地先・SNSからの個別リンク・将来のSEO。それまで全ビューが /petwalker のままだった。
+// ⚠️ ルートは App.tsx 側で "/petwalker/*" のワイルドカード1本。こうすると URL が変わっても
+//    React Router から見て同一ルート = 再マウントしない → 1,551件の再取得も戻る挙動も現状不変。
+//    URL の反映は既存の pushState に第3引数を足すだけ。popstate ハンドラの marker 判定は不変。
+const areaSlugOf = (tag: string) => PW_AREAS.find((a) => a.tag === tag)?.slug || null;
+const PW_URL = {
+  top: "/petwalker",
+  area: (tag: string) => { const s = areaSlugOf(tag); return s ? `/petwalker/area/${s}` : "/petwalker"; },
+  spot: (id: string) => `/petwalker/spot/${id}`,
+  feature: (m: { id: string; slug?: string | null }) => `/petwalker/feature/${m.slug || m.id}`,
+  nearby: "/petwalker/nearby",
+};
+
+// 初期URL (マウント時に1度だけ読む) → 開くべきビュー。以降の遷移は pushState 側が URL を持つ。
+type DeepLink = { type: "area"; slug: string } | { type: "spot"; id: string } | { type: "feature"; key: string } | null;
+const parseDeepLink = (pathname: string): DeepLink => {
+  const m = pathname.match(/^\/petwalker\/(area|spot|feature)\/([^/?#]+)\/?$/);
+  if (!m) return null;
+  const key = decodeURIComponent(m[2]);
+  if (m[1] === "area") return { type: "area", slug: key };
+  if (m[1] === "spot") return { type: "spot", id: key };
+  return { type: "feature", key };
+};
 
 export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
   setPage?: (p: string) => void; isPC?: boolean;
@@ -82,12 +107,12 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
     setActiveCat("all");
     setActiveArea(tag);
     setActiveSpot(null);
-    window.history.pushState({ [PW_NAV]: { type: "area", tag } }, "");
+    window.history.pushState({ [PW_NAV]: { type: "area", tag } }, "", PW_URL.area(tag));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const openSpot = (s: Spot) => {
     setActiveSpot(s);
-    window.history.pushState({ [PW_NAV]: { type: "spot", id: s.id } }, "");
+    window.history.pushState({ [PW_NAV]: { type: "spot", id: s.id } }, "", PW_URL.spot(s.id));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const goBack = () => { window.history.back(); };
@@ -95,7 +120,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
   const openMagazine = (m: MagazineArticle) => {
     setActiveMagazine(m);
     setActiveSpot(null);
-    window.history.pushState({ [PW_NAV]: { type: "magazine", id: m.id } }, "");
+    window.history.pushState({ [PW_NAV]: { type: "magazine", id: m.id } }, "", PW_URL.feature(m));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   // GPS Phase2: nearby view を開く。geolocation はここ (明示タップ) でのみ発火。
@@ -105,7 +130,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
     setNearbyMode("list");
     setNearbyOn(true);
     setNearbyStatus("locating");
-    window.history.pushState({ [PW_NAV]: { type: "nearby" } }, "");
+    window.history.pushState({ [PW_NAV]: { type: "nearby" } }, "", PW_URL.nearby);
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (!("geolocation" in navigator)) { setNearbyStatus("error"); return; }
     navigator.geolocation.getCurrentPosition(
@@ -188,7 +213,7 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
     (async () => {
       const { data } = await supabase
         .from("blog_posts")
-        .select("id,title,content,hero_image_url,spot_ids,meta_description")
+        .select("id,slug,title,content,hero_image_url,spot_ids,meta_description")
         .eq("post_type", "magazine")
         .eq("published", true)
         .eq("is_deleted", false)
@@ -203,6 +228,52 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
   useEffect(() => {
     if (activeMagazine) mpTrackEvent("PetWalkerMagazineView", { content_name: activeMagazine.title });
   }, [activeMagazine]);
+
+  // ── 共有可能URL: 直リンクで来た人を、そのビューまで連れていく (2026/7/17) ──────
+  // マウント時の URL を1度だけ読み、必要データが揃った時点で1回だけ開く。
+  // 「もどる」がサイト外に出ないよう、履歴を [トップ] → [目的のビュー] の2段に整えてから開く。
+  const initialPathRef = useRef<string>(typeof window === "undefined" ? "" : window.location.pathname);
+  const deepLinkDoneRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkDoneRef.current) return;
+    const link = parseDeepLink(initialPathRef.current);
+    if (!link) { deepLinkDoneRef.current = true; return; }
+
+    // 深いURLの手前に「トップ」の履歴を1枚差し込む (戻る先を作る)
+    const seedHistory = (marker: object, url: string) => {
+      window.history.replaceState({}, "", PW_URL.top);
+      window.history.pushState({ [PW_NAV]: marker }, "", url);
+    };
+
+    if (link.type === "area") {
+      const area = PW_AREAS.find((a) => a.slug === link.slug);
+      deepLinkDoneRef.current = true;
+      if (area) {
+        seedHistory({ type: "area", tag: area.tag }, PW_URL.area(area.tag));
+        setActiveCat("all");
+        setActiveArea(area.tag);
+      }
+      return; // 該当なし = トップのまま (404 にはしない)
+    }
+    if (link.type === "spot") {
+      if (spots.length === 0) return; // 読み込み待ち
+      const s = spots.find((x) => x.id === link.id);
+      deepLinkDoneRef.current = true;
+      if (s) {
+        seedHistory({ type: "spot", id: s.id }, PW_URL.spot(s.id));
+        setActiveSpot(s);
+      }
+      return;
+    }
+    // feature: slug 優先・旧ID でも開けるようフォールバック
+    if (magazines.length === 0) return; // 読み込み待ち
+    const m = magazines.find((x) => x.slug === link.key || x.id === link.key);
+    deepLinkDoneRef.current = true;
+    if (m) {
+      seedHistory({ type: "magazine", id: m.id }, PW_URL.feature(m));
+      setActiveMagazine(m);
+    }
+  }, [spots, magazines]);
 
   // エリア別件数 (親エリアは子エリア分も内包)
   const countByArea = (tag: string) => spots.filter((s) => matchArea(s, tag)).length;
