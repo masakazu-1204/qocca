@@ -1,16 +1,21 @@
 // ペットウォーカー スポット詳細の口コミUI (DB基盤に「乗せるだけ」)
-// ⚠️ DB: pet_walker_reviews(本人insert/update/delete・公開はis_hidden=false) /
+// ⚠️ DB: pet_walker_reviews(本人insert/update/delete・公開はis_hidden=false・image_urls jsonb) /
 //        pet_walker_review_reports(本人insertのみ・通報3件で自動非表示=トリガー)
 //        pet_walker_spots.avg_rating/review_count はトリガー自動集計 (ここでは表示用に取得分から再計算)。
+// 写真: petwalker-review-photos バケット (本人フォルダのみ書込・公開読取)。
+//       アップ前にクライアントで webp 圧縮 (長辺1600px・q0.8)。最大3枚。
 // ⚠️ 静けさ世界観: QCトークン・絵文字なし(★は評価記号として許容)・font-weight<=500・transition 0.8s+。
 // ⚠️ 決済・SNS・施設マップ・認証には一切触れない。読むのは reviews/reports と profiles(表示名)のみ。
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_TIMING } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 
 const ease = QC_TIMING.hoverEasing;
+
+const MAX_PHOTOS = 3;
+const REVIEW_PHOTO_BUCKET = "petwalker-review-photos";
 
 type ReviewRow = {
   id: string;
@@ -19,9 +24,36 @@ type ReviewRow = {
   rating: number;
   comment: string | null;
   visited_with: string | null;
+  image_urls: string[] | null;
   created_at: string;
   profiles: { display_name: string | null } | null;
 };
+
+// クライアント側 webp 圧縮 (長辺1600px・q0.8)。失敗時は元ファイルをそのまま返す。
+async function compressToWebp(file: File): Promise<Blob> {
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = url;
+    });
+    const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("no canvas 2d context");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.8));
+    if (blob && blob.size > 0 && blob.size < file.size) return blob;
+    return blob && blob.size > 0 ? blob : file;
+  } catch {
+    return file;
+  }
+}
 
 const REPORT_REASONS = ["不適切な内容", "誤った情報", "宣伝・スパム", "その他"];
 
@@ -45,6 +77,11 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
   const [visitedWith, setVisitedWith] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  // 写真: 既存URL (編集時) + 新規ファイル。合計 MAX_PHOTOS 枚まで
+  const [keptUrls, setKeptUrls] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   // 通報
   const [reportOpenId, setReportOpenId] = useState<string | null>(null);
   const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
@@ -52,7 +89,7 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
   const fetchReviews = useCallback(async () => {
     const { data } = await supabase
       .from("pet_walker_reviews")
-      .select("id,spot_id,user_id,rating,comment,visited_with,created_at,profiles(display_name)")
+      .select("id,spot_id,user_id,rating,comment,visited_with,image_urls,created_at,profiles(display_name)")
       .eq("spot_id", spotId)
       .eq("is_hidden", false)
       .order("created_at", { ascending: false });
@@ -71,9 +108,11 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
       setRating(myReview.rating);
       setComment(myReview.comment || "");
       setVisitedWith(myReview.visited_with || "");
+      setKeptUrls(myReview.image_urls || []);
     } else {
-      setRating(0); setComment(""); setVisitedWith("");
+      setRating(0); setComment(""); setVisitedWith(""); setKeptUrls([]);
     }
+    setNewFiles([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myReview?.id, spotId]);
 
@@ -81,27 +120,65 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
   const count = reviews.length;
   const avg = count ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
 
+  // 写真の選択 (合計 MAX_PHOTOS 枚まで・超過分は静かに切る)
+  const pickFiles = (list: FileList | null) => {
+    if (!list) return;
+    const room = MAX_PHOTOS - keptUrls.length - newFiles.length;
+    const picked = Array.from(list).filter((f) => f.type.startsWith("image/")).slice(0, Math.max(0, room));
+    if (picked.length > 0) setNewFiles((prev) => [...prev, ...picked]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const submit = async () => {
     if (!user || rating < 1 || submitting) return;
     setSubmitting(true); setErrMsg(null);
+
+    // 1) 新規写真を webp 圧縮してアップロード (本人フォルダ: <user.id>/...)
+    const uploadedUrls: string[] = [];
+    for (let i = 0; i < newFiles.length; i++) {
+      const blob = await compressToWebp(newFiles[i]);
+      const ext = blob.type === "image/webp" ? "webp" : (newFiles[i].name.split(".").pop()?.toLowerCase() || "jpg");
+      const path = `${user.id}/${spotId}_${Date.now()}_${i}.${ext}`;
+      const { error: upErr } = await supabase.storage.from(REVIEW_PHOTO_BUCKET).upload(path, blob, { contentType: blob.type || undefined });
+      if (upErr) {
+        setSubmitting(false);
+        setErrMsg("写真をアップロードできませんでした。枚数やサイズを見直して、もう一度お試しください。");
+        return;
+      }
+      uploadedUrls.push(supabase.storage.from(REVIEW_PHOTO_BUCKET).getPublicUrl(path).data.publicUrl);
+    }
+    const imageUrls = [...keptUrls, ...uploadedUrls].slice(0, MAX_PHOTOS);
+
+    // 2) 口コミ本体を insert / update
     const payload = {
       spot_id: spotId,
       user_id: user.id,
       rating,
       comment: comment.trim() || null,
       visited_with: visitedWith.trim() || null,
+      image_urls: imageUrls,
     };
     let error;
     if (myReview) {
       ({ error } = await supabase
         .from("pet_walker_reviews")
-        .update({ rating: payload.rating, comment: payload.comment, visited_with: payload.visited_with, updated_at: new Date().toISOString() })
+        .update({ rating: payload.rating, comment: payload.comment, visited_with: payload.visited_with, image_urls: payload.image_urls, updated_at: new Date().toISOString() })
         .eq("id", myReview.id));
     } else {
       ({ error } = await supabase.from("pet_walker_reviews").insert(payload));
     }
     setSubmitting(false);
     if (error) { setErrMsg("送信できませんでした。時間をおいて、もう一度お試しください。"); return; }
+
+    // 3) 編集で外した写真はストレージからも片づける (失敗しても口コミ自体は成立)
+    const removed = (myReview?.image_urls || []).filter((u) => !imageUrls.includes(u));
+    if (removed.length > 0) {
+      const paths = removed
+        .map((u) => u.split(`/object/public/${REVIEW_PHOTO_BUCKET}/`)[1])
+        .filter((p): p is string => !!p);
+      if (paths.length > 0) await supabase.storage.from(REVIEW_PHOTO_BUCKET).remove(paths);
+    }
+    setNewFiles([]);
     await fetchReviews();
   };
 
@@ -185,6 +262,53 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
               background: "#fff", marginBottom: 16,
             }}
           />
+          {/* 写真 (任意・最大3枚)。既存 keptUrls + 新規 newFiles をサムネイルで並べ、それぞれ外せる */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+              {keptUrls.map((u) => (
+                <div key={u} style={{ position: "relative", width: 72, height: 72 }}>
+                  <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10, border: `1px solid ${QC.lightSand}`, display: "block" }} />
+                  <button
+                    onClick={() => setKeptUrls((prev) => prev.filter((x) => x !== u))}
+                    aria-label="この写真を外す"
+                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: 999, border: `1px solid ${QC.lightSand}`, background: QC.warmWhite, color: QC.warmGray, fontSize: 11, lineHeight: 1, cursor: "pointer", padding: 0 }}
+                  >×</button>
+                </div>
+              ))}
+              {newFiles.map((f, i) => (
+                <div key={`${f.name}_${i}`} style={{ position: "relative", width: 72, height: 72 }}>
+                  <img src={URL.createObjectURL(f)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10, border: `1px solid ${QC.lightSand}`, display: "block" }} />
+                  <button
+                    onClick={() => setNewFiles((prev) => prev.filter((_, j) => j !== i))}
+                    aria-label="この写真を外す"
+                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: 999, border: `1px solid ${QC.lightSand}`, background: QC.warmWhite, color: QC.warmGray, fontSize: 11, lineHeight: 1, cursor: "pointer", padding: 0 }}
+                  >×</button>
+                </div>
+              ))}
+              {keptUrls.length + newFiles.length < MAX_PHOTOS && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    width: 72, height: 72, borderRadius: 10, cursor: "pointer",
+                    border: `1px dashed ${QC.sage}`, background: "transparent",
+                    color: QC.sage, fontFamily: QC_FONT_JP, fontSize: 11.5, fontWeight: 300, lineHeight: 1.7,
+                    transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                  }}
+                >写真を<br />添える</button>
+              )}
+            </div>
+            <p style={{ fontSize: 11.5, color: QC.sage, fontWeight: 300, margin: "8px 0 0" }}>
+              この場所で撮った写真を、{MAX_PHOTOS}枚まで添えられます。（任意）
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => pickFiles(e.target.files)}
+              style={{ display: "none" }}
+            />
+          </div>
           {errMsg && <p style={{ fontSize: 12.5, color: QC.terracotta, fontWeight: 400, margin: "0 0 12px" }}>{errMsg}</p>}
           <button
             onClick={submit}
@@ -223,6 +347,21 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
               {r.comment && (
                 <p style={{ fontSize: 14, color: QC.warmGray, fontWeight: 300, lineHeight: 1.9, margin: "0 0 6px", whiteSpace: "pre-wrap" }}>{r.comment}</p>
               )}
+              {/* 口コミ写真: サムネイル → タップで拡大 */}
+              {(r.image_urls?.length ?? 0) > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "10px 0 4px" }}>
+                  {(r.image_urls || []).map((u) => (
+                    <button
+                      key={u}
+                      onClick={() => setLightboxUrl(u)}
+                      aria-label="写真を拡大する"
+                      style={{ padding: 0, border: `1px solid ${QC.lightSand}`, borderRadius: 10, overflow: "hidden", cursor: "pointer", background: QC.cream, width: 88, height: 88 }}
+                    >
+                      <img src={u} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </button>
+                  ))}
+                </div>
+              )}
               {r.visited_with && (
                 <p style={{ fontSize: 12, color: QC.sage, fontWeight: 300, margin: "6px 0 0" }}>{r.visited_with} と</p>
               )}
@@ -258,6 +397,23 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
           );
         })}
       </div>
+
+      {/* ライトボックス (タップで閉じる) */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          role="button"
+          aria-label="閉じる"
+          style={{
+            position: "fixed", inset: 0, zIndex: 60, cursor: "pointer",
+            background: "rgba(44,41,38,0.82)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+            animation: `qocca-fadeInSlow 0.6s ${ease} both`,
+          }}
+        >
+          <img src={lightboxUrl} alt="" style={{ maxWidth: "92vw", maxHeight: "86vh", borderRadius: 14, boxShadow: "0 12px 48px rgba(0,0,0,0.4)" }} />
+        </div>
+      )}
     </section>
   );
 }
