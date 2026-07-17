@@ -8,6 +8,8 @@ export type PWCategory = { key: string; label: string; en: string };
 // 公開URLは決定的なので先に配線 (投入前は 404 → UI はフォールバック背景色)。
 const PW_IMG_BASE = "https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/petwalker";
 const pwImg = (slug: string) => `${PW_IMG_BASE}/${slug}.webp`;
+// スポット写真を直参照 (目的テーマの代表画像用。専用テーマ画像を用意したら pwImg に差し替え)
+const pwSpotImg = (file: string) => `${PW_IMG_BASE}/spots/${file}.webp`;
 
 // 表示順: ① 地名エリア(kind:"area")を北→南 ② テーマ特集(kind:"theme")を後置。
 //   tag は DB の area_tag と完全一致。slug = Storage ファイル名。en/blurb/slug は不変(並び替えのみ)。
@@ -94,6 +96,13 @@ export const PW_AREAS: PWArea[] = [
   { tag: "高速SA・ドッグラン", en: "Highway Dog Run", blurb: "道中の、ひと休み。",      slug: "driving_dogrun", img: pwImg("driving_dogrun"), kind: "theme" },
   { tag: "道の駅・ドッグラン", en: "Roadside Station Dog Run", blurb: "立ち寄りの、ひと遊び。", slug: "michinoeki_dogrun", img: pwImg("michinoeki_dogrun"), kind: "theme" },
   { tag: "雨の日OK・屋内あそび場", en: "Rainy Day", blurb: "雨でも、思いきり。", slug: "rainy_indoor", img: pwImg("rainy_indoor"), kind: "theme" },
+  // 2026/7/18 目的追加5 (横断テーマ)。既存の地名スポットに secondary_area_tags で付与 = 地名にも目的にも出る。
+  //   img は代表スポット写真を直URL参照 (専用テーマ画像を作ったら pwImg(slug) に差し替え可)。
+  { tag: "海で遊ぶ",          en: "By the Sea",       blurb: "潮風と、波打ちぎわ。",   slug: "umi",         img: pwSpotImg("iseshima_goza"),          kind: "theme" },
+  { tag: "絶景・展望",        en: "Scenic Views",     blurb: "遠くまで、見晴らす。",   slug: "zekkei",      img: pwSpotImg("iseshima_yokoyama"),      kind: "theme" },
+  { tag: "ドッグラン付きの宿", en: "Stay with Dog Run", blurb: "駆けて、泊まる。",       slug: "dogrun_stay", img: pwSpotImg("iseshima_wanwantoba"),     kind: "theme" },
+  { tag: "犬と入れるカフェ",  en: "Dog-friendly Cafés", blurb: "テラスで、ひと息。",    slug: "cafe_terrace", img: pwSpotImg("kyoto_reste_arashiyama"), kind: "theme" },
+  { tag: "BBQ・グランピング", en: "BBQ & Glamping",   blurb: "外で、火を囲む。",       slug: "bbq_glamping", img: pwSpotImg("kyoto_kamehouse"),        kind: "theme" },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
