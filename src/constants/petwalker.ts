@@ -103,6 +103,8 @@ export const PW_AREAS: PWArea[] = [
   { tag: "ドッグラン付きの宿", en: "Stay with Dog Run", blurb: "駆けて、泊まる。",       slug: "dogrun_stay", img: pwSpotImg("iseshima_wanwantoba"),     kind: "theme" },
   { tag: "犬と入れるカフェ",  en: "Dog-friendly Cafés", blurb: "テラスで、ひと息。",    slug: "cafe_terrace", img: pwSpotImg("kyoto_reste_arashiyama"), kind: "theme" },
   { tag: "BBQ・グランピング", en: "BBQ & Glamping",   blurb: "外で、火を囲む。",       slug: "bbq_glamping", img: pwSpotImg("kyoto_kamehouse"),        kind: "theme" },
+  // 2026/7/18 目的追加6: フォトスポット (鳥居/灯台/大橋/花畑/映えスポット明記の54件)
+  { tag: "フォトスポット",    en: "Photo Spots",      blurb: "うちの子と、一枚。",     slug: "photo",       img: pwSpotImg("yamaguchi_motonosumi"),   kind: "theme" },
 ];
 
 // カテゴリ表示 (DB の category と一致: hotel/cafe/spot)
