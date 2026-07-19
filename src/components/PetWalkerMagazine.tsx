@@ -47,12 +47,18 @@ function parseSection(sec: string): { heading: string | null; body: string } {
   return { heading: null, body: sec.trim() };
 }
 
-export function PetWalkerMagazine({ article, spots, isPC, onSpotClick, onBack }: {
+export function PetWalkerMagazine({ article, spots, isPC, onSpotClick, onBack, likedSpots, onLikeSpot, isLoggedIn, onJoin }: {
   article: MagazineArticle;
   spots: MagazineSpot[];              // petwalker.tsx が保持する全スポット (id で引く)
   isPC?: boolean;
   onSpotClick?: (spotId: string) => void;
   onBack: () => void;
+  // 2026/7/19 #3 (広告→記事の登録変換): 記事内で"熱の頂点"に保存を置く。
+  //   ♡は既存の onLikeSpot に乗る (未ログインなら App 側でログイン誘導トースト)。
+  likedSpots?: Record<string, boolean>;
+  onLikeSpot?: (spotId: string) => void;
+  isLoggedIn?: boolean;              // 締めの招待を未ログイン時のみ出す
+  onJoin?: () => void;              // 締めの「はじめる」→ /login
 }) {
   const spotById = new Map(spots.map((s) => [s.id, s]));
   const sections = article.content.split("\n---\n").map(parseSection);
@@ -169,6 +175,29 @@ export function PetWalkerMagazine({ article, spots, isPC, onSpotClick, onBack }:
                       公式の案内を確認する
                     </a>
                   )}
+                  {/* #3: 熱の頂点で保存 (未ログインは App 側でログイン誘導トースト) */}
+                  {onLikeSpot && (() => {
+                    const saved = !!likedSpots?.[spot.id];
+                    return (
+                      <div style={{ marginTop: 18 }}>
+                        <button
+                          onClick={() => onLikeSpot(spot.id)}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 7,
+                            background: saved ? QC.cream : "transparent",
+                            border: `1px solid ${saved ? QC.sage : QC.lightSand}`, borderRadius: 999,
+                            padding: "8px 16px", cursor: "pointer",
+                            fontFamily: QC_FONT_JP, fontSize: 12.5, fontWeight: 400,
+                            color: saved ? QC.mutedGreen : QC.warmGray, letterSpacing: 0.3,
+                            transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                          }}
+                        >
+                          <span style={{ fontSize: 13, color: saved ? QC.mutedGreen : QC.sage }}>{saved ? "♥" : "♡"}</span>
+                          {saved ? "保存済み" : "行きたい場所に保存"}
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </section>
@@ -200,6 +229,31 @@ export function PetWalkerMagazine({ article, spots, isPC, onSpotClick, onBack }:
                 onSelect={(s) => onSpotClick && onSpotClick(s.id)}
               />
             </Suspense>
+          </section>
+        )}
+
+        {/* #3: 読み終えた余韻に、静かな招待 (未ログイン時のみ)。売り込まず、価値だけを差し出す */}
+        {!isLoggedIn && onJoin && (
+          <section style={{ maxWidth: 640, margin: `${isPC ? 140 : 96}px auto 0`, textAlign: "center" }}>
+            <div style={{ borderTop: `1px solid ${QC.lightSand}`, paddingTop: isPC ? 64 : 48 }}>
+              <p style={{ fontFamily: QC_FONT_DISPLAY, fontWeight: 500, fontSize: isPC ? 23 : 19, lineHeight: 1.9, color: QC.charcoal, margin: "0 0 14px" }}>
+                気に入った場所は、<br />保存しておけます。
+              </p>
+              <p style={{ fontFamily: QC_FONT_JP, fontSize: isPC ? 14.5 : 13.5, fontWeight: 300, lineHeight: 2.0, color: QC.warmGray, margin: "0 0 30px" }}>
+                うちの子との、次のおでかけに。<br />そっと、残しておく。
+              </p>
+              <button
+                onClick={onJoin}
+                style={{
+                  padding: isPC ? "13px 40px" : "12px 34px", borderRadius: 999, border: "none",
+                  background: QC.softBrown, color: "#fff",
+                  fontFamily: QC_FONT_JP, fontSize: isPC ? 14.5 : 13.5, fontWeight: 400, letterSpacing: 1,
+                  cursor: "pointer", transition: `all ${QC_TIMING.hoverDuration} ${ease}`,
+                }}
+              >
+                はじめる
+              </button>
+            </div>
           </section>
         )}
       </div>
