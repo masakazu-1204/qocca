@@ -5,8 +5,10 @@
 // ⚠️ 決済・施設マップ・既存テーブルには一切触れない (読むのは pet_walker_spots のみ)。
 
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_TIMING } from "../constants/theme";
 import { supabase } from "../supabaseClient";
+import { useAuth } from "../contexts/AuthContext";
 import { PW_AREAS, PW_CATEGORIES, PW_PET_LABELS } from "../constants/petwalker";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { PetWalkerReviews } from "../components/PetWalkerReviews";
@@ -87,6 +89,11 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
   // 2026/7/13 横断お気に入り Phase2: スポット保存 (未接続でも動くよう任意プロップ)
   likedSpots?: Record<string, boolean>; onLikeSpot?: (spotId: string) => void;
 }) {
+  // 2026/7/19 #3: 未ログイン誘導の出し分けに使用 (読むだけ)。AuthContext は createContext(null) で
+  // 未型付け(既存の型負債)のため、最小形にキャストして受ける (any は使わない・型負債を増やさない)。
+  const user = (useAuth() as { user: { id: string } | null } | null)?.user ?? null;
+  const navigate = useNavigate();
+  const goLogin = () => navigate("/login");
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeArea, setActiveArea] = useState<string | null>(null);
@@ -437,6 +444,10 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
           isPC={isPC}
           onBack={goBack}
           onSpotClick={(id) => { const s = spots.find((x) => x.id === id); if (s) openSpot(s); }}
+          likedSpots={likedSpots}
+          onLikeSpot={onLikeSpot}
+          isLoggedIn={!!user}
+          onJoin={goLogin}
         />
         <FloatingBackButton aboveTabBar={true} />
       </>
@@ -747,6 +758,18 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
             泊まれる宿、一緒に入れるカフェ、歩きたくなる場所。<br />
             この子と過ごす旅を、エリアごとに。
           </p>
+          {/* 2026/7/19 #3: 未ログインの人へ、静かな保存の誘い (ログイン済みには「保存した場所」があるので出さない) */}
+          {!user && (
+            <p style={{ fontSize: isPC ? 14 : 13, color: QC.sage, fontWeight: 300, lineHeight: 1.9, margin: "22px auto 0", letterSpacing: 0.3 }}>
+              気になる場所は、保存できます。うちの子との、次のおでかけに。
+              <button
+                onClick={goLogin}
+                style={{ background: "none", border: "none", padding: 0, marginLeft: 8, cursor: "pointer", fontFamily: QC_FONT_JP, fontSize: isPC ? 14 : 13, fontWeight: 400, color: QC.softBrown, borderBottom: `1px solid ${QC.softBrown}` }}
+              >
+                はじめる
+              </button>
+            </p>
+          )}
         </div>
 
         {/* 2026/7/16 特集 Phase1: 特集棚 (雑誌の表紙)。published の特集がある時だけ。1本目を大きく */}
