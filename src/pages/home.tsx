@@ -3056,6 +3056,9 @@ export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, on
       {/* 2026/6/29 第3弾 ②: 並び順を 街で愛されている作品→ペットウォーカー→うちの子ギャラリー→街のアルバム に変更 */}
       {/* ペットウォーカー誘導 (写真ヒーロー → /petwalker) */}
       <Reveal><SectionPetWalker setPage={setPage} /></Reveal>
+      {/* 2026/7/21 イベント強化: 末尾に埋もれていた HomeEventsSection をペットウォーカー直後へ昇格。
+          「行ける場所(PetWalker)」+「行けるイベント」= "うちの子とすること" を上部に束ねる。時期ものは来訪動機になる。 */}
+      <Reveal><HomeEventsSection events={homeEvents} setPage={setPage}/></Reveal>
       {/* 2026/6/29 第3弾 ①: HomePetGallerySection 新設 (pet_gallery.tsx 取得ロジック/カードUI流用・8件preview + もっと見る→/petgallery) */}
       <Reveal><HomePetGallerySection /></Reveal>
       {/* 街のアルバム: MomentModal / LoginPromptModal (position:fixed) を内包するため transform を使わない fade */}
@@ -3075,8 +3078,7 @@ export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, on
       <Reveal><HomeCommunitiesSection setPage={setPage}/></Reveal>
       {/* 2026/7/5 トップ改善①: 街の読みもの (blog_posts 最新3件・0件時非表示・詳細/一覧は既存ブログへ) */}
       <Reveal><HomeBlogSection setPage={setPage}/></Reveal>
-      {/* 🔴 緊急修正 (2026/6/5): #116 末尾セクションを本来あるべき HomePage 内 (SectionJoinTown と Footer の間) に正しく配置 - 0件時 null 非表示 */}
-      <Reveal><HomeEventsSection events={homeEvents} setPage={setPage}/></Reveal>
+      {/* 2026/7/21 イベントセクションは上部(ペットウォーカー直後)へ移動済み。ここでは二重表示しない。 */}
       {/* 2026/6/28 案A実施: 自前 SharedFooter 削除。App.tsx PC L452 + Mobile L528 で全ページ共通 1個に統一されたため重複解消。 */}
     </div>
   );
