@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
 
     const {
       listing_id, listing_title, price, options, buyer_id, seller_id,
-      shipping_address_id, variant_id, shipping_region, selected_shipping_method_id
+      shipping_address_id, variant_id, shipping_region, selected_shipping_method_id,
+      choice_ids  // 2026/7/23 Phase 2: 選択肢購入 (N個選択)。choiceモード時のみ使用
     } = body;
 
     if (!listing_title || !price) {
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
 
     const { data: listing, error: listingErr } = await supabase
       .from("listings")
-      .select("id, has_variants, price, stock_quantity, status, shipping_type, shipping_fee, shipping_rates, shipping_methods")
+      .select("id, has_variants, price, stock_quantity, status, shipping_type, shipping_fee, shipping_rates, shipping_methods, choice_required_count, choice_set_price")
       .eq("id", listing_id)
       .single();
 
@@ -99,9 +100,39 @@ Deno.serve(async (req) => {
     let actualPrice: number;
     let variantData: any = null;
     let variantSnapshot: any = null;
+    // 2026/7/23 Phase 2: 選択肢購入モード判定 (choice_required_count が正の時)。
+    //   出品側で variant/option とは併用不可を強制済 (Phase 1)。ここでも choice優先で独立処理。
+    const isChoiceMode = listing.choice_required_count != null && Number(listing.choice_required_count) > 0;
+    let choiceRows: any[] = [];   // 検証済みの選択肢 (order_choices 保存用)
     debugLog.step = "validate_price_stock";
+    debugLog.isChoiceMode = isChoiceMode;
 
-    if (listing.has_variants) {
+    if (isChoiceMode) {
+      const reqN = Number(listing.choice_required_count);
+      const setPrice = Number(listing.choice_set_price);
+      if (!Number.isFinite(setPrice) || setPrice <= 0) {
+        return new Response(JSON.stringify({ error: "Invalid choice_set_price", message: "この商品の価格設定に問題があります", debugLog }), { status: 400, headers: corsHeaders });
+      }
+      if (!Array.isArray(choice_ids) || choice_ids.length !== reqN) {
+        return new Response(JSON.stringify({ error: "Choice count mismatch", message: `${reqN}個選んでください`, debugLog }), { status: 400, headers: corsHeaders });
+      }
+      const uniqIds = Array.from(new Set(choice_ids.map((x: any) => String(x))));
+      if (uniqIds.length !== reqN) {
+        return new Response(JSON.stringify({ error: "Duplicate choices", message: "同じものは選べません。別々に選んでください", debugLog }), { status: 400, headers: corsHeaders });
+      }
+      // 全件このlistingの有効な選択肢か + 在庫>0 か (最終的な減算は reduce_choices_stock がアトミックに再検証)
+      const { data: chs, error: chErr } = await supabase
+        .from("listing_choices").select("id, name, stock, is_active")
+        .in("id", uniqIds).eq("listing_id", listing_id).eq("is_active", true);
+      if (chErr || !chs || chs.length !== reqN) {
+        return new Response(JSON.stringify({ error: "Choice not found or inactive", message: "選んだものは利用できません", debugLog }), { status: 400, headers: corsHeaders });
+      }
+      if (chs.some((c: any) => (c.stock ?? 0) <= 0)) {
+        return new Response(JSON.stringify({ error: "Choice out of stock", message: "売り切れのものが含まれています", debugLog }), { status: 400, headers: corsHeaders });
+      }
+      actualPrice = setPrice;   // セット価格をサーバー確定 (選択で価格は変わらない)
+      choiceRows = chs;
+    } else if (listing.has_variants) {
       if (!variant_id) {
         return new Response(JSON.stringify({ error: "Variant ID required for this listing", message: "種類を選んでください", debugLog }), { status: 400, headers: corsHeaders });
       }
@@ -211,7 +242,23 @@ Deno.serve(async (req) => {
     }
 
     debugLog.step = "reduce_stock";
-    if (variant_id) {
+    if (isChoiceMode) {
+      // 2026/7/23 Phase 2: N個の在庫をアトミック減算 (1つでも不足なら全減算せず FALSE)
+      const { data: choiceOk, error: choiceStockErr } = await supabase.rpc('reduce_choices_stock', { p_choice_ids: choiceRows.map((c: any) => c.id) });
+      if (choiceStockErr || !choiceOk) {
+        await supabase.from("orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", order.id);
+        return new Response(JSON.stringify({ error: "Choice stock reduction failed", message: "売り切れました", debugLog }), { status: 400, headers: corsHeaders });
+      }
+      // 注文明細 (選んだN個を snapshot 付きで保存)
+      const { error: ocErr } = await supabase.from("order_choices").insert(
+        choiceRows.map((c: any) => ({ order_id: order.id, choice_id: c.id, choice_snapshot: { name: c.name } }))
+      );
+      if (ocErr) {
+        // 明細保存失敗: 注文を取消 (在庫は戻さない=既存variantと同一方針・二重販売より安全側)
+        await supabase.from("orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", order.id);
+        return new Response(JSON.stringify({ error: "order_choices insert failed", message: "注文の保存に失敗しました", debugLog }), { status: 500, headers: corsHeaders });
+      }
+    } else if (variant_id) {
       const { data: stockSuccess, error: stockErr } = await supabase.rpc('reduce_variant_stock', { p_variant_id: variant_id, p_quantity: 1 });
       if (stockErr || !stockSuccess) {
         await supabase.from("orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", order.id);
@@ -237,7 +284,9 @@ Deno.serve(async (req) => {
     debugLog.step = "stripe_call";
     debugLog.order_id = order.id;
 
-    const productName = variantData ? `${listing_title} - ${variantData.variant_name}` : listing_title;
+    const productName = isChoiceMode
+      ? `${listing_title}（${choiceRows.map((c: any) => c.name).join("・")}）`.slice(0, 250)
+      : variantData ? `${listing_title} - ${variantData.variant_name}` : listing_title;
 
     const line_items: any[] = [{
       price_data: { currency: "jpy", product_data: { name: productName }, unit_amount: actualPrice },
