@@ -355,7 +355,10 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       await supabase.from("orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", order.id);
-      if (variant_id) {
+      if (isChoiceMode) {
+        // 2026/7/23 Phase 2: 決済前失敗なので減算した選択肢在庫を戻す (variant/単品と同じ扱い)
+        await supabase.rpc('restore_choices_stock', { p_choice_ids: choiceRows.map((c: any) => c.id) });
+      } else if (variant_id) {
         await supabase.from("listing_variants").update({ stock: variantData.stock }).eq("id", variant_id);
       } else if (listing.stock_quantity !== null) {
         await supabase.from("listings").update({ stock_quantity: listing.stock_quantity, status: "approved" }).eq("id", listing_id);
