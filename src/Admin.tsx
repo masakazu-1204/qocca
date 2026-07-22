@@ -391,6 +391,181 @@ const MembersPage = () => {
   );
 };
 
+// ── お知らせ配信 (運営専用 一斉DM・2026/7/22 King承認指示書) ──────────────────
+// 🛡️ 真のゲートはサーバー側 RPC admin_broadcast_dm() の is_admin() (UI非表示に依存しない)。
+//    ここは admin しか到達できない AdminDashboard 内のUI。宛先は手動チェックのみ(条件絞込・全員は作らない)。
+const BroadcastPage = () => {
+  const MAX_LEN = 2000;
+  const MAX_RECIPIENTS = 200;
+  const [members, setMembers] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [content, setContent] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: m }, { data: h }] = await Promise.all([
+      supabase.from("profiles")
+        .select("id, display_name, avatar_url, created_at, is_suspended")
+        .order("created_at", { ascending: false }),
+      supabase.from("dm_broadcasts")
+        .select("id, content, recipient_count, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    setMembers(m || []);
+    setHistory(h || []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const filtered = members.filter(m => !search || m.display_name?.includes(search) || m.id?.includes(search));
+  const selectedIds = Object.keys(checked).filter(id => checked[id]);
+  const selectedNames = members.filter(m => checked[m.id]).map(m => m.display_name || "未設定");
+  const remain = MAX_LEN - content.length;
+  const canSend = selectedIds.length > 0 && selectedIds.length <= MAX_RECIPIENTS && content.trim().length > 0 && remain >= 0 && !sending;
+
+  const toggleAllFiltered = (on: boolean) => {
+    setChecked(prev => {
+      const next = { ...prev };
+      filtered.forEach(m => { next[m.id] = on; });
+      return next;
+    });
+  };
+
+  const send = async () => {
+    setSending(true);
+    setResult(null);
+    // 🛡️ サーバー側 RPC (SECURITY DEFINER + is_admin ゲート)。非adminはここで forbidden。
+    const { data, error } = await supabase.rpc("admin_broadcast_dm", {
+      p_recipient_ids: selectedIds, p_content: content.trim(),
+    });
+    setSending(false);
+    setConfirming(false);
+    if (error) {
+      setResult({ ok: false, msg: `送信できませんでした: ${error.message}` });
+      return;
+    }
+    setResult({ ok: true, msg: `${data}人に送信しました。` });
+    setChecked({});
+    setContent("");
+    load(); // 履歴を更新
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: C.dark, marginBottom: 6 }}>📣 お知らせ配信</h2>
+      <p style={{ fontSize: 12, color: C.warmGray, marginBottom: 20 }}>
+        選択したユーザーへ「運営事務局」から個別DMとして一斉送信します（最大{MAX_RECIPIENTS}人・{MAX_LEN}字・1時間5回まで）。受信者は通常のDMとして返信できます。
+      </p>
+
+      {result && (
+        <div style={{ padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 13, fontWeight: 700,
+          background: result.ok ? C.greenPale : C.redPale, color: result.ok ? C.green : C.red }}>
+          {result.msg}
+        </div>
+      )}
+
+      {/* 本文 */}
+      <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, padding: 16, marginBottom: 16 }}>
+        <textarea value={content} onChange={e => setContent(e.target.value)} rows={5}
+          placeholder="お知らせの本文を入力..."
+          style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", resize: "vertical", outline: "none" }} />
+        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: remain < 0 ? C.red : C.warmGray, marginTop: 6 }}>
+          残り {remain} 字
+        </div>
+      </div>
+
+      {/* 宛先選択 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="名前・IDで検索..."
+          style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+        <button onClick={() => toggleAllFiltered(true)} style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", color: C.dark }}>表示中を全選択</button>
+        <button onClick={() => setChecked({})} style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", color: C.warmGray }}>全解除</button>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: C.warmGray }}>読み込み中...</div>
+      ) : (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", maxHeight: 380, overflowY: "auto", marginBottom: 16 }}>
+          {filtered.map(m => (
+            <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", background: checked[m.id] ? C.cream : "transparent" }}>
+              <input type="checkbox" checked={!!checked[m.id]} onChange={e => setChecked(prev => ({ ...prev, [m.id]: e.target.checked }))} />
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: m.avatar_url ? "transparent" : C.orange, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                {m.avatar_url ? <img src={m.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{(m.display_name || "?")[0]}</span>}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{m.display_name || "未設定"}</span>
+              {m.is_suspended && <Badge text="停止中" color={C.red} bg={C.redPale} />}
+              <span style={{ marginLeft: "auto", fontSize: 11, color: C.warmGray }}>{m.created_at?.slice(0, 10)}</span>
+            </label>
+          ))}
+          {filtered.length === 0 && <div style={{ textAlign: "center", padding: 30, color: C.warmGray }}>該当する会員がいません</div>}
+        </div>
+      )}
+
+      {/* 送信 (確認モーダルを開くだけ。実送信はモーダル内) */}
+      <button disabled={!canSend} onClick={() => setConfirming(true)}
+        style={{ padding: "12px 28px", borderRadius: 10, border: "none", fontFamily: "inherit",
+          background: canSend ? C.orange : C.border, color: "#fff", fontSize: 14, fontWeight: 800, cursor: canSend ? "pointer" : "default" }}>
+        {selectedIds.length > 0 ? `${selectedIds.length}人に送信内容を確認` : "宛先を選択してください"}
+      </button>
+      {selectedIds.length > MAX_RECIPIENTS && (
+        <span style={{ marginLeft: 12, fontSize: 12, color: C.red, fontWeight: 700 }}>宛先は最大{MAX_RECIPIENTS}人までです</span>
+      )}
+
+      {/* ★誤送信防止: 送信前確認モーダル (人数+本文プレビュー) */}
+      {confirming && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+          onClick={() => !sending && setConfirming(false)}>
+          <div style={{ background: C.white, borderRadius: 16, padding: 24, maxWidth: 520, width: "100%", maxHeight: "80vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 17, fontWeight: 900, color: C.dark, marginBottom: 8 }}>
+              {selectedIds.length}人に送信します。よろしいですか？
+            </div>
+            <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 12, lineHeight: 1.7 }}>
+              宛先: {selectedNames.slice(0, 8).join("、")}{selectedNames.length > 8 ? ` ほか${selectedNames.length - 8}人` : ""}
+            </div>
+            <div style={{ background: C.cream, borderRadius: 10, padding: 14, fontSize: 13, color: C.dark, whiteSpace: "pre-wrap", lineHeight: 1.8, marginBottom: 18 }}>
+              {content.trim()}
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button disabled={sending} onClick={() => setConfirming(false)}
+                style={{ padding: "10px 20px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.white, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", color: C.warmGray }}>
+                やめる
+              </button>
+              <button disabled={sending} onClick={send}
+                style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: C.orange, color: "#fff", fontSize: 13, fontWeight: 800, cursor: sending ? "default" : "pointer", fontFamily: "inherit" }}>
+                {sending ? "送信中..." : "送信する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 送信履歴 */}
+      <h3 style={{ fontSize: 15, fontWeight: 900, color: C.dark, margin: "28px 0 10px" }}>送信履歴</h3>
+      <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+        {history.map(h => (
+          <div key={h.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", gap: 12, fontSize: 12, color: C.warmGray, marginBottom: 4 }}>
+              <span>{h.created_at?.replace("T", " ").slice(0, 16)}</span>
+              <span style={{ fontWeight: 800, color: C.dark }}>{h.recipient_count}人</span>
+            </div>
+            <div style={{ fontSize: 12.5, color: C.dark, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+              {h.content.length > 120 ? h.content.slice(0, 120) + "…" : h.content}
+            </div>
+          </div>
+        ))}
+        {history.length === 0 && <div style={{ textAlign: "center", padding: 24, color: C.warmGray, fontSize: 12 }}>まだ送信履歴がありません</div>}
+      </div>
+    </div>
+  );
+};
+
 // ── 通報管理 ──────────────────────────────────────────────────────────────
 const ReportsPage = () => {
   const [reports, setReports] = useState<any[]>([]);
@@ -2923,6 +3098,7 @@ const MENU: Array<{ id: string; icon: string; label: string; href?: string; grou
   { id: "events", icon: "🎪", label: "イベント管理" },
   { id: "listings", icon: "📦", label: "出品管理" },
   { id: "members", icon: "👥", label: "会員管理" },
+  { id: "broadcast", icon: "📣", label: "お知らせ配信" },
   { id: "reports", icon: "🚨", label: "通報管理" },
   { id: "sales", icon: "💰", label: "売上管理" },
   { id: "crowdfunding", icon: "🎁", label: "クラファン管理" },
@@ -3081,6 +3257,7 @@ export default function AdminDashboard() {
         {page === "events" && <EventsPage />}
         {page === "listings" && <ListingsPage />}
         {page === "members" && <MembersPage />}
+        {page === "broadcast" && <BroadcastPage />}
         {page === "reports" && <ReportsPage />}
         {page === "sales" && <SalesPage />}
         {page === "crowdfunding" && <CrowdfundingPage />}
