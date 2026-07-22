@@ -2185,19 +2185,29 @@ const OrdersTab = () => {
     // listing と seller profile を別途取得して付与
     const listingIds = Array.from(new Set((data || []).map(o => o.listing_id).filter(Boolean)));
     const sellerIds = Array.from(new Set((data || []).map(o => o.seller_id).filter(Boolean)));
+    // 2026/7/23 Phase 2.1: 選択肢購入の「選んだN個」を注文に付与 (買い手も自分の選択を確認できる)
+    const orderIds = (data || []).map(o => o.id);
 
-    const [{ data: listings }, { data: sellers }] = await Promise.all([
+    const [{ data: listings }, { data: sellers }, { data: choices }] = await Promise.all([
       listingIds.length ? supabase.from("listings").select("id, title, image_urls, category").in("id", listingIds) : Promise.resolve({ data: [] }),
       sellerIds.length ? supabase.from("profiles").select("id, display_name").in("id", sellerIds) : Promise.resolve({ data: [] }),
+      orderIds.length ? supabase.from("order_choices").select("order_id, choice_snapshot").in("order_id", orderIds) : Promise.resolve({ data: [] }),
     ]);
 
     const listingMap = new Map((listings || []).map(l => [l.id, l]));
     const sellerMap = new Map((sellers || []).map(s => [s.id, s]));
+    const choicesMap = new Map<string, string[]>();
+    for (const c of (choices || [])) {
+      const arr = choicesMap.get(c.order_id) || [];
+      arr.push((c.choice_snapshot?.name) || "");
+      choicesMap.set(c.order_id, arr);
+    }
 
     const enriched = (data || []).map(o => ({
       ...o,
       listing: listingMap.get(o.listing_id),
       seller: sellerMap.get(o.seller_id),
+      choices: choicesMap.get(o.id) || [],
     }));
 
     setOrders(enriched);
@@ -2288,6 +2298,17 @@ const OrdersTab = () => {
                 {selected?.id===order.id && (
                   <div style={{ borderTop:`1px solid ${C.border}`, padding:"16px", background:C.lightGray }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {order.id.slice(0, 8)}</div>
+                    {/* 2026/7/23 Phase 2.1: 選択肢購入で選んだN個 */}
+                    {Array.isArray(order.choices) && order.choices.length > 0 && (
+                      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", marginBottom:10 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:6 }}>選んだもの（{order.choices.length}点）</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                          {order.choices.map((n:string, i:number) => (
+                            <span key={i} style={{ fontSize:12, fontWeight:700, color:C.dark, background:C.orangePale, borderRadius:8, padding:"4px 10px" }}>{n}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <OrderStatusBar status={orderStatusKey(order)}/>
 
                     {orderStatusKey(order)==="disputed" && (
@@ -2617,19 +2638,29 @@ const SalesTab = () => {
 
     const listingIds = Array.from(new Set((data || []).map(o => o.listing_id).filter(Boolean)));
     const buyerIds = Array.from(new Set((data || []).map(o => o.buyer_id).filter(Boolean)));
+    // 2026/7/23 Phase 2.1: 選択肢購入の「選ばれたN個」を注文に付与 (売り手が何を作るか分かるように)
+    const orderIds = (data || []).map(o => o.id);
 
-    const [{ data: listings }, { data: buyers }] = await Promise.all([
+    const [{ data: listings }, { data: buyers }, { data: choices }] = await Promise.all([
       listingIds.length ? supabase.from("listings").select("id, title, image_urls, delivery_type").in("id", listingIds) : Promise.resolve({ data: [] }),
       buyerIds.length ? supabase.from("profiles").select("id, display_name").in("id", buyerIds) : Promise.resolve({ data: [] }),
+      orderIds.length ? supabase.from("order_choices").select("order_id, choice_snapshot").in("order_id", orderIds) : Promise.resolve({ data: [] }),
     ]);
 
     const listingMap = new Map((listings || []).map(l => [l.id, l]));
     const buyerMap = new Map((buyers || []).map(b => [b.id, b]));
+    const choicesMap = new Map<string, string[]>();
+    for (const c of (choices || [])) {
+      const arr = choicesMap.get(c.order_id) || [];
+      arr.push((c.choice_snapshot?.name) || "");
+      choicesMap.set(c.order_id, arr);
+    }
 
     const enriched = (data || []).map(o => ({
       ...o,
       listing: listingMap.get(o.listing_id),
       buyer: buyerMap.get(o.buyer_id),
+      choices: choicesMap.get(o.id) || [],
     }));
 
     setSales(enriched);
@@ -2752,6 +2783,17 @@ const SalesTab = () => {
                 {selected?.id===sale.id && (
                   <div style={{ borderTop:`1px solid ${C.border}`, padding:"16px", background:C.lightGray }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.warmGray, marginBottom:4 }}>注文番号: {sale.id.slice(0, 8)}</div>
+                    {/* 2026/7/23 Phase 2.1: 選択肢購入で購入者が選んだN個 (何を作る/詰めるか) */}
+                    {Array.isArray(sale.choices) && sale.choices.length > 0 && (
+                      <div style={{ background:"#FFF8F0", border:`2px solid ${C.orange}`, borderRadius:10, padding:"10px 12px", marginBottom:10 }}>
+                        <div style={{ fontSize:11, fontWeight:800, color:C.orange, marginBottom:6 }}>📋 選ばれたもの（{sale.choices.length}点）</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                          {sale.choices.map((n:string, i:number) => (
+                            <span key={i} style={{ fontSize:12.5, fontWeight:700, color:C.dark, background:C.white, border:`1px solid ${C.orange}40`, borderRadius:8, padding:"4px 10px" }}>{n}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <OrderStatusBar status={orderStatusKey(sale)}/>
 
                     {isShipping && sale.shipping_address_id && (
