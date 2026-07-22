@@ -130,6 +130,42 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
     if (hasVariants) regenerateVariants();
   }, [variantOptions, hasVariants, variantsLoading, regenerateVariants]);
 
+  // ── 2026/7/23 Phase 1: 選択肢から選んでもらう (N個選択+選択肢ごと在庫・Tails Up要望) ──
+  // ★Phase 1 は出品側の登録のみ (決済フロー完全非接触・購入UIと在庫減算は Phase 2)。
+  // ★有料オプション/種類とは併用不可 (どれか1モードのみ。混在すると購入UIが破綻するため)。
+  const [choicesLoading, setChoicesLoading] = useState(true);
+  const [hasChoices, setHasChoices] = useState(listing.choice_required_count != null);
+  const [choiceCount, setChoiceCount] = useState<string>(listing.choice_required_count != null ? String(listing.choice_required_count) : "3");
+  const [choiceSetPrice, setChoiceSetPrice] = useState<string>(listing.choice_set_price != null ? String(listing.choice_set_price) : "");
+  const [choices, setChoices] = useState<any[]>([]);          // {id?, name, stock}
+  const [origChoices, setOrigChoices] = useState<any[]>([]);  // DB既存行 (is_active含む全行)
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("listing_choices")
+        .select("id, name, stock, is_active, display_order")
+        .eq("listing_id", listing.id)
+        .order("display_order", { ascending: true });
+      if (!alive) return;
+      const rows = data || [];
+      setOrigChoices(rows);
+      setChoices(rows.filter((r: any) => r.is_active !== false)
+        .map((r: any) => ({ id: r.id, name: r.name || "", stock: r.stock != null ? String(r.stock) : "0" })));
+      setChoicesLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [listing.id]);
+
+  const addChoice = () => setChoices(prev => [...prev, { name: "", stock: "0" }]);
+  const updateChoice = (idx: number, key: string, val: string) => setChoices(prev => prev.map((c, i) => i === idx ? { ...c, [key]: val } : c));
+  const removeChoice = (idx: number) => setChoices(prev => prev.filter((_, i) => i !== idx));
+
+  // 併用判定 (UI制御 + 保存時の二重ガードに使用)
+  const optionsInUse = options.some((o: any) => (o.name && String(o.name).trim()) || (o.price && String(o.price).trim()));
+  const variantsInUse = hasVariants;
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -159,6 +195,22 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
       : [];
     if (hasVariants && !variantsLoading && validVariants.length === 0) {
       setError("種類を使う場合は、価格を入れた種類を1つ以上設定してください（チェックを外すと種類なしで保存できます）"); return;
+    }
+    // 2026/7/23 Phase 1: 選択肢モードのバリデーション + 併用二重ガード
+    const validChoices = hasChoices && !choicesLoading
+      ? choices.filter((c: any) => c.name && String(c.name).trim())
+      : [];
+    if (hasChoices && !choicesLoading) {
+      if (optionsInUse || variantsInUse) {
+        setError("「選択肢から選んでもらう」は、有料オプション・種類とは併用できません。どちらかを空にしてください"); return;
+      }
+      const n = parseInt(choiceCount);
+      const p = parseInt(choiceSetPrice);
+      if (isNaN(n) || n < 1) { setError("選んでもらう数は1以上を入力してください"); return; }
+      if (isNaN(p) || p <= 0) { setError("セット価格は1円以上を入力してください"); return; }
+      if (validChoices.length < n) {
+        setError(`選択肢が足りません（${n}個選んでもらうには、選択肢が${n}個以上必要です）`); return;
+      }
     }
     setSaving(true);
     // 2026/6/28 ①: 新規ファイルを Storage アップ → 最終的な image_urls 配列を組み立て
@@ -207,10 +259,39 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
           .map((o: any) => ({ name: String(o.name).trim(), price: parseInt(o.price) || 0 })),
         // 2026/7/22 B: has_variants は有効な組合せがある時のみ true
         has_variants: validVariants.length > 0,
+        // 2026/7/23 Phase 1: 選択設定 (OFF時は null = 機能未使用・既存挙動のまま)
+        choice_required_count: hasChoices && !choicesLoading ? parseInt(choiceCount) : null,
+        choice_set_price: hasChoices && !choicesLoading ? parseInt(choiceSetPrice) : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", listing.id);
     if (updErr) { setSaving(false); setError("保存に失敗しました: " + updErr.message); return; }
+
+    // 2026/7/23 Phase 1: 選択肢の差分適用 (variants と同流儀: 既存id→UPDATE / 新規→INSERT /
+    // 消えた行→is_active=false。Phase 2 の注文明細が参照する前提で物理削除しない)
+    if (!choicesLoading) {
+      const keepChoiceIds = new Set(validChoices.filter((c: any) => c.id).map((c: any) => c.id));
+      for (const r of origChoices) {
+        if (!keepChoiceIds.has(r.id) && r.is_active !== false) {
+          const { error: e } = await supabase.from("listing_choices")
+            .update({ is_active: false }).eq("id", r.id);
+          if (e) { setSaving(false); setError("選択肢の更新に失敗しました: " + e.message); return; }
+        }
+      }
+      for (let i = 0; i < validChoices.length; i++) {
+        const c = validChoices[i];
+        const row = {
+          name: String(c.name).trim().slice(0, 60),
+          stock: Math.max(0, parseInt(c.stock) || 0),
+          display_order: i,
+          is_active: true,
+        };
+        const { error: e } = c.id
+          ? await supabase.from("listing_choices").update(row).eq("id", c.id)
+          : await supabase.from("listing_choices").insert({ ...row, listing_id: listing.id });
+        if (e) { setSaving(false); setError("選択肢の保存に失敗しました: " + e.message); return; }
+      }
+    }
 
     // 2026/7/22 B: 種類の差分適用 (fetch未完了のまま保存された場合は既存を触らない=安全側)
     if (!variantsLoading) {
@@ -358,6 +439,12 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
         </div>
 
         {/* 2026/7/22 Tails Up報告修正 A: 有料オプション編集 (SellPage L2111 と同型・編集画面に欄が無かった) */}
+        {/* 2026/7/23 Phase 1: 選択肢モード使用中は併用不可のため畳む */}
+        {hasChoices ? (
+          <div style={{ marginBottom:14, padding:"10px 12px", background:C.lightGray, borderRadius:10, fontSize:11, color:C.warmGray, lineHeight:1.7 }}>
+            有料オプション・種類は「選択肢から選んでもらう」と併用できません。使う場合は下のチェックを外してください。
+          </div>
+        ) : (
         <div style={{ marginBottom:14 }}>
           <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>有料オプション（任意）</label>
           <p style={{ fontSize:10.5, color:C.warmGray, marginBottom:8, lineHeight:1.6 }}>購入者が注文時に追加できるオプションを設定できます</p>
@@ -377,8 +464,10 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
             <button type="button" onClick={addOption} style={{ padding:"8px 14px", background:C.orangePale, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit" }}>＋ オプションを追加</button>
           )}
         </div>
+        )}
 
         {/* 2026/7/22 Tails Up報告修正 B: 種類 (Variant) 編集 (SellPage Phase B と同型) */}
+        {!hasChoices && (
         <div style={{ marginBottom:14, paddingTop:12, borderTop:`1px dashed ${C.border}` }}>
           {variantsLoading ? (
             <p style={{ fontSize:11, color:C.warmGray }}>種類を読み込み中...</p>
@@ -471,6 +560,77 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        )}
+
+        {/* 2026/7/23 Phase 1: 選択肢から選んでもらう (N個選択+選択肢ごと在庫・出品側のみ) */}
+        <div style={{ marginBottom:14, paddingTop:12, borderTop:`1px dashed ${C.border}` }}>
+          {choicesLoading ? (
+            <p style={{ fontSize:11, color:C.warmGray }}>選択肢を読み込み中...</p>
+          ) : (
+            <>
+              <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, fontWeight:800, color:(optionsInUse||variantsInUse) ? C.warmGray : C.dark, cursor:(optionsInUse||variantsInUse) ? "not-allowed" : "pointer", marginBottom:6 }}>
+                <input
+                  type="checkbox"
+                  checked={hasChoices}
+                  disabled={optionsInUse || variantsInUse}
+                  onChange={e => {
+                    setHasChoices(e.target.checked);
+                    if (e.target.checked && choices.length === 0) {
+                      setChoices([{ name:"", stock:"0" }, { name:"", stock:"0" }, { name:"", stock:"0" }]);
+                    }
+                  }}
+                  style={{ width:16, height:16, accentColor:C.orange }}
+                />
+                <span>選択肢から選んでもらう（詰め合わせ・セット向け）</span>
+              </label>
+              <p style={{ fontSize:10.5, color:C.warmGray, marginBottom:10, paddingLeft:24, lineHeight:1.6 }}>
+                「15種類から3つ選ぶ」のような売り方ができます。選択肢ごとに在庫を持てます。<br/>
+                {(optionsInUse || variantsInUse) && "⚠️ 有料オプション・種類と併用できません。先にそちらを空にしてください。"}
+              </p>
+              {hasChoices && (
+                <div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+                    <div>
+                      <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>選んでもらう数</label>
+                      <div style={{ position:"relative" }}>
+                        <input type="number" min="1" value={choiceCount} onChange={e=>setChoiceCount(e.target.value)} placeholder="3"
+                          style={{ width:"100%", padding:"8px 26px 8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                        <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>個</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:4 }}>セット価格</label>
+                      <div style={{ position:"relative" }}>
+                        <input type="number" min="1" value={choiceSetPrice} onChange={e=>setChoiceSetPrice(e.target.value)} placeholder="1680"
+                          style={{ width:"100%", padding:"8px 26px 8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                        <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>円</span>
+                      </div>
+                    </div>
+                  </div>
+                  <label style={{ fontSize:11, fontWeight:700, color:C.warmGray, display:"block", marginBottom:6 }}>選択肢（名前と在庫）</label>
+                  {choices.map((c: any, i: number) => (
+                    <div key={i} style={{ display:"flex", gap:6, marginBottom:6, alignItems:"center" }}>
+                      <input value={c.name} onChange={e=>updateChoice(i,"name",e.target.value)} placeholder={`例：ささみジャーキー`}
+                        style={{ flex:2, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                      <div style={{ position:"relative", width:90 }}>
+                        <input type="number" min="0" value={c.stock} onChange={e=>updateChoice(i,"stock",e.target.value)} placeholder="0"
+                          style={{ width:"100%", padding:"8px 22px 8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                        <span style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>個</span>
+                      </div>
+                      <button type="button" onClick={()=>removeChoice(i)} style={{ width:28, height:28, borderRadius:"50%", border:`1px solid ${C.border}`, background:C.lightGray, cursor:"pointer", fontSize:14, color:C.warmGray, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>×</button>
+                    </div>
+                  ))}
+                  {choices.length < 30 && (
+                    <button type="button" onClick={addChoice} style={{ padding:"8px 14px", background:C.orangePale, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit" }}>＋ 選択肢を追加 ({choices.length})</button>
+                  )}
+                  <p style={{ fontSize:10.5, color:C.warmGray, marginTop:8, lineHeight:1.6 }}>
+                    ※ 購入画面での選択表示は準備中です。登録した内容は保存され、機能公開時にそのまま使えます。
+                  </p>
                 </div>
               )}
             </>
