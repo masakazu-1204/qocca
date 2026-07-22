@@ -2,10 +2,14 @@
 // DetailPage(pages/marketplace.tsx) と MyListingsTab(App.tsx 残留 Phase7) の両方が参照するため中立化。
 // ⚠️ ロジック・参照名は App.tsx 時点から1文字も改変なし (切り取って移動)。依存=useState/supabase/C のみ。
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { C } from "../constants/theme";
 import { CATS } from "../constants/data";
 import { supabase } from "../supabaseClient";
+
+// 2026/7/22 Tails Up報告修正: attributes の照合キー (jsonb はキー順が正規化されるため、
+// JSON.stringify 直接比較では順序ズレで不一致になる → キーをソートして正規化)
+const attrKey = (a: any) => JSON.stringify(Object.keys(a || {}).sort().map(k => [k, a[k]]));
 
 const MAX_IMAGES = 5;
 
@@ -42,6 +46,90 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
     if (Array.isArray(listing.shipping_methods) && listing.shipping_methods.length > 0) return listing.shipping_methods;
     return [{ id: "m1", name: "クリックポスト", fee: 185, note: "" }, { id: "m2", name: "宅急便60サイズ", fee: 750, note: "" }];
   });
+  // ── 2026/7/22 Tails Up報告修正 A: 有料オプション編集 (SellPage L2111 と同型・編集モーダルに欄が無かった) ──
+  const [options, setOptions] = useState<any[]>(() =>
+    Array.isArray(listing.options)
+      ? listing.options.map((o: any) => ({ name: o?.name || "", price: o?.price != null ? String(o.price) : "" }))
+      : []
+  );
+  const addOption = () => setOptions(prev => [...prev, { name: "", price: "" }]);
+  const updateOption = (idx: number, key: string, val: string) => setOptions(prev => prev.map((o, i) => i === idx ? { ...o, [key]: val } : o));
+  const removeOption = (idx: number) => setOptions(prev => prev.filter((_, i) => i !== idx));
+
+  // ── 2026/7/22 Tails Up報告修正 B: 種類 (Variant) 編集 (SellPage Phase B と同型) ──
+  // 既存 listing_variants をモーダル開時に fetch → 軸(variantOptions)を attributes から逆算して復元。
+  // 保存は差分適用: 既存id→UPDATE / 新規→INSERT / 消えた組合せ→is_active=false (物理削除しない=過去注文の参照保護)
+  const [variantsLoading, setVariantsLoading] = useState(true);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variantOptions, setVariantOptions] = useState<Array<{ name: string; values: string[] }>>([]);
+  const [variants, setVariants] = useState<any[]>([]);       // {id?, variant_name, attributes, price, stock}
+  const [origVariants, setOrigVariants] = useState<any[]>([]); // DB既存行 (is_active含む全行)
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("listing_variants")
+        .select("id, variant_name, attributes, price, stock, is_active, display_order")
+        .eq("listing_id", listing.id)
+        .order("display_order", { ascending: true });
+      if (!alive) return;
+      const rows = data || [];
+      setOrigVariants(rows);
+      const active = rows.filter((r: any) => r.is_active !== false);
+      if (active.length > 0) {
+        // 軸を attributes から逆算 (実データは全行 attributes あり)
+        const keys = Array.from(new Set(active.flatMap((r: any) => Object.keys(r.attributes || {}))));
+        setVariantOptions(keys.map(k => ({
+          name: k,
+          values: Array.from(new Set(active.map((r: any) => r.attributes?.[k]).filter(Boolean))) as string[],
+        })));
+        setVariants(active.map((r: any) => ({
+          id: r.id, variant_name: r.variant_name, attributes: r.attributes || {},
+          price: r.price != null ? String(r.price) : "", stock: r.stock != null ? String(r.stock) : "0",
+        })));
+        setHasVariants(true);
+      }
+      setVariantsLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [listing.id]);
+
+  // 軸操作 (SellPage L1544-1568 と同一ロジック)
+  const addVariantOption = () => { if (variantOptions.length < 2) setVariantOptions(prev => [...prev, { name: "", values: [""] }]); };
+  const removeVariantOption = (idx: number) => setVariantOptions(prev => prev.filter((_, i) => i !== idx));
+  const updateVariantOptionName = (idx: number, name: string) => setVariantOptions(prev => prev.map((o, i) => i === idx ? { ...o, name } : o));
+  const addVariantOptionValue = (optIdx: number) => setVariantOptions(prev => prev.map((o, i) => i === optIdx ? { ...o, values: [...o.values, ""] } : o));
+  const updateVariantOptionValue = (optIdx: number, valIdx: number, value: string) => setVariantOptions(prev => prev.map((o, i) => i === optIdx ? { ...o, values: o.values.map((v, j) => j === valIdx ? value : v) } : o));
+  const removeVariantOptionValue = (optIdx: number, valIdx: number) => setVariantOptions(prev => prev.map((o, i) => i === optIdx ? { ...o, values: o.values.filter((_, j) => j !== valIdx) } : o));
+  const updateVariant = (idx: number, key: string, value: string) => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [key]: value } : v));
+
+  // 組合せ再生成 (SellPage L1572 と同型 + id 継承 / 照合は attrKey 正規化)
+  const regenerateVariants = useCallback(() => {
+    if (variantOptions.length === 0) { setVariants([]); return; }
+    const combos: any[] = [];
+    const gen = (i: number, attrs: any, name: string) => {
+      if (i >= variantOptions.length) {
+        combos.push({ variant_name: name.trim() || "デフォルト", attributes: attrs, price: listing.price != null ? String(listing.price) : "", stock: "1" });
+        return;
+      }
+      const opt = variantOptions[i];
+      for (const val of opt.values.filter(v => v && v.trim())) {
+        gen(i + 1, { ...attrs, [opt.name]: val }, name + (name ? " × " : "") + val);
+      }
+    };
+    gen(0, {}, "");
+    setVariants(prev => combos.map(c => {
+      const ex = prev.find(p => attrKey(p.attributes) === attrKey(c.attributes));
+      return ex ? { ...c, id: ex.id, price: ex.price, stock: ex.stock } : c;
+    }));
+  }, [variantOptions, listing.price]);
+
+  useEffect(() => {
+    if (variantsLoading) return;          // fetch 完了前に走って初期値を消さない
+    if (hasVariants) regenerateVariants();
+  }, [variantOptions, hasVariants, variantsLoading, regenerateVariants]);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -65,6 +153,13 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
     }
     // 2026/6/28 ①: 画像最低1枚必須(SellPageと同水準のバリデーション)
     if (totalImageCount === 0) { setError("画像を少なくとも1枚アップロードしてください"); return; }
+    // 2026/7/22 B: 種類ON時は有効な組合せ(名前+価格>0)が1件以上必要
+    const validVariants = hasVariants && !variantsLoading
+      ? variants.filter((v: any) => v.variant_name && parseInt(v.price) > 0)
+      : [];
+    if (hasVariants && !variantsLoading && validVariants.length === 0) {
+      setError("種類を使う場合は、価格を入れた種類を1つ以上設定してください（チェックを外すと種類なしで保存できます）"); return;
+    }
     setSaving(true);
     // 2026/6/28 ①: 新規ファイルを Storage アップ → 最終的な image_urls 配列を組み立て
     const uploadedUrls: string[] = [];
@@ -106,11 +201,47 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
                 note: String(m.note || '').trim().slice(0, 60),
               }))
           : [],
+        // 2026/7/22 A: 有料オプション UPDATE (SellPage submitListing L564 と同フィルタ)
+        options: options
+          .filter((o: any) => o.name && parseInt(o.price) > 0)
+          .map((o: any) => ({ name: String(o.name).trim(), price: parseInt(o.price) || 0 })),
+        // 2026/7/22 B: has_variants は有効な組合せがある時のみ true
+        has_variants: validVariants.length > 0,
         updated_at: new Date().toISOString(),
       })
       .eq("id", listing.id);
+    if (updErr) { setSaving(false); setError("保存に失敗しました: " + updErr.message); return; }
+
+    // 2026/7/22 B: 種類の差分適用 (fetch未完了のまま保存された場合は既存を触らない=安全側)
+    if (!variantsLoading) {
+      const keepIds = new Set(validVariants.filter((v: any) => v.id).map((v: any) => v.id));
+      // 1) 今回の組合せに無い既存行 → is_active=false (物理削除しない: 過去注文の variant_id 参照を守る)
+      for (const r of origVariants) {
+        if (!keepIds.has(r.id) && r.is_active !== false) {
+          const { error: e } = await supabase.from("listing_variants")
+            .update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", r.id);
+          if (e) { setSaving(false); setError("種類の更新に失敗しました: " + e.message); return; }
+        }
+      }
+      // 2) 有効な組合せを UPDATE / INSERT
+      for (let i = 0; i < validVariants.length; i++) {
+        const v = validVariants[i];
+        const row = {
+          variant_name: String(v.variant_name).trim(),
+          attributes: v.attributes || {},
+          price: parseInt(v.price),
+          stock: Math.max(0, parseInt(v.stock) || 0),
+          display_order: i,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        };
+        const { error: e } = v.id
+          ? await supabase.from("listing_variants").update(row).eq("id", v.id)
+          : await supabase.from("listing_variants").insert({ ...row, listing_id: listing.id });
+        if (e) { setSaving(false); setError("種類の保存に失敗しました: " + e.message); return; }
+      }
+    }
     setSaving(false);
-    if (updErr) { setError("保存に失敗しました: " + updErr.message); return; }
     onSaved();
   };
 
@@ -224,6 +355,126 @@ export const ListingEditModal = ({ listing, onClose, onSaved }) => {
             }}/>
             <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:11, color:C.warmGray }}>個</span>
           </div>
+        </div>
+
+        {/* 2026/7/22 Tails Up報告修正 A: 有料オプション編集 (SellPage L2111 と同型・編集画面に欄が無かった) */}
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>有料オプション（任意）</label>
+          <p style={{ fontSize:10.5, color:C.warmGray, marginBottom:8, lineHeight:1.6 }}>購入者が注文時に追加できるオプションを設定できます</p>
+          {options.map((opt: any, i: number) => (
+            <div key={i} style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
+              <input value={opt.name} onChange={e=>updateOption(i,"name",e.target.value)} placeholder="例：急ぎ対応（3日以内）"
+                style={{ flex:2, padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+              <div style={{ position:"relative", flex:1 }}>
+                <input type="number" value={opt.price} onChange={e=>updateOption(i,"price",e.target.value)} placeholder="500"
+                  style={{ width:"100%", padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:11, color:C.warmGray }}>円</span>
+              </div>
+              <button type="button" onClick={()=>removeOption(i)} style={{ width:28, height:28, borderRadius:"50%", border:`1px solid ${C.border}`, background:C.lightGray, cursor:"pointer", fontSize:14, color:C.warmGray, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>×</button>
+            </div>
+          ))}
+          {options.length < 15 && (
+            <button type="button" onClick={addOption} style={{ padding:"8px 14px", background:C.orangePale, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit" }}>＋ オプションを追加</button>
+          )}
+        </div>
+
+        {/* 2026/7/22 Tails Up報告修正 B: 種類 (Variant) 編集 (SellPage Phase B と同型) */}
+        <div style={{ marginBottom:14, paddingTop:12, borderTop:`1px dashed ${C.border}` }}>
+          {variantsLoading ? (
+            <p style={{ fontSize:11, color:C.warmGray }}>種類を読み込み中...</p>
+          ) : (
+            <>
+              <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, fontWeight:800, color:C.dark, cursor:"pointer", marginBottom:6 }}>
+                <input
+                  type="checkbox"
+                  checked={hasVariants}
+                  onChange={e => {
+                    setHasVariants(e.target.checked);
+                    if (!e.target.checked) { setVariantOptions([]); setVariants([]); }
+                    else if (variantOptions.length === 0) { setVariantOptions([{ name: "", values: [""] }]); }
+                  }}
+                  style={{ width:16, height:16, accentColor:C.orange }}
+                />
+                <span>種類を増やす（色違い・サイズ違いなど）</span>
+              </label>
+              <p style={{ fontSize:10.5, color:C.warmGray, marginBottom:10, paddingLeft:24, lineHeight:1.6 }}>
+                1つの作品で、構図やサイズの種類を選んでもらえます。それぞれに価格と在庫を設定できます。<br/>
+                {origVariants.some((r:any)=>r.is_active!==false) && !hasVariants && "⚠️ チェックを外して保存すると、既存の種類は購入画面に表示されなくなります。"}
+              </p>
+              {hasVariants && (
+                <div>
+                  {/* 軸 (項目) max 2 */}
+                  {variantOptions.map((opt, optIdx) => (
+                    <div key={optIdx} style={{ marginBottom:12, padding:12, background:C.lightGray, borderRadius:10 }}>
+                      <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:8 }}>
+                        <input
+                          value={opt.name}
+                          onChange={e => updateVariantOptionName(optIdx, e.target.value)}
+                          placeholder={optIdx === 0 ? "例：構図" : "例：サイズ"}
+                          style={{ flex:1, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+                        />
+                        <button type="button" onClick={() => removeVariantOption(optIdx)}
+                          style={{ width:28, height:28, borderRadius:"50%", border:`1px solid ${C.border}`, background:C.white, cursor:"pointer", fontSize:14, color:C.warmGray }}
+                        >×</button>
+                      </div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                        {opt.values.map((val, valIdx) => (
+                          <div key={valIdx} style={{ display:"flex", alignItems:"center", gap:4, background:C.white, borderRadius:8, padding:"4px 4px 4px 8px", border:`1px solid ${C.border}` }}>
+                            <input
+                              value={val}
+                              onChange={e => updateVariantOptionValue(optIdx, valIdx, e.target.value)}
+                              placeholder={optIdx === 0 ? "マズルアップ" : "小"}
+                              style={{ width:90, padding:"4px 2px", border:"none", fontSize:12, fontFamily:"inherit", outline:"none", background:"transparent" }}
+                            />
+                            {opt.values.length > 1 && (
+                              <button type="button" onClick={() => removeVariantOptionValue(optIdx, valIdx)}
+                                style={{ width:18, height:18, borderRadius:"50%", border:"none", background:C.lightGray, cursor:"pointer", fontSize:10, color:C.warmGray }}
+                              >×</button>
+                            )}
+                          </div>
+                        ))}
+                        {opt.values.length < 10 && (
+                          <button type="button" onClick={() => addVariantOptionValue(optIdx)}
+                            style={{ padding:"4px 10px", background:C.orangePale, border:`1px dashed ${C.orange}`, borderRadius:6, fontSize:11, color:C.orange, cursor:"pointer", fontFamily:"inherit", fontWeight:700 }}
+                          >＋ 追加</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {variantOptions.length < 2 && (
+                    <button type="button" onClick={addVariantOption}
+                      style={{ padding:"8px 14px", background:C.white, border:`1.5px dashed ${C.orange}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.orange, cursor:"pointer", fontFamily:"inherit", marginBottom:12 }}
+                    >＋ {variantOptions.length === 0 ? "種類の項目を追加" : "もう1項目（サイズなど）"}</button>
+                  )}
+                  {/* 組合せごとの価格・在庫 */}
+                  {variants.length > 0 && (
+                    <div style={{ marginTop:8 }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:C.dark, marginBottom:8 }}>それぞれの種類（{variants.length}通り）</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                        {variants.map((v: any, idx: number) => (
+                          <div key={idx} style={{ padding:10, background:C.white, border:`1px solid ${C.border}`, borderRadius:10 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:6 }}>{v.variant_name}</div>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                              <div style={{ position:"relative" }}>
+                                <input type="number" value={v.price} onChange={e => updateVariant(idx, "price", e.target.value)} placeholder="3000"
+                                  style={{ width:"100%", padding:"7px 26px 7px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                                <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>円</span>
+                              </div>
+                              <div style={{ position:"relative" }}>
+                                <input type="number" value={v.stock} onChange={e => updateVariant(idx, "stock", e.target.value)} placeholder="1" min="0"
+                                  style={{ width:"100%", padding:"7px 26px 7px 10px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+                                <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", fontSize:10, color:C.warmGray }}>個</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* 依頼書 #104 Phase B-2 (2026/6/3): 4タイプ送料編集 UI */}
