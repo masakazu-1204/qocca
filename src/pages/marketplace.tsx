@@ -646,6 +646,10 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   // - selectedVariant: selectedAttrs に完全一致する listing_variants の row
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  // 2026/7/23 Phase 2: 選択肢購入 (N個選択+選択肢ごと在庫)
+  // - choicePool: listing_choices の active 行 / selectedChoiceIds: 買い手が選んだ id 配列 (最大 N)
+  const [choicePool, setChoicePool] = useState<any[]>([]);
+  const [selectedChoiceIds, setSelectedChoiceIds] = useState<string[]>([]);
   // 依頼書 #143 TOP2 方式B (2026/6/10): 出品者の送金準備状態 (購入は止めず警告のみ)
   // null=取得中 / true=送金可 / false=未連携(警告表示)。判定軸=stripe_payouts_enabled
   const [sellerPayoutsEnabled, setSellerPayoutsEnabled] = useState<boolean | null>(null);
@@ -672,6 +676,22 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
     })();
     return () => { cancelled = true; };
   }, [item?.seller_id]);
+
+  // 2026/7/23 Phase 2: 選択肢モードなら active な選択肢プールを取得 (choice_required_count 設定時のみ)
+  const choiceRequired = item?.choice_required_count != null ? Number(item.choice_required_count) : 0;
+  const isChoiceMode = choiceRequired > 0;
+  useEffect(() => {
+    if (!item?.id || !isChoiceMode) { setChoicePool([]); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("listing_choices").select("id, name, stock, is_active")
+        .eq("listing_id", item.id).eq("is_active", true)
+        .order("display_order", { ascending: true });
+      if (!cancelled) setChoicePool(data || []);
+    })();
+    return () => { cancelled = true; };
+  }, [item?.id, isChoiceMode]);
 
   if (!item) return null;
 
@@ -703,19 +723,37 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAttrs, hasVariants]);
 
-  const itemOptions = item.options || [];
+  // 2026/7/23 Phase 2: 選択肢モードは option 併用不可 (出品側で強制済) → optionsは無視
+  const itemOptions = isChoiceMode ? [] : (item.options || []);
   const optionsTotal = itemOptions.reduce((sum, o, i) => sum + (selectedOptions[i] ? (o.price||0) : 0), 0);
-  // Phase B: variant 優先の価格計算 (variant 未選択時は item.price)
-  const basePrice = hasVariants ? (selectedVariant?.price || 0) : (item.price || 0);
+  // 価格: choiceモード=セット価格固定 / variant優先 / それ以外=item.price
+  const choiceComplete = isChoiceMode && selectedChoiceIds.length === choiceRequired;
+  const basePrice = isChoiceMode
+    ? (Number(item.choice_set_price) || 0)
+    : hasVariants ? (selectedVariant?.price || 0) : (item.price || 0);
   const totalPrice = basePrice + optionsTotal;
 
   const toggleOption = (idx) => setSelectedOptions(prev => ({...prev, [idx]: !prev[idx]}));
+  // 選択肢トグル: N個まで。N到達後は選択済み以外を弾く。在庫0は選べない。
+  const toggleChoice = (id: string, stock: number) => {
+    setSelectedChoiceIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (stock <= 0) return prev;
+      if (prev.length >= choiceRequired) return prev;   // 上限
+      return [...prev, id];
+    });
+  };
 
   const handleOrder = async () => {
     if (!user) { setPage("signup"); return; }
     // Phase B: variant 必須チェック (種類のある商品で未選択時はブロック)
     if (hasVariants && !selectedVariant) {
       alert("種類を選んでください");
+      return;
+    }
+    // 2026/7/23 Phase 2: 選択肢モードは N個ちょうど選択が必須
+    if (isChoiceMode && selectedChoiceIds.length !== choiceRequired) {
+      alert(`${choiceRequired}個選んでください`);
       return;
     }
     if (item.delivery_type === "shipping") {
@@ -832,13 +870,15 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           listing_title: item.title,
           // Phase B: variant 選択時はその価格、未選択時 (単品) は listing.price
           // ⚠️ Edge Function (Phase C) でサーバー側再計算が前提、クライアント値は参考のみ
-          price: hasVariants && selectedVariant ? selectedVariant.price : item.price,
+          price: isChoiceMode ? (Number(item.choice_set_price) || 0) : (hasVariants && selectedVariant ? selectedVariant.price : item.price),
           options: selectedOpts,
           buyer_id: user.id,
           seller_id: item.seller_id,
           shipping_address_id: shippingAddressId,
           // Phase B: variant_id を Edge Function に渡す (Phase C で受信処理)
           variant_id: hasVariants && selectedVariant ? selectedVariant.id : null,
+          // 2026/7/23 Phase 2: 選択肢モードの選んだ id 配列 (サーバー側で価格/在庫を再検証)
+          choice_ids: isChoiceMode ? selectedChoiceIds : undefined,
           // 依頼書 #104 Phase B-2 (2026/6/3): 送料情報 (#127 Phase C で line_items / orders.shipping_* 反映完了)
           shipping_fee: shippingFeeForOrder,
           shipping_region: shippingRegionForOrder,
@@ -959,6 +999,47 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
               marginLeft: 4,
             }}>
               {item.creation_story}
+            </div>
+          </div>
+        )}
+
+        {/* 2026/7/23 Phase 2: 選択肢から選ぶ UI (N個選択・在庫0は選べない・N到達で他を無効化) */}
+        {isChoiceMode && choicePool.length > 0 && (
+          <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:12 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{choiceRequired}つ選ぶ</div>
+              <div style={{ fontSize:12, fontWeight:700, color: choiceComplete ? C.green : C.orange }}>
+                {selectedChoiceIds.length} / {choiceRequired}
+              </div>
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {choicePool.map((ch:any) => {
+                const selected = selectedChoiceIds.includes(ch.id);
+                const soldOut = (ch.stock ?? 0) <= 0;
+                const full = !selected && selectedChoiceIds.length >= choiceRequired;
+                const disabled = soldOut || full;
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => toggleChoice(ch.id, ch.stock ?? 0)}
+                    disabled={disabled}
+                    style={{
+                      padding:"8px 14px", borderRadius:10,
+                      border: selected ? `2px solid ${C.orange}` : `1.5px solid ${soldOut ? "#E0E0E0" : C.border}`,
+                      background: selected ? C.orangePale : (disabled ? "#F5F5F5" : C.white),
+                      color: selected ? C.orange : (soldOut ? "#BDBDBD" : full ? "#BDBDBD" : C.dark),
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      fontSize:13, fontWeight:700, fontFamily:"inherit",
+                      textDecoration: soldOut ? "line-through" : "none",
+                    }}
+                  >
+                    {ch.name}{soldOut && "（売り切れ）"}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ marginTop:12, fontSize:13, fontWeight:800, color:C.dark }}>
+              セット価格 ¥{(Number(item.choice_set_price)||0).toLocaleString()}
             </div>
           </div>
         )}
@@ -1469,23 +1550,25 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
           /* Phase B: hasVariants で variant 未選択時は無効化、ラベルも変化 */
           <button
             onClick={handleOrder}
-            disabled={hasVariants && !selectedVariant}
+            disabled={(hasVariants && !selectedVariant) || (isChoiceMode && !choiceComplete)}
             style={{
               flex:2,
               padding:"14px",
-              background: (hasVariants && !selectedVariant) ? C.warmGray : C.orange,
+              background: ((hasVariants && !selectedVariant) || (isChoiceMode && !choiceComplete)) ? C.warmGray : C.orange,
               border:"none",
               borderRadius:12,
               color:"#fff",
               fontWeight:800,
               fontSize:16,
-              cursor: (hasVariants && !selectedVariant) ? "not-allowed" : "pointer",
+              cursor: ((hasVariants && !selectedVariant) || (isChoiceMode && !choiceComplete)) ? "not-allowed" : "pointer",
               fontFamily: "inherit"
             }}
           >
             {hasVariants && !selectedVariant
               ? "種類を選んでください"
-              : (user ? "🐾 注文する" : "🔒 ログインして注文")}
+              : (isChoiceMode && !choiceComplete)
+                ? `あと${choiceRequired - selectedChoiceIds.length}つ選んでください`
+                : (user ? "🐾 注文する" : "🔒 ログインして注文")}
           </button>
         )}
       </div>
