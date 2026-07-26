@@ -748,13 +748,16 @@ export const MyPage = ({ setPage }) => {
         .eq("fulfillment_status", "working");
       setPendingSalesCount(salesCount || 0);
 
-      // 未読DM数（recipient_idが自分でis_read=false）
-      const { count: dmCount } = await supabase
-        .from("direct_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_id", user.id)
-        .eq("is_read", false);
-      setUnreadMsgs(dmCount || 0);
+      // 未読メッセージ数（recipient_idが自分でis_read=false）
+      // 2026/7/27 修正: DMのみ数えていたため、取引メッセージに未読があっても
+      //   💬メッセージタブのバッジが0のままで気づけなかった。両方を合算する。
+      const [{ count: dmCount }, { count: orderMsgCount }] = await Promise.all([
+        supabase.from("direct_messages").select("id", { count: "exact", head: true })
+          .eq("recipient_id", user.id).eq("is_read", false),
+        supabase.from("order_messages").select("id", { count: "exact", head: true })
+          .eq("recipient_id", user.id).eq("is_read", false),
+      ]);
+      setUnreadMsgs((dmCount || 0) + (orderMsgCount || 0));
     })();
   }, [user?.id, refreshKey]);
 
@@ -2967,7 +2970,12 @@ const OrderMessagesTab = () => {
         unreadMap[m.order_id] = (unreadMap[m.order_id] || 0) + 1;
       }
     });
-    const list = orders.map(o => {
+    // 2026/7/27 バグ報告修正★3: 注文が入ると自動でスレッド行が生成される仕様のため、
+    //   「キャンセル済み かつ メッセージ0件」の注文が空スレッドとして残り、
+    //   全部「まだメッセージがありません」と表示されて DM の本文が読めないと誤解された。
+    //   → 中身も可能性も無いスレッド(キャンセル済み+0件)だけを隠す。
+    //   進行中の注文は0件でも表示する(ここから会話を始めるため)。
+    const list = orders.filter(o => !(o.status === "cancelled" && !lastMsgMap[o.id])).map(o => {
       const partnerId = o.buyer_id === user.id ? o.seller_id : o.buyer_id;
       const partner = profMap[partnerId];
       const listing = listMap[o.listing_id];
@@ -3022,8 +3030,16 @@ const OrderMessagesTab = () => {
   useEffect(() => { if (selected) fetchMessages(selected.order_id); }, [selected?.order_id]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // 2026/7/27 二重送信バグ修正: sending は React state のため、setSending(true) が反映される前に
+  //   2回目のイベント(日本語IMEの変換確定Enter→送信Enter 等)が入ると素通りしてしまう。
+  //   さらに送信前に await があるため state ガードは事実上効いていなかった。
+  //   同期的に立つ ref で確実にブロックする。
+  const sendingRef = useRef(false);
   const handleSend = async () => {
     if (!input.trim() || !user || !selected || sending) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
     const detection = detectContacts(input);
     const isCompleted = selected.status === "completed";
     if (detection.found && !isCompleted) {
@@ -3049,6 +3065,7 @@ const OrderMessagesTab = () => {
     setInput(""); setWarning(null);
     await fetchMessages(selected.order_id);
     setSending(false);
+    } finally { sendingRef.current = false; }
   };
 
   if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>;
@@ -3159,7 +3176,7 @@ const OrderMessagesTab = () => {
             <input
               value={input}
               onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
-              onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+              onKeyDown={e=>{ /* 日本語IMEの変換確定Enterで送信されないよう isComposing を見る */ if (e.key === "Enter" && !e.shiftKey && !sending && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
               placeholder="メッセージを入力..."
               disabled={sending}
               style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
@@ -3276,8 +3293,15 @@ const DirectMessagesTab = () => {
   useEffect(() => { if (selected) fetchMessages(selected.partner_id); }, [selected?.partner_id]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // 2026/7/27 二重送信バグ修正 (実害あり: 7/19に同一本文が2ms差/88ms差で各2件重複記録)。
+  //   sending は React state のため setSending(true) 反映前の2回目イベントを止められず、
+  //   さらに下の follows 照会 await が setSending より前にあるため完全に無防備だった。
+  const sendingRef = useRef(false);
   const handleSend = async () => {
     if (!input.trim() || !user || !selected || sending) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
     if (!selected.is_following) {
       alert("メッセージを送るには、まず相手をフォローしてください");
       return;
@@ -3315,6 +3339,7 @@ const DirectMessagesTab = () => {
     setInput(""); setWarning(null);
     await fetchMessages(selected.partner_id);
     setSending(false);
+    } finally { sendingRef.current = false; }
   };
 
   if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>;
@@ -3400,7 +3425,7 @@ const DirectMessagesTab = () => {
               <input
                 value={input}
                 onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
-                onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+                onKeyDown={e=>{ /* 日本語IMEの変換確定Enterで送信されないよう isComposing を見る */ if (e.key === "Enter" && !e.shiftKey && !sending && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
                 placeholder="メッセージを入力..."
                 disabled={sending}
                 style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
@@ -3418,9 +3443,33 @@ const MessagesTab = () => {
   // 2026/7/13 週次点検バグ1修正: プロフィール「💬 メッセージ」からは navigate state { dm } で来る。
   //   マウント時に確実に読めるため setTimeout+CustomEvent レース(PR#107と同型)が起きない。
   const location = useLocation();
+  // useAuth() の型が null 推論のため、既存箇所と同じくキャストして受ける
+  const user = (useAuth() as { user: { id: string } | null } | null)?.user ?? null;
   const [subTab, setSubTab] = useState<"order" | "dm">(() =>
     (location.state as { dm?: string } | null)?.dm ? "dm" : "order"
   );
+  // 2026/7/27 バグ報告修正★1: どちらのタブに未読があるか分からず、
+  //   取引タブ(空スレッド)を見て「DMが読めない」と誤解される事故が発生したため
+  //   サブタブごとに未読バッジを出す。
+  const [unread, setUnread] = useState<{ order: number; dm: number }>({ order: 0, dm: 0 });
+  const autoSwitched = useRef(false);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [{ count: dmCount }, { count: orderCount }] = await Promise.all([
+        supabase.from("direct_messages").select("id", { count: "exact", head: true }).eq("recipient_id", user.id).eq("is_read", false),
+        supabase.from("order_messages").select("id", { count: "exact", head: true }).eq("recipient_id", user.id).eq("is_read", false),
+      ]);
+      setUnread({ dm: dmCount || 0, order: orderCount || 0 });
+      // ★2: 取引に未読が無く DM だけに未読がある場合は DM を初期表示にする。
+      //   一度きり (autoSwitched) なので、ユーザーが自分でタブを切り替えた後に奪わない。
+      if (!autoSwitched.current && !(location.state as { dm?: string } | null)?.dm) {
+        autoSwitched.current = true;
+        if ((dmCount || 0) > 0 && (orderCount || 0) === 0) setSubTab("dm");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
   // /mypage 表示中の再遷移 (再マウントなし) にも location.key 監視で対応
   useEffect(() => {
     if ((location.state as { dm?: string } | null)?.dm) setSubTab("dm");
@@ -3434,8 +3483,18 @@ const MessagesTab = () => {
   return (
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:14, background:C.lightGray, borderRadius:12, padding:4 }}>
-        <button onClick={()=>setSubTab("order")} style={{ flex:1, padding:"8px", background: subTab === "order" ? C.white : "transparent", border:"none", borderRadius:8, fontSize:12, fontWeight:800, color: subTab === "order" ? C.orange : C.warmGray, cursor:"pointer", fontFamily:"inherit", boxShadow: subTab === "order" ? "0 2px 4px rgba(0,0,0,0.05)" : "none" }}>📦 取引</button>
-        <button onClick={()=>setSubTab("dm")} style={{ flex:1, padding:"8px", background: subTab === "dm" ? C.white : "transparent", border:"none", borderRadius:8, fontSize:12, fontWeight:800, color: subTab === "dm" ? C.orange : C.warmGray, cursor:"pointer", fontFamily:"inherit", boxShadow: subTab === "dm" ? "0 2px 4px rgba(0,0,0,0.05)" : "none" }}>✉️ DM</button>
+        {/* 2026/7/27 ★4: どちらに何が入っているか一目で分かるラベルにする */}
+        {([
+          { id: "order" as const, label: "📦 取引メッセージ", n: unread.order },
+          { id: "dm" as const, label: "✉️ DM（運営・出品者）", n: unread.dm },
+        ]).map(t => (
+          <button key={t.id} onClick={()=>setSubTab(t.id)} style={{ flex:1, padding:"8px 6px", background: subTab === t.id ? C.white : "transparent", border:"none", borderRadius:8, fontSize:11, fontWeight:800, color: subTab === t.id ? C.orange : C.warmGray, cursor:"pointer", fontFamily:"inherit", boxShadow: subTab === t.id ? "0 2px 4px rgba(0,0,0,0.05)" : "none", display:"flex", alignItems:"center", justifyContent:"center", gap:5, whiteSpace:"nowrap" }}>
+            {t.label}
+            {t.n > 0 && (
+              <span style={{ minWidth:17, height:17, padding:"0 4px", borderRadius:9, background:"#E14B4B", color:"#fff", fontSize:10, fontWeight:800, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{t.n > 99 ? "99+" : t.n}</span>
+            )}
+          </button>
+        ))}
       </div>
       {subTab === "order" ? <OrderMessagesTab/> : <DirectMessagesTab/>}
     </div>
