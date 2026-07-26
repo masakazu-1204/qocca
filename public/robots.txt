@@ -1,58 +1,105 @@
+# Qocca (qocca.pet) robots.txt
+# 2026/7/27 更新: サイトマップをインデックス方式(動的生成・約5,200URL)に変更。
+#   併せてログイン後・管理系のパスを除外。
+
 User-agent: *
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
+Disallow: /update-password
+Disallow: /deletion-status
+Disallow: /redeem
+Disallow: /login
 
-# AI クローラー明示許可 (依頼書 #128 - GEO 対策 / 2026/6/5)
-# AI 検索 (ChatGPT search / Claude / Perplexity / Google AI Overviews) からの引用を促進
+# ── AI クローラー 明示許可 (依頼書 #128 GEO 対策 / 2026/6/5) ──
+# AI 検索 (ChatGPT search / Claude / Perplexity / Google AI Overviews・AI Mode) からの
+# 引用を促進する。2026/7/27: これらは JS を実行しないため、
+# クローラー向けプリレンダリング (api/prerender.js) を併せて導入した。
+
 User-agent: GPTBot
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: ChatGPT-User
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: ClaudeBot
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: anthropic-ai
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: PerplexityBot
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: Perplexity-User
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: Google-Extended
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: CCBot
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 User-agent: Bytespider
 Allow: /
 Disallow: /mypage
 Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
+
+User-agent: meta-externalagent
+Allow: /
+Disallow: /mypage
+Disallow: /favorites
+Disallow: /admin
+Disallow: /settings
 
 Sitemap: https://qocca.pet/sitemap.xml
