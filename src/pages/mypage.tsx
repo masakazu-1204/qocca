@@ -3030,8 +3030,16 @@ const OrderMessagesTab = () => {
   useEffect(() => { if (selected) fetchMessages(selected.order_id); }, [selected?.order_id]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // 2026/7/27 二重送信バグ修正: sending は React state のため、setSending(true) が反映される前に
+  //   2回目のイベント(日本語IMEの変換確定Enter→送信Enter 等)が入ると素通りしてしまう。
+  //   さらに送信前に await があるため state ガードは事実上効いていなかった。
+  //   同期的に立つ ref で確実にブロックする。
+  const sendingRef = useRef(false);
   const handleSend = async () => {
     if (!input.trim() || !user || !selected || sending) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
     const detection = detectContacts(input);
     const isCompleted = selected.status === "completed";
     if (detection.found && !isCompleted) {
@@ -3057,6 +3065,7 @@ const OrderMessagesTab = () => {
     setInput(""); setWarning(null);
     await fetchMessages(selected.order_id);
     setSending(false);
+    } finally { sendingRef.current = false; }
   };
 
   if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>;
@@ -3167,7 +3176,7 @@ const OrderMessagesTab = () => {
             <input
               value={input}
               onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
-              onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+              onKeyDown={e=>{ /* 日本語IMEの変換確定Enterで送信されないよう isComposing を見る */ if (e.key === "Enter" && !e.shiftKey && !sending && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
               placeholder="メッセージを入力..."
               disabled={sending}
               style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
@@ -3284,8 +3293,15 @@ const DirectMessagesTab = () => {
   useEffect(() => { if (selected) fetchMessages(selected.partner_id); }, [selected?.partner_id]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // 2026/7/27 二重送信バグ修正 (実害あり: 7/19に同一本文が2ms差/88ms差で各2件重複記録)。
+  //   sending は React state のため setSending(true) 反映前の2回目イベントを止められず、
+  //   さらに下の follows 照会 await が setSending より前にあるため完全に無防備だった。
+  const sendingRef = useRef(false);
   const handleSend = async () => {
     if (!input.trim() || !user || !selected || sending) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
     if (!selected.is_following) {
       alert("メッセージを送るには、まず相手をフォローしてください");
       return;
@@ -3323,6 +3339,7 @@ const DirectMessagesTab = () => {
     setInput(""); setWarning(null);
     await fetchMessages(selected.partner_id);
     setSending(false);
+    } finally { sendingRef.current = false; }
   };
 
   if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>;
@@ -3408,7 +3425,7 @@ const DirectMessagesTab = () => {
               <input
                 value={input}
                 onChange={e=>{setInput(e.target.value); if (warning) setWarning(null);}}
-                onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+                onKeyDown={e=>{ /* 日本語IMEの変換確定Enterで送信されないよう isComposing を見る */ if (e.key === "Enter" && !e.shiftKey && !sending && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
                 placeholder="メッセージを入力..."
                 disabled={sending}
                 style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>

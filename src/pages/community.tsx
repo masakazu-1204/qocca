@@ -571,8 +571,15 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
     setReportTarget(null);
   };
 
+  // 2026/7/27 二重送信バグ修正: sending は React state のため、setSending(true) が反映される前に
+  //   2回目のイベント(日本語IMEの変換確定Enter→送信Enter 等)が入ると素通りしてしまう。
+  //   同期的に立つ ref で確実にブロックする。
+  const sendingRef = useRef(false);
   const handleSend = async () => {
     if (!input.trim() || !user || !communityId || sending) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
 
     // NGワード検出（暴言・誹謗中傷など）
     const ng = detectNGWords(input);
@@ -603,6 +610,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
     setInput(""); setWarning(null);
     await fetchCommunity();
     setSending(false);
+    } finally { sendingRef.current = false; }
   };
 
   if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
@@ -706,7 +714,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
             <input
               value={input}
               onChange={e=>{setInput(e.target.value); if (warning) setWarning(null); if (ngError) setNgError(null);}}
-              onKeyDown={e=>{ if (e.key === "Enter" && !e.shiftKey && !sending) { e.preventDefault(); handleSend(); } }}
+              onKeyDown={e=>{ /* 日本語IMEの変換確定Enterで送信されないよう isComposing を見る */ if (e.key === "Enter" && !e.shiftKey && !sending && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
               placeholder="メッセージを入力..."
               disabled={sending}
               style={{ flex:1, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
