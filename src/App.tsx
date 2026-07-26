@@ -18,6 +18,8 @@ import { SearchPage, UserProfilePage, SellPage, DetailPageWrapper, LikedPage } f
 import { MyPage } from "./pages/mypage";
 import { HomePage } from "./pages/home";
 import { FacilitiesPage } from "./pages/facilities";
+// 2026/7/27 MEO: 施設の個別ページ / 都道府県ハブ (ローカル検索の受け皿)
+import { FacilityDetailPage, FacilityHubPage } from "./pages/facilitySeo";
 import { PetWalkerPage } from "./pages/petwalker";
 import { PetGalleryPage } from "./pages/pet_gallery";
 import AdminDashboard from "./Admin";
@@ -316,6 +318,12 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            {/* 2026/7/27 MEO: 施設の個別URLと都道府県×カテゴリのハブ。
+                既存 /facilities (地図つき検索) はそのまま。ローカル検索の受け皿を新設する。
+                ⚠️ api/prerender.js が同じURLをクローラー向けにHTMLで返す (URL設計変更時は両方直す) */}
+            <Route path="/facility/:id" element={<FacilityDetailPage/>}/>
+            <Route path="/facilities/:pref" element={<FacilityHubPage/>}/>
+            <Route path="/facilities/:pref/:cat" element={<FacilityHubPage/>}/>
             {/* ペットウォーカー: ペットと行きたくなる場所(宿/カフェ/観光) の情報ページ (商店街メイン機能・施設マップとは別) */}
             {/* 2026/7/17 共有可能URL: /petwalker/area|spot|feature/... を同一ルートで受ける。
                 ワイルドカード1本にすることで、URL が変わっても React Router 的には同じルート
@@ -547,6 +555,10 @@ function QoccaAppInner() {
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
+            {/* 2026/7/27 MEO: 施設の個別URL / 都道府県×カテゴリのハブ (PC側と同じ) */}
+            <Route path="/facility/:id" element={<FacilityDetailPage/>}/>
+            <Route path="/facilities/:pref" element={<FacilityHubPage/>}/>
+            <Route path="/facilities/:pref/:cat" element={<FacilityHubPage/>}/>
             {/* 2026/7/17 共有可能URL (PC側と同じくワイルドカード1本・再マウント回避) */}
             <Route path="/petwalker/*" element={<PetWalkerPage setPage={setPage} isPC={false} likedSpots={likedSpots} onLikeSpot={onLikeSpot}/>}/>
             <Route path="/petgallery" element={<PetGalleryPage setPage={setPage} isPC={false}/>}/>
