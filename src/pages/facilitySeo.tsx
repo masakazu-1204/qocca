@@ -17,7 +17,7 @@ import {
   prefToSlug, slugToPrefBase,
 } from "../constants/facilitySlugs";
 
-const SITE = "https://qocca.pet";
+import { SITE_URL as SITE } from "../constants/site";
 
 type Facility = {
   id: string;

@@ -7,6 +7,7 @@
 // JS を実行しない AI クローラー向けには api/prerender.js が別途 HTML を返す。
 
 import { useEffect } from "react";
+import { SITE_URL } from "../constants/site";
 
 type SEO = {
   title: string;
@@ -20,7 +21,7 @@ type SEO = {
   noindex?: boolean;
 };
 
-const SITE = "https://qocca.pet";
+const SITE = SITE_URL;
 const MANAGED = "data-qocca-seo"; // このフックが作った要素の目印
 
 const upsert = (

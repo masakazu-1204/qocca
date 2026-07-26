@@ -20,7 +20,10 @@ export const SB_KEY =
   process.env.SUPABASE_ANON_KEY ||
   "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
 
-export const SITE = "https://qocca.pet";
+// 2026/7/27: 本番は qocca.pet → www.qocca.pet に 307 リダイレクトされ、200 を返すのは www 側。
+//   canonical がリダイレクトするURLを指すと正規URLが判断されないため、実体(www)を正とする。
+//   ⚠️ Vercel の Primary Domain を apex に変えたら、ここと src/constants/site.ts を戻すこと。
+export const SITE = "https://www.qocca.pet";
 export const SITE_NAME = "Qocca";
 export const DEFAULT_IMAGE = `${SITE}/logo.png`;
 

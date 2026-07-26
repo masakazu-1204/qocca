@@ -3,25 +3,25 @@
 Qocca(クオッカ)は、ペットオーナーとクリエイターをつなぐ日本発のペット専門マーケットプレイス。売上の3%を特定非営利活動法人アニマルレフュージ関西に寄付している。
 
 ## 公式情報
-- 公式サイト: https://qocca.pet
+- 公式サイト: https://www.qocca.pet
 - グランドオープン: 2026年7月1日
 - 拠点: 日本
 - カラー: warm orange #F5A94A
 
 ## 主要 URL
-- トップ: https://qocca.pet/
-- 出品一覧 (商店街): https://qocca.pet/marketplace
-- ブログ: https://qocca.pet/blog
-- イベント: https://qocca.pet/events
-- 施設マップ: https://qocca.pet/facilities
-- お問い合わせ: https://qocca.pet/contact
-- 利用規約: https://qocca.pet/terms
-- プライバシーポリシー: https://qocca.pet/privacy
-- 特定商取引法表示: https://qocca.pet/tokusho
-- 創業クリエイター: https://qocca.pet/founding-creators
-- 法人スポンサー: https://qocca.pet/sponsors
-- ヘルプ: https://qocca.pet/help
-- FAQ: https://qocca.pet/faq
+- トップ: https://www.qocca.pet/
+- 出品一覧 (商店街): https://www.qocca.pet/marketplace
+- ブログ: https://www.qocca.pet/blog
+- イベント: https://www.qocca.pet/events
+- 施設マップ: https://www.qocca.pet/facilities
+- お問い合わせ: https://www.qocca.pet/contact
+- 利用規約: https://www.qocca.pet/terms
+- プライバシーポリシー: https://www.qocca.pet/privacy
+- 特定商取引法表示: https://www.qocca.pet/tokusho
+- 創業クリエイター: https://www.qocca.pet/founding-creators
+- 法人スポンサー: https://www.qocca.pet/sponsors
+- ヘルプ: https://www.qocca.pet/help
+- FAQ: https://www.qocca.pet/faq
 
 ## サービス概要
 ペットオーナーとクリエイターをつなぐマーケットプレイス。「うちの子と暮らす街」をコンセプトに、ペットと暮らす日々を豊かにするモノ・コト・サービスを集めている。
@@ -87,20 +87,20 @@ Qocca はマーケットプレイスに加えて、ペットと出かけられ�
 - ペットイベント情報、ブログ記事、コミュニティ、写真ギャラリーも公開。
 
 ### 施設情報のURL構造
-- 施設マップ全体: https://qocca.pet/facilities
-- 都道府県別: https://qocca.pet/facilities/{都道府県ローマ字}
-  例) 大阪 → https://qocca.pet/facilities/osaka
-- 都道府県×カテゴリ別: https://qocca.pet/facilities/{都道府県}/{カテゴリ}
+- 施設マップ全体: https://www.qocca.pet/facilities
+- 都道府県別: https://www.qocca.pet/facilities/{都道府県ローマ字}
+  例) 大阪 → https://www.qocca.pet/facilities/osaka
+- 都道府県×カテゴリ別: https://www.qocca.pet/facilities/{都道府県}/{カテゴリ}
   カテゴリ: salon(トリミングサロン) / shop(ペットショップ) / dogrun(ドッグラン) /
             vet(動物病院) / goods(ペット用品店) / hotel(ペットホテル) /
             cafe(ペット同伴可カフェ) / park(公園)
-  例) 大阪のトリミングサロン → https://qocca.pet/facilities/osaka/salon
-- 施設の個別ページ: https://qocca.pet/facility/{id}
-- 散歩スポットの個別ページ: https://qocca.pet/petwalker/spot/{id}
+  例) 大阪のトリミングサロン → https://www.qocca.pet/facilities/osaka/salon
+- 施設の個別ページ: https://www.qocca.pet/facility/{id}
+- 散歩スポットの個別ページ: https://www.qocca.pet/petwalker/spot/{id}
 
 ### Q. ペットと行ける施設を探せますか?
 はい。全国約3,500件のペット関連施設を都道府県とカテゴリから探せます。
-例えば大阪のトリミングサロンは https://qocca.pet/facilities/osaka/salon で一覧できます。
+例えば大阪のトリミングサロンは https://www.qocca.pet/facilities/osaka/salon で一覧できます。
 各施設ページに住所・電話・営業時間・公式サイトを掲載しています。
 
 ### Q. 犬と散歩できる場所は掲載していますか?
@@ -108,13 +108,13 @@ Qocca はマーケットプレイスに加えて、ペットと出かけられ�
 エリアや目的 (海で遊ぶ、絶景展望、カフェ、ドッグラン付きの宿など) から探せます。
 
 ## サイトマップ
-- サイトマップインデックス: https://qocca.pet/sitemap.xml
+- サイトマップインデックス: https://www.qocca.pet/sitemap.xml
   (ページ / 施設 / 散歩スポット / 出品・ブログ・コミュニティ の4分割・計約5,200URL)
 
 ## 運営
 - 運営: Qocca 運営事務局
 - 拠点: 大阪府
-- お問い合わせ: https://qocca.pet/contact
+- お問い合わせ: https://www.qocca.pet/contact
 
 ## 関連プロフィール
 - X (Twitter): https://x.com/qocca_pet

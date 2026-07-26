@@ -102,4 +102,4 @@ Disallow: /favorites
 Disallow: /admin
 Disallow: /settings
 
-Sitemap: https://qocca.pet/sitemap.xml
+Sitemap: https://www.qocca.pet/sitemap.xml
