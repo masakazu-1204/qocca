@@ -785,15 +785,15 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
 const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }: {
   facility: PetFacility; user: AuthUser; onClose: () => void; onSubmitted: () => void;
 }) => {
-  const [selectedMoods, setSelectedMoods] = useState([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [visitedAt, setVisitedAt] = useState("");
-  const [photoFiles, setPhotoFiles] = useState([]);
-  const [photoPreviews, setPhotoPreviews] = useState([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const toggleMood = (id: string) => {
     setSelectedMoods(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
