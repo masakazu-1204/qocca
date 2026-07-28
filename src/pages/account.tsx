@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import type { OAuthProvider } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
 import { C, QC_FONT_DISPLAY } from "../constants/theme";
 import { REDEEM_TIER_THEME } from "../constants/data";
@@ -86,7 +87,7 @@ export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void 
     setLoading(false);
   };
 
-  const handleOAuth = async (provider: string) => {
+  const handleOAuth = async (provider: OAuthProvider) => {
     setError("");
     const { error } = await signInWithProvider(provider);
     if (error) setError(error.message);

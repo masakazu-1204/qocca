@@ -5,12 +5,43 @@
 // ロジック・参照名は App.tsx 時点から1文字も改変なし。
 
 import { useState, useEffect, createContext, useContext } from "react";
+import type { ReactNode } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
 
-const AuthContext = createContext(null);
+// 2026/7/27 型負債返済: createContext(null) のせいで useAuth() の戻り値が null 型になり、
+//   全画面で「Property 'user' does not exist on type 'null'」が出ていた (42件)。
+//   ⚠️ 実装・呼び出し順・リアルタイム購読は1行も変更していない。型注釈の追加のみ。
+//   返り値の形は supabase 自身の型から導出しているので推測が入らない。
+type SignUpResult = Awaited<ReturnType<typeof supabase.auth.signUp>>;
+type SignInResult = Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+type OAuthResult = Awaited<ReturnType<typeof supabase.auth.signInWithOAuth>>;
+type SignOutResult = Awaited<ReturnType<typeof supabase.auth.signOut>>;
+type ResetResult = Awaited<ReturnType<typeof supabase.auth.resetPasswordForEmail>>;
+type UpdateUserResult = Awaited<ReturnType<typeof supabase.auth.updateUser>>;
+/** "google" | "line" ... supabase が受け付ける OAuth プロバイダ */
+export type OAuthProvider = Parameters<typeof supabase.auth.signInWithOAuth>[0]["provider"];
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+/** 実装は supabase の戻り値を { data, error } に組み直して返すため、
+ *  元の判別可能ユニオンの対応関係が外れる。その実態に合わせた形。 */
+type Split<T extends { data: unknown; error: unknown }> = { data: T["data"]; error: T["error"] };
+
+export type AuthContextValue = {
+  user: User | null;
+  loading: boolean;
+  isRecovery: boolean;
+  signUp: (email: string, password: string, displayName?: string) => Promise<Split<SignUpResult>>;
+  signIn: (email: string, password: string) => Promise<Split<SignInResult>>;
+  signInWithProvider: (provider: OAuthProvider) => Promise<Split<OAuthResult>>;
+  signOut: () => Promise<{ error: SignOutResult["error"] }>;
+  resetPassword: (email: string) => Promise<Split<ResetResult>>;
+  updatePassword: (newPassword: string) => Promise<Split<UpdateUserResult>>;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   // 依頼書 #138 タスク2 (2026/6/9): PASSWORD_RECOVERY 検出フラグ
   // recovery メール経由のみ true / 通常ログインは絶対に false
   // /update-password の表示ガードに使用
@@ -51,7 +82,7 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email, password, displayName) => {
+  const signUp = async (email: string, password: string, displayName?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -62,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
-  const signIn = async (email, password) => {
+  const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -70,7 +101,7 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   };
 
-  const signInWithProvider = async (provider) => {
+  const signInWithProvider = async (provider: OAuthProvider) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -91,7 +122,7 @@ export const AuthProvider = ({ children }) => {
   //   - https://qocca.pet/update-password
   //   - https://www.qocca.pet/update-password
   //   - Vercel preview env: https://*.vercel.app/update-password
-  const resetPassword = async (email) => {
+  const resetPassword = async (email: string) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: typeof window !== "undefined" ? `${window.location.origin}/update-password` : undefined,
     });
@@ -112,4 +143,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// Provider は App 全体を包んでいるため、呼び出し側では常に値が入っている。
+// 実行時の挙動を変えないよう throw は追加せず、型だけ非nullとして扱う。
+export const useAuth = () => useContext(AuthContext) as AuthContextValue;
