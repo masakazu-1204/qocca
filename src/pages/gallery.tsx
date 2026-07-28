@@ -22,17 +22,25 @@ type BlogPost = {
   likes_count?: number; views_count?: number; created_at?: string;
   author_id?: string; authorName?: string; authorAvatar?: string | null;
 };
+/** gallery_posts_public のうち この画面が参照する列 + 表示用に付与する名前 */
+type GalleryPost = {
+  id: string; user_id?: string; pet_id?: string | null;
+  image_url?: string; caption?: string | null;
+  pet_type?: string | null; pet_name?: string | null;
+  likes_count?: number; created_at?: string; is_official?: boolean | null;
+  petName?: string; userName?: string; userAvatar?: string | null;
+};
 
 export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
   const { postId } = useParams();
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("all");
   const [showWrite, setShowWrite] = useState(false);
   const [viewPost, setViewPost] = useState<BlogPost | null>(null);
-  const [likedPosts, setLikedPosts] = useState({});
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
   const [form, setForm] = useState({ title:"", content:"", category:"general", tags:"" });
@@ -368,14 +376,14 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
 
 export const GalleryPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
-  const [likedPosts, setLikedPosts] = useState({});
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const fileRef = useRef(null);
   const [commentOpen, setCommentOpen] = useState(false);
 const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
