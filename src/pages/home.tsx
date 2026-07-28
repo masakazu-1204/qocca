@@ -10,6 +10,13 @@ import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_D
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { PW_AREAS } from "../constants/petwalker";
 import { dailySeededShuffle } from "../utils/dailyShuffle";
+import type { ReactNode } from "react";
+import type { SetPage } from "../types";
+
+/** 今日のモーメント (gallery_posts の表示に使う列のみ) */
+type Moment = { id: string; image_url?: string; caption?: string; pet_name?: string };
+/** リアクション種別キー → 件数 */
+type ReactionCounts = Record<string, number>;
 import { petIcon, petLabelShort } from "../constants/pets";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
@@ -1362,7 +1369,7 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
   );
 };
 
-const SectionTodaysMoments = ({ setPage }) => {
+const SectionTodaysMoments = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
   const [moments, setMoments] = useState<any[]>([]);
   const [reactionCounts, setReactionCounts] = useState<Record<string, any>>({});
@@ -1682,7 +1689,12 @@ const SectionTodaysMoments = ({ setPage }) => {
 // ----------------------------------------------------------------------------
 // MomentCard - 静けさ実装 (stagger フェードイン、ホバー時のみ pet_name)
 // ----------------------------------------------------------------------------
-const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, index, onMouseEnter, onMouseLeave, onClick, onReact }) => {
+const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, index, onMouseEnter, onMouseLeave, onClick, onReact }: {
+  moment: Moment; isHover: boolean; counts: ReactionCounts; mySet: Set<string>;
+  animatingKey: string | null; isMobile: boolean; index: number;
+  onMouseEnter: () => void; onMouseLeave: () => void; onClick: () => void;
+  onReact: (momentId: string, key: string) => void;
+}) => {
   const { ref, inView } = useInViewStaggered(index, 200);
 
   return (
@@ -1820,7 +1832,10 @@ const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, in
 // ----------------------------------------------------------------------------
 // MomentModal - モバイル詳細モーダル (フォント軽く)
 // ----------------------------------------------------------------------------
-const MomentModal = ({ moment, counts = {}, mySet = new Set(), onReact, onClose }) => (
+const MomentModal = ({ moment, counts = {}, mySet = new Set<string>(), onReact, onClose }: {
+  moment: Moment; counts?: ReactionCounts; mySet?: Set<string>;
+  onReact: (momentId: string, key: string) => void; onClose: () => void;
+}) => (
   <div
     onClick={onClose}
     style={{
@@ -1938,7 +1953,7 @@ const MomentModal = ({ moment, counts = {}, mySet = new Set(), onReact, onClose 
 // ----------------------------------------------------------------------------
 // LoginPromptModal - CTA弱める版
 // ----------------------------------------------------------------------------
-const LoginPromptModal = ({ onClose, onLogin }) => (
+const LoginPromptModal = ({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) => (
   <div
     onClick={onClose}
     style={{
@@ -2047,7 +2062,9 @@ const LoginPromptModal = ({ onClose, onLogin }) => (
 //     (仕様書の setPage("listing-detail", ...) は未定義 page id のため不採用)
 // ============================================================================
 
-const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
+const SectionQuietlyLoved = ({ listings, onDetail, setPage }: {
+  listings: any[]; onDetail: (item: any) => void; setPage: SetPage;
+}) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [allLinkHover, setAllLinkHover] = useState(false);
   const [isMobile, setIsMobile] = useState(
@@ -2342,7 +2359,7 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }) => {
 // SECTION 6: 仲間になろう (Join the Town) - 登録CTA
 // ============================================================================
 
-const SectionJoinTown = ({ setPage }) => {
+const SectionJoinTown = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
   const [isHover, setIsHover] = useState(false);
 
@@ -2969,7 +2986,7 @@ const QOCCA_REDUCED_MOTION =
   !!window.matchMedia &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const Reveal = ({ children, variant = "rise" }) => {
+const Reveal = ({ children, variant = "rise" }: { children: ReactNode; variant?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(QOCCA_REDUCED_MOTION);
   const [settled, setSettled] = useState(QOCCA_REDUCED_MOTION);
@@ -3020,7 +3037,11 @@ const Reveal = ({ children, variant = "rise" }) => {
   );
 };
 
-export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, onDetail, homeEvents = [] }) => {
+export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, onDetail, homeEvents = [] }: {
+  setPage: SetPage; listings: any[];
+  liked?: Record<string, boolean>; onLike?: (id: string) => void;
+  onDetail: (item: any) => void; homeEvents?: any[];
+}) => {
   const progress = useScrollProgress();
   const bgColor = qoccaInterpolateBackground(progress);
 
