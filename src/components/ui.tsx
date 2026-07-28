@@ -11,6 +11,7 @@ import { resolveFontFamily } from "../constants/fonts";
 import { stepIndex } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
+import type { SetPage } from "../types";
 
 // 画面間で共通の props 型。setPage は遷移先ごとに異なるペイロードを渡すため d?: any
 //   (既存の各ページの注釈と同じ慣例に揃えている)
