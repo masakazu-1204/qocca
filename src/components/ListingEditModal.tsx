@@ -13,7 +13,33 @@ const attrKey = (a: any) => JSON.stringify(Object.keys(a || {}).sort().map(k => 
 
 const MAX_IMAGES = 5;
 
-export const ListingEditModal = ({ listing, onClose, onSaved }) => {
+/** 編集モーダルが実際に参照する listings の列だけを列挙した型 (DB行の部分集合)。
+ *  読み出しは全て `?? ""` / `|| 0` 等でフォールバックしているため任意・nullable にしている。 */
+export type EditableListing = {
+  id: string;
+  seller_id?: string | null;
+  title?: string | null;
+  description?: string | null;
+  price?: number | null;
+  category?: string | null;
+  delivery_days?: number | string | null;
+  image_urls?: string[] | null;
+  options?: any[] | null;
+  stock_quantity?: number | null;
+  shipping_type?: string | null;
+  shipping_fee?: number | null;
+  shipping_rates?: any[] | null;
+  shipping_note?: string | null;
+  shipping_methods?: any[] | null;
+  choice_required_count?: number | null;
+  choice_set_price?: number | null;
+};
+
+export const ListingEditModal = ({ listing, onClose, onSaved }: {
+  listing: EditableListing;
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
   const [title, setTitle] = useState(listing.title || "");
   const [description, setDescription] = useState(listing.description || "");
   const [price, setPrice] = useState(listing.price?.toString() || "");
