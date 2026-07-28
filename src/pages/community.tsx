@@ -14,18 +14,34 @@ import { EVENT_CATS, PREFS_47_ORDER, COMMUNITY_CATEGORIES } from "../constants/d
 import { detectContacts, detectNGWords } from "../utils/moderation";
 import CommentModal from "../components/CommentModal";
 import type { CommentTargetType } from "../types";
+import type { SetPage } from "../types";
+
+/** events 行を一覧カード表示用に変換した形 (fetch 時の map で生成される) */
+type EventCard = {
+  id: string; title?: string; date?: string; time?: string; place?: string;
+  pref?: string; pet?: string; fee?: string; image?: string | null;
+  organizer?: string; url?: string | null; desc?: string;
+  likes?: number; joins?: number; comments?: number;
+  category?: string; bg?: string; organizer_id?: string;
+};
+/** イベント投稿フォーム (image_url は投稿時のみ使うため任意) */
+type EventForm = {
+  title: string; event_date: string; event_time: string; place: string;
+  prefecture: string; pet_type: string; fee: string; category: string;
+  description: string; image_url?: string;
+};
 
 
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
 export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: (p: string, d?: any) => void }) => {
   const { user } = useAuth();
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<EventCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [pref, setPref] = useState("すべて");
   const [cat, setCat] = useState("すべて");
   const [pet, setPet] = useState("すべて");
-  const [evLiked, setEvLiked] = useState({});
-  const [joined, setJoined] = useState({});
+  const [evLiked, setEvLiked] = useState<Record<string, boolean>>({});
+  const [joined, setJoined] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState(null);
   const [showPost, setShowPost] = useState(false);
 
@@ -48,7 +64,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: (p: str
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
-  const [form, setForm] = useState({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"" });
+  const [form, setForm] = useState<EventForm>({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"" });
   const [submitting, setSubmitting] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
