@@ -186,7 +186,7 @@ function QoccaAppInner() {
   // 2026/7/13 お気に入り拡張 Phase1: 未ログインで♡が「無反応」だったのを ログイン誘導に。
   //   会員登録動線の復活 (押した意思を拾ってログインへ送る)。
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const onLike = (id) => {
+  const onLike = (id: string) => {
     if (user) { toggleLike(id); }
     else { setShowLoginPrompt(true); }
   };
@@ -195,7 +195,8 @@ function QoccaAppInner() {
     if (user) { toggleLike(spotId, "spot"); }
     else { setShowLoginPrompt(true); }
   };
-  const onDetail = (item) => { setPage("detail", item); };
+  // item は出品行そのものを詳細ページへ引き渡すだけ (setPage の data と同じ扱い) のため any
+  const onDetail = (item: any) => { setPage("detail", item); };
   const [homeEvents, setHomeEvents] = useState<any[]>([]);
   useEffect(()=>{
     (async()=>{

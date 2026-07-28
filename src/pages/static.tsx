@@ -11,6 +11,10 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { TERMS_V2 } from "../legal/terms_v2";
+import type { SetPage } from "../types";
+
+/** 規約・プライバシー・特商法・お問い合わせ の4文書に共通の形 */
+type LegalDoc = { title: string; updated?: string; sections: { h: string; p: string }[] };
 import type { FoundingCreator } from "../types";
 
 // ============================================================================
@@ -18,7 +22,7 @@ import type { FoundingCreator } from "../types";
 // ============================================================================
 
 // ── 特定商取引法に基づく表記（法的義務）─────────────────────────────
-export const TokushoPage = ({ setPage, isPC }) => {
+export const TokushoPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
@@ -60,14 +64,14 @@ export const TokushoPage = ({ setPage, isPC }) => {
 };
 
 // ── 利用規約 (依頼書 #105: 弁護士確認版 v2.0 / LegalPage に統一) ─────
-export const TermsPage = ({ setPage, isPC: _isPC }) => {
+export const TermsPage = ({ setPage, isPC: _isPC }: { setPage: SetPage; isPC?: boolean }) => {
   // 旧 TermsPage の JSX は v2.0 と互換性なし → LegalPage(type=terms) に転送
   return <LegalPage type="terms" setPage={setPage}/>;
 };
 
 
 // ── プライバシーポリシー ────────────────────────────────────────────
-export const PrivacyPage = ({ setPage, isPC }) => {
+export const PrivacyPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       <div style={{ maxWidth:780, margin:"0 auto", padding:"40px 20px 60px" }}>
@@ -139,7 +143,7 @@ export const PrivacyPage = ({ setPage, isPC }) => {
 };
 
 // ── お問い合わせ ─────────────────────────────────────────────────
-export const ContactPage = ({ setPage, isPC }) => {
+export const ContactPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
   const [category, setCategory] = useState("general");
   const [subject, setSubject] = useState("");
@@ -285,7 +289,7 @@ export const ContactPage = ({ setPage, isPC }) => {
 };
 
 // ── Qocca Town Guide ("What is Qocca?" 街の機能ガイド)─────────────────
-export const QoccaTownGuide = ({ setPage }) => {
+export const QoccaTownGuide = ({ setPage }: { setPage: SetPage }) => {
   const features = [
     { icon:"💬", emoji:"🏞", label:"広場", title:"仲間と話せる広場", desc:"同じ犬種・年齢・お悩みの仲間とつながる。\nペット好き専用のコミュニティ。", to:"communities" },
     { icon:"🛍", emoji:"🏪", label:"商店街", title:"想いを形にした商店街", desc:"似顔絵・ハンドメイド服・写真撮影。\nペット好きクリエイターの一点物が並ぶ。", to:"marketplace" },
@@ -336,7 +340,7 @@ export const QoccaTownGuide = ({ setPage }) => {
 };
 
 // ── First Step Guide ("はじめての方へ" 3ステップ)────────────────────
-export const FirstStepGuide = ({ setPage }) => {
+export const FirstStepGuide = ({ setPage }: { setPage: SetPage }) => {
   const steps = [
     { num:"1", emoji:"🐾", title:"住民になる(30秒)", desc:"うちの子のプロフィールを登録。\n街の住民として歓迎されます。", action:"アカウント作成", to:"signup" },
     { num:"2", emoji:"💬", title:"広場で挨拶する(1分)", desc:"同じ犬種・地域の仲間がいる\nコミュニティに参加してみよう。", action:"広場をのぞく", to:"communities" },
@@ -626,8 +630,9 @@ export const SponsorsPage = ({ setPage: _setPage }: { setPage: (p: string) => vo
 };
 
 // ── Legal Pages ───────────────────────────────────────────────────────────
-export const LegalPage = ({ type, setPage }) => {
-  const pages = {
+export const LegalPage = ({ type, setPage }: { type: string; setPage: SetPage }) => {
+  // 4文書とも同じ形 ({h,p} の配列)。型を明示して pages[type] の暗黙any索引を解消する。
+  const pages: Record<"terms" | "privacy" | "tokusho" | "contact", LegalDoc> = {
     // 依頼書 #105 (2026/6/3): 弁護士確認版 利用規約 v2.0 (前文 + 第1〜28条 + 第29条クラファン + 附則)
     terms: {
       title: TERMS_V2.title,
@@ -679,7 +684,7 @@ export const LegalPage = ({ type, setPage }) => {
     }
   };
 
-  const pg = pages[type];
+  const pg = pages[type as keyof typeof pages];
   if (!pg) return null;
 
   return (

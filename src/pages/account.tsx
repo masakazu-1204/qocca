@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import type { OAuthProvider } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
 import { C, QC_FONT_DISPLAY } from "../constants/theme";
 import { REDEEM_TIER_THEME } from "../constants/data";
@@ -12,7 +13,7 @@ import { MyPage } from "./mypage";
 
 // Phase8 8b: account 系7ページを App.tsx から byte同一 line-slice 移動 (元 App.tsx 141-1514)
 
-export const SignupPage = ({ setPage }) => {
+export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void }) => {
   const { user, signUp, signIn, signInWithProvider, resetPassword } = useAuth();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -86,7 +87,7 @@ export const SignupPage = ({ setPage }) => {
     setLoading(false);
   };
 
-  const handleOAuth = async (provider) => {
+  const handleOAuth = async (provider: OAuthProvider) => {
     setError("");
     const { error } = await signInWithProvider(provider);
     if (error) setError(error.message);

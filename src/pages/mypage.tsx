@@ -20,6 +20,17 @@ import { DecoratedAvatar } from "../components/DecoratedAvatar";
 import { petLabelShort, petIcon } from "../constants/pets";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
+import type { SetPage } from "../types";
+
+/** 在庫操作ハンドラが参照する出品行の最小形 */
+type SellerListing = { id: string; stock_quantity?: number | null };
+/** 出品管理タブの一覧が参照する列 */
+type MyListing = {
+  id: string; title?: string; price?: number; status?: string;
+  image_urls?: string[] | null; stock_quantity?: number | null;
+};
+/** 異議申立モーダルに渡す注文の最小形 (item は呼び出し側で listing.title から組み立てる) */
+type DisputeOrder = { id: string; item?: string; price?: number };
 import { createClient } from "@supabase/supabase-js";
 import { OrderStatusBar } from "../components/ui";
 import { ReviewModal } from "../components/ReviewModal";
@@ -474,7 +485,7 @@ const BlogComposeForm = ({ user, editing, onClose }: any) => {
   );
 };
 
-export const MyPage = ({ setPage }) => {
+export const MyPage = ({ setPage }: { setPage: SetPage }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1782,7 +1793,7 @@ const handleOpenDashboard = async () => {
   };
 
   if (loading) {
-    return <div style={{ padding:40, textAlign:"center", color:C.textMuted }}>読み込み中...</div>;
+    return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
   }
 
   const isConnected = connectStatus?.connected && connectStatus?.payouts_enabled;
@@ -1803,7 +1814,7 @@ const handleOpenDashboard = async () => {
                 : "銀行口座を設定してください"}
             </h3>
           </div>
-          <p style={{ margin:"8px 0 12px", fontSize:13, color:C.text, lineHeight:1.6 }}>
+          <p style={{ margin:"8px 0 12px", fontSize:13, color:C.dark, lineHeight:1.6 }}>
             {completedCount > 0
               ? <>売上を受け取るには、Stripe で銀行口座の連携が必要です🐾<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>
               : <>売上を受け取るには、Stripe で銀行口座を連携する必要があります。<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>}
@@ -1842,7 +1853,7 @@ const handleOpenDashboard = async () => {
 
       {/* 残高サマリー (v3.1: 3つ並ぶうち1つだけ強調する EC的設計を排除、統一スタイル) */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
-        <h3 style={{ margin:"0 0 16px", fontSize:14, fontWeight:700, color:C.text }}>残高サマリー</h3>
+        <h3 style={{ margin:"0 0 16px", fontSize:14, fontWeight:700, color:C.dark }}>残高サマリー</h3>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
           <div style={{ background:C.cream, padding:14, borderRadius:12, textAlign:"center", border:`1px solid ${C.border}` }}>
             <div style={{ fontSize:11, color:C.warmGray, marginBottom:4 }}>取引中</div>
@@ -1863,7 +1874,7 @@ const handleOpenDashboard = async () => {
       </div>
 
       {/* 振込スケジュール案内 */}
-      <div style={{ background:"#F8F9FA", borderRadius:16, padding:16, fontSize:12, lineHeight:1.7, color:C.text }}>
+      <div style={{ background:"#F8F9FA", borderRadius:16, padding:16, fontSize:12, lineHeight:1.7, color:C.dark }}>
         <div style={{ fontWeight:800, marginBottom:6 }}>📅 振込について</div>
         <div>• <strong>月末自動振込</strong>: ¥{monthlyThreshold.toLocaleString()}以上は手数料無料、未満は¥275(税込)</div>
         <div>• <strong>即時受け取り</strong>: 一律¥275(税込) / 数分で着金</div>
@@ -1883,8 +1894,8 @@ const handleOpenDashboard = async () => {
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:16 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
             <div style={{ flex:1, minWidth:200 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:C.text, marginBottom:4 }}>🏦 銀行口座・支払い設定</div>
-              <div style={{ fontSize:11, color:C.textMuted, lineHeight:1.5 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:4 }}>🏦 銀行口座・支払い設定</div>
+              <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5 }}>
                 銀行口座の変更、住所変更、税情報の更新などはStripeのページから安全に行えます。
               </div>
             </div>
@@ -1900,19 +1911,19 @@ const handleOpenDashboard = async () => {
       )}
       {/* 出金履歴 */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
-        <h3 style={{ margin:"0 0 12px", fontSize:14, fontWeight:800, color:C.text }}>📜 出金履歴</h3>
+        <h3 style={{ margin:"0 0 12px", fontSize:14, fontWeight:800, color:C.dark }}>📜 出金履歴</h3>
         {payouts.length === 0 ? (
-          <div style={{ padding:20, textAlign:"center", color:C.textMuted, fontSize:13 }}>まだ出金履歴はありません</div>
+          <div style={{ padding:20, textAlign:"center", color:C.warmGray, fontSize:13 }}>まだ出金履歴はありません</div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {payouts.map(p => (
               <div key={p.id} style={{ padding:12, border:`1px solid ${C.border}`, borderRadius:10, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div>
-                  <div style={{ fontSize:11, color:C.textMuted }}>
+                  <div style={{ fontSize:11, color:C.warmGray }}>
                     {new Date(p.created_at).toLocaleDateString("ja-JP")} - {p.payout_type === "instant" ? "⚡即時" : p.payout_type === "monthly_auto" ? "📅月末" : "🖱️手動"}
                   </div>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.text }}>¥{p.net_amount.toLocaleString()}</div>
-                  {p.fee > 0 && <div style={{ fontSize:11, color:C.textMuted }}>手数料 ¥{p.fee.toLocaleString()}</div>}
+                  <div style={{ fontSize:14, fontWeight:700, color:C.dark }}>¥{p.net_amount.toLocaleString()}</div>
+                  {p.fee > 0 && <div style={{ fontSize:11, color:C.warmGray }}>手数料 ¥{p.fee.toLocaleString()}</div>}
                 </div>
                 <span style={{ 
                   fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:8,
@@ -1932,7 +1943,7 @@ const handleOpenDashboard = async () => {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999 }}>
           <div style={{ background:C.white, borderRadius:16, padding:24, maxWidth:400, width:"90%", maxHeight:"88vh", overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
             <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:800 }}>⚡ 即時受け取り</h3>
-            <p style={{ fontSize:13, color:C.text, lineHeight:1.6, margin:"0 0 16px" }}>
+            <p style={{ fontSize:13, color:C.dark, lineHeight:1.6, margin:"0 0 16px" }}>
               手数料: 一律¥275(税込)<br/>
               受取可能残高: <strong>¥{(balance?.pending_balance || 0).toLocaleString()}</strong>
             </p>
@@ -2221,9 +2232,9 @@ const OrdersTab = () => {
 
   const filtered = orders.filter(o => filter==="all" || orderStatusKey(o)===filter);
 
-  const statusLabel = (s) => {
+  const statusLabel = (s: string) => {
     const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
-    return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
+    return map[s as keyof typeof map] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
   const handleConfirm = async (orderId: string) => {
@@ -2371,9 +2382,9 @@ const OrdersTab = () => {
 };
 
 // ── Sales Tab（出品者向け：自分が売った注文一覧、対応操作可） ──────────────
-const MyListingsTab = ({ setPage }) => {
+const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
-  const [listings, setListings] = useState([]);
+  const [listings, setListings] = useState<MyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
@@ -2404,7 +2415,7 @@ const MyListingsTab = ({ setPage }) => {
     return true;
   });
 
-  const statusBadge = (s) => {
+  const statusBadge = (s: string) => {
     const map = {
       draft:    { text:"💾 下書き",    bg:C.lightGray,    color:C.warmGray },
       pending:  { text:"⏳ 審査中",    bg:C.orangePale,   color:C.orange },
@@ -2415,7 +2426,7 @@ const MyListingsTab = ({ setPage }) => {
     return map[s] || { text:s, bg:C.lightGray, color:C.warmGray };
   };
 
-  const handleStockChange = async (listing, delta) => {
+  const handleStockChange = async (listing: SellerListing, delta: number) => {
     if (busy) return;
     const current = listing.stock_quantity ?? 0;
     const newStock = Math.max(0, current + delta);
@@ -2426,7 +2437,7 @@ const MyListingsTab = ({ setPage }) => {
     await loadListings();
   };
 
-  const handleEnableStock = async (listing) => {
+  const handleEnableStock = async (listing: SellerListing) => {
     if (busy) return;
     const value = prompt("在庫数を入力してください（数字）", "10");
     if (value === null) return;
@@ -2439,7 +2450,7 @@ const MyListingsTab = ({ setPage }) => {
     await loadListings();
   };
 
-  const handleDisableStock = async (listing) => {
+  const handleDisableStock = async (listing: SellerListing) => {
     if (busy) return;
     if (!confirm("在庫管理を停止します。\n以降「在庫無制限（オーダーメイド型）」として扱われます。よろしいですか？")) return;
     setBusy(true);
@@ -2449,7 +2460,7 @@ const MyListingsTab = ({ setPage }) => {
     await loadListings();
   };
 
-  const handlePublishDraft = async (listing) => {
+  const handlePublishDraft = async (listing: SellerListing) => {
     if (busy) return;
     if (!confirm("この下書きを公開申請しますか？\n（NGワードチェック・信頼度判定の上で、即時公開 or 審査待ちになります）")) return;
     setBusy(true);
@@ -2681,9 +2692,9 @@ const SalesTab = () => {
     return true;
   });
 
-  const statusLabel = (s) => {
+  const statusLabel = (s: string) => {
     const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
-    return map[s] || {text:s,bg:C.lightGray,color:C.warmGray};
+    return map[s as keyof typeof map] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
   const markDelivered = async (sale: any) => {
@@ -2848,7 +2859,10 @@ const SalesTab = () => {
 };
 
 // ── Dispute Modal ─────────────────────────────────────────────────────────
-const DisputeModal = ({ order, onClose, onSubmit }) => {
+const DisputeModal = ({ order, onClose, onSubmit }: {
+  order: DisputeOrder; onClose: () => void;
+  onSubmit: (orderId: string, reason: string, desc: string) => void;
+}) => {
   const [step, setStep] = useState(1);
   const [reason, setReason] = useState("");
   const [desc, setDesc] = useState("");

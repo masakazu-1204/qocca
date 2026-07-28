@@ -12,18 +12,35 @@ import { BLOG_CATS } from "../constants/data";
 import CommentModal from "../components/CommentModal";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 import { FloatingBackButton } from "../components/FloatingBackButton";
-import type { CommentTargetType } from "../types";
+import type { CommentTargetType, SetPage } from "../types";
+import type { ChangeEvent } from "react";
 
-export const BlogPage = ({ setPage, isPC }) => {
+/** ブログ記事詳細で参照する列のみ (blog_posts_public の部分集合 + 表示用に付与する著者情報) */
+type BlogPost = {
+  id: string; title?: string; content?: string; category?: string;
+  cover_image_url?: string | null; tags?: string[] | null;
+  likes_count?: number; views_count?: number; created_at?: string;
+  author_id?: string; authorName?: string; authorAvatar?: string | null;
+};
+/** gallery_posts_public のうち この画面が参照する列 + 表示用に付与する名前 */
+type GalleryPost = {
+  id: string; user_id?: string; pet_id?: string | null;
+  image_url?: string; caption?: string | null;
+  pet_type?: string | null; pet_name?: string | null;
+  likes_count?: number; created_at?: string; is_official?: boolean | null;
+  petName?: string; userName?: string; userAvatar?: string | null;
+};
+
+export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
   const { postId } = useParams();
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("all");
   const [showWrite, setShowWrite] = useState(false);
-  const [viewPost, setViewPost] = useState(null);
-  const [likedPosts, setLikedPosts] = useState({});
+  const [viewPost, setViewPost] = useState<BlogPost | null>(null);
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
   const [form, setForm] = useState({ title:"", content:"", category:"general", tags:"" });
@@ -97,14 +114,14 @@ export const BlogPage = ({ setPage, isPC }) => {
   };
 
   // 一覧記事クリック時に URL を /blog/:id にする
-  const openViewPost = (post) => {
+  const openViewPost = (post: BlogPost) => {
     setViewPost(post);
     navigate(`/blog/${post.id}`);
     // 閲覧数 +1
     supabase.from("blog_posts").update({ views_count: (post.views_count || 0) + 1 }).eq("id", post.id).then(()=>{});
   };
 
-  const handleCoverSelect = (e) => {
+  const handleCoverSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) { setCoverFile(file); setCoverPreview(URL.createObjectURL(file)); }
   };
@@ -139,7 +156,7 @@ export const BlogPage = ({ setPage, isPC }) => {
     fetchPosts();
   };
 
-  const toggleLike = async (postId) => {
+  const toggleLike = async (postId: string) => {
     if (!user) { setPage("signup"); return; }
     if (likedPosts[postId]) {
       await supabase.from("blog_likes").delete().eq("user_id", user.id).eq("post_id", postId);
@@ -155,8 +172,8 @@ export const BlogPage = ({ setPage, isPC }) => {
   const openPost = openViewPost;
 
   const filtered = posts.filter(p => cat === "all" || p.category === cat);
-  const blogCatLabel = (c) => BLOG_CATS.find(bc => bc.id === c)?.label || c;
-  const blogCatIcon = (c) => BLOG_CATS.find(bc => bc.id === c)?.icon || "📝";
+  const blogCatLabel = (c: string) => BLOG_CATS.find(bc => bc.id === c)?.label || c;
+  const blogCatIcon = (c: string) => BLOG_CATS.find(bc => bc.id === c)?.icon || "📝";
 
   // 記事詳細ビュー
   if (viewPost) return (
@@ -357,16 +374,16 @@ export const BlogPage = ({ setPage, isPC }) => {
   );
 };
 
-export const GalleryPage = ({ setPage, isPC }) => {
+export const GalleryPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
-  const [likedPosts, setLikedPosts] = useState({});
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const fileRef = useRef(null);
   const [commentOpen, setCommentOpen] = useState(false);
 const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
@@ -504,7 +521,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     setLoading(false);
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
@@ -535,7 +552,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     fetchPosts();
   };
 
-  const toggleLike = async (postId) => {
+  const toggleLike = async (postId: string) => {
     if (!user) { setPage("signup"); return; }
     if (likedPosts[postId]) {
       await supabase.from("gallery_likes").delete().eq("user_id", user.id).eq("post_id", postId);

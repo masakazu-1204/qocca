@@ -33,7 +33,7 @@ export const detectNGWords = (text:string): { found: boolean; words: string[] } 
 };
 
 // NGワードチェック関数
-export const checkFacilityNGWords = (text) => {
+export const checkFacilityNGWords = (text: string | null | undefined): string | null => {
   if (!text) return null;
   for (const word of FACILITY_NG_WORDS) {
     if (text.includes(word)) return word;

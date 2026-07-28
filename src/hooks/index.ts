@@ -82,7 +82,7 @@ export const useListings = () => {
 //   - liked      : 作品の互換マップ {listing_id: true} (既存の Card/Home/Search/Detail はこのまま動く)
 //   - likedSpots : スポット用マップ {spot_id: true}
 //   - toggleLike(id, type='listing') : 種別付きトグル (旧シグネチャ互換)
-export const useFavorites = (userId) => {
+export const useFavorites = (userId: string | null | undefined) => {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [likedSpots, setLikedSpots] = useState<Record<string, boolean>>({});
 
@@ -145,7 +145,9 @@ export const useHeroStats = () => {
 
 export const useNav = () => {
   const navigate = useNavigate();
-  const setPage = (page, data) => {
+  // data は遷移先ごとに異なるペイロード (detail なら listing) のため any。
+  // 既存の props 型注釈 setPage:(p:string,d?:any)=>void と同じ慣例に揃えている。
+  const setPage = (page: string, data?: any) => {
     if (page === "detail" && data) {
       navigate(`/listing/${data.id}`, { state: { item: data } });
     } else if (page === "home") navigate("/");

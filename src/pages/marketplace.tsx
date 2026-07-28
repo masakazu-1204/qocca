@@ -15,12 +15,42 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
 import { useNav } from "../hooks";
+import type { ChangeEvent } from "react";
+import type { SetPage } from "../types";
+
+/** 出品オプション (listings.options の1要素) */
+type ListingOption = { name: string; price?: number };
+/** 出品バリエーション (listing_variants の行) */
+type ListingVariant = {
+  id: string; attributes?: Record<string, string> | null;
+  stock_quantity?: number | null; price?: number | null;
+  is_active?: boolean | null; variant_name?: string | null;
+};
+/** 一覧/詳細で扱う出品。listings の列 + 一覧生成時に付与する表示用フィールド */
+type ListingItem = {
+  id: string; seller_id?: string; title?: string; price?: number; category?: string;
+  options?: ListingOption[] | null; has_variants?: boolean | null;
+  listing_variants?: ListingVariant[] | null;
+  choice_required_count?: number | null; choice_set_price?: number | null;
+  creation_story?: string | null; delivery_type?: string | null;
+  shipping_type?: string | null; shipping_fee?: number | null;
+  shipping_rates?: any[] | null; shipping_note?: string | null; shipping_methods?: any[] | null;
+  stock_quantity?: number | null; image_urls?: string[] | null; description?: string | null;
+  // 一覧生成時に付与する表示用フィールド
+  bg?: string; emoji?: string; imageUrl?: string; tag?: string;
+  seller?: string; sellerIcon?: string; sellerAvatar?: string;
+  rating?: number; reviews?: number; desc?: string; delivery?: string | number; pet?: string;
+};
+type LikedMap = Record<string, boolean>;
 import { ListingEditModal } from "../components/ListingEditModal";
 import { FloatingBackButton } from "../components/FloatingBackButton";
 // 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (公開プロフィール・equipped=trueはRLSで他人も閲覧可)
 import { DecoratedAvatar } from "../components/DecoratedAvatar";
 
-export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC }) => {
+export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC }: {
+  listings: ListingItem[]; liked: LikedMap; onLike: (id: string) => void;
+  onDetail: (item: any) => void; search: string; setSearch: (v: string) => void; isPC?: boolean;
+}) => {
   const [cat, setCat] = useState("all");
   const [sort, setSort] = useState("popular");
   // "ふらっと" は sort 切替時または filter 変化時にシャッフルし直す (毎レンダーでは変わらない)
@@ -531,7 +561,10 @@ const handleFollow = async () => {
 // ⚠️ 決済ロジック・BP計算(Math.floor*0.04)・送料合計(grand)・購入確認モーダルJSX・create-checkout・Stripe文字列 全て無改変。
 // export: SellPage / DetailPageWrapper (App routes 用) / DetailPage・submitListing は intra (module-private)。
 
-const submitListing = async (userId, form, imageFiles, options = [], isDraft = false, variants = []) => {
+const submitListing = async (
+  userId: string, form: any, imageFiles: File[],
+  options: ListingOption[] = [], isDraft = false, variants: any[] = []
+) => {
   const imageUrls = [];
   for (const file of imageFiles) {
     const ext = file.name.split(".").pop();
@@ -621,7 +654,10 @@ const submitListing = async (userId, form, imageFiles, options = [], isDraft = f
   return { data: listing, error: null };
 };
 
-const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
+const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
+  item: ListingItem; onBack: () => void; liked: LikedMap;
+  onLike: (id: string) => void; setPage: SetPage;
+}) => {
   const { user } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const [ordered] = useState(false);
@@ -640,7 +676,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
   // 依頼書 #113 (緊急) (2026/6/4): 出品者が自分の出品ページから直接編集できるよう ListingEditModal を呼出
   const [showMyEditModal, setShowMyEditModal] = useState(false);
   const [reportDone, setReportDone] = useState(false);
-  const [selectedOptions, setSelectedOptions] = useState({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<number, boolean>>({});
   // Phase B: Variant 選択 state
   // - selectedAttrs: 軸ごとの選択値 (例: { 構図: "マズルアップ", サイズ: "小" })
   // - selectedVariant: selectedAttrs に完全一致する listing_variants の row
@@ -733,7 +769,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
     : hasVariants ? (selectedVariant?.price || 0) : (item.price || 0);
   const totalPrice = basePrice + optionsTotal;
 
-  const toggleOption = (idx) => setSelectedOptions(prev => ({...prev, [idx]: !prev[idx]}));
+  const toggleOption = (idx: number) => setSelectedOptions(prev => ({...prev, [idx]: !prev[idx]}));
   // 選択肢トグル: N個まで。N到達後は選択済み以外を弾く。在庫0は選べない。
   const toggleChoice = (id: string, stock: number) => {
     setSelectedChoiceIds(prev => {
@@ -1582,7 +1618,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }) => {
 };
 
 // ── SELL ───────────────────────────────────────────────────────────────────
-export const SellPage = ({ setPage }) => {
+export const SellPage = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [done, setDone] = useState(false);
@@ -1604,8 +1640,8 @@ export const SellPage = ({ setPage }) => {
       { id: "m2", name: "宅急便60サイズ", fee: 750, note: "" },
     ],
   });
-  const [images, setImages] = useState([]);
-  const [options, setOptions] = useState([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [options, setOptions] = useState<ListingOption[]>([]);
   // Phase B: Variant (種類) state
   // - hasVariants: チェックON で variant モード
   // - variantOptions: 軸の定義 (例: [{name: "構図", values: ["マズルアップ", "全身"]}]) max 2 項目
@@ -1617,34 +1653,34 @@ export const SellPage = ({ setPage }) => {
   const [isFoundingCreator, setIsFoundingCreator] = useState(false);
   const [foundingFeeRate, setFoundingFeeRate] = useState<number | null>(null);
   const [categoryPriceStats, setCategoryPriceStats] = useState<Record<string, { avg: number; min: number; max: number; count: number }>>({});
-  const up = (k,v) => setForm(p=>({...p,[k]:v}));
+  const up = (k: string, v: any) => setForm((p: any)=>({...p,[k]:v}));
   const fileRef = useRef(null);
   const addOption = () => setOptions(prev => [...prev, { name:"", price:"" }]);
-  const updateOption = (idx, key, val) => setOptions(prev => prev.map((o,i) => i===idx ? {...o, [key]:val} : o));
-  const removeOption = (idx) => setOptions(prev => prev.filter((_,i) => i!==idx));
+  const updateOption = (idx: number, key: string, val: any) => setOptions(prev => prev.map((o,i) => i===idx ? {...o, [key]:val} : o));
+  const removeOption = (idx: number) => setOptions(prev => prev.filter((_,i) => i!==idx));
 
   // Phase B: Variant 操作関数群
   const addVariantOption = () => {
     if (variantOptions.length >= 2) return; // 最大2項目 (例: 色 × サイズ)
     setVariantOptions(prev => [...prev, { name: "", values: [""] }]);
   };
-  const removeVariantOption = (idx) => {
+  const removeVariantOption = (idx: number) => {
     setVariantOptions(prev => prev.filter((_, i) => i !== idx));
   };
-  const updateVariantOptionName = (idx, name) => {
+  const updateVariantOptionName = (idx: number, name: string) => {
     setVariantOptions(prev => prev.map((o, i) => i === idx ? { ...o, name } : o));
   };
-  const addVariantOptionValue = (optIdx) => {
+  const addVariantOptionValue = (optIdx: number) => {
     setVariantOptions(prev => prev.map((o, i) =>
       i === optIdx ? { ...o, values: [...o.values, ""] } : o
     ));
   };
-  const updateVariantOptionValue = (optIdx, valIdx, value) => {
+  const updateVariantOptionValue = (optIdx: number, valIdx: number, value: string) => {
     setVariantOptions(prev => prev.map((o, i) =>
       i === optIdx ? { ...o, values: o.values.map((v, j) => j === valIdx ? value : v) } : o
     ));
   };
-  const removeVariantOptionValue = (optIdx, valIdx) => {
+  const removeVariantOptionValue = (optIdx: number, valIdx: number) => {
     setVariantOptions(prev => prev.map((o, i) =>
       i === optIdx ? { ...o, values: o.values.filter((_, j) => j !== valIdx) } : o
     ));
@@ -1691,7 +1727,7 @@ export const SellPage = ({ setPage }) => {
     });
   }, [variantOptions, form.price]);
 
-  const updateVariant = (idx, key, value) => {
+  const updateVariant = (idx: number, key: string, value: any) => {
     setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [key]: value } : v));
   };
 
@@ -1746,13 +1782,13 @@ export const SellPage = ({ setPage }) => {
     })();
   }, []);
 
-  const handleImageSelect = (e) => {
+  const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 5) { setError("画像は最大5枚までです"); return; }
     setImages(prev => [...prev, ...files].slice(0, 5));
     setError("");
   };
-  const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
+  const removeImage = (idx: number) => setImages(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async (isDraft = false) => {
     setSubmitting(true);
@@ -2449,7 +2485,9 @@ export const SellPage = ({ setPage }) => {
   );
 };
 
-export const DetailPageWrapper = ({ listings, liked, onLike }) => {
+export const DetailPageWrapper = ({ listings, liked, onLike }: {
+  listings: ListingItem[]; liked: LikedMap; onLike: (id: string) => void;
+}) => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -2513,7 +2551,10 @@ export const DetailPageWrapper = ({ listings, liked, onLike }) => {
 // Phase8 8b: LikedPage を App.tsx から移動 (元 App.tsx 2343-2361 / C・Card は既import)
 // 2026/7/13 お気に入り Phase3: 横断お気に入り一覧をタブ化 (作品 / おでかけ)。イベントは将来枠。
 //   スポットは自前で favorites(item_type='spot') → pet_walker_spots を引く (App.tsx を肥大させない)。
-export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }) => {
+export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }: {
+  listings: ListingItem[]; liked: LikedMap; onLike: (id: string) => void;
+  onDetail: (item: any) => void; isPC?: boolean;
+}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"listing" | "spot">("listing");

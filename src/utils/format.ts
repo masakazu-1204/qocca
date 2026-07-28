@@ -3,7 +3,15 @@
 
 // ── 人気スコア計算（ハイブリッドアルゴリズム）─────────────────────────
 // 販売数×5 + お気に入り×1 + 閲覧数×0.1 + 新規ボーナス×30(14日以内) - 経過日数×0.1
-export const calcPopularityScore = (item) => {
+/** 人気スコアの計算に使うフィールドだけを要求する (出品以外にも流用できるよう最小限) */
+export type PopularityItem = {
+  sales_count?: number | null;
+  favorite_count?: number | null;
+  view_count?: number | null;
+  created_at?: string | Date | null;
+} | null | undefined;
+
+export const calcPopularityScore = (item: PopularityItem): number => {
   if (!item) return 0;
   const sales = item.sales_count || 0;
   const favs  = item.favorite_count || 0;
@@ -19,12 +27,13 @@ export const calcPopularityScore = (item) => {
        - (daysSince * 0.1);
 };
 
-export const sortByPopularity = (items) => {
+// ジェネリクスで受けて同じ型の配列を返す (呼び出し側の要素型を失わないため)
+export const sortByPopularity = <T extends PopularityItem>(items: readonly T[]): T[] => {
   return [...items].sort((a, b) => calcPopularityScore(b) - calcPopularityScore(a));
 };
 
 // ── 取引ステップ index ────────────────────────────────────────────────
-export const stepIndex = (status) => {
+export const stepIndex = (status: string | null | undefined): number => {
   if (status==="pending") return 0;
   if (status==="working") return 1;
   if (status==="delivered") return 2;
@@ -68,7 +77,7 @@ export const formatStat = (n:number, threshold:number = 100) => {
 };
 
 // ── ミニボタン style ファクトリ ───────────────────────────────────────
-export const miniBtnStyle = (bg, color, disabled) => ({
+export const miniBtnStyle = (bg: string, color: string, disabled?: boolean) => ({
   padding: "6px 10px",
   fontSize: 11,
   fontWeight: 700,
