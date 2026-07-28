@@ -24,6 +24,11 @@ import type { SetPage } from "../types";
 
 /** 在庫操作ハンドラが参照する出品行の最小形 */
 type SellerListing = { id: string; stock_quantity?: number | null };
+/** 出品管理タブの一覧が参照する列 */
+type MyListing = {
+  id: string; title?: string; price?: number; status?: string;
+  image_urls?: string[] | null; stock_quantity?: number | null;
+};
 /** 異議申立モーダルに渡す注文の最小形 (item は呼び出し側で listing.title から組み立てる) */
 type DisputeOrder = { id: string; item?: string; price?: number };
 import { createClient } from "@supabase/supabase-js";
@@ -2379,7 +2384,7 @@ const OrdersTab = () => {
 // ── Sales Tab（出品者向け：自分が売った注文一覧、対応操作可） ──────────────
 const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
-  const [listings, setListings] = useState([]);
+  const [listings, setListings] = useState<MyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
