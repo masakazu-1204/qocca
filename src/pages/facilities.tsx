@@ -17,11 +17,31 @@ import { FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, PREFS } from "../con
 import { checkFacilityNGWords } from "../utils/moderation";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+import type { ChangeEvent } from "react";
+import type { SetPage } from "../types";
+
+/** pet_facilities のうち この画面が参照する列 */
+type PetFacility = {
+  id: string; name?: string; category?: string; facility_category?: string | null;
+  address?: string; prefecture?: string; city?: string | null;
+  phone?: string | null; website?: string | null; hours?: string | null;
+  description?: string | null; image_url?: string | null;
+  latitude?: number | null; longitude?: number | null;
+  review_count?: number; is_closed?: boolean | null;
+};
+/** facility_visits (訪問記録)。authorName は表示用に付与する */
+type FacilityVisit = {
+  id: string; user_id?: string; comment?: string | null;
+  mood_tags?: string[] | null; photo_urls?: string[] | null;
+  visited_at?: string; created_at?: string; authorName?: string;
+};
+/** 認証ユーザー。AuthContext が未型付けのため any で受ける (AuthContext 自体は変更禁止) */
+type AuthUser = any;
 
 // 依頼書 #146 Step1 (2026/6/13): 登録番号・出典を画面非表示にする表示用フィルタ
 // ⚠️ DB の description は CC-BY の出典保持義務のため削除しない (画面表示のみフィルタ)
 // open_data 617件 = 「登録番号: ｜ 出典:」のみ / admin_manual 80件 = 営業情報のみ (混在ゼロを確認済)
-const facilityDisplayDesc = (desc) => {
+const facilityDisplayDesc = (desc: string | null | undefined) => {
   if (!desc) return "";
   return String(desc)
     .split("\n")
@@ -35,7 +55,10 @@ const facilityDisplayDesc = (desc) => {
 // - ピンは divIcon (デフォルト画像のバンドラパス問題回避 + カテゴリ絵文字でデザイン統一)
 // - chunkedLoading で 1000 ピンでも描画が固まらない
 // - ポップアップは DOM 組み立て (textContent = 施設名/住所の XSS 安全)
-const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }) => {
+const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }: {
+  facilities: PetFacility[]; isPC?: boolean;
+  onSelect: (f: PetFacility) => void; catIcon: (c: string) => string;
+}) => {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clusterRef = useRef(null);
@@ -102,9 +125,9 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }) => {
   );
 };
 
-export const FacilitiesPage = ({ setPage, isPC }) => {
+export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
-  const [facilities, setFacilities] = useState([]);
+  const [facilities, setFacilities] = useState<PetFacility[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("all");
   const [pref, setPref] = useState("");
@@ -117,7 +140,7 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
   const [addForm, setAddForm] = useState({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [selectedFacility, setSelectedFacility] = useState<PetFacility | null>(null);
 
   // 2026/6/28 軽傷UX: 施設詳細→戻るで /facilities トップ全飛ばしせず1段戻る (petwalker PR#60 と同パターン)。
   //   pushState で履歴に印を積み、popstate で印を見て selectedFacility=null。React Router 設定不変・本ファイル内に閉じる。
@@ -271,8 +294,8 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
     setAddForm({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
   };
 
-  const catIcon = (c) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
-  const catLabel = (c) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
+  const catIcon = (c: string) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
+  const catLabel = (c: string) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
 
   if (selectedFacility) {
     return <FacilityDetailView facility={selectedFacility} onBack={closeFacility} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
@@ -585,9 +608,12 @@ export const FacilitiesPage = ({ setPage, isPC }) => {
   );
 };
 
-const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel }) => {
+const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel }: {
+  facility: PetFacility; onBack: () => void; isPC?: boolean; setPage: SetPage;
+  catIcon: (c: string) => string; catLabel: (c: string) => string;
+}) => {
   const { user } = useAuth();
-  const [visits, setVisits] = useState([]);
+  const [visits, setVisits] = useState<FacilityVisit[]>([]);
   const [loadingVisits, setLoadingVisits] = useState(true);
   const [showVisitForm, setShowVisitForm] = useState(false);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
@@ -624,8 +650,8 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
 
   useEffect(() => { fetchVisits(); }, [facility.id]);
 
-  const moodLabel = (id) => MOOD_TAGS.find(m => m.id === id)?.label || id;
-  const moodIcon = (id) => MOOD_TAGS.find(m => m.id === id)?.icon || "🐾";
+  const moodLabel = (id: string) => MOOD_TAGS.find(m => m.id === id)?.label || id;
+  const moodIcon = (id: string) => MOOD_TAGS.find(m => m.id === id)?.icon || "🐾";
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
@@ -756,7 +782,9 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
   );
 };
 
-const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
+const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }: {
+  facility: PetFacility; user: AuthUser; onClose: () => void; onSubmitted: () => void;
+}) => {
   const [selectedMoods, setSelectedMoods] = useState([]);
   const [comment, setComment] = useState("");
   const [visitedAt, setVisitedAt] = useState("");
@@ -767,11 +795,11 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
   const [confirming, setConfirming] = useState(false);
   const fileRef = useRef(null);
 
-  const toggleMood = (id) => {
+  const toggleMood = (id: string) => {
     setSelectedMoods(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const handlePhotoSelect = (e) => {
+  const handlePhotoSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []).slice(0, 3 - photoFiles.length);
     if (files.length === 0) return;
     const newFiles = [...photoFiles, ...files].slice(0, 3);
@@ -780,7 +808,7 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
     setPhotoPreviews(previews);
   };
 
-  const removePhoto = (idx) => {
+  const removePhoto = (idx: number) => {
     const newFiles = photoFiles.filter((_, i) => i !== idx);
     const newPreviews = photoPreviews.filter((_, i) => i !== idx);
     setPhotoFiles(newFiles);
@@ -942,7 +970,9 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }) => {
   );
 };
 
-const FacilityReportModal = ({ visit, user, onClose, onSubmitted }) => {
+const FacilityReportModal = ({ visit, user, onClose, onSubmitted }: {
+  visit: FacilityVisit; user: AuthUser; onClose: () => void; onSubmitted: () => void;
+}) => {
   const [reason, setReason] = useState("");
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1007,7 +1037,9 @@ const FacilityReportModal = ({ visit, user, onClose, onSubmitted }) => {
   );
 };
 
-const FacilityCorrectionForm = ({ facility, user, onClose }) => {
+const FacilityCorrectionForm = ({ facility, user, onClose }: {
+  facility: PetFacility; user: AuthUser; onClose: () => void;
+}) => {
   const [fieldName, setFieldName] = useState("");
   const [proposedValue, setProposedValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
