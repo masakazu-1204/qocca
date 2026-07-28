@@ -6,8 +6,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-// 2026/6/29 SectionWhatIsQoccaV2Diagram 用アイコン (試作・既存V1温存)
-import { ShoppingBag, PawPrint, Image as LucideImage, MessagesSquare, Calendar, Map as LucideMap } from "lucide-react";
 import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_DURATIONS, QC_HERO_TRANSITION_MS, QC_PC_BREAKPOINT } from "../constants/theme";
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { PW_AREAS } from "../constants/petwalker";
