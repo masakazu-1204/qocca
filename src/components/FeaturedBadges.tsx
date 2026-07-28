@@ -21,20 +21,22 @@ interface Props {
   maxBadges?: number;
 }
 
+interface Badge {
+  id: string;
+  name: string;
+  image_url: string;
+  tier: string;
+  tier_order: number;
+  category: string;
+}
+
 interface BadgeRow {
   badge_id: string;
-  badges: {
-    id: string;
-    name: string;
-    image_url: string;
-    tier: string;
-    tier_order: number;
-    category: string;
-  } | null;
+  badges: Badge | null;
 }
 
 export default function FeaturedBadges({ userId, size = 28, maxBadges = 3 }: Props) {
-  const [badges, setBadges] = useState<any[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -56,8 +58,8 @@ export default function FeaturedBadges({ userId, size = 28, maxBadges = 3 }: Pro
       if (!data) return;
 
       // カテゴリごとに最高ティアだけ残す
-      const byCategory: Record<string, any> = {};
-      (data as any[]).forEach((row) => {
+      const byCategory: Record<string, Badge> = {};
+      (data as unknown as BadgeRow[]).forEach((row) => {
         if (!row.badges) return;
         const b = row.badges;
         if (!byCategory[b.category] || b.tier_order > byCategory[b.category].tier_order) {
@@ -66,7 +68,7 @@ export default function FeaturedBadges({ userId, size = 28, maxBadges = 3 }: Pro
       });
 
       // 創業メンバー優先 → tier_order高い順
-      const sorted = Object.values(byCategory).sort((a: any, b: any) => {
+      const sorted = Object.values(byCategory).sort((a, b) => {
         if (a.category === "special") return -1;
         if (b.category === "special") return 1;
         return b.tier_order - a.tier_order;
@@ -87,7 +89,7 @@ export default function FeaturedBadges({ userId, size = 28, maxBadges = 3 }: Pro
       alignItems: "center",
       justifyContent: "center",
     }}>
-      {badges.map((b: any) => (
+      {badges.map((b) => (
         <img
           key={b.id}
           src={b.image_url}
