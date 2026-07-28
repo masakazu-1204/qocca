@@ -12,6 +12,26 @@ import { stepIndex } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
 
+// 画面間で共通の props 型。setPage は遷移先ごとに異なるペイロードを渡すため d?: any
+//   (既存の各ページの注釈と同じ慣例に揃えている)
+type SetPage = (p: string, d?: any) => void;
+
+/** Card が実際に参照するフィールドだけを列挙 (出品/ギャラリー等 複数の一覧で共用されるため緩め) */
+export type CardItem = {
+  id: string;
+  title?: string;
+  price?: number;
+  rating?: number;
+  reviews?: number;
+  seller?: string;
+  sellerAvatar?: string;
+  sellerIcon?: string;
+  imageUrl?: string;
+  emoji?: string;
+  tag?: string;
+  bg?: string;
+};
+
 // ── Logo ─────────────────────────────────────────────────────────────────
 export const Logo = ({ size = 32 }) => (
   <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", flexShrink:0 }}>
@@ -20,15 +40,17 @@ export const Logo = ({ size = 32 }) => (
   </div>
 );
 
-export const Stars = ({ rating, size=12 }) => (
+export const Stars = ({ rating, size = 12 }: { rating: number; size?: number }) => (
   <span style={{ color:C.orange, fontSize:size }}>{"★".repeat(Math.round(rating))}{"☆".repeat(5-Math.round(rating))}</span>
 );
 
-export const Tag = ({ text }) => (
+export const Tag = ({ text }: { text: string }) => (
   <span style={{ background:C.orangePale, color:C.orange, border:`1px solid ${C.orange}`, fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" }}>{text}</span>
 );
 
-export const Card = ({ item, onClick, liked, onLike }) => (
+export const Card = ({ item, onClick, liked, onLike }: {
+  item: CardItem; onClick: (item: CardItem) => void; liked?: boolean; onLike: (id: string) => void;
+}) => (
   <div onClick={() => onClick(item)} style={{
     background:C.white, borderRadius:16, overflow:"hidden",
     cursor:"pointer", border:`1px solid ${C.border}`,
@@ -72,10 +94,10 @@ export const Card = ({ item, onClick, liked, onLike }) => (
 );
 
 // ── User Menu (ログイン後のアイコンメニュー) ──────────────────────────────
-export const UserMenu = ({ setPage }) => {
+export const UserMenu = ({ setPage }: { setPage: SetPage }) => {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
 
   useEffect(() => {
@@ -91,7 +113,7 @@ export const UserMenu = ({ setPage }) => {
   }, [user?.id]);
 
   useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
@@ -253,7 +275,11 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
 };
 
 // ── PC用ナビバー ───────────────────────────────────────────────────────────
-export const PCNavbar = ({ setPage, search, setSearch }) => {
+export const PCNavbar = ({ setPage, search, setSearch }: {
+  setPage: SetPage; search: string; setSearch: (v: string) => void;
+  /** App.tsx から渡されるが PCNavbar 内では未使用 (受け取りだけ許容) */
+  liked?: Record<string, boolean>;
+}) => {
   const { user } = useAuth();
   return (
     <nav style={{
@@ -460,7 +486,7 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
   );
 };
 
-export const OrderStatusBar = ({ status }) => {
+export const OrderStatusBar = ({ status }: { status: string }) => {
   const idx = stepIndex(status);
   if (idx < 0) return (
     <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:status==="refunded"?"#FFEBEE":"#FFF3E0", borderRadius:12 }}>
@@ -494,7 +520,7 @@ export const OrderStatusBar = ({ status }) => {
   );
 };
 
-export const SharedFooter = ({ setPage }) => (
+export const SharedFooter = ({ setPage }: { setPage: SetPage }) => (
   <footer style={{ background:"#0D0A05", padding:"24px 16px" }}>
     <Logo size={24}/>
     <div style={{ display:"flex", flexWrap:"wrap", gap:16, marginTop:16 }}>
@@ -507,7 +533,7 @@ export const SharedFooter = ({ setPage }) => (
 );
 
 // ── Bottom Tab Bar (Mobile) ───────────────────────────────────────────────
-export const TabBar = ({ page, setPage }) => {
+export const TabBar = ({ page, setPage }: { page: string; setPage: SetPage }) => {
   const { user } = useAuth();
   const tabs = [
     { id:"home", icon:"🏠", label:"ホーム" },
@@ -547,7 +573,7 @@ export const TabBar = ({ page, setPage }) => {
   );
 };
 
-export const PCBanner = ({ setPage }) => (
+export const PCBanner = ({ setPage }: { setPage: SetPage }) => (
   <div style={{
     background:`linear-gradient(135deg, ${C.orange}, ${C.orangeLight})`,
     borderRadius:20, padding:"32px 36px", position:"relative", overflow:"hidden",
