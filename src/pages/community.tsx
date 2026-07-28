@@ -18,11 +18,11 @@ import type { SetPage } from "../types";
 
 /** events 行を一覧カード表示用に変換した形 (fetch 時の map で生成される) */
 type EventCard = {
-  id: string; title?: string; date?: string; time?: string; place?: string;
-  pref?: string; pet?: string; fee?: string; image?: string | null;
-  organizer?: string; url?: string | null; desc?: string;
-  likes?: number; joins?: number; comments?: number;
-  category?: string; bg?: string; organizer_id?: string;
+  id: string; title: string; date: string; time: string; place: string;
+  pref: string; pet: string; fee: string; image: string;
+  organizer: string; url: string; desc: string;
+  likes: number; joins: number; comments: number;
+  category: string; bg: string; organizer_id?: string;
 };
 /** イベント投稿フォーム (image_url は投稿時のみ使うため任意) */
 type EventForm = {
@@ -33,7 +33,7 @@ type EventForm = {
 
 
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
-export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: (p: string, d?: any) => void }) => {
+export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage }) => {
   const { user } = useAuth();
   const [events, setEvents] = useState<EventCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,13 +42,13 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: (p: str
   const [pet, setPet] = useState("すべて");
   const [evLiked, setEvLiked] = useState<Record<string, boolean>>({});
   const [joined, setJoined] = useState<Record<string, boolean>>({});
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<EventCard | null>(null);
   const [showPost, setShowPost] = useState(false);
 
   // 2026/6/28 軽傷UX: イベント詳細モーダル表示中の右スワイプ/戻る で別ページに飛ばずモーダルだけ閉じる。
   //   pushState で履歴に印を積み popstate で印を見て selected=null。petwalker PR#60 と同パターン。
   const EVENT_MODAL_MARK = "community_event_modal";
-  const openEvent = (ev: any) => {
+  const openEvent = (ev: EventCard) => {
     setSelected(ev);
     window.history.pushState({ [EVENT_MODAL_MARK]: ev?.id || true }, "");
   };
