@@ -17,7 +17,7 @@ import type { CommentTargetType } from "../types";
 
 
 // ── EVENTS PAGE ───────────────────────────────────────────────────────────
-export const EventsPage = ({ isPC, setPage }) => {
+export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: (p: string, d?: any) => void }) => {
   const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
