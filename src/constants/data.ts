@@ -200,7 +200,9 @@ export const PREFS_47_ORDER = [
 // ⚠️ Hero CTA(App.tsx 残留) と FoundingCreators/Sponsors(pages/static.tsx) の両方が参照するため中立化
 export const CAMPFIRE_PROJECT_URL_WITH_UTM = "https://camp-fire.jp/projects/955666/view?utm_source=qocca&utm_medium=site_banner&utm_campaign=cf_launch_202606";
 // CROWDFUNDING_ACTIVE: 期間内 + URL 設定済 を一括判定 (終了後は手動で false にして即時撤去可能)
-export const CROWDFUNDING_ACTIVE = true;
+// 2026/7/31 週次点検: クラファン終了(6/30) + グランドオープン(7/1)を受けて false に。
+//   これで CROWDFUNDING_ACTIVE 参照の全導線(SectionAnnouncement の「公開中」見出し等)が終了側表示になる。
+export const CROWDFUNDING_ACTIVE = false;
 
 // ── クラファン リターン階層テーマ (App.tsx から移管 / Phase7 循環import回避) ─────────
 // RedeemPage(App.tsx 残留) と MyPage(pages/mypage.tsx) の両方が参照するため中立化。

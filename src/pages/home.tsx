@@ -2513,8 +2513,8 @@ const FoundingPartnersSection = () => {
           </div>
         ) : (
           <div style={{ padding: "8px 0 18px", color: "#A89580", fontSize: 11.5, lineHeight: 1.9, fontStyle: "italic" }}>
-            ※ 創業パートナーの公開掲載は<br />
-            クラウドファンディング 公開中。創業期住民・作家さんの紹介を順次掲載します🌅
+            ※ クラウドファンディングは終了しました。<br />
+            あたたかなご支援をありがとうございました。創業期住民・作家さんの紹介を順次掲載します🌅
           </div>
         )}
         <div style={{ fontSize: 11, color: "#A07640" }}>
