@@ -24,6 +24,15 @@ const REFERRER_IGNORE = ["accounts.google.com", "supabase.co", "qocca.pet", "loc
 
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
+// 2026/7/31 計測の穴ふさぎ:
+//   Meta のアプリ内ブラウザから外部ブラウザへ飛ぶと、URL の utm_* もリファラーも失われる。
+//   そのため広告経由の登録が全て「直接/不明」に落ちていた (7月の登録21名中 UTM 判明 0件)。
+//   → 広告の着地先を専用パスにしておけば「パスそのもの」が経路の証拠になる。
+//     クエリが消えてもパスは残るため、QRカードと同じ発想で確実に効く。
+const CAMPAIGN_PATH_PREFIXES = ["/welcome"];
+export const isCampaignPath = (path: string): boolean =>
+  CAMPAIGN_PATH_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+
 type StoredAttr = {
   utm_source: string | null;
   utm_medium: string | null;
@@ -55,14 +64,16 @@ export function captureAttribution(): void {
       } catch { /* 壊れた referrer は無視 */ }
     }
 
+    const landingPath = window.location.pathname;
+    // utm も referrer も無い「素の着地」でも、専用パスなら経路が確定するので必ず記録する
     const hasUtm = UTM_KEYS.some((k) => utm[k]);
-    if (!hasUtm && !referrer) return;
+    if (!hasUtm && !referrer && !isCampaignPath(landingPath)) return;
 
     const attr: StoredAttr = {
       utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign,
       utm_content: utm.utm_content, utm_term: utm.utm_term,
       referrer,
-      landing_path: clip(window.location.pathname),
+      landing_path: clip(landingPath),
       first_seen_at: new Date().toISOString(),
     };
     localStorage.setItem(ATTR_KEY, JSON.stringify(attr));
