@@ -10,8 +10,12 @@
 //   「Qoccaが何か」と「登録」だけに絞った静かな一枚を用意する。
 //
 // URL:
-//   /welcome        … 汎用
-//   /welcome/:tag   … 広告別に出し分けたいとき (例 /welcome/adc)。tag は記録されるだけ。
+//   /welcome            … 汎用 (この着地ページを表示)
+//   /welcome/:tag       … 広告別。tag は landing_path として記録される
+//   /welcome/petwalker  … 記録だけして そのまま /petwalker へ送る (2026/7/31 King指示)
+//                         「広告の約束どおりの画面に着地させる」ため、着地ページを挟まない。
+//                         計測は App マウント時の captureAttribution() が済ませているので、
+//                         ここで即座に転送しても landing_path は残る。
 //
 // ⚠️ 静けさ Redesign 準拠: 絵文字なし / 純黒・純白なし / font-weight 最大500 /
 //    transition 0.8s / 「今すぐ」等の煽り表現を使わない。
@@ -22,13 +26,39 @@ import { QC, QC_FONT_JP, QC_FONT_DISPLAY } from "../constants/theme";
 import { useSEO } from "../hooks/useSEO";
 import { useAuth } from "../contexts/AuthContext";
 
+// tag → 転送先。着地ページを見せずに目的の画面へ直行させたい広告用。
+// ⚠️ 転送先は既存ルートをそのまま使う (PetWalker は /petwalker/* の内部URL制御を持つため、
+//    別パスで描画せず通常ルートへ送ることで再マウント等の副作用を避ける)。
+const TAG_REDIRECT: Record<string, string> = {
+  petwalker: "/petwalker",
+  facilities: "/facilities",
+  marketplace: "/marketplace",
+};
+
 const LINKS: { to: string; label: string; note: string }[] = [
   { to: "/marketplace", label: "商店街をのぞく", note: "ペット専門の作家さんの作品" },
   { to: "/facilities", label: "おでかけ先をさがす", note: "全国のペット関連施設 約3,500件" },
   { to: "/petwalker", label: "散歩コースをさがす", note: "うちの子と歩ける場所 約1,550件" },
 ];
 
+/** 転送だけを担う。着地ページ側の useSEO を通さないので、
+ *  転送先のタブタイトルや noindex を汚さない。 */
+const CampaignRedirect = ({ to }: { to: string }) => {
+  const navigate = useNavigate();
+  // replace で履歴を残さない (戻るで /welcome に戻って再転送されるのを防ぐ)
+  useEffect(() => { navigate(to, { replace: true }); }, [to, navigate]);
+  return null;
+};
+
 export const WelcomePage = () => {
+  const { tag } = useParams();
+  const redirectTo = tag ? TAG_REDIRECT[tag] : undefined;
+  // 計測は App マウント時の captureAttribution() が済ませているため、
+  // ここで即座に転送しても landing_path は残る。
+  return redirectTo ? <CampaignRedirect to={redirectTo} /> : <WelcomeLanding />;
+};
+
+const WelcomeLanding = () => {
   const navigate = useNavigate();
   const { tag } = useParams();
   const { user } = useAuth();
