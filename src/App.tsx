@@ -20,6 +20,8 @@ import { HomePage } from "./pages/home";
 import { FacilitiesPage } from "./pages/facilities";
 // 2026/7/27 MEO: 施設の個別ページ / 都道府県ハブ (ローカル検索の受け皿)
 import { FacilityDetailPage, FacilityHubPage } from "./pages/facilitySeo";
+// 2026/7/31 広告計測: 専用着地ページ (landing_path が経路の証拠になる)
+import { WelcomePage } from "./pages/welcome";
 import { PetWalkerPage } from "./pages/petwalker";
 import { PetGalleryPage } from "./pages/pet_gallery";
 import AdminDashboard from "./Admin";
@@ -322,6 +324,9 @@ function QoccaAppInner() {
             {/* 2026/7/27 MEO: 施設の個別URLと都道府県×カテゴリのハブ。
                 既存 /facilities (地図つき検索) はそのまま。ローカル検索の受け皿を新設する。
                 ⚠️ api/prerender.js が同じURLをクローラー向けにHTMLで返す (URL設計変更時は両方直す) */}
+            {/* 2026/7/31 広告の専用着地ページ。utm が消えても landing_path で経路が残る */}
+            <Route path="/welcome" element={<WelcomePage/>}/>
+            <Route path="/welcome/:tag" element={<WelcomePage/>}/>
             <Route path="/facility/:id" element={<FacilityDetailPage/>}/>
             <Route path="/facilities/:pref" element={<FacilityHubPage/>}/>
             <Route path="/facilities/:pref/:cat" element={<FacilityHubPage/>}/>
@@ -557,6 +562,9 @@ function QoccaAppInner() {
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/facilities" element={<FacilitiesPage setPage={setPage} isPC={false}/>}/>
             {/* 2026/7/27 MEO: 施設の個別URL / 都道府県×カテゴリのハブ (PC側と同じ) */}
+            {/* 2026/7/31 広告の専用着地ページ。utm が消えても landing_path で経路が残る */}
+            <Route path="/welcome" element={<WelcomePage/>}/>
+            <Route path="/welcome/:tag" element={<WelcomePage/>}/>
             <Route path="/facility/:id" element={<FacilityDetailPage/>}/>
             <Route path="/facilities/:pref" element={<FacilityHubPage/>}/>
             <Route path="/facilities/:pref/:cat" element={<FacilityHubPage/>}/>
