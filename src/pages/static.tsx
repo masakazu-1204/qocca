@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { TERMS_V2 } from "../legal/terms_v2";
 import type { SetPage } from "../types";
 
@@ -495,20 +494,20 @@ export const FoundingCreatorsPage = ({ setPage: _setPage }: { setPage: (p: strin
               })}
             </div>
             <div style={{ background: C.white, borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+              {/* 2026/7/31 クラファン締め: CAMPFIRE 支援ボタン → 終了報告 + 感謝に差し替え
+                  (終了済みプロジェクトへの誘導は混乱の元。創業クリエイター枠はクラファン限定特典のため受付終了) */}
               <h3 style={{ fontSize: 14, fontWeight: 800, color: C.dark, margin: "0 0 10px" }}>
-                あなたも創業クリエイターになる🌅
+                クラウドファンディングは終了しました🌅
               </h3>
               <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 14px" }}>
-                CAMPFIRE の「創業クリエイター」リターン (¥8,000) で<br />
-                <strong style={{ color: C.dark }}>事業が存続する限り手数料 3% (通常 10%→3%)</strong> + 創業クリエイターバッジ獲得
+                創業クリエイター枠へのご支援、ありがとうございました。<br />
+                ご支援くださった皆さまは<strong style={{ color: C.dark }}>事業が存続する限り手数料 3%</strong> + 創業クリエイターバッジが適用されます。
               </p>
-              <a
-                href={CAMPFIRE_PROJECT_URL_WITH_UTM}
-                target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-block", padding: "10px 22px", background: C.orange, color: "#fff", borderRadius: 22, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
-              >
-                📣 CAMPFIRE で支援する →
-              </a>
+              <p style={{ fontSize: 11.5, color: C.warmGray, lineHeight: 1.8, margin: 0 }}>
+                Qocca への出品は、どなたでも
+                <a href="/sell" style={{ color: C.orange, fontWeight: 700, textDecoration: "underline", margin: "0 2px" }}>こちら</a>
+                から始められます。初回取引の販売手数料は 0% です。
+              </p>
             </div>
           </>
         )}
@@ -566,20 +565,20 @@ export const SponsorsPage = ({ setPage: _setPage }: { setPage: (p: string) => vo
             <h3 style={{ fontSize: 16, fontWeight: 800, color: C.dark, margin: "0 0 10px" }}>
               法人スポンサー募集中
             </h3>
+            {/* 2026/7/31 クラファン締め: CAMPFIRE 導線 → お問い合わせ導線に差し替え
+                (クラファンは終了したが、法人スポンサーの募集自体は継続) */}
             <p style={{ fontSize: 12.5, color: C.warmGray, lineHeight: 1.9, margin: "0 0 20px" }}>
               Qocca の街を 一緒に育ててくださる法人パートナーを募集しています🐾<br />
-              ¥300,000 のクラウドファンディング支援で、<br />
               法人スポンサーとして以下を提供します：<br /><br />
               ・このページに法人ロゴ + 社名 + Web リンク掲載<br />
               ・HomePage 創業パートナーセクションに法人名掲載<br />
               ・利用規約 第29条で正式支援者として明文化
             </p>
             <a
-              href={CAMPFIRE_PROJECT_URL_WITH_UTM}
-              target="_blank" rel="noopener noreferrer"
+              href="/contact"
               style={{ display: "inline-block", padding: "12px 26px", background: C.orange, color: "#fff", borderRadius: 24, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
             >
-              📣 CAMPFIRE で支援する →
+              お問い合わせから相談する →
             </a>
           </div>
         ) : (
@@ -610,16 +609,16 @@ export const SponsorsPage = ({ setPage: _setPage }: { setPage: (p: string) => vo
               <h3 style={{ fontSize: 14, fontWeight: 800, color: C.dark, margin: "0 0 10px" }}>
                 あなたの会社も Qocca を支援できます🐾
               </h3>
+              {/* 2026/7/31 クラファン締め: CAMPFIRE 導線 → お問い合わせ導線に差し替え (募集自体は継続) */}
               <p style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.8, margin: "0 0 14px" }}>
-                CAMPFIRE で「法人スポンサー」リターン (¥300,000) をご支援いただくと<br />
+                法人スポンサーとしてご支援いただくと<br />
                 このページに法人ロゴと社名を掲載します。
               </p>
               <a
-                href={CAMPFIRE_PROJECT_URL_WITH_UTM}
-                target="_blank" rel="noopener noreferrer"
+                href="/contact"
                 style={{ display: "inline-block", padding: "10px 22px", background: C.orange, color: "#fff", borderRadius: 22, fontSize: 13, fontWeight: 800, textDecoration: "none" }}
               >
-                📣 CAMPFIRE で支援する →
+                お問い合わせから相談する →
               </a>
             </div>
           </>
