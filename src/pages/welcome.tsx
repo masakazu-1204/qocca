@@ -26,13 +26,17 @@ import { QC, QC_FONT_JP, QC_FONT_DISPLAY } from "../constants/theme";
 import { useSEO } from "../hooks/useSEO";
 import { useAuth } from "../contexts/AuthContext";
 
-// tag → 転送先。着地ページを見せずに目的の画面へ直行させたい広告用。
+// 飛び先キー → 実際のルート。着地ページを見せずに目的の画面へ直行させたいとき用。
 // ⚠️ 転送先は既存ルートをそのまま使う (PetWalker は /petwalker/* の内部URL制御を持つため、
 //    別パスで描画せず通常ルートへ送ることで再マウント等の副作用を避ける)。
-const TAG_REDIRECT: Record<string, string> = {
+const DEST_ROUTE: Record<string, string> = {
   petwalker: "/petwalker",
   facilities: "/facilities",
   marketplace: "/marketplace",
+  gallery: "/gallery",
+  blog: "/blog",
+  events: "/events",
+  home: "/",
 };
 
 const LINKS: { to: string; label: string; note: string }[] = [
@@ -51,10 +55,14 @@ const CampaignRedirect = ({ to }: { to: string }) => {
 };
 
 export const WelcomePage = () => {
-  const { tag } = useParams();
-  const redirectTo = tag ? TAG_REDIRECT[tag] : undefined;
+  // /welcome/:tag        … tag が流入元 (threads / x / instagram / adc など)
+  // /welcome/:tag/:dest  … dest が飛び先 (petwalker など)。流入元と飛び先を組み合わせられる
+  const { tag, dest } = useParams();
+  // 飛び先は「第2セグメント優先」。無ければ tag 自体を飛び先として解釈する
+  // (/welcome/petwalker のような従来の広告URLをそのまま活かすため)。
+  const redirectTo = (dest && DEST_ROUTE[dest]) || (!dest && tag ? DEST_ROUTE[tag] : undefined);
   // 計測は App マウント時の captureAttribution() が済ませているため、
-  // ここで即座に転送しても landing_path は残る。
+  // ここで即座に転送しても landing_path (= /welcome/threads/petwalker 等) は残る。
   return redirectTo ? <CampaignRedirect to={redirectTo} /> : <WelcomeLanding />;
 };
 

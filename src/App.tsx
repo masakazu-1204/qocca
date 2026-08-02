@@ -327,6 +327,9 @@ function QoccaAppInner() {
             {/* 2026/7/31 広告の専用着地ページ。utm が消えても landing_path で経路が残る */}
             <Route path="/welcome" element={<WelcomePage/>}/>
             <Route path="/welcome/:tag" element={<WelcomePage/>}/>
+            {/* 2026/7/31 流入元計測: /welcome/<流入元>/<飛び先> (例 /welcome/threads/petwalker)。
+                飛び先もパスに埋めるのは、アプリ内ブラウザでクエリが消えても経路が残るため。 */}
+            <Route path="/welcome/:tag/:dest" element={<WelcomePage/>}/>
             <Route path="/facility/:id" element={<FacilityDetailPage/>}/>
             <Route path="/facilities/:pref" element={<FacilityHubPage/>}/>
             <Route path="/facilities/:pref/:cat" element={<FacilityHubPage/>}/>
@@ -565,6 +568,9 @@ function QoccaAppInner() {
             {/* 2026/7/31 広告の専用着地ページ。utm が消えても landing_path で経路が残る */}
             <Route path="/welcome" element={<WelcomePage/>}/>
             <Route path="/welcome/:tag" element={<WelcomePage/>}/>
+            {/* 2026/7/31 流入元計測: /welcome/<流入元>/<飛び先> (例 /welcome/threads/petwalker)。
+                飛び先もパスに埋めるのは、アプリ内ブラウザでクエリが消えても経路が残るため。 */}
+            <Route path="/welcome/:tag/:dest" element={<WelcomePage/>}/>
             <Route path="/facility/:id" element={<FacilityDetailPage/>}/>
             <Route path="/facilities/:pref" element={<FacilityHubPage/>}/>
             <Route path="/facilities/:pref/:cat" element={<FacilityHubPage/>}/>
