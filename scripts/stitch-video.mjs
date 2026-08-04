@@ -27,19 +27,70 @@ for (const c of clips) {
   if (!existsSync(c)) { console.error(`見つからない: ${c}`); process.exit(1); }
 }
 
-// 入力を並べ、concat filter で1本にする (映像・音声を同時に連結)
+// ★音声トラックの有無を調べる。
+//   ミーム用クリップは無音で生成する(テキストが主役・生成も速い)ため、
+//   音声前提で組むと concat filter が [0:a:0] を見つけられず落ちる。
+const hasAudio = (file) => {
+  try {
+    execFileSync(ffmpegPath, ["-i", file], { stdio: ["ignore", "pipe", "pipe"] });
+    return false; // -i だけなら必ず例外になるのでここには来ない
+  } catch (e) {
+    return /Stream #\d+:\d+.*: Audio:/.test(String(e.stderr || ""));
+  }
+};
+/** 尺(秒)を取る。無音クリップに同じ長さの無音音声を付けるために要る。 */
+const durationOf = (file) => {
+  try {
+    execFileSync(ffmpegPath, ["-i", file], { stdio: ["ignore", "pipe", "pipe"] });
+    return 0;
+  } catch (e) {
+    const m = String(e.stderr || "").match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+    if (!m) return 0;
+    return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+  }
+};
+
+const audioFlags = clips.map(hasAudio);
+const allHaveAudio = audioFlags.every(Boolean);
+const noneHaveAudio = audioFlags.every(f => !f);
+
+// 入力を並べ、concat filter で1本にする
 const args = ["-y", "-v", "error"];
 for (const c of clips) args.push("-i", c);
 
 const n = clips.length;
-const streams = clips.map((_, i) => `[${i}:v:0][${i}:a:0]`).join("");
+if (noneHaveAudio) {
+  // 全部無音 (ミーム用の標準ケース)
+  const streams = clips.map((_, i) => `[${i}:v:0]`).join("");
+  args.push("-filter_complex", `${streams}concat=n=${n}:v=1:a=0[v]`, "-map", "[v]");
+} else {
+  // 1本でも音声があれば音声トラックを持つ動画にする。
+  // ★混在を許す: 「宣言だけ声を入れて、オチは無音」のような作り方をしたいため、
+  //   無音クリップには同じ長さの無音音声を合成して尺を合わせる。
+  const parts = [];
+  clips.forEach((_, i) => {
+    if (audioFlags[i]) { parts.push(`[${i}:v:0][${i}:a:0]`); }
+    else { parts.push(`[${i}:v:0][qsil${i}]`); }
+  });
+  const silGen = clips
+    .map((_, i) => audioFlags[i] ? null : `anullsrc=channel_layout=stereo:sample_rate=44100,atrim=duration=${durationOf(clips[i])}[qsil${i}]`)
+    .filter(Boolean);
+  args.push(
+    "-filter_complex",
+    `${silGen.length ? silGen.join(";") + ";" : ""}${parts.join("")}concat=n=${n}:v=1:a=1[v][a]`,
+    "-map", "[v]", "-map", "[a]",
+    "-c:a", "aac", "-b:a", "128k",
+  );
+}
 args.push(
-  "-filter_complex", `${streams}concat=n=${n}:v=1:a=1[v][a]`,
-  "-map", "[v]", "-map", "[a]",
   "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
-  "-c:a", "aac", "-b:a", "128k",
   "-movflags", "+faststart",   // SNS/ブラウザで即再生できるように
   out,
+);
+console.log(
+  noneHaveAudio ? "音声: 全クリップ無音"
+  : allHaveAudio ? "音声: 全クリップあり"
+  : `音声: 混在 (${audioFlags.map((f, i) => `${i + 1}=${f ? "有" : "無"}`).join(" ")}) → 無音側に同尺の無音を合成`
 );
 
 console.log(`結合: ${clips.length}本 → ${out}`);
