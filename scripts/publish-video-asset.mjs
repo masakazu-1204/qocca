@@ -64,6 +64,13 @@ if (!SERVICE_KEY && !DRY) { console.error("scripts/.sbkey.local が読めませ�
 await mkdir(OUT_DIR, { recursive: true });
 const localClips = [];
 for (const [i, url] of clipUrls.entries()) {
+  // ★ローカルの仕上げ済みファイルも渡せる。
+  //   文字焼き込み・ロゴ・BGM合成をローカルで済ませてから登録したいことが多いため。
+  if (!/^https?:\/\//.test(url)) {
+    console.log(`① ローカル ${url} (${(statSync(url).size / 1024 / 1024).toFixed(2)} MB)`);
+    localClips.push(url);
+    continue;
+  }
   const p = `${OUT_DIR}/${slug}_c${i + 1}.mp4`;
   const res = await fetch(url);
   if (!res.ok) { console.error(`取得失敗(${res.status}): ${url}`); process.exit(1); }

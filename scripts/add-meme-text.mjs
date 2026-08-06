@@ -46,11 +46,56 @@ if (!input || !output || segs.length === 0) {
 }
 if (!existsSync(input)) { console.error(`見つからない: ${input}`); process.exit(1); }
 
+// ★v3: --cute で「可愛い見た目」に切り替える (2026/8/5 King要望)
+//   ・純白/純黒はブランドNG。温かい白 + こげ茶のフチにする
+//   ・下に柔らかい影を落とすと、映像から浮いて読みやすい
+//   ・文字が出る瞬間に軽く弾ませる(ポップイン)。静止で出るより表情が出る
+const cute = argv.includes("--cute");
+
 const FONT = "C:/Windows/Fonts/meiryob.ttc";
 const fontFileArg = FONT.replace(/\\/g, "/").replace(/:/g, "\\:");
 
+const FILL   = cute ? "0xFFF9F0" : "white";           // 温かい白 #FFF9F0
+const STROKE = cute ? "0x4A3728@0.95" : "black@0.92";  // こげ茶 #4A3728
 // ⚠️ borderw は数式を受け付けない(整数のみ)。fontsize は数式OKという非対称仕様。
-const BORDER_W = 7;
+const BORDER_W = cute ? 9 : 7;
+
+/**
+ * 出現時に弾む fontsize 式を組む。
+ * 0.6倍 → 1.12倍(オーバーシュート) → 1.0倍 と 0.3秒で収束させる。
+ * ⚠️ フィルタ記述の中では ',' が区切りとして解釈されるため必ず '\,' に逃がす。
+ */
+const popExpr = (fs, st) => {
+  const u = `(t-${st})`;
+  const e = `if(lt(${u}\\,0.18)\\,0.6+2.8889*${u}\\,if(lt(${u}\\,0.30)\\,1.12-(${u}-0.18)\\,1))`;
+  return `'${fs}*${e}'`;
+};
+
+// ── 動画の実寸を取る (文字を画面内に収めるために必要) ──────────────
+const sizeOf = (file) => {
+  try { execFileSync(ffmpegPath, ["-i", file], { stdio: ["ignore", "pipe", "pipe"] }); }
+  catch (e) {
+    const m = String(e.stderr || "").match(/Stream #\d+:\d+.*: Video:.*?(\d{2,5})x(\d{2,5})/);
+    if (m) return { w: Number(m[1]), h: Number(m[2]) };
+  }
+  return { w: 720, h: 1280 };
+};
+const { w: VW, h: VH } = sizeOf(input);
+
+// ★文字が画面からはみ出さないよう、行の長さからフォントサイズを決める。
+//   全角はフォントサイズとほぼ同じ幅、半角は約0.55倍で描画される。
+const lineWidthUnits = (line) => {
+  let u = 0;
+  for (const ch of line) u += /[\x20-\x7E\uFF61-\uFF9F]/.test(ch) ? 0.55 : 1.0;
+  return u;
+};
+const fitFontSize = (text) => {
+  const lines = text.replace(/\\n/g, "\n").split("\n");
+  const widest = Math.max(...lines.map(lineWidthUnits), 1);
+  const maxByWidth = Math.floor((VW * 0.88) / widest); // 左右に余白を残す
+  const base = Math.floor(VH / 17);                    // 見やすさの上限
+  return Math.max(22, Math.min(base, maxByWidth));     // 小さすぎても読めない
+};
 
 // drawtext のテキスト側エスケープ。' は typographic に置換して壊れを避ける
 const esc = (s) => s
@@ -62,12 +107,16 @@ const esc = (s) => s
 
 const yOf = (pos) => pos === "top" ? "h*0.07" : pos === "bottom" ? "h*0.80" : "(h-text_h)/2";
 
-const filters = segs.map(s =>
-  `drawtext=fontfile='${fontFileArg}':text='${esc(s.text)}':` +
-  `fontcolor=white:fontsize=h/17:borderw=${BORDER_W}:bordercolor=black@0.92:` +
-  `x=(w-text_w)/2:y=${yOf(s.pos)}:line_spacing=14:` +
-  `enable='between(t,${s.start},${s.end})'`
-);
+const filters = segs.map(s => {
+  const fs = fitFontSize(s.text);
+  s.fontsize = fs; // ログ表示用
+  const size = cute ? popExpr(fs, s.start) : String(fs);
+  const shadow = cute ? `shadowcolor=black@0.30:shadowx=0:shadowy=5:` : "";
+  return `drawtext=fontfile='${fontFileArg}':text='${esc(s.text)}':` +
+    `fontcolor=${FILL}:fontsize=${size}:borderw=${BORDER_W}:bordercolor=${STROKE}:${shadow}` +
+    `x=(w-text_w)/2:y=${yOf(s.pos)}:line_spacing=14:` +
+    `enable='between(t,${s.start},${s.end})'`;
+});
 
 const args = [
   "-y", "-v", "error", "-i", input,
@@ -78,8 +127,8 @@ const args = [
   output,
 ];
 
-console.log(`テキスト焼き込み: ${input} → ${output} (${segs.length}区間)`);
-segs.forEach(s => console.log(`  ${s.start}s〜${s.end}s [${s.pos}] ${s.text.replace(/\\n/g, " / ")}`));
+console.log(`テキスト焼き込み: ${input} → ${output} (${VW}x${VH} / ${segs.length}区間)`);
+segs.forEach(s => console.log(`  ${s.start}s〜${s.end}s [${s.pos}] ${s.fontsize}px  ${s.text.replace(/\\n/g, " / ")}`));
 try {
   execFileSync(ffmpegPath, args, { stdio: ["ignore", "inherit", "inherit"] });
 } catch (e) {
