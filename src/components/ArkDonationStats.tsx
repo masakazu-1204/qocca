@@ -116,7 +116,7 @@ export default function ArkDonationStats() {
             🐾 特定非営利活動法人
             <br />
             <span style={{ fontWeight: 700 }}>アニマルレフュージ関西</span>
-            様への
+            (認定NPO法人) 様への
           </h3>
           <div
             style={{

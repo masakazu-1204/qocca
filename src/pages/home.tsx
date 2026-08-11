@@ -2539,7 +2539,8 @@ const ArkPartnershipSection = () => {
         <p style={{ fontSize: 12.5, color: "#8B7355", lineHeight: 2, margin: 0 }}>
           Qocca で生まれる売上の <strong style={{ color: "#3D2E1E" }}>3% を</strong><br />
           <strong style={{ color: "#3D2E1E" }}>特定非営利活動法人<br />
-          アニマルレフュージ関西【ARK】</strong> へ<br />
+          アニマルレフュージ関西(認定NPO法人)<br />
+          【ARK】</strong> へ<br />
           寄付しています。
         </p>
         <p style={{ fontSize: 11.5, color: "#A89580", lineHeight: 2, margin: "18px 0 0", fontStyle: "italic" }}>
