@@ -204,7 +204,7 @@ const WelcomeLanding = () => {
         </div>
 
         <p style={{ ...fade(0.55), fontSize: 11, fontWeight: 300, color: QC.sage, lineHeight: 2, marginTop: isMobile ? 40 : 52 }}>
-          売上の3%を、特定非営利活動法人アニマルレフュージ関西へ寄付しています。
+          売上の3%を、特定非営利活動法人アニマルレフュージ関西(認定NPO法人)へ寄付しています。
         </p>
 
       </div>
