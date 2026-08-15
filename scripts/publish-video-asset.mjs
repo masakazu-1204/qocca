@@ -82,8 +82,18 @@ for (const [i, url] of clipUrls.entries()) {
 // ── ② 結合 ───────────────────────────────────────────────
 const finalPath = `${OUT_DIR}/${slug}.mp4`;
 if (localClips.length === 1) {
-  await writeFile(finalPath, await readFile(localClips[0]));
-  console.log(`② 単体のためそのまま → ${finalPath}`);
+  // ★1本でも必ず再エンコードする (2026/8/15)
+  //   生成AIの生ファイルは 10,000kbps 超になることがあり、Instagram の
+  //   コンテナが ERROR で落ちる。moov atom を先頭に置く +faststart も要る。
+  //   「1本だからコピーで済む」は事故のもと。
+  execFileSync(ffmpegPath, [
+    "-y", "-v", "error", "-i", localClips[0],
+    "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-profile:v", "high", "-level", "4.0",
+    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+    "-movflags", "+faststart", finalPath,
+  ], { stdio: ["ignore", "inherit", "inherit"] });
+  console.log(`② 単体を再エンコード → ${finalPath} (${(statSync(finalPath).size / 1024 / 1024).toFixed(2)} MB)`);
 } else {
   // concat filter で再エンコード。生成AIの出力は規格が微妙にズレることがあり、
   // 無再エンコード結合だと音ズレ・破損を起こすため安全側に倒す。
