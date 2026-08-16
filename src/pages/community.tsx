@@ -413,10 +413,23 @@ const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onC
   );
 };
 
+// ── クラファン特典: 限定セクション (2026/8/17) ─────────────────────────
+// communities.required_badges (text[]) が設定されたコミュニティは、
+// user_badges にそのいずれかを持つ人だけが参加できる (RLS が本体の門番)。
+// フロントは「限定」ラベル表示と、参加前の分かりやすい案内を担当する。
+const lockLabel = (badges?: string[] | null): string | null => {
+  if (!badges || badges.length === 0) return null;
+  return badges.length === 1 && badges[0] === "crowdfund-creator"
+    ? "創業クリエイター限定" : "創業メンバー限定";
+};
+const canEnter = (badges: string[] | null | undefined, myBadges: Set<string>): boolean =>
+  !badges || badges.length === 0 || badges.some(b => myBadges.has(b));
+
 // ── コミュニティ一覧ページ ──────────────────────────────────────────────
 export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:string,d?:any)=>void }) => {
   const { user } = useAuth();
   const [communities, setCommunities] = useState<any[]>([]);
+  const [myBadges, setMyBadges] = useState<Set<string>>(new Set());
   const [myCommunityIds, setMyCommunityIds] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState("すべて");
   const [showCreate, setShowCreate] = useState(false);
@@ -433,6 +446,8 @@ export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:
     if (user) {
       const { data: mems } = await supabase.from("community_members").select("community_id").eq("user_id", user.id);
       setMyCommunityIds(new Set((mems||[]).map((m:any)=>m.community_id)));
+      const { data: badges } = await supabase.from("user_badges").select("badge_id").eq("user_id", user.id);
+      setMyBadges(new Set((badges||[]).map((b:any)=>b.badge_id)));
     }
     setLoading(false);
   };
@@ -450,8 +465,14 @@ export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:
       setMyCommunityIds(prev => { const next = new Set(prev); next.delete(communityId); return next; });
       setCommunities(prev => prev.map(c => c.id === communityId ? {...c, member_count: Math.max((c.member_count||1)-1, 0)} : c));
     } else {
-      // 参加
-      await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
+      // 参加 (限定コミュニティはバッジ必須。RLS が最終防衛線・ここは案内のみ)
+      const target = communities.find(c => c.id === communityId);
+      if (target && !canEnter(target.required_badges, myBadges)) {
+        alert(`「${target.name}」は ${lockLabel(target.required_badges)} のコミュニティです。\nクラウドファンディングの特典コードをお持ちの方は /redeem からご登録ください。`);
+        return;
+      }
+      const { error } = await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
+      if (error) return; // RLS拒否など。UIを進めない
       setMyCommunityIds(prev => new Set(prev).add(communityId));
       setCommunities(prev => prev.map(c => c.id === communityId ? {...c, member_count: (c.member_count||0)+1} : c));
     }
@@ -492,11 +513,12 @@ export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
                     {c.is_official && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:C.orange, color:"#fff", fontWeight:800 }}>公式</span>}
+                    {lockLabel(c.required_badges) && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"#F3E5F5", color:"#AB47BC", fontWeight:800, flexShrink:0 }}>🔒 {lockLabel(c.required_badges)}</span>}
                   </div>
                   <div style={{ fontSize:11, color:C.warmGray, marginBottom:6 }}>{c.category} · 👥 {c.member_count || 0}人</div>
                   {c.description && <div style={{ fontSize:12, color:"#555", marginBottom:8, lineHeight:1.5, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{c.description}</div>}
-                  <button onClick={(e)=>handleJoin(e, c.id)} style={{ padding:"6px 14px", background: isMember ? C.white : C.orange, border: isMember ? `1.5px solid ${C.orange}` : "none", borderRadius:16, color: isMember ? C.orange : "#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                    {isMember ? "参加中" : "+ 参加する"}
+                  <button onClick={(e)=>handleJoin(e, c.id)} style={{ padding:"6px 14px", background: isMember ? C.white : (canEnter(c.required_badges, myBadges) ? C.orange : "#EEE6D9"), border: isMember ? `1.5px solid ${C.orange}` : "none", borderRadius:16, color: isMember ? C.orange : (canEnter(c.required_badges, myBadges) ? "#fff" : C.warmGray), fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    {isMember ? "参加中" : canEnter(c.required_badges, myBadges) ? "+ 参加する" : "🔒 特典限定"}
                   </button>
                 </div>
               </div>
@@ -516,6 +538,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
   const { user } = useAuth();
   const [community, setCommunity] = useState<any>(null);
   const [isMember, setIsMember] = useState(false);
+  const [myBadges, setMyBadges] = useState<Set<string>>(new Set());
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -534,6 +557,8 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
     if (user) {
       const { data: mem } = await supabase.from("community_members").select("id").eq("community_id", communityId).eq("user_id", user.id).maybeSingle();
       setIsMember(!!mem);
+      const { data: badges } = await supabase.from("user_badges").select("badge_id").eq("user_id", user.id);
+      setMyBadges(new Set((badges||[]).map((b:any)=>b.badge_id)));
       if (mem) {
         const { data: msgs } = await supabase
           .from("community_messages")
@@ -556,7 +581,10 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
 
   const handleJoin = async () => {
     if (!user || !communityId) { setPage("signup"); return; }
-    await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
+    // 限定コミュニティはバッジ必須 (RLS が最終防衛線・ここは案内のみ)
+    if (community && !canEnter(community.required_badges, myBadges)) return;
+    const { error } = await supabase.from("community_members").insert({ community_id: communityId, user_id: user.id });
+    if (error) return;
     setIsMember(true);
     fetchCommunity();
   };
@@ -644,6 +672,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <div style={{ fontSize:16, fontWeight:900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{community.name}</div>
             {community.is_official && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:C.orange, color:"#fff", fontWeight:800 }}>公式</span>}
+            {lockLabel(community.required_badges) && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"#F3E5F5", color:"#AB47BC", fontWeight:800, flexShrink:0 }}>🔒 {lockLabel(community.required_badges)}</span>}
           </div>
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{community.category} · 👥 {community.member_count || 0}人</div>
         </div>
@@ -658,8 +687,22 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
 
       {!isMember ? (
         <div style={{ padding:"40px 20px", textAlign:"center", background:C.white, borderRadius: isPC ? 16 : 0, marginTop: isPC ? 12 : 0 }}>
-          <div style={{ fontSize:14, color:C.warmGray, marginBottom:14 }}>このコミュニティに参加するとチャットに参加できます</div>
-          <button onClick={handleJoin} style={{ padding:"12px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>+ 参加する</button>
+          {canEnter(community.required_badges, myBadges) ? (
+            <>
+              <div style={{ fontSize:14, color:C.warmGray, marginBottom:14 }}>このコミュニティに参加するとチャットに参加できます</div>
+              <button onClick={handleJoin} style={{ padding:"12px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>+ 参加する</button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize:32, marginBottom:10 }}>🔒</div>
+              <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:8 }}>{lockLabel(community.required_badges)}のコミュニティです</div>
+              <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.8, marginBottom:14 }}>
+                クラウドファンディングで Qocca の創業を支えてくださった方だけが入れる部屋です。<br/>
+                特典コードをお持ちの方は、引き換え後にご参加いただけます。
+              </div>
+              <button onClick={()=>{ setPage("redeem"); navigate("/redeem"); }} style={{ padding:"10px 24px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12, color:C.orange, fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>特典コードを引き換える</button>
+            </>
+          )}
         </div>
       ) : (
         <>
