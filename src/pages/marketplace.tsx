@@ -37,7 +37,8 @@ type ListingItem = {
   shipping_rates?: any[] | null; shipping_note?: string | null; shipping_methods?: any[] | null;
   stock_quantity?: number | null; image_urls?: string[] | null; description?: string | null;
   // 一覧生成時に付与する表示用フィールド
-  bg?: string; emoji?: string; imageUrl?: string; tag?: string;
+  // imageUrls は image_urls の表示用エイリアス (DetailPageWrapper が詰める)
+  bg?: string; emoji?: string; imageUrl?: string; imageUrls?: string[]; tag?: string;
   seller?: string; sellerIcon?: string; sellerAvatar?: string;
   rating?: number; reviews?: number; desc?: string; delivery?: string | number; pet?: string;
 };
@@ -660,6 +661,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
 }) => {
   const { user } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [photoIdx, setPhotoIdx] = useState(0); // 2026/8/21 複数枚の切り替え
   const [ordered] = useState(false);
   const [ordering, setOrdering] = useState(false);
   const [showAddressStep, setShowAddressStep] = useState(false);
@@ -944,23 +946,73 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
     setOrdering(false);
   };
 
+  // 2026/8/21: 出品は最大5枚まで登録できるのに1枚目しか表示されていなかった。
+  //   出品者が角度や質感を伝えるために撮った残り4枚が誰にも見られていない状態だった。
+  const photos: string[] = (Array.isArray(item.imageUrls) && item.imageUrls.length ? item.imageUrls
+    : item.imageUrl ? [item.imageUrl] : []).filter(Boolean);
+  const shownPhoto = photos[photoIdx] ?? photos[0] ?? "";
+
   return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream }}>
       <div style={{ padding:"12px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange, fontWeight:700 }}>←</button>
         <span style={{ fontSize:14, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</span>
       </div>
-      <div style={{ height:240, background:item.bg || "#FFF3E0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:100, position:"relative", overflow:"hidden" }}>
-        {item.imageUrl
-          ? <img src={item.imageUrl} alt={item.title} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-          : item.emoji
-        }
+      {/* 2026/8/21 画像の見切れ修正:
+          以前は height:240 固定 + objectFit:cover だったため、縦長の作品が
+          上下バッサリ切れていた (色鉛筆アートの犬の頭が切れる等)。
+          作品は「そのままの形」で見せるのが本来。cover → contain にし、
+          背景をぼかした同じ画像で埋めて余白の間延びを防ぐ。 */}
+      <div style={{ background:item.bg || "#FFF3E0", position:"relative", overflow:"hidden" }}>
+        {shownPhoto ? (
+          <>
+            {/* 背景: 同じ画像を拡大+ぼかし。レターボックスの帯が寂しくならない */}
+            <div aria-hidden style={{
+              position:"absolute", inset:0,
+              background:`url(${shownPhoto}) center/cover`,
+              filter:"blur(28px) brightness(0.92)", transform:"scale(1.15)",
+            }}/>
+            <img
+              src={shownPhoto}
+              alt={item.title}
+              style={{
+                position:"relative", display:"block", margin:"0 auto",
+                maxWidth:"100%", maxHeight:"60vh", width:"auto", height:"auto",
+                objectFit:"contain",
+              }}
+            />
+          </>
+        ) : (
+          <div style={{ height:240, display:"flex", alignItems:"center", justifyContent:"center", fontSize:100 }}>{item.emoji}</div>
+        )}
         <button onClick={() => onLike(item.id)} style={{
           position:"absolute", top:12, right:12, width:40, height:40, borderRadius:"50%",
           background:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontSize:20,
           display:"flex", alignItems:"center", justifyContent:"center"
         }}>{liked ? "❤️" : "🤍"}</button>
       </div>
+
+      {/* 2枚以上あるときだけサムネイルを出す。1枚しかない出品の見た目は変えない */}
+      {photos.length > 1 && (
+        <div style={{ display:"flex", gap:8, padding:"10px 16px", overflowX:"auto", background:C.white, borderBottom:`1px solid ${C.border}` }}>
+          {photos.map((src, i) => (
+            <button
+              key={src + i}
+              onClick={() => setPhotoIdx(i)}
+              aria-label={`${i + 1}枚目の写真を見る`}
+              style={{
+                flexShrink:0, width:56, height:56, padding:0, borderRadius:8, overflow:"hidden",
+                cursor:"pointer", background:C.lightGray,
+                border: i === photoIdx ? `2px solid ${C.orange}` : `1px solid ${C.border}`,
+                opacity: i === photoIdx ? 1 : 0.7, transition:"opacity 0.2s",
+              }}
+            >
+              <img src={src} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ padding:"16px" }}>
         {item.tag && <div style={{ marginBottom:8 }}><Tag text={item.tag}/></div>}
         <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.3 }}>{item.title}</h1>
