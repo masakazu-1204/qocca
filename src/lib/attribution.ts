@@ -19,6 +19,20 @@ import { supabase } from "../supabaseClient";
 
 const ATTR_KEY = "qocca_attr_v1";
 
+// 2026/8/21 計測の穴ふさぎ その2:
+//   captureAttribution() は App の useEffect から呼ばれていたが、React は
+//   「子の effect → 親の effect」の順で実行する。/welcome/<経路> の
+//   CampaignRedirect が先に navigate() してしまうため、App の effect が走る頃には
+//   pathname が転送先 (/petwalker 等) に変わっており、7/31 に入れた
+//   「パスで経路を残す」対策が一度も発火していなかった (8/20 時点 landing_path 0件)。
+//   → モジュール読み込み時点、つまり React が動き出す前に一度確定させる。
+let bootPath: string | null = null;
+let bootSearch: string | null = null;
+try {
+  bootPath = window.location.pathname;
+  bootSearch = window.location.search;
+} catch { /* SSR/非ブラウザ環境では触らない */ }
+
 // OAuth コールバック等の内部的なリファラーは流入元として意味がないので除外
 const REFERRER_IGNORE = ["accounts.google.com", "supabase.co", "qocca.pet", "localhost"];
 
@@ -50,7 +64,8 @@ const clip = (v: string | null): string | null => (v ? v.slice(0, 256) : null);
 export function captureAttribution(): void {
   try {
     if (localStorage.getItem(ATTR_KEY)) return; // ファーストタッチ維持
-    const params = new URLSearchParams(window.location.search);
+    // ★転送で書き換わる前の「最初に開いた URL」を使う (現在地ではない)
+    const params = new URLSearchParams(bootSearch ?? window.location.search);
     const utm: Record<string, string | null> = {};
     for (const k of UTM_KEYS) utm[k] = clip(params.get(k));
 
@@ -64,7 +79,7 @@ export function captureAttribution(): void {
       } catch { /* 壊れた referrer は無視 */ }
     }
 
-    const landingPath = window.location.pathname;
+    const landingPath = bootPath ?? window.location.pathname;
     // utm も referrer も無い「素の着地」でも、専用パスなら経路が確定するので必ず記録する
     const hasUtm = UTM_KEYS.some((k) => utm[k]);
     if (!hasUtm && !referrer && !isCampaignPath(landingPath)) return;
@@ -79,6 +94,11 @@ export function captureAttribution(): void {
     localStorage.setItem(ATTR_KEY, JSON.stringify(attr));
   } catch { /* localStorage 不可環境では諦める */ }
 }
+
+// ★このモジュールが読まれた時点で即座に確定させる。
+//   App の useEffect を待つと、その前に子の転送 effect が走って手遅れになる。
+//   多重呼び出しはファーストタッチ判定で無害 (既に保存済みなら即 return)。
+captureAttribution();
 
 // 初回ログイン検知時に呼ぶ。user_id 単位で1回だけ registration_sources に記録。
 export async function saveRegistrationSource(userId: string): Promise<void> {
