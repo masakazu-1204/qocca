@@ -1674,6 +1674,20 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [done, setDone] = useState(false);
+  // 2026/8/22 出品フローに入金設定の確認が一切なく、出品者9人中5人が
+  //   Stripe を一度も開始しないまま出品していた (21件中12件が売れても入金されない状態)。
+  //   出品直後は「売る気」が最も高い瞬間なので、ここで一度だけ案内する。
+  const [payoutsReady, setPayoutsReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!done || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles").select("stripe_payouts_enabled").eq("id", user.id).maybeSingle();
+      if (!cancelled) setPayoutsReady(data?.stripe_payouts_enabled === true);
+    })();
+    return () => { cancelled = true; };
+  }, [done, user?.id]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // 依頼書 #104 Phase B: form に shipping_* 4項目追加 (デフォルト included)
@@ -1938,6 +1952,27 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
               </a>
             </div>
           </>
+        )}
+        {/* 2026/8/22 入金設定の案内。未設定のときだけ出す。
+             出品はできるのに入金設定を一度も聞かれず、売れても振り込めない
+             出品者が9人中5人いた。購入者側には警告が出ていたが、
+             出品者本人が気づける場所がどこにも無かった。 */}
+        {payoutsReady === false && (
+          <div style={{ background:"#FFF4E5", border:"1px solid #F5C77E", borderRadius:12, padding:"14px 16px", marginBottom:16, textAlign:"left" }}>
+            <div style={{ fontSize:13, fontWeight:800, color:"#8A5A00", marginBottom:6 }}>
+              受け取り口座の設定が、まだ残っています
+            </div>
+            <div style={{ fontSize:12, color:"#6B5638", lineHeight:1.8, marginBottom:10 }}>
+              作品は公開されますが、このままだと売れたときに売上をお渡しできません。<br />
+              数分で終わります。先に済ませておくと安心です。
+            </div>
+            <button
+              onClick={()=>setPage("mypage")}
+              style={{ padding:"9px 18px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}
+            >
+              受け取り口座を設定する
+            </button>
+          </div>
         )}
         <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
           <button onClick={()=>setPage("mypage")} style={{ flex:1, minWidth:140, padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>マイページで確認</button>
