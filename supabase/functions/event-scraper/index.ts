@@ -1,5 +1,7 @@
 // ============================================
-// event-scraper v6 (2026/8/22)
+// event-scraper v7 (2026/8/22)
+// v7 修正: 重複判定に location を含めていたため、会場表記の揺れで同一イベントが
+//   何度も新規登録されていた (実例: 同一イベントが4件)。タイトル+日付で判定する。
 // v6 修正: 「切ってから掃除する」順序が逆で、本文が AI に一度も届いていなかった
 //   実測 (pets-support.com/dog-event/ = 全体396,620文字・イベント日付165個):
 //     1. 生HTMLを先頭120,000文字で切る  -> 日付 0個   ここで全部落ちていた
@@ -211,7 +213,15 @@ async function runScrape(sourceId: string): Promise<any> {
     const conf = Number(e.ai_confidence || 0);
     if (conf < 0.30) { rejectedCount++; continue; }
 
-    const hash = await sha256(e.title + "|" + e.start_date + "|" + (e.location || ""));
+    // v7 (2026/8/22) 重複判定から location を外す。
+    //   ソースによって会場の書き方が揺れるため、同じイベントが何度も新規登録されていた。
+    //   実例: PILI ALOHA Fes.with DOG 2026 SUMMER (2026-08-22) が4件登録されていた
+    //     道の駅うつのみや ろまんちっく村 / 〒321-2118 栃木県宇都宮市新里町丙254
+    //     / 栃木県宇都宮市新里町丙254 / 栃木県宇都宮市新里町丙254番地
+    //   同じ日に同名イベントが別々に存在することは実質ないため、
+    //   タイトル(空白除去・小文字化) + 開催日 で判定する。
+    const dedupKey = e.title.split(" ").join("").split("　").join("").toLowerCase() + "|" + e.start_date;
+    const hash = await sha256(dedupKey);
     const { data: existing } = await supabase.from("event_dedup_hashes").select("id").eq("content_hash", hash).maybeSingle();
     if (existing) { dupCount++; continue; }
 
