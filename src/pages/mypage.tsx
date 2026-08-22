@@ -2390,6 +2390,10 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   const [editTarget, setEditTarget] = useState(null);
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // 2026/8/22 公開中の出品があるのに入金設定が未完了だと、売れても売上を渡せない。
+  //   実測で出品者9人中5人が Stripe を一度も開始していなかった。
+  //   購入者側には警告が出ていたが、出品者が気づける場所が無かったためここにも出す。
+  const [payoutsReady, setPayoutsReady] = useState<boolean | null>(null);
 
   const loadListings = async () => {
     if (!user?.id) return;
@@ -2404,6 +2408,16 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   };
 
   useEffect(() => { loadListings(); }, [user?.id]);
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles").select("stripe_payouts_enabled").eq("id", user.id).maybeSingle();
+      if (!cancelled) setPayoutsReady(data?.stripe_payouts_enabled === true);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const filtered = listings.filter(l => {
     if (filter === "all") return true;
@@ -2497,6 +2511,26 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
       <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginBottom:14, fontSize:11, color:C.dark, lineHeight:1.6 }}>
         🐾 出品した商品の一覧です。下書きの編集・公開、在庫管理、削除ができます。
       </div>
+
+      {/* 2026/8/22 公開中の出品があるのに入金設定が未完了なら警告する。
+           売れても売上を渡せない状態を出品者本人が知る手段が無かった。 */}
+      {payoutsReady === false && counts.approved > 0 && (
+        <div style={{ background:"#FFF4E5", border:"1px solid #F5C77E", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
+          <div style={{ fontSize:13, fontWeight:800, color:"#8A5A00", marginBottom:6 }}>
+            受け取り口座が未設定です
+          </div>
+          <div style={{ fontSize:12, color:"#6B5638", lineHeight:1.8, marginBottom:10 }}>
+            公開中の作品が{counts.approved}件ありますが、このままだと売れても売上をお渡しできません。<br />
+            「売上」から数分で設定できます。
+          </div>
+          <button
+            onClick={()=>setPage("mypage")}
+            style={{ padding:"9px 18px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}
+          >
+            受け取り口座を設定する
+          </button>
+        </div>
+      )}
 
       {/* フィルター */}
       <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
