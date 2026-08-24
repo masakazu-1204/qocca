@@ -687,23 +687,32 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
             width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12,
             color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit",
             boxShadow:"0 4px 12px rgba(245, 169, 74, 0.3)"
-          }}>📝 訪問レポートを投稿する</button>
+          }}>📝 {visits.length === 0 ? "この場所の、最初の記録を残す" : "訪問レポートを投稿する"}</button>
         ) : (
           <button onClick={()=>setPage("login")} style={{
             width:"100%", padding:"14px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12,
             color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit"
-          }}>🔒 ログインしてレポートを投稿</button>
+          }}>🔒 {visits.length === 0 ? "ログインして、最初のひとりになる" : "ログインしてレポートを投稿"}</button>
         )}
       </div>
 
       <div style={{ padding:"0 16px 80px" }}>
         <h2 style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>🐾 みんなの訪問レポート</h2>
+        {/* 2026/8/25 最初のひとり: 一番乗りの名前を場所に残す。3,613施設に対しレポートが
+            1件も無く、「最初の一人になるのが怖い」を崩す必要があった。
+            ⚠️ fetchVisits は新しい順50件までしか取らないため、50件に達している場合は
+            末尾が本当の最古とは限らない。その時は出さない (嘘の記録を作らない)。 */}
+        {visits.length > 0 && visits.length < 50 && (
+          <div style={{ fontSize:11, color:C.warmGray, marginBottom:10 }}>
+            この場所の最初の記録は、{visits[visits.length - 1].authorName}さんが残しました。
+          </div>
+        )}
         {loadingVisits ? (
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
         ) : visits.length === 0 ? (
           <div style={{ background:C.white, borderRadius:16, padding:"40px 20px", border:`1px dashed ${C.border}`, textAlign:"center" }}>
             <div style={{ fontSize:40, marginBottom:8 }}>🐾</div>
-            <div style={{ fontSize:13, color:C.warmGray, lineHeight:1.7 }}>まだレポートがありません<br/>最初のレポート投稿者になりませんか？</div>
+            <div style={{ fontSize:13, color:C.warmGray, lineHeight:1.7 }}>この場所のことは、まだ誰も書いていません<br/>あなたが、最初のひとりになれます</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>

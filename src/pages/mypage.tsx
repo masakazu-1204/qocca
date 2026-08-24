@@ -602,6 +602,13 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
       setMyPets(data || []);
     })();
   }, [user?.id, refreshKey, petEditOpen]);
+  // 2026/8/25 はじめの一歩: トップの「うちの子を登録する」から navigate state で飛んでくる。
+  //   プロフィールタブの うちの子 セクションは画面下部にあり、遷移しただけでは気づかれないため
+  //   追加モーダルまで開き切る。tab の切替と同じく location.key を見る (再マウントしないため)。
+  useEffect(() => {
+    const open = (location.state as { openPetAdd?: boolean } | null)?.openPetAdd;
+    if (open) { setEditingPetId(null); setPetEditOpen(true); }
+  }, [location.key]);
   useEffect(()=>{
     if (!user?.id) return;
     (async ()=>{

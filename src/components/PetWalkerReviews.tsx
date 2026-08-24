@@ -102,6 +102,11 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
   // 自分の既存口コミ (UNIQUE制約 → あれば編集モード)
   const myReview = user ? reviews.find((r) => r.user_id === user.id) || null : null;
 
+  // 一番乗りの住人 (created_at 降順で取得しているため末尾が最古)
+  const firstOne = reviews.length > 0
+    ? (reviews[reviews.length - 1].profiles?.display_name || "住民")
+    : null;
+
   // 編集モード時はフォームに既存値をプリフィル (口コミ取得後 / spot切替時)
   useEffect(() => {
     if (myReview) {
@@ -214,15 +219,29 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
         </div>
       ) : (
         <p style={{ fontSize: 14, color: QC.warmGray, fontWeight: 300, marginBottom: 28 }}>
-          {loading ? "読み込んでいます。" : "まだ口コミがありません。"}
+          {loading
+            ? "読み込んでいます。"
+            : "この場所のことは、まだ誰も書いていません。あなたが、最初のひとりになれます。"}
         </p>
       )}
 
+      {/* 2026/8/25 最初のひとり: 一番乗りを「記録」として残す。
+          1,551スポットに対し口コミが1件しか無く、誰も最初の一人になりたがらない状態だった。
+          バッジで釣るのではなく、その人の名前が場所に残ることを見せる。 */}
+      {firstOne && (
+        <p style={{ fontSize: 12.5, color: QC.sage, fontWeight: 300, margin: "-16px 0 28px", letterSpacing: 0.3 }}>
+          この場所の最初の記録は、{firstOne}さんが残しました。
+        </p>
+      )}
       {/* 投稿フォーム (ログイン時のみ) / 未ログイン導線 */}
       {user ? (
         <div style={{ background: QC.cream, border: `1px solid ${QC.lightSand}`, borderRadius: 14, padding: isPC ? "22px 24px" : "18px 18px", marginBottom: 32 }}>
           <p style={{ fontSize: 14, fontWeight: 500, color: QC.charcoal, margin: "0 0 14px" }}>
-            {myReview ? "あなたの口コミを編集" : "この場所の口コミを書く"}
+            {myReview
+              ? "あなたの口コミを編集"
+              : count === 0
+                ? "この場所の、最初の記録を残す"
+                : "この場所の口コミを書く"}
           </p>
           {/* 星選択 */}
           <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
@@ -326,7 +345,9 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
         </div>
       ) : (
         <p style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, marginBottom: 32 }}>
-          ログインすると、この場所の口コミを書けます。
+          {count === 0
+            ? "ログインすると、この場所の最初のひとりになれます。"
+            : "ログインすると、この場所の口コミを書けます。"}
         </p>
       )}
 

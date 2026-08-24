@@ -2359,6 +2359,157 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }: {
 // SECTION 6: 仲間になろう (Join the Town) - 登録CTA
 // ============================================================================
 
+// ============================================================================
+// はじめの一歩 (2026/8/25)
+// ============================================================================
+// 背景: 会員76人に対し「うちの子」の登録は7人 (9%)。ギャラリーも散歩の記録も
+//   街のアルバムも、どれも「うちの子」が起点なのに、登録を促す場所がどこにも
+//   無かった。訪問レポート0件・いいね0件も、たどれば同じ「入口が無い」に行き着く。
+// 方針: 頼むのは1つだけにする。並べると誰もやらない。
+//   ログイン済み かつ ペット0件 の住人にだけ、トップ上部で静かに一度だけ声をかける。
+//   ペットのいない作家さんもいるため「あとで」で30日間は出さない。
+// ⚠️ SectionJoinTown (未ログインにだけ出る) と対になる。両方が同時に出ることはない。
+const FIRST_STEP_SNOOZE_KEY = "qocca_first_step_snoozed_until";
+const FIRST_STEP_SNOOZE_DAYS = 30;
+
+const SectionFirstStep = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [petCount, setPetCount] = useState<number | null>(null);
+  const [isHover, setIsHover] = useState(false);
+  const [snoozed, setSnoozed] = useState<boolean>(() => {
+    try {
+      const until = localStorage.getItem(FIRST_STEP_SNOOZE_KEY);
+      return until ? Number(until) > Date.now() : false;
+    } catch (_) { return false; }
+  });
+
+  useEffect(() => {
+    if (!user?.id) { setPetCount(null); return; }
+    let alive = true;
+    (async () => {
+      const { count, error } = await supabase
+        .from("pets")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", user.id);
+      if (!alive) return;
+      // 取得に失敗したときは「登録済み」側に倒す。読めないことを理由に催促しない。
+      setPetCount(error ? 1 : (count ?? 0));
+    })();
+    return () => { alive = false; };
+  }, [user?.id]);
+
+  const snooze = () => {
+    try {
+      localStorage.setItem(
+        FIRST_STEP_SNOOZE_KEY,
+        String(Date.now() + FIRST_STEP_SNOOZE_DAYS * 86400000),
+      );
+    } catch (_) { /* localStorage が使えなくても、この場では閉じる */ }
+    setSnoozed(true);
+  };
+
+  // 未ログイン / 判定前 / 登録済み / 見送り中 は何も出さない
+  if (!user || snoozed || petCount === null || petCount > 0) return null;
+
+  return (
+    <section style={{
+      padding: "clamp(72px, 12vw, 120px) 0",
+      background: "transparent",
+      textAlign: "center",
+    }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 32px" }}>
+
+        <p style={{
+          fontFamily: QC_FONT_EN,
+          fontSize: 13,
+          fontStyle: "italic",
+          color: QC.warmGray,
+          letterSpacing: 1,
+          margin: "0 0 24px 0",
+          opacity: 0.75,
+          fontWeight: 300,
+        }}>
+          Your First Step
+        </p>
+
+        <h2 style={{
+          fontFamily: QC_FONT_DISPLAY,
+          fontSize: "clamp(22px, 3.6vw, 30px)",
+          fontWeight: 700,
+          color: QC.softBrown,
+          letterSpacing: "0.06em",
+          lineHeight: 1.8,
+          margin: "0 0 32px 0",
+        }}>
+          この街は、住人がすこしずつ
+          <br />
+          足していく場所です。
+        </h2>
+
+        <p style={{
+          fontFamily: QC_FONT_JP,
+          fontSize: 13,
+          fontWeight: 300,
+          color: QC.warmGray,
+          lineHeight: 2,
+          margin: "0 0 56px 0",
+          letterSpacing: 0.5,
+        }}>
+          まず、うちの子を紹介してもらえませんか。
+          <br />
+          名前がひとつ増えるたび、
+          <br />
+          この街の窓辺が、ひとつ灯ります。
+        </p>
+
+        <button
+          onClick={() => navigate("/mypage", { state: { tab: "profile", openPetAdd: true } })}
+          onMouseEnter={() => setIsHover(true)}
+          onMouseLeave={() => setIsHover(false)}
+          style={{
+            fontFamily: QC_FONT_JP,
+            background: isHover ? "rgba(201, 123, 95, 0.05)" : "transparent",
+            color: QC.terracotta,
+            border: `1px solid ${QC.terracotta}`,
+            padding: "16px 44px",
+            fontSize: 14,
+            fontWeight: 300,
+            letterSpacing: 1.5,
+            cursor: "pointer",
+            borderRadius: 0,
+            transition: "all 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          うちの子を登録する
+        </button>
+
+        <div>
+          <button
+            onClick={snooze}
+            style={{
+              fontFamily: QC_FONT_JP,
+              background: "transparent",
+              border: "none",
+              color: QC.warmGray,
+              fontSize: 12,
+              fontWeight: 300,
+              letterSpacing: 1,
+              cursor: "pointer",
+              marginTop: 24,
+              padding: 8,
+              opacity: 0.7,
+              transition: "opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            あとで
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const SectionJoinTown = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
   const [isHover, setIsHover] = useState(false);
@@ -3064,6 +3215,10 @@ export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, on
           〜2026-07-26 = クラファン告知(CAMPFIRE誘導)、2026-07-27〜 = 住人募集(/login誘導)。
           切替は SectionDynamicCTABanner 内部の日付判定で自動。 */}
       <Reveal><SectionDynamicCTABanner setPage={setPage} /></Reveal>
+      {/* 2026/8/25 はじめの一歩: ログイン済み かつ うちの子0件 の住人にだけ出る。
+          街の機能はどれも「うちの子」が起点なのに登録を促す場所が無く、76人中7人 (9%) しか
+          登録していなかった。SectionJoinTown (未ログイン専用) と対で、同時には出ない。 */}
+      <Reveal><SectionFirstStep /></Reveal>
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
           2026/6/29 Dday準備: 上の SectionDynamicCTABanner に置き換え済。
           CrowdfundingBanner 関数定義 + import は温存し、{false &&} を外せば即復活可能。 */}
