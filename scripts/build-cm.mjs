@@ -9,8 +9,15 @@
 //       cm-out/cut1.mp4:0:4.0 cm-out/cut2.mp4:1.2:5.0 \
 //       cm-out/cut3.mp4:1.0:5.0 cm-out/cut4.mp4:0.6:5.0
 //
-//   --copy  締めのコピー (既定: うちの子を愛してる人が集まる街。)
-//   --sub   その下に置く小さい一行 (任意)。広告の飛び先ごとの一言に使う。
+//   --copy     締めのコピー (既定: うちの子を愛してる人が集まる街。)
+//   --sub      その下に置く小さい一行 (任意)。広告の飛び先ごとの一言に使う。
+//   --caption  本編に乗せる字幕。"開始:尺:本文" 形式で何度でも指定できる。
+//              本文の | は改行。時刻は本編の頭からの秒数 (締めカードには乗らない)。
+//              例: --caption "1.0:3.4:その首輪をつくった人の足元にも|待っている子がいる。"
+//
+// 字幕について: Meta 広告は大半が音を切って見られるため、実質こちらが本体になる。
+//   ただしミーム動画のような極太の縁取りは静けさを壊すので使わない。
+//   やわらかい影 + 薄いこげ茶の縁で、逆光の画でも読めるところまでに留める。
 //
 // やること:
 //   1. 各クリップを指定区間で切り出し、1080x1920 に揃える (Meta 推奨サイズ)
@@ -41,6 +48,17 @@ const OUTRO_IN = 0.9;         // 締めカードへの溶け込み (ゆっくり
 const OUTRO_HOLD = 3.4;       // 締めカードの尺
 const FONT = "C:/Windows/Fonts/yumin.ttf";      // 游明朝 (QC_FONT_DISPLAY のフォールバック)
 const FONT_EN = "C:/Windows/Fonts/georgia.ttf"; // QC_FONT_EN のフォールバック (セリフ)
+// 字幕は明朝だと動画の上で細って読めないため、ゴシックにする
+const FONT_CAP = "C:/Windows/Fonts/YuGothM.ttc";
+const CAP_INK = "0xFAF7F2";       // QC.warmWhite
+const CAP_EDGE = "0x2C2926@0.35"; // QC.charcoal を薄く。輪郭は「足りるぶんだけ」
+const CAP_SIZE = 44;
+const CAP_LINE = 74;              // 行送り
+const CAP_Y = 0.70;               // 画面の下から3割あたり
+const CAP_FADE = 0.4;             // 出入りのやわらかさ
+const SCRIM_INK = "0x1C1A18";     // 字幕の下地。純黒は使わない
+const SCRIM_FROM = 0.58;          // ここから下だけ、じわっと沈める
+const SCRIM_MAX = 0.42;           // 一番濃いところの不透明度
 
 // --copy / --sub を先に抜き取り、残りを「出力 + クリップ指定」として扱う
 const argv = process.argv.slice(2);
@@ -54,6 +72,14 @@ const takeOpt = (name) => {
 };
 const COPY = takeOpt("--copy") ?? DEFAULT_COPY;
 const SUB = takeOpt("--sub");
+
+// --caption は繰り返し指定できるので、無くなるまで抜き取る
+const captions = [];
+for (let raw; (raw = takeOpt("--caption")) !== null; ) {
+  const m = raw.match(/^([\d.]+):([\d.]+):([\s\S]+)$/);
+  if (!m) { console.error(`--caption の形式は "開始:尺:本文" : ${raw}`); process.exit(1); }
+  captions.push({ start: Number(m[1]), dur: Number(m[2]), lines: m[3].split("|") });
+}
 
 const [out, ...specs] = argv;
 if (!out || specs.length < 2) {
@@ -122,8 +148,45 @@ parts.push(
   `x=(w-text_w)/2:y=(h/2)+250[card_t]`,
   `[${clips.length}:v]scale=${Math.round(W * 0.16)}:-1,format=rgba[lg]`,
   `[card_t][lg]overlay=x=(W-w)/2:y=(H/2)+40:format=auto,format=yuv420p[card]`,
-  // フィルム末尾に締めカードを重ねる (offset = フィルム尺 - 溶け込み時間)
-  `[film][card]xfade=transition=fade:duration=${OUTRO_IN}:offset=${(filmDur - OUTRO_IN).toFixed(3)}[v]`
+);
+
+// 3.5) 字幕を本編にだけ乗せる。締めカードには乗らない (コピーと二重になるため)。
+//      ⚠️ フィルタ式の中のカンマは \, にしないと、そこでフィルタが切れたと解釈される。
+const capChain = captions.flatMap((c) => {
+  const end = c.start + c.dur;
+  if (end > filmDur + 0.01) {
+    console.warn(`⚠️ 字幕が本編(${filmDur.toFixed(1)}秒)をはみ出す: "${c.lines[0]}" ${c.start}〜${end}秒`);
+  }
+  const F = CAP_FADE;
+  const a = `if(lt(t\\,${c.start})\\,0\\,if(lt(t\\,${c.start + F})\\,(t-${c.start})/${F}` +
+            `\\,if(lt(t\\,${end - F})\\,1\\,if(lt(t\\,${end})\\,(${end}-t)/${F}\\,0))))`;
+  // 複数行は1行ずつ別の drawtext にする (drawtext の改行は環境差が出るため)
+  return c.lines.map((line, i) =>
+    `drawtext=fontfile='${esc(FONT_CAP)}':text='${escText(line)}':` +
+    `fontcolor=${CAP_INK}:fontsize=${CAP_SIZE}:` +
+    `borderw=2:bordercolor=${CAP_EDGE}:shadowcolor=0x2C2926@0.45:shadowx=0:shadowy=2:` +
+    `x=(w-text_w)/2:y=h*${CAP_Y}+${i * CAP_LINE}:alpha='${a}'`
+  );
+});
+// 字幕の下地。逆光のカットでは文字が背景に負けるが、縁取りを太くすると
+// ミーム動画の見た目になってしまう。CM と同じく「下だけに薄い影」を敷いて
+// 文字の側は細いままにする。小さく作って拡大することで滑らかな階調にする。
+if (capChain.length) {
+  parts.push(
+    `color=c=${SCRIM_INK}:s=2x256,format=rgba,` +
+    `geq=r='r(X\\,Y)':g='g(X\\,Y)':b='b(X\\,Y)':` +
+    `a='if(lt(Y\\,H*${SCRIM_FROM})\\,0\\,255*${SCRIM_MAX}*(Y-H*${SCRIM_FROM})/(H*${(1 - SCRIM_FROM).toFixed(3)}))',` +
+    `scale=${W}:${H},setsar=1[scrim]`,
+    `[film][scrim]overlay=0:0:format=auto:shortest=1[film_s]`,
+    `[film_s]${capChain.join(",")}[film_c]`,
+  );
+} else {
+  parts.push(`[film]null[film_c]`);
+}
+
+// 4) フィルム末尾に締めカードを重ねる (offset = フィルム尺 - 溶け込み時間)
+parts.push(
+  `[film_c][card]xfade=transition=fade:duration=${OUTRO_IN}:offset=${(filmDur - OUTRO_IN).toFixed(3)}[v]`
 );
 
 const args = [
