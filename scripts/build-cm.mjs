@@ -11,6 +11,8 @@
 //
 //   --copy     締めのコピー (既定: うちの子を愛してる人が集まる街。)
 //   --sub      その下に置く小さい一行 (任意)。広告の飛び先ごとの一言に使う。
+//   --vo       ナレーション音声。"ファイル:開始秒" 形式。無指定なら無音になる。
+//              例: --vo "cm-out/vo/alden.wav:2.0"
 //   --caption  本編に乗せる字幕。"開始:尺:本文" 形式で何度でも指定できる。
 //              本文の | は改行。時刻は本編の頭からの秒数 (締めカードには乗らない)。
 //              例: --caption "1.0:3.4:その首輪をつくった人の足元にも|待っている子がいる。"
@@ -72,6 +74,18 @@ const takeOpt = (name) => {
 };
 const COPY = takeOpt("--copy") ?? DEFAULT_COPY;
 const SUB = takeOpt("--sub");
+
+// --vo "ファイル:開始秒" (Windows の "C:/..." があるので末尾の数値だけ剥がす)
+const voRaw = takeOpt("--vo");
+let vo = null;
+if (voRaw) {
+  const p = voRaw.split(":");
+  const at = Number(p.pop());
+  const path = p.join(":");
+  if (!Number.isFinite(at)) { console.error(`--vo は "ファイル:開始秒" : ${voRaw}`); process.exit(1); }
+  if (!existsSync(path)) { console.error(`ナレーションが見つからない: ${path}`); process.exit(1); }
+  vo = { path, at };
+}
 
 // --caption は繰り返し指定できるので、無くなるまで抜き取る
 const captions = [];
@@ -189,14 +203,23 @@ parts.push(
   `[film_c][card]xfade=transition=fade:duration=${OUTRO_IN}:offset=${(filmDur - OUTRO_IN).toFixed(3)}[v]`
 );
 
+// 音声。ナレーションがあれば指定秒だけ遅らせ、後ろは無音で埋める (-t で切る)。
+// 無ければ無音トラックだけ入れる (Meta は音声トラックがある方が扱いが素直)。
+const SILENCE_IDX = clips.length + 1;
+const VO_IDX = clips.length + 2;
+if (vo) {
+  const ms = Math.round(vo.at * 1000);
+  parts.push(`[${VO_IDX}:a]aresample=44100,adelay=${ms}|${ms},apad[voa]`);
+}
+
 const args = [
   "-y", "-v", "error",
   ...clips.flatMap((c) => ["-i", c.path]),
   "-i", LOGO,
-  // 無音トラック (Meta は音声トラックがある方が扱いが素直。音楽は後乗せ)
   "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+  ...(vo ? ["-i", vo.path] : []),
   "-filter_complex", parts.join(";"),
-  "-map", "[v]", "-map", `${clips.length + 1}:a`,
+  "-map", "[v]", "-map", vo ? "[voa]" : `${SILENCE_IDX}:a`,
   "-t", total.toFixed(3),
   "-c:v", "libx264", "-preset", "slow", "-crf", "19",
   "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.0",
@@ -209,5 +232,6 @@ execFileSync(ffmpegPath, args, { stdio: ["ignore", "inherit", "inherit"] });
 
 console.log(`できた: ${out}`);
 clips.forEach((c, i) => console.log(`  カット${i + 1}  ${c.path}  ${c.start}s から ${c.dur.toFixed(1)}秒`));
-console.log(`  本編 ${filmDur.toFixed(1)}秒 + 締め ${OUTRO_HOLD}秒 = ${total.toFixed(1)}秒 / ${W}x${H} / 無音`);
-console.log(`  音楽: node scripts/add-music.mjs ${out} 曲.mp3 出力.mp4`);
+console.log(`  本編 ${filmDur.toFixed(1)}秒 + 締め ${OUTRO_HOLD}秒 = ${total.toFixed(1)}秒 / ${W}x${H} / ${vo ? "ナレ入り" : "無音"}`);
+if (vo) console.log(`  ナレ: ${vo.path}  ${vo.at}秒 から`);
+console.log(`  音楽: node scripts/add-music.mjs ${out} 曲.mp3 出力.mp4${vo ? " --keep-voice" : ""}`);
