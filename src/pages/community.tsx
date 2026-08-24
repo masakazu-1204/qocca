@@ -712,7 +712,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
           {/* メッセージ一覧 */}
           <div style={{ padding:"16px", minHeight:300, maxHeight: isPC ? 500 : "60vh", overflowY:"auto", display:"flex", flexDirection:"column", gap:12, background:"#FAFAF8" }}>
             {messages.length === 0 ? (
-              <div style={{ textAlign:"center", color:C.warmGray, fontSize:12, padding:"30px 0" }}>まだメッセージがありません<br/>最初のメッセージを送ってみましょう</div>
+              <div style={{ textAlign:"center", color:C.warmGray, fontSize:12, padding:"30px 0" }}>まだ誰も話していません<br/>あなたの最初のひとことから、この部屋がはじまります</div>
             ) : messages.map(m => (
               <div key={m.id} style={{ display:"flex", justifyContent: m.sender_id === user?.id ? "flex-end" : "flex-start", gap:8 }}>
                 {m.sender_id !== user?.id && (
