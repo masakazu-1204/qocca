@@ -41,7 +41,9 @@ const BG = "0xFAF7F2";        // QC.warmWhite
 const INK = "0x8B6F5C";       // QC.softBrown  (コピー)
 const MARK_INK = "0x2C2926";  // QC.charcoal   (ワードマーク)
 const DEFAULT_COPY = "うちの子を愛してる人が集まる街。";
-const SUB_INK = "0xA8B59E";   // QC.sage (小さい一行。主役のコピーより一段引く)
+// 小さい一行は主役のコピーより一段引くが、QC.sage だと温白の上で薄くなりすぎて
+// ほぼ読めなかった (2026/8/25 実測)。QC.warmGray まで濃くする。
+const SUB_INK = "0x6B6259";   // QC.warmGray
 const LOGO = "public/qocca_logo.png";
 
 const W = 1080, H = 1920, FPS = 24;
@@ -59,8 +61,10 @@ const CAP_LINE = 74;              // 行送り
 const CAP_Y = 0.70;               // 画面の下から3割あたり
 const CAP_FADE = 0.4;             // 出入りのやわらかさ
 const SCRIM_INK = "0x1C1A18";     // 字幕の下地。純黒は使わない
-const SCRIM_FROM = 0.58;          // ここから下だけ、じわっと沈める
-const SCRIM_MAX = 0.42;           // 一番濃いところの不透明度
+const SCRIM_FROM = 0.55;          // ここから下だけ、じわっと沈める
+// 逆光で床が明るいカットでは 0.42 だと字幕が飛んだ (2026/8/25 実測)。
+// 文字側を太らせず、下地を濃くするほうで解決する。
+const SCRIM_MAX = 0.55;           // 一番濃いところの不透明度
 
 // --copy / --sub を先に抜き取り、残りを「出力 + クリップ指定」として扱う
 const argv = process.argv.slice(2);
