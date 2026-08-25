@@ -181,30 +181,59 @@ Qocca.
 
 ---
 
-## ビルドコマンド (映像が揃ったら)
+## ビルドコマンド (実際に組んだもの・2026/8/25)
+
+⚠️ 秒数は手で決め打ちしていない。ナレーションを `silencedetect` にかけて
+息継ぎの位置を実測し、**台詞の頭とカットの切り替わりが同じ瞬間に来る**ように
+逆算している。特に turn は 0.2秒ずれると効かなくなる。
+
+実測したナレーションの区切り (ファイル先頭からの秒。`--vo` の 1.8 を足すと本編上の位置):
+
+| 台詞 | 音声上 | 本編上 | 乗るカット |
+|---|---:|---:|---|
+| You don't tell people this. | 0.46 | 2.3 | ① ケーキ |
+| But you celebrate their birthday. | 2.90 | 4.7 | ① ケーキ |
+| You talk to them. | 5.67 | 7.5 | ② 話しかけ |
+| Every photo is the same face. | 7.08 | 8.9 | ③ カメラロール |
+| Sometimes you wonder if it's too much. | 10.28 | 12.1 | ④ ごはん |
+| **But tonight, in all these houses…** | 13.55 | **15.4** | **⑥ 夜の街 (15.5開始)** |
+| It isn't too much. Here, it's normal. | 19.39 | 21.2 | ⑦ 窓 |
+| Qocca. | 24.12 | 25.9 | 締めカード |
 
 ```bash
 node scripts/build-cm.mjs cm-out/qocca_cm_omoku_nai.mp4 \
-  "cm-out/a1_cake.mp4:0.3:4.3" \
+  "cm-out/a1_cake.mp4:0:5.0" \
   "cm-out/a2_talk.mp4:0.5:4.0" \
   "cm-out/a3_roll.mp4:0.5:4.0" \
-  "cm-out/a4_gohan.mp4:0.5:4.0" \
-  "cm-out/a5_ashi.mp4:0.5:4.0" \
+  "cm-out/a4_gohan.mp4:0.6:3.6" \
+  "cm-out/a5_ashi.mp4:0.6:3.6" \
   "cm-out/a6_machi.mp4:0:6.0" \
   "cm-out/a7_mado.mp4:0.5:4.0" \
   --copy "その愛は、重くない。" \
   --sub "うちの子を愛してる人が集まる街。" \
-  --vo "cm-out/vo/omokunai_Alden.wav:1.5" \
-  --caption "0.8:3.4:誰にも言わへんけど、|うちの子の誕生日は、ちゃんと祝ってる。" \
-  --caption "4.6:3.0:話しかけてるし、" \
-  --caption "8.0:3.2:写真は、おなじ顔ばっかり増えていく。" \
-  --caption "11.6:3.2:ごはんも、自分のより気をつかってる。" \
-  --caption "15.2:3.0:ちょっと重いかな、と思うことがある。" \
-  --caption "19.0:5.0:でも、おなじ夜に|おなじことをしてる家が、こんなにある。"
+  --vo "cm-out/vo/omokunai_Alden.wav:1.8" \
+  --caption "2.2:3.2:誰にも言わへんけど、|うちの子の誕生日は、ちゃんと祝ってる。" \
+  --caption "5.9:2.0:話しかけてるし、" \
+  --caption "8.3:2.4:写真は、おなじ顔ばっかり増えていく。" \
+  --caption "11.0:2.2:ごはんも、自分のより気をつかってる。" \
+  --caption "13.5:2.0:ちょっと重いかな、と思うことがある。" \
+  --caption "15.9:5.0:でも、おなじ夜に|おなじことをしてる家が、こんなにある。"
 
 node scripts/add-music.mjs cm-out/qocca_cm_omoku_nai.mp4 曲.mp3 cm-out/_mix.mp4 0.35 --keep-voice
-node scripts/finalize-video.mjs cm-out/_mix.mp4 "cm-out/Qocca_CM_その愛は重くない_配信用.mp4"
+node scripts/finalize-video.mjs cm-out/_mix.mp4 "cm-out/Qocca_CM_その愛は重くない_28s_配信用.mp4"
 ```
+
+本編 24.5秒 + 締めカード 3.4秒 = **27.9秒**
+
+### 生成でつまずいた点
+
+- カット6 (夜の街) は2本流して1本が失敗。**残った1本が一発で当たり**だったので
+  そのまま採用。企画の生命線なので、先に単体で流して確認する手順は正解だった。
+- カット2 (話しかけ) は「人がソファに座って犬に話しかけている」で1度失敗。
+  **主役を犬に寄せ、人は前ボケの肩と腕だけ**に書き換えたら通った。
+  人物を主語にすると落ちやすい。
+- 同時に7本投げると稀に 503 / クレジット判定のレースで数本落ちる。
+  落ちたぶんを単体で投げ直せばよい (失敗ぶんは返却される)。
 
 ## 曲 (SUNO・Instrumental を ON)
 
