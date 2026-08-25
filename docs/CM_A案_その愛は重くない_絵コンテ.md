@@ -134,18 +134,30 @@ You don't tell people this.
 But you celebrate their birthday.
 You talk to them.
 Every photo is the same face.
-Their meals get more care than your own.
 
 Sometimes you wonder if it's too much.
 
 But tonight, in all these houses,
-somebody is doing exactly the same thing.
+somebody is doing the same thing.
 
 It isn't too much.
 Here, it's normal.
 
 Qocca.
 ```
+
+⚠️ 最初に書いた長い版は読み上げ **32.7秒** で、本編 24.5秒に収まらなかった。
+「ごはん」の一行を落として **24.8秒** にしてある。録音済み:
+
+| ファイル | 尺 | 締め |
+|---|---|---|
+| `cm-out/vo/omokunai_Alden.wav` | 24.8s | `Qocca.` |
+| `cm-out/vo/omokunai_Alden_welcome.wav` | 25.3s | `Welcome to Qocca.` |
+
+本編 24.5秒に対しナレが 24.8秒なので、**開始 1.5秒**に置くと最後の
+`It isn't too much. Here, it's normal. Qocca.` が締めカードに重なる。
+カードの「その愛は、重くない。」と同時に鳴るのは狙いどおり
+(日本語は文字で、英語は音で、同じことを別の感覚に入れる)。
 
 ## 字幕 (日本語)
 
@@ -182,7 +194,7 @@ node scripts/build-cm.mjs cm-out/qocca_cm_omoku_nai.mp4 \
   "cm-out/a7_mado.mp4:0.5:4.0" \
   --copy "その愛は、重くない。" \
   --sub "うちの子を愛してる人が集まる街。" \
-  --vo "cm-out/vo/omokunai_Alden.wav:2.5" \
+  --vo "cm-out/vo/omokunai_Alden.wav:1.5" \
   --caption "0.8:3.4:誰にも言わへんけど、|うちの子の誕生日は、ちゃんと祝ってる。" \
   --caption "4.6:3.0:話しかけてるし、" \
   --caption "8.0:3.2:写真は、おなじ顔ばっかり増えていく。" \
