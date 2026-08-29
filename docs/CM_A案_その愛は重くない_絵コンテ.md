@@ -1,0 +1,260 @@
+# CM A案「その愛は、重くない。」絵コンテ (2026/8/25)
+
+30秒 / 9:16 / 飛び先: 商店街 or トップ
+
+---
+
+## なぜこの構成か
+
+既存2本は「モノの旅」と「楽しさの羅列」で、後者には turn が無かった。
+turn の無いCMは気持ちよく見られて、そのまま忘れられる。
+
+この案が使うのは **飼い主が一番隠している感情**。
+
+> うちの子への愛が「重すぎる」と思っていて、
+> それを人には言わない。自分だけがおかしいと思っている。
+
+turn は「自分だけやと思ってた」→「みんなやった」。
+広告でもっとも安定して効く構造で、かつ **「街」のメタファーが初めて画で成立する**
+(これまではコピーで言っていただけ。窓の灯りで見せる)。
+
+## 撮り方の制約
+
+⚠️ 人物の顔は映さない。AI は顔で破綻する。
+   使えるのは **手 / 後ろ姿 / シルエット / 引きの窓** まで。
+   turn のカット6は人が要らないので、そこは安全。
+
+⚠️ 犬は1匹に固定しない。「みんなの家の話」なので、家ごとに違う犬でよい。
+   むしろ揃えると「1人の話」に見えてしまい、turn が弱くなる。
+
+---
+
+## カット表
+
+| # | 尺 | 内容 | 役割 |
+|---|---|---|---|
+| 1 | 4.0s | 暗い部屋。犬用のちいさなケーキに火を灯す手。犬がじっと見ている | フック |
+| 2 | 3.5s | 別の家。ソファの後ろ姿。犬に話しかけている。犬が首をかしげる | 積み上げ |
+| 3 | 3.5s | 別の家。スマホのカメラロールをスクロールする指。全部おなじ犬 | 積み上げ |
+| 4 | 3.5s | 別の家。犬のごはんに刻んだ野菜をきれいに乗せる手。奥で犬が待つ | 積み上げ |
+| 5 | 3.5s | 別の家。玄関。散歩帰り、犬の足を1本ずつ拭く手 | 積み上げ |
+| 6 | 6.0s | 夜の住宅街を引き。窓の灯りがぽつぽつ、いくつも | **turn** |
+| 7 | 3.5s | その中の一つの窓に寄る。カーテン越しに人と犬のシルエット | 着地 |
+
+本編 27.5 − ディゾルブ6×0.5 = **24.5秒** + 締めカード 3.4秒 = **27.9秒**
+
+---
+
+## 生成プロンプト (そのまま投げる)
+
+共通の末尾: `Serene, warm, unhurried, high-end commercial cinematography. No text, no graphics, no faces.`
+
+**1. ケーキ (フック)**
+```
+Cinematic television commercial shot, dark quiet living room at night. A hand
+strikes a match and lights a single candle on a very small dog-friendly cake on
+a low wooden table. A dog sits perfectly still just behind it, face lit softly by
+the candle flame, eyes fixed on it. Everything else falls into darkness.
+Shallow depth of field, 85mm lens, natural film grain, warm palette of amber and
+deep brown. Almost still camera. Serene, warm, unhurried, high-end commercial
+cinematography. No text, no graphics, no faces.
+```
+
+**2. 話しかけている**
+```
+Cinematic television commercial shot, warm evening living room. Seen from behind,
+a person sits on a sofa with their back to camera, shoulders relaxed, clearly
+talking to a dog sitting on the floor facing them. The dog tilts its head, ears
+shifting, listening intently. Soft lamplight. Shallow depth of field, 50mm lens,
+natural film grain, warm palette of amber, cream and soft brown. Static camera.
+Serene, warm, unhurried, high-end commercial cinematography. No text, no graphics,
+no faces.
+```
+
+**3. カメラロール**
+```
+Cinematic television commercial macro shot. A thumb scrolls slowly up a phone
+photo grid held in one hand. Every single thumbnail is the same cat, sleeping,
+photographed from slightly different angles again and again. The screen glow lights
+the fingers. Everything around is dark and soft. Extreme shallow depth of field,
+100mm macro lens, natural film grain, warm palette of soft blue screen light and
+amber room light. Static camera. Serene, warm, unhurried, high-end commercial
+cinematography. No text, no graphics, no faces.
+```
+
+**4. ごはん**
+```
+Cinematic television commercial shot, evening kitchen. Two hands carefully arrange
+finely chopped vegetables and shredded chicken on top of a bowl of dog food,
+placing each piece neatly, taking real care. In the soft-focus background a dog
+waits patiently, sitting upright. Warm overhead kitchen light. Shallow depth of
+field, 50mm lens, natural film grain, warm palette of cream and soft green.
+Static camera. Serene, warm, unhurried, high-end commercial cinematography.
+No text, no graphics, no faces.
+```
+
+**5. 足を拭く**
+```
+Cinematic television commercial shot, low angle in a Japanese genkan entryway after
+a walk. Two hands gently wipe a dog's paw with a soft towel, one paw at a time,
+lifting each carefully. The dog stands patiently, tail giving one small wag.
+Soft evening light from the door. Shallow depth of field, 50mm lens, natural film
+grain, warm palette of pale wood and cream. Static camera. Serene, warm, unhurried,
+high-end commercial cinematography. No text, no graphics, no faces.
+```
+
+**6. 夜の街 (turn) ★ここが企画の生命線**
+```
+Cinematic television commercial shot, night. A slow wide pull-back over a quiet
+Japanese residential neighbourhood seen from just above rooftop height. Dozens of
+windows glow warm amber in the darkness, scattered across the houses, each one a
+small pocket of light. Still air, faint haze. Deep blue night sky above.
+Shallow depth of field on the nearest rooftops, 35mm lens, natural film grain,
+palette of deep blue and warm amber. Very slow steady pull-back.
+Serene, warm, unhurried, high-end commercial cinematography. No text, no graphics,
+no people.
+```
+
+**7. 窓に寄る**
+```
+Cinematic television commercial shot, night, exterior. A slow push-in toward one
+warmly lit window of a house. Through the thin curtain, the soft silhouette of a
+person and a dog moves gently together, undefined and glowing. Everything else is
+dark. Shallow depth of field, 85mm lens, natural film grain, palette of deep blue
+and warm amber. Very slow push-in. Serene, warm, unhurried, high-end commercial
+cinematography. No text, no graphics, no faces.
+```
+
+---
+
+## ナレーション (英語・Alden)
+
+```
+You don't tell people this.
+But you celebrate their birthday.
+You talk to them.
+Every photo is the same face.
+
+Sometimes you wonder if it's too much.
+
+But tonight, in all these houses,
+somebody is doing the same thing.
+
+It isn't too much.
+Here, it's normal.
+
+Qocca.
+```
+
+⚠️ 最初に書いた長い版は読み上げ **32.7秒** で、本編 24.5秒に収まらなかった。
+「ごはん」の一行を落として **24.8秒** にしてある。録音済み:
+
+| ファイル | 尺 | 締め |
+|---|---|---|
+| `cm-out/vo/omokunai_Alden.wav` | 24.8s | `Qocca.` |
+| `cm-out/vo/omokunai_Alden_welcome.wav` | 25.3s | `Welcome to Qocca.` |
+
+本編 24.5秒に対しナレが 24.8秒なので、**開始 1.5秒**に置くと最後の
+`It isn't too much. Here, it's normal. Qocca.` が締めカードに重なる。
+カードの「その愛は、重くない。」と同時に鳴るのは狙いどおり
+(日本語は文字で、英語は音で、同じことを別の感覚に入れる)。
+
+## 字幕 (日本語)
+
+```
+0.8:3.4   誰にも言わへんけど、|うちの子の誕生日は、ちゃんと祝ってる。
+4.6:3.0   話しかけてるし、
+8.0:3.2   写真は、おなじ顔ばっかり増えていく。
+11.6:3.2  ごはんも、自分のより気をつかってる。
+15.2:3.0  ちょっと重いかな、と思うことがある。
+19.0:5.0  でも、おなじ夜に|おなじことをしてる家が、こんなにある。
+```
+
+⚠️ 最後の字幕はカット6 (夜の街) に重ねる。turn と同時に出す。
+
+## 締めカード
+
+```
+--copy "その愛は、重くない。"
+--sub  "うちの子を愛してる人が集まる街。"
+```
+
+---
+
+## ビルドコマンド (実際に組んだもの・2026/8/25)
+
+⚠️ 秒数は手で決め打ちしていない。ナレーションを `silencedetect` にかけて
+息継ぎの位置を実測し、**台詞の頭とカットの切り替わりが同じ瞬間に来る**ように
+逆算している。特に turn は 0.2秒ずれると効かなくなる。
+
+実測したナレーションの区切り (ファイル先頭からの秒。`--vo` の 1.8 を足すと本編上の位置):
+
+| 台詞 | 音声上 | 本編上 | 乗るカット |
+|---|---:|---:|---|
+| You don't tell people this. | 0.46 | 2.3 | ① ケーキ |
+| But you celebrate their birthday. | 2.90 | 4.7 | ① ケーキ |
+| You talk to them. | 5.67 | 7.5 | ② 話しかけ |
+| Every photo is the same face. | 7.08 | 8.9 | ③ カメラロール |
+| Sometimes you wonder if it's too much. | 10.28 | 12.1 | ④ ごはん |
+| **But tonight, in all these houses…** | 13.55 | **15.4** | **⑥ 夜の街 (15.5開始)** |
+| It isn't too much. Here, it's normal. | 19.39 | 21.2 | ⑦ 窓 |
+| Qocca. | 24.12 | 25.9 | 締めカード |
+
+```bash
+node scripts/build-cm.mjs cm-out/qocca_cm_omoku_nai.mp4 \
+  "cm-out/a1_cake.mp4:0:5.0" \
+  "cm-out/a2_talk.mp4:0.5:4.0" \
+  "cm-out/a3_roll.mp4:0.5:4.0" \
+  "cm-out/a4_gohan.mp4:0.6:3.6" \
+  "cm-out/a5_ashi.mp4:0.6:3.6" \
+  "cm-out/a6_machi.mp4:0:6.0" \
+  "cm-out/a7_mado.mp4:0.5:4.0" \
+  --copy "その愛は、重くない。" \
+  --sub "うちの子を愛してる人が集まる街。" \
+  --vo "cm-out/vo/omokunai_Alden.wav:1.8" \
+  --caption "2.2:3.2:誰にも言わへんけど、|うちの子の誕生日は、ちゃんと祝ってる。" \
+  --caption "5.9:2.0:話しかけてるし、" \
+  --caption "8.3:2.4:写真は、おなじ顔ばっかり増えていく。" \
+  --caption "11.0:2.2:ごはんも、自分のより気をつかってる。" \
+  --caption "13.5:2.0:ちょっと重いかな、と思うことがある。" \
+  --caption "15.9:5.0:でも、おなじ夜に|おなじことをしてる家が、こんなにある。"
+
+node scripts/add-music.mjs cm-out/qocca_cm_omoku_nai.mp4 曲.mp3 cm-out/_mix.mp4 0.35 --keep-voice
+node scripts/finalize-video.mjs cm-out/_mix.mp4 "cm-out/Qocca_CM_その愛は重くない_28s_配信用.mp4"
+```
+
+本編 24.5秒 + 締めカード 3.4秒 = **27.9秒**
+
+### 生成でつまずいた点
+
+- カット6 (夜の街) は2本流して1本が失敗。**残った1本が一発で当たり**だったので
+  そのまま採用。企画の生命線なので、先に単体で流して確認する手順は正解だった。
+- カット2 (話しかけ) は「人がソファに座って犬に話しかけている」で1度失敗。
+  **主役を犬に寄せ、人は前ボケの肩と腕だけ**に書き換えたら通った。
+  人物を主語にすると落ちやすい。
+- 同時に7本投げると稀に 503 / クレジット判定のレースで数本落ちる。
+  落ちたぶんを単体で投げ直せばよい (失敗ぶんは返却される)。
+
+## 曲 (SUNO・Instrumental を ON)
+
+```
+Cinematic emotional orchestral score. Sparse solo felt piano, single notes,
+lots of silence. Warm strings enter around 15 seconds. Opens up into a full
+but restrained swell at 19-24 seconds, then resolves and fades to near silence.
+No drums, no percussion. Tender, hopeful, quietly devastating.
+```
+
+⚠️ 19〜24秒に山が来ること。そこが turn (夜の街) と重なる。
+
+---
+
+## 費用
+
+| | クレジット |
+|---|---:|
+| 7カット | 227.5 |
+| 撮り直し見込み (3割) | 約70 |
+| ナレーション | 0.1 |
+| **合計** | **約300** |
+
+⚠️ カット6が出なければ企画ごと組み直しになる。**最初に6番だけ単体で回して確認する。**
