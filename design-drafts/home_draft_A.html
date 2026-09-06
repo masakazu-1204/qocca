@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qocca — 案A「余白の雑誌」</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Shippori+Mincho:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF7; --ink:#1A1815; --sub:#6E675E; --line:#E4DFD6;
+    --orange:#F5A94A; --orange-deep:#E08B22;
+    --serif-en:"Fraunces",serif; --serif-jp:"Shippori Mincho",serif; --sans-jp:"Zen Kaku Gothic New",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans-jp);font-weight:300;line-height:2;overflow-x:hidden;
+    background-image:radial-gradient(rgba(26,24,21,.025) 1px,transparent 1px);background-size:24px 24px}
+  img{max-width:100%;display:block}
+  a{color:inherit;text-decoration:none}
+
+  /* ───── 誌面グリッド ───── */
+  .page{max-width:1280px;margin:0 auto;padding:0 clamp(20px,5vw,72px)}
+
+  /* ───── マストヘッド (雑誌の題字) ───── */
+  header{display:flex;justify-content:space-between;align-items:baseline;padding:28px 0 22px;border-bottom:1px solid var(--ink)}
+  .masthead{font-family:var(--serif-en);font-weight:600;font-size:clamp(26px,3vw,34px);letter-spacing:.02em}
+  .masthead .dot{color:var(--orange)}
+  .issue{font-family:var(--serif-en);font-size:12px;letter-spacing:.22em;color:var(--sub);text-transform:uppercase}
+  nav{display:flex;gap:28px;font-size:12.5px;letter-spacing:.14em}
+  nav a{padding-bottom:2px;border-bottom:1px solid transparent;transition:border-color .4s}
+  nav a:hover{border-color:var(--orange)}
+  @media(max-width:760px){nav{display:none}}
+
+  /* ───── HERO: 非対称エディトリアル ───── */
+  .hero{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(24px,4vw,64px);
+    padding:clamp(48px,8vw,110px) 0 clamp(40px,6vw,80px);align-items:end}
+  .hero-copy .vol{font-family:var(--serif-en);font-size:12px;letter-spacing:.3em;color:var(--orange-deep);text-transform:uppercase;margin-bottom:26px;display:flex;align-items:center;gap:14px}
+  .hero-copy .vol::after{content:"";width:64px;height:1px;background:var(--orange)}
+  h1{font-family:var(--serif-jp);font-weight:500;font-size:clamp(34px,5.6vw,64px);line-height:1.62;letter-spacing:.04em}
+  h1 em{font-style:normal;background:linear-gradient(transparent 72%,rgba(245,169,74,.42) 72%)}
+  .hero-copy p.lede{margin-top:34px;font-size:14.5px;color:var(--sub);max-width:34em;line-height:2.3}
+  .hero-cta{margin-top:42px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .btn-ink{font-family:var(--sans-jp);font-weight:500;font-size:13.5px;letter-spacing:.12em;color:var(--paper);
+    background:var(--ink);padding:16px 34px;border-radius:2px;position:relative;overflow:hidden;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+  .btn-ink::after{content:"";position:absolute;inset:0;background:var(--orange);transform:translateY(101%);transition:transform .45s cubic-bezier(.22,1,.36,1);z-index:-0}
+  .btn-ink span{position:relative;z-index:1}
+  .btn-ink:hover{transform:translateY(-2px)}
+  .btn-ink:hover::after{transform:translateY(0)}
+  .link-line{font-size:13px;letter-spacing:.1em;color:var(--sub);border-bottom:1px solid var(--line);padding-bottom:3px;transition:color .4s,border-color .4s}
+  .link-line:hover{color:var(--ink);border-color:var(--orange)}
+
+  .hero-visual{position:relative}
+  .hero-visual .photo{aspect-ratio:4/5;overflow:hidden;border-radius:2px}
+  .hero-visual .photo img{width:100%;height:100%;object-fit:cover;transform:scale(1.02)}
+  /* クオッカ = 誌面の署名。写真の角に「編集長」として手描きで居る */
+  .quokka-sign{position:absolute;left:-34px;bottom:-30px;width:110px;transform:rotate(-8deg);filter:drop-shadow(0 6px 14px rgba(26,24,21,.12))}
+  .quokka-sign .label{font-family:var(--serif-en);font-size:10.5px;letter-spacing:.16em;color:var(--sub);text-align:center;margin-top:4px;transform:rotate(2deg)}
+  .hero-visual .caption{margin-top:14px;display:flex;justify-content:space-between;font-size:11px;letter-spacing:.14em;color:var(--sub)}
+  @media(max-width:860px){.hero{grid-template-columns:1fr}.hero-visual{order:-1;max-width:420px}.quokka-sign{left:auto;right:-16px;width:88px}}
+
+  /* ───── 目次 (エディトリアルの導線) ───── */
+  .toc{border-top:1px solid var(--ink);border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr)}
+  .toc a{padding:34px clamp(16px,2.5vw,36px);border-right:1px solid var(--line);transition:background .5s}
+  .toc a:last-child{border-right:none}
+  .toc a:hover{background:#F4EFE6}
+  .toc .no{font-family:var(--serif-en);font-size:13px;color:var(--orange-deep);letter-spacing:.1em}
+  .toc h3{font-family:var(--serif-jp);font-weight:500;font-size:clamp(15px,1.6vw,19px);margin:10px 0 6px;letter-spacing:.06em}
+  .toc p{font-size:12px;color:var(--sub);line-height:1.9}
+  .toc .go{font-family:var(--serif-en);font-size:11px;letter-spacing:.2em;color:var(--sub);margin-top:14px;display:inline-block}
+  .toc a:hover .go{color:var(--orange-deep)}
+  @media(max-width:760px){.toc{grid-template-columns:1fr}.toc a{border-right:none;border-bottom:1px solid var(--line)}}
+
+  /* ───── 特集: 作品 (雑誌の見開き風・非対称) ───── */
+  section.feature{padding:clamp(64px,10vw,130px) 0}
+  .sec-head{display:flex;align-items:baseline;gap:22px;margin-bottom:clamp(36px,5vw,64px)}
+  .sec-head .en{font-family:var(--serif-en);font-size:12px;letter-spacing:.3em;color:var(--orange-deep);text-transform:uppercase}
+  .sec-head h2{font-family:var(--serif-jp);font-weight:500;font-size:clamp(22px,3vw,32px);letter-spacing:.06em}
+  .sec-head .rule{flex:1;height:1px;background:var(--line)}
+  .spread{display:grid;grid-template-columns:5fr 4fr 3fr;gap:clamp(14px,2vw,28px);align-items:start}
+  .spread .cut{overflow:hidden;border-radius:2px;position:relative}
+  .spread .cut img{width:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.22,1,.36,1)}
+  .spread .cut:hover img{transform:scale(1.04)}
+  .cut.tall{aspect-ratio:3/4}.cut.mid{aspect-ratio:4/5;margin-top:clamp(28px,4vw,64px)}.cut.small{aspect-ratio:1/1;margin-top:clamp(56px,8vw,120px)}
+  .cut .tag{position:absolute;left:0;bottom:0;background:var(--paper);padding:8px 16px 6px 0;font-size:11px;letter-spacing:.14em;color:var(--sub)}
+  @media(max-width:760px){.spread{grid-template-columns:1fr 1fr}.cut.small{display:none}}
+
+  /* ───── 一撃: ステートメント (D2Cの一撃はタイポで) ───── */
+  .statement{padding:clamp(70px,12vw,150px) 0;border-top:1px solid var(--ink)}
+  .statement .big{font-family:var(--serif-jp);font-weight:500;font-size:clamp(28px,5vw,54px);line-height:1.9;letter-spacing:.05em;max-width:20em}
+  .statement .big .or{color:var(--orange-deep)}
+  .statement .foot{margin-top:44px;display:flex;gap:18px;align-items:center;font-size:12px;color:var(--sub);letter-spacing:.12em}
+  .statement .foot img{width:44px;transform:rotate(6deg)}
+
+  /* ───── ARK / 信頼 ───── */
+  .trust{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,80px);padding:clamp(56px,8vw,110px) 0;border-top:1px solid var(--line)}
+  .trust h3{font-family:var(--serif-jp);font-weight:500;font-size:20px;letter-spacing:.06em;margin-bottom:18px}
+  .trust p{font-size:13.5px;color:var(--sub);line-height:2.2}
+  .trust .num{font-family:var(--serif-en);font-size:clamp(56px,8vw,96px);font-weight:300;line-height:1;color:var(--orange);letter-spacing:-.02em}
+  .trust .num small{font-size:.35em;color:var(--sub);letter-spacing:.1em}
+  @media(max-width:760px){.trust{grid-template-columns:1fr}}
+
+  /* ───── 登録CTA (奥付) ───── */
+  .colophon{border-top:1px solid var(--ink);padding:clamp(56px,9vw,120px) 0 clamp(72px,10vw,140px);text-align:center}
+  .colophon .quokka{width:84px;margin:0 auto 22px;transform:rotate(-4deg)}
+  .colophon h2{font-family:var(--serif-jp);font-weight:500;font-size:clamp(22px,3.4vw,34px);letter-spacing:.08em;line-height:1.9}
+  .colophon p{font-size:13px;color:var(--sub);margin:20px 0 36px;letter-spacing:.06em}
+  footer{border-top:1px solid var(--line);padding:26px 0;display:flex;justify-content:space-between;font-size:11px;letter-spacing:.16em;color:var(--sub)}
+
+  /* ───── reveal ───── */
+  .rv{opacity:0;transform:translateY(22px);transition:opacity 1s cubic-bezier(.22,1,.36,1),transform 1s cubic-bezier(.22,1,.36,1)}
+  .rv.on{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="masthead">Qocca<span class="dot">.</span></div>
+    <div class="issue">Petto to kurasu machi &nbsp;/&nbsp; Est. 2026</div>
+    <nav><a href="#">商店街</a><a href="#">おでかけ</a><a href="#">広場</a><a href="#">アルバム</a></nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="vol rv">The Town for Every Pet Owner</div>
+      <h1 class="rv" style="transition-delay:.08s">想いを形にして、<br><em>ふたり</em>をつなぐ。</h1>
+      <p class="lede rv" style="transition-delay:.16s">動物と暮らしはじめた日に、誰もがあたりまえに開く場所を。作家の手仕事、犬と歩ける道、同じ子を愛する人たち——この街には、ふたりの毎日を豊かにするものが揃っています。</p>
+      <div class="hero-cta rv" style="transition-delay:.24s">
+        <a class="btn-ink" href="#"><span>住民になる — 登録は無料</span></a>
+        <a class="link-line" href="#">まずは街を歩いてみる</a>
+      </div>
+    </div>
+    <div class="hero-visual rv" style="transition-delay:.2s">
+      <div class="photo"><img src="https://www.qocca.pet/feature-cards/feature_walk.webp" alt="愛犬との散歩"></div>
+      <div class="quokka-sign">
+        <img src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/ashiato-assets/stamps/s2_quokka_b.svg" alt="クオッカ編集長">
+        <div class="label">EDITOR — QOCCA</div>
+      </div>
+      <div class="caption"><span>PHOTO 001 / 散歩の途中で</span><span>16:24 PM</span></div>
+    </div>
+  </section>
+
+  <div class="toc rv">
+    <a href="#"><div class="no">01</div><h3>商店街 — Market</h3><p>作家がうちの子のためだけに作る、一点ものの作品。初回の販売手数料は無料。</p><span class="go">READ →</span></a>
+    <a href="#"><div class="no">02</div><h3>おでかけ — Pet Walker</h3><p>愛犬と行ける場所、全国643件。今週末の行き先が、ここで見つかる。</p><span class="go">READ →</span></a>
+    <a href="#"><div class="no">03</div><h3>広場 — Community</h3><p>同じ犬種、同じ猫種。「うちもそう」と言い合える人が、いつもいる。</p><span class="go">READ →</span></a>
+  </div>
+
+  <section class="feature">
+    <div class="sec-head rv"><span class="en">Featured Works</span><h2>今週、街で愛された作品</h2><div class="rule"></div></div>
+    <div class="spread">
+      <div class="cut tall rv"><img src="https://www.qocca.pet/feature-cards/feature_market.webp" alt="作品1"><span class="tag">羊毛フェルト / うちの子オーダー</span></div>
+      <div class="cut mid rv" style="transition-delay:.1s"><img src="https://www.qocca.pet/feature-cards/feature_album.webp" alt="作品2"><span class="tag">似顔絵 / 水彩</span></div>
+      <div class="cut small rv" style="transition-delay:.2s"><img src="https://www.qocca.pet/feature-cards/feature_blog.webp" alt="作品3"><span class="tag">読みもの</span></div>
+    </div>
+  </section>
+
+  <section class="statement">
+    <p class="big rv">動物を飼ったその日に、<br>誰もが<span class="or">あたりまえに</span>開くアプリへ。<br>この街は、そのために作られています。</p>
+    <div class="foot rv"><img src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/ashiato-assets/icon/i1_ashiato_b.svg" alt="🐾"><span>QOCCA MANIFESTO — 2026</span></div>
+  </section>
+
+  <section class="trust">
+    <div class="rv">
+      <div class="num">3<small>%</small></div>
+      <h3>売上の3%は、保護動物のもとへ。</h3>
+      <p>Qoccaの売上の3%は、特定非営利活動法人アニマルレフュージ関西(ARK)に寄付されます。あなたがこの街で過ごすほど、行き場のない子たちの明日が、少しだけ変わります。</p>
+    </div>
+    <div class="rv" style="transition-delay:.12s">
+      <div class="num">0<small>円</small></div>
+      <h3>はじめての出品は、手数料無料。</h3>
+      <p>作家としての一歩を、身軽に踏み出せるように。初回の販売手数料は無料、販売価格がそのままあなたの手取りになります。</p>
+    </div>
+  </section>
+
+  <section class="colophon">
+    <img class="quokka rv" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/ashiato-assets/stamps/s2_quokka_b.svg" alt="クオッカ">
+    <h2 class="rv">あなたのうちの子も、<br>もうこの街の住民です。</h2>
+    <p class="rv">登録は無料。1分で、街の門が開きます。</p>
+    <a class="btn-ink rv" href="#"><span>住民登録へすすむ</span></a>
+  </section>
+
+  <footer><span>QOCCA — PET OWNER'S TOWN</span><span>© 2026 Qocca</span></footer>
+</div>
+
+<script>
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.15});
+  document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
