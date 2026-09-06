@@ -1,0 +1,212 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SITE_URL = "https://qocca.pet";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
+};
+
+async function getSettings(supabase: any, keys: string[]): Promise<Record<string, string>> {
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("key, value")
+    .in("key", keys);
+  const result: Record<string, string> = {};
+  for (const row of data || []) result[row.key] = row.value;
+  return result;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  const debugLog: any = { step: "start" };
+
+  try {
+    debugLog.step = "parse_body";
+    const body = await req.json();
+    debugLog.body = body;
+
+    const { listing_id, listing_title, price, options, buyer_id, seller_id, shipping_address_id } = body;
+
+    if (!listing_title || !price) {
+      return new Response(JSON.stringify({ error: "listing_title and price are required", debugLog }), { status: 400, headers: corsHeaders });
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response(JSON.stringify({ error: "Supabase env vars missing", debugLog }), { status: 500, headers: corsHeaders });
+    }
+
+    debugLog.step = "create_client";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // 商品価格(出品価格 + オプション)
+    const optionsTotal = (options || []).reduce((sum, o) => sum + (o.price || 0), 0);
+    const listingPrice = price + optionsTotal;
+
+    // バイヤープロテクション率を platform_settings から取得(デフォルト4%)
+    const settings = await getSettings(supabase, ["buyer_protection_rate"]);
+    const buyerProtectionRate = parseFloat(settings.buyer_protection_rate || "0.04");
+
+    // バイヤープロテクション手数料(購入者負担)
+    const buyerProtectionFee = Math.floor(listingPrice * buyerProtectionRate);
+
+    // 購入者の支払い総額 = 商品価格 + BP
+    const totalAmount = listingPrice + buyerProtectionFee;
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
+    const order_number = `QC-${dateStr}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+    // ordersに挿入(qocca_fee/seller_payoutは complete-order で確定するためここでは0)
+    const insertData: any = {
+      order_number,
+      listing_id: listing_id || null,
+      buyer_id: buyer_id || null,
+      seller_id: seller_id || null,
+      amount: totalAmount,                // 購入者支払い額(BP込み)
+      listing_price: listingPrice,        // 商品価格(qocca_fee計算基準)
+      buyer_protection_fee: buyerProtectionFee, // BP
+      stripe_fee: 0,                      // complete-orderで確定
+      qocca_fee: 0,                       // complete-orderで確定
+      seller_payout: 0,                   // complete-orderで確定
+      status: "pending",
+      escrow_status: "held",
+    };
+    if (shipping_address_id) {
+      insertData.shipping_address_id = shipping_address_id;
+    }
+    debugLog.step = "insert";
+    debugLog.insertData = insertData;
+
+    const { data: order, error: insertError } = await supabase
+      .from("orders")
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (insertError) {
+      return new Response(JSON.stringify({ 
+        error: "DB insert error", 
+        insertError_message: insertError.message,
+        insertError_code: insertError.code,
+        insertError_details: insertError.details,
+        insertError_hint: insertError.hint,
+        insertError_full: JSON.stringify(insertError),
+        debugLog
+      }), { status: 500, headers: corsHeaders });
+    }
+
+    // 配送先住所をこの注文に紐付ける(後で30日自動削除のトリガー対象になる)
+    if (shipping_address_id) {
+      await supabase
+        .from("shipping_addresses")
+        .update({ order_id: order.id })
+        .eq("id", shipping_address_id)
+        .eq("user_id", buyer_id);
+    }
+
+    debugLog.step = "stripe_call";
+    debugLog.order_id = order.id;
+
+    // line_items: 商品本体 + オプション + バイヤープロテクション
+    const line_items: any[] = [{
+      price_data: {
+        currency: "jpy",
+        product_data: { name: listing_title },
+        unit_amount: price,
+      },
+      quantity: 1,
+    }];
+
+    if (options && options.length > 0) {
+      for (const opt of options) {
+        if (opt.name && opt.price > 0) {
+          line_items.push({
+            price_data: {
+              currency: "jpy",
+              product_data: { name: `オプション: ${opt.name}` },
+              unit_amount: opt.price,
+            },
+            quantity: 1,
+          });
+        }
+      }
+    }
+
+    // バイヤープロテクションを別行として追加(購入者に分かりやすく)
+    if (buyerProtectionFee > 0) {
+      line_items.push({
+        price_data: {
+          currency: "jpy",
+          product_data: { name: "バイヤープロテクション(4%)" },
+          unit_amount: buyerProtectionFee,
+        },
+        quantity: 1,
+      });
+    }
+
+    const params = new URLSearchParams();
+    params.append("mode", "payment");
+    params.append("success_url", `${SITE_URL}/mypage?order=success&order_id=${order.id}`);
+    params.append("cancel_url", `${SITE_URL}/mypage?order=cancel&order_id=${order.id}`);
+    params.append("metadata[order_id]", order.id);
+    params.append("metadata[order_number]", order_number);
+    params.append("metadata[listing_id]", listing_id || "");
+    params.append("metadata[buyer_id]", buyer_id || "");
+    params.append("metadata[seller_id]", seller_id || "");
+    params.append("metadata[shipping_address_id]", shipping_address_id || "");
+    params.append("metadata[listing_price]", String(listingPrice));
+    params.append("metadata[buyer_protection_fee]", String(buyerProtectionFee));
+
+    line_items.forEach((item, i) => {
+      params.append(`line_items[${i}][price_data][currency]`, item.price_data.currency);
+      params.append(`line_items[${i}][price_data][product_data][name]`, item.price_data.product_data.name);
+      params.append(`line_items[${i}][price_data][unit_amount]`, String(item.price_data.unit_amount));
+      params.append(`line_items[${i}][quantity]`, String(item.quantity));
+    });
+
+    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const session = await res.json();
+
+    if (!res.ok) {
+      await supabase.from("orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", order.id);
+      return new Response(JSON.stringify({ error: "Stripe error", detail: session, debugLog }), { status: 500, headers: corsHeaders });
+    }
+
+    await supabase.from("orders").update({ stripe_payment_intent_id: session.id }).eq("id", order.id);
+
+    return new Response(JSON.stringify({ 
+      url: session.url, 
+      session_id: session.id, 
+      order_id: order.id,
+      breakdown: {
+        listing_price: listingPrice,
+        buyer_protection_fee: buyerProtectionFee,
+        total_amount: totalAmount,
+      },
+    }), { headers: corsHeaders });
+  } catch (err) {
+    return new Response(JSON.stringify({ 
+      error: "Caught error",
+      message: err.message || String(err),
+      stack: err.stack || null,
+      debugLog
+    }), { status: 500, headers: corsHeaders });
+  }
+});

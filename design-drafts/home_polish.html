@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Qocca — 磨き上げ版ファーストビュー (既存構造キープ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     磨き上げ版 Hero — 既存の資産は全部そのまま:
+       ・シネマ写真7枚ローテ(実URL) ・クロスフェード1500ms
+       ・キャッチ「想いを形にして、ふたりをつなぐ。」Shippori Mincho 700
+       ・QCカラー体系
+     変えたのは「置き方」だけ:
+       ① キャッチ 中央揃え→左下の非対称+縦罫線 (エディトリアル化)
+       ② 眠っていた詩キャプション(cinema.caption)を右下に表示+番号
+       ③ Hero内に控えめCTA (登録導線をファーストビューに)
+       ④ 上下グラデ+グレイン0.04で文字の品を上げる(textShadow依存を卒業)
+       ⑤ スクロール誘導 ⑥ クオッカ案内人スロット(新キャラ差替え前提)
+     ============================================================ */
+  :root{
+    --warmWhite:#FAF7F2; --cream:#F5EFE6; --lightSand:#EEE6D9;
+    --charcoal:#2C2926; --warmGray:#6B6259; --softBrown:#8B6F5C;
+    --orange:#F5A94A;
+    --display:"Shippori Mincho",serif; --jp:"Zen Kaku Gothic New",sans-serif; --en:"Instrument Serif",serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--charcoal);font-family:var(--jp);overflow-x:hidden}
+  img{display:block}
+
+  .hero{position:relative;width:100%;height:100svh;min-height:600px;overflow:hidden;background:var(--charcoal)}
+  .hero .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1500ms cubic-bezier(.4,0,.2,1)}
+  .hero .ph.on{opacity:1}
+
+  /* ④ 品位レイヤー: 上下の微グラデ + グレイン (白文字のtextShadow頼みを卒業) */
+  .hero .grade{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(44,41,38,.38) 0%,transparent 26%,transparent 55%,rgba(44,41,38,.52) 100%)}
+  .hero .grain{position:absolute;inset:0;pointer-events:none;opacity:.04;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  /* 右上: ロゴ (新ロゴ画像スロット + 文字) — 既存位置を維持しつつ画像化 */
+  .brand{position:absolute;top:max(env(safe-area-inset-top,0px),44px);right:max(env(safe-area-inset-right,0px),40px);
+    display:flex;align-items:center;gap:12px;z-index:20;opacity:0;animation:fadeSlow 2s cubic-bezier(.16,1,.3,1) .5s forwards}
+  .brand .mark{width:34px;height:34px;border-radius:8px;background:rgba(250,247,242,.14);backdrop-filter:blur(4px);
+    display:grid;place-items:center;font-family:var(--en);font-style:italic;font-size:19px;color:var(--warmWhite);border:1px solid rgba(250,247,242,.22)}
+  /* ↑ 新ロゴ画像が上がったら: .brand .mark{background:url(logo.webp) center/cover} に差替え */
+  .brand .txt{text-align:right}
+  .brand .txt .nm{font-family:var(--display);font-weight:700;font-size:21px;color:var(--warmWhite);letter-spacing:.04em;line-height:1.1}
+  .brand .txt .tg{font-family:var(--en);font-style:italic;font-size:12px;color:rgba(250,247,242,.75);letter-spacing:.1em}
+
+  /* ① キャッチ: 中央→左下の非対称。縦罫線 = 編集の背骨 */
+  .copy{position:absolute;left:clamp(24px,6vw,88px);bottom:clamp(96px,16svh,150px);z-index:10;
+    padding-left:clamp(18px,2.4vw,30px);border-left:1px solid rgba(250,247,242,.4);
+    opacity:0;animation:fadeSlow 2.4s cubic-bezier(.16,1,.3,1) 1s forwards}
+  .copy .en{font-family:var(--en);font-style:italic;font-size:clamp(12px,1.2vw,15px);color:var(--orange);
+    letter-spacing:.14em;margin-bottom:18px}
+  .copy h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4.6vw,54px);color:var(--warmWhite);
+    letter-spacing:.06em;line-height:1.6}
+  .copy .sub{font-size:clamp(12px,1.15vw,15px);font-weight:300;color:rgba(250,247,242,.82);
+    letter-spacing:.14em;line-height:1.9;margin-top:20px}
+  /* ③ CTA: ファーストビューに控えめ導線 (Mercari型・押しつけない) */
+  .copy .cta{margin-top:30px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .copy .cta .in{font-family:var(--jp);font-weight:500;font-size:13px;letter-spacing:.12em;color:var(--charcoal);
+    background:var(--warmWhite);padding:14px 32px;border-radius:100px;text-decoration:none;
+    transition:transform .5s cubic-bezier(.22,1,.36,1),box-shadow .5s;box-shadow:0 4px 18px rgba(44,41,38,.25)}
+  .copy .cta .in:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(44,41,38,.3)}
+  .copy .cta .walk{font-size:12px;font-weight:300;color:rgba(250,247,242,.85);letter-spacing:.1em;text-decoration:none;
+    border-bottom:1px solid rgba(250,247,242,.35);padding-bottom:3px;transition:border-color .5s}
+  .copy .cta .walk:hover{border-color:var(--orange)}
+
+  /* ② 眠っていた資産の救出: 写真の詩キャプション + 番号 (右下・編集の痕跡) */
+  .photo-cap{position:absolute;right:clamp(24px,5vw,64px);bottom:clamp(30px,5svh,44px);z-index:10;text-align:right;
+    opacity:0;animation:fadeSlow 2s cubic-bezier(.16,1,.3,1) 1.6s forwards}
+  .photo-cap .no{font-family:var(--en);font-style:italic;font-size:11px;color:rgba(250,247,242,.6);letter-spacing:.24em}
+  .photo-cap .cap{font-family:var(--display);font-weight:500;font-size:clamp(11.5px,1.1vw,13.5px);
+    color:rgba(250,247,242,.88);letter-spacing:.12em;margin-top:6px;transition:opacity .8s}
+
+  /* ⑤ スクロール誘導 (呼吸する縦線・既存の静けさ文法) */
+  .scroll-cue{position:absolute;left:clamp(24px,6vw,88px);bottom:clamp(28px,4.5svh,40px);z-index:10;
+    display:flex;align-items:center;gap:12px;opacity:0;animation:fadeSlow 2s cubic-bezier(.16,1,.3,1) 2s forwards}
+  .scroll-cue .ln{width:44px;height:1px;background:rgba(250,247,242,.5);transform-origin:left;animation:breath 4s ease-in-out infinite}
+  .scroll-cue span{font-family:var(--en);font-style:italic;font-size:10.5px;color:rgba(250,247,242,.6);letter-spacing:.3em}
+  @keyframes breath{0%,100%{transform:scaleX(.4);opacity:.5}50%{transform:scaleX(1);opacity:1}}
+  @keyframes fadeSlow{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  /* ⑥ クオッカ案内人: 次セクションとの継ぎ目に、ひょっこり (新キャラ差替え前提のスロット) */
+  .greeter{position:absolute;right:clamp(20px,7vw,110px);bottom:-6px;z-index:12;width:clamp(64px,7.5vw,96px);
+    filter:drop-shadow(0 6px 16px rgba(44,41,38,.3));
+    opacity:0;animation:peek 1.4s cubic-bezier(.22,1,.36,1) 2.6s forwards}
+  @keyframes peek{from{opacity:0;transform:translateY(46%)}to{opacity:1;transform:translateY(12%)}}
+
+  /* ── 次セクションへの継ぎ (貼り紙との接続を罫線で滑らかに) ── */
+  .next{background:var(--warmWhite);padding:clamp(56px,9vw,110px) 24px;text-align:center}
+  .next .rule{width:64px;height:1px;background:var(--warmGray);opacity:.35;margin:0 auto 32px}
+  .next h2{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,26px);color:var(--charcoal);letter-spacing:.04em;line-height:1.65}
+  .next .dt{font-family:var(--display);font-weight:500;font-size:13px;color:var(--warmGray);letter-spacing:.18em;margin-top:16px}
+  .next p.note{font-size:12px;color:var(--warmGray);margin-top:28px;line-height:2}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <!-- 既存のシネマ7枚 (実URL・実ローテそのまま) -->
+  <img class="ph on" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-1-bed.png" alt="">
+  <img class="ph" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-2-window.png" alt="">
+  <img class="ph" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-3-path.png" alt="">
+  <img class="ph" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-4-living.png" alt="">
+  <img class="ph" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-5-kitchen.png" alt="">
+  <img class="ph" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-6-entrance.png" alt="">
+  <img class="ph" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/gallery-images/official/cinema/cinema-7-town.png" alt="">
+
+  <div class="grade"></div>
+  <div class="grain"></div>
+
+  <div class="brand">
+    <div class="txt">
+      <div class="nm">Qocca</div>
+      <div class="tg">Live with pets.</div>
+    </div>
+    <div class="mark">Q</div><!-- 新ロゴ画像に差替えスロット -->
+  </div>
+
+  <div class="copy">
+    <div class="en">The town for every pet owner</div>
+    <h1>想いを形にして、<br>ふたりをつなぐ。</h1>
+    <div class="sub">うちの子との時間を、ちゃんと残せる場所。</div>
+    <div class="cta">
+      <a class="in" href="#">住民になる — 無料</a>
+      <a class="walk" href="#">まずは街を歩いてみる</a>
+    </div>
+  </div>
+
+  <div class="photo-cap">
+    <div class="no" id="capNo">SCENE 01 / 07</div>
+    <div class="cap" id="capTxt">誰もまだ起きていない、朝。</div>
+  </div>
+
+  <div class="scroll-cue"><div class="ln"></div><span>SCROLL</span></div>
+
+  <!-- クオッカ案内人 (⑥): 今はプレースホルダ(スタンプ版)。King新キャラ(ふわふわ全身)が上がったら差替え -->
+  <img class="greeter" src="https://qufrqkuipzuqeqkvuhkx.supabase.co/storage/v1/object/public/ashiato-assets/stamps/s2_quokka_b.svg" alt="クオッカの案内人">
+</section>
+
+<!-- 既存「貼り紙」セクションの入り (罫線の継ぎ目だけ調律・中身は既存のまま) -->
+<section class="next">
+  <div class="rule"></div>
+  <h2>7月から、少しずつ始まります。</h2>
+  <div class="dt">2026年7月1日</div>
+  <p class="note">(以下、既存のセクションがそのまま続く — 貼り紙 / できること / 作品 / おでかけ / うちの子 / アルバム)</p>
+</section>
+
+<script>
+  // 既存と同じローテ思想 (durations 14/10/10/10/10/10/14秒・クロスフェード1500ms)
+  const caps=[
+    '誰もまだ起きていない、朝。','窓の向こうを、ずっと見ていた。','いつもの散歩道、いつもの時間。',
+    'ソファに残った、温もり。','夕飯の支度の音を、聞いていた。','おかえりを、ずっと待っていた。','この街と、この子と。'
+  ];
+  const durs=[14,10,10,10,10,10,14];
+  const phs=[...document.querySelectorAll('.hero .ph')];
+  const capNo=document.getElementById('capNo'), capTxt=document.getElementById('capTxt');
+  let i=0;
+  function next(){
+    phs[i].classList.remove('on');
+    i=(i+1)%phs.length;
+    phs[i].classList.add('on');
+    capTxt.style.opacity=0;
+    setTimeout(()=>{
+      capNo.textContent=`SCENE 0${i+1} / 07`;
+      capTxt.textContent=caps[i];
+      capTxt.style.opacity=1;
+    },700);
+    setTimeout(next,durs[i]*1000);
+  }
+  setTimeout(next,durs[0]*1000);
+</script>
+</body>
+</html>

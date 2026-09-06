@@ -32,3 +32,23 @@ dist-ssr
 # ペットウォーカー元画像 (変換元・コミットしない)
 petwalker-src/
 petwalker-out/
+
+# ---- 生成物 (2026/9/7 作業場整理 / King 承認) ----
+# AI生成の画像・動画・音声。正本は Supabase Storage、リポジトリには入れない。
+# ファイル自体は残す。git status を読める状態に保つため隠すだけ。
+*-out/
+neta-new/
+neta-fix/
+quokka/
+cast-pick/
+frames/
+stamps/
+music/
+
+# Claude Code のワークツリー / Supabase CLI の一時ファイル
+.claude/worktrees/
+supabase/.temp/
+
+# ルート直下の一時ファイル (_で始まる解析用の残骸)
+/_*.txt
+/_*.cjs
