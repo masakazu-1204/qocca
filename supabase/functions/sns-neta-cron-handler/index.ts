@@ -3,8 +3,8 @@
 //   ネタ画像を 3SNS(X/Threads/IG)へ同一画像・同一キャプションで自動投稿。
 //   独立系統: 既存の日常テンプレ(x/threads/instagram_post_templates)・
 //   既存 cron-handler には一切触れない。sns_neta_posts + 既存投稿APIの再利用のみ。
-//   pick: is_active AND use_count=0 を sort_order 昇順で1本 → 48hガード → 3SNS投稿 → use_count++
-//   body: { test_mode?:bool (pickのみ・投稿しない), force?:bool (48hガード無視) }
+//   pick: is_active AND use_count=0 を sort_order 昇順で1本 → 間隔ガード → 3SNS投稿 → use_count++
+//   body: { test_mode?:bool (pickのみ・投稿しない), force?:bool (間隔ガード無視) }
 //
 // v2 (2026/8/5): 投稿前に画像の実在チェックを追加。
 //   背景: DBに登録はあるがストレージに画像が無いネタが5件あり、Instagram が
@@ -21,6 +21,14 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const SNS_KILL = Deno.env.get("SNS_KILL_SWITCH") ?? "false";
 const BUCKET = "sns-neta";
+/**
+ * 「2日に1回」を実現するための下限時間。
+ * cron は毎日同じ時刻ちょうどに発火するが、last_used_at が入るのは投稿API完了後
+ * (実測で約90秒後)。48 にすると2日後の判定が 47:58 となり、わずかに届かず
+ * もう1日待ってしまう (実際に3日に1回になっていた)。実行の遅れを吸収できる 46 にする。
+ * 翌日の再実行は経過24hなのでこの値でも弾ける。
+ */
+const GUARD_HOURS = 46;
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: any, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
@@ -46,14 +54,14 @@ async function runJob(testMode: boolean, force: boolean) {
   if (SNS_KILL === "true") return { success: false, step: "kill_switch", startedAt };
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  // 48hガード: 前回投稿から48h未満ならスキップ (= 実質2日に1回)
+  // 間隔ガード: 前回投稿から GUARD_HOURS 未満ならスキップ (= 実質2日に1回)
   if (!force) {
     const { data: last } = await sb.from("sns_neta_posts")
       .select("last_used_at").not("last_used_at", "is", null)
       .order("last_used_at", { ascending: false }).limit(1).maybeSingle();
     if (last?.last_used_at) {
       const hrs = (Date.now() - new Date(last.last_used_at).getTime()) / 3600000;
-      if (hrs < 48) return { success: false, step: "too_soon", hours_since_last: Math.round(hrs), startedAt };
+      if (hrs < GUARD_HOURS) return { success: false, step: "too_soon", hours_since_last: Math.round(hrs), startedAt };
     }
   }
 
