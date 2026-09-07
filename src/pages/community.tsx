@@ -271,7 +271,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
             {[["イベント名","title","例:わんわんフェスタ in 東京"],["日付","event_date","例:2026-05-01"],["時間","event_time","例:10:00〜17:00"],["会場名","place","例:代々木公園"],["都道府県","prefecture","例:東京都"],["参加費","fee","例:無料 / 500円"]].map(([label,key,ph])=>(
               <div key={key} style={{ marginBottom:12 }}>
                 <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>{label}</label>
-                <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
+                <input value={form[key as keyof typeof form]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
               </div>
             ))}
@@ -401,7 +401,7 @@ const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onC
         </select>
         <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>説明（任意）</div>
         <textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={200} placeholder="どんなコミュニティか紹介してください" style={{ width:"100%", minHeight:80, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
-        <div style={{ fontSize:11, color:C.gray, textAlign:"right", marginBottom:16 }}>{description.length}/200</div>
+        <div style={{ fontSize:11, color:C.warmGray, textAlign:"right", marginBottom:16 }}>{description.length}/200</div>
         <div style={{ background:C.orangePale, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:11, color:C.dark, lineHeight:1.5 }}>
           📌 ルール: Qocca内の商品紹介はOK。外部サイト誘導や個人連絡先交換は禁止です。
         </div>
@@ -820,7 +820,7 @@ const ReportMessageModal = ({ target, onClose, onReport }: { target:any; onClose
         </div>
         <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>詳細（任意）</div>
         <textarea value={detail} onChange={e=>setDetail(e.target.value)} maxLength={300} placeholder="状況を詳しく教えてください" style={{ width:"100%", minHeight:70, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
-        <div style={{ fontSize:11, color:C.gray, textAlign:"right", marginBottom:14 }}>{detail.length}/300</div>
+        <div style={{ fontSize:11, color:C.warmGray, textAlign:"right", marginBottom:14 }}>{detail.length}/300</div>
         <div style={{ background:"#FFF8E1", borderRadius:8, padding:"10px 12px", marginBottom:14, fontSize:11, color:"#996200", lineHeight:1.5 }}>
           📌 通報内容は運営が確認します。同じメッセージが3人以上から通報されると自動的に非表示になります。虚偽の通報は禁止です。
         </div>

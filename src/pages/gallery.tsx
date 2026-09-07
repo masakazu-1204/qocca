@@ -44,10 +44,10 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
   const [form, setForm] = useState({ title:"", content:"", category:"general", tags:"" });
-  const [coverFile, setCoverFile] = useState(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const coverRef = useRef(null);
+  const coverRef = useRef<HTMLInputElement>(null);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -60,7 +60,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
     if (!error && data) {
       const authorIds = [...new Set(data.map(p => p.author_id))];
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", authorIds);
-      const profMap = {};
+      const profMap: Record<string, { id: string; display_name?: string | null; avatar_url?: string | null }> = {};
       (profiles || []).forEach(p => { profMap[p.id] = p; });
       setPosts(data.map(p => ({
         ...p,
@@ -70,7 +70,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
     }
     if (user) {
       const { data: likes } = await supabase.from("blog_likes").select("post_id").eq("user_id", user.id);
-      const likeMap = {};
+      const likeMap: Record<string, boolean> = {};
       (likes || []).forEach(l => { likeMap[l.post_id] = true; });
       setLikedPosts(likeMap);
     }
@@ -172,8 +172,8 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
   const openPost = openViewPost;
 
   const filtered = posts.filter(p => cat === "all" || p.category === cat);
-  const blogCatLabel = (c: string) => BLOG_CATS.find(bc => bc.id === c)?.label || c;
-  const blogCatIcon = (c: string) => BLOG_CATS.find(bc => bc.id === c)?.icon || "📝";
+  const blogCatLabel = (c?: string | null) => BLOG_CATS.find(bc => bc.id === c)?.label || c || "";
+  const blogCatIcon = (c?: string | null) => BLOG_CATS.find(bc => bc.id === c)?.icon || "📝";
 
   // 記事詳細ビュー
   if (viewPost) return (
@@ -198,19 +198,19 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
           </div>
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{viewPost.authorName}</div>
-            <div style={{ fontSize:11, color:C.warmGray }}>{new Date(viewPost.created_at).toLocaleDateString("ja-JP")} · 👁 {viewPost.views_count||0}</div>
+            <div style={{ fontSize:11, color:C.warmGray }}>{viewPost.created_at ? new Date(viewPost.created_at).toLocaleDateString("ja-JP") : ""} · 👁 {viewPost.views_count||0}</div>
           </div>
         </div>
         <div style={{ fontSize:15, color:"#333", lineHeight:2, whiteSpace:"pre-wrap" }}>{viewPost.content}</div>
-        {viewPost.tags?.length > 0 && (
+        {(viewPost.tags?.length ?? 0) > 0 && (
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:20 }}>
-            {viewPost.tags.map(t => <span key={t} style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:C.lightGray, color:C.warmGray }}>#{t}</span>)}
+            {(viewPost.tags ?? []).map(t => <span key={t} style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:C.lightGray, color:C.warmGray }}>#{t}</span>)}
           </div>
         )}
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, paddingTop:16, borderTop:`1px solid ${C.border}` }}>
           <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20 }}>{likedPosts[viewPost.id]?"❤️":"🤍"}</button>
           <span style={{ fontSize:13, color:C.warmGray }}>{viewPost.likes_count||0} いいね</span>
-          <button onClick={()=>{ setCommentTarget({ type:"blog", id: viewPost.id, ownerId: viewPost.author_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:C.warmGray, marginLeft:8, fontFamily:"inherit" }}>💬 コメント</button>
+          <button onClick={()=>{ setCommentTarget({ type:"blog", id: viewPost.id, ownerId: viewPost.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:C.warmGray, marginLeft:8, fontFamily:"inherit" }}>💬 コメント</button>
         </div>
       </div>
     {commentTarget && (
@@ -342,12 +342,12 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
                         {post.authorAvatar ? <img src={post.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
                       </div>
                       <span style={{ fontSize:11, fontWeight:600, color:C.dark }}>{post.authorName}</span>
-                      <span style={{ fontSize:10, color:C.warmGray }}>{new Date(post.created_at).toLocaleDateString("ja-JP")}</span>
+                      <span style={{ fontSize:10, color:C.warmGray }}>{post.created_at ? new Date(post.created_at).toLocaleDateString("ja-JP") : ""}</span>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:11, color:C.warmGray }}>
                       <span>❤️ {post.likes_count||0}</span>
                       <span>👁 {post.views_count||0}</span>
-                      <button onClick={(e)=>{ e.stopPropagation(); setCommentTarget({ type:"blog", id: post.id, ownerId: post.author_id }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0, color:C.warmGray }}>💬 コメント</button>
+                      <button onClick={(e)=>{ e.stopPropagation(); setCommentTarget({ type:"blog", id: post.id, ownerId: post.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0, color:C.warmGray }}>💬 コメント</button>
                     </div>
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export const GalleryPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolea
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [commentOpen, setCommentOpen] = useState(false);
 const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
 
@@ -493,11 +493,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     if (!error && data) {
       const userIds = [...new Set(data.map(p => p.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds);
-      const profMap = {};
+      const profMap: Record<string, { id: string; display_name?: string | null; avatar_url?: string | null }> = {};
       (profiles || []).forEach(p => { profMap[p.id] = p; });
 
       const petIds = [...new Set(data.filter(p => p.pet_id).map(p => p.pet_id))];
-      let petMap = {};
+      let petMap: Record<string, { id: string; name?: string | null; species?: string | null }> = {};
       if (petIds.length > 0) {
         const { data: pets } = await supabase.from("pets").select("id, name, species").in("id", petIds);
         (pets || []).forEach(p => { petMap[p.id] = p; });
@@ -514,7 +514,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     // いいね状態を取得
     if (user) {
       const { data: likes } = await supabase.from("gallery_likes").select("post_id").eq("user_id", user.id);
-      const likeMap = {};
+      const likeMap: Record<string, boolean> = {};
       (likes || []).forEach(l => { likeMap[l.post_id] = true; });
       setLikedPosts(likeMap);
     }

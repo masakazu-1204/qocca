@@ -869,7 +869,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
             }}>
               <span style={{ fontSize:14 }}>{t.icon}</span>
               <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.label}</span>
-              {t.badge > 0 && <span style={{ background:C.orange, color:"#fff", fontSize:9, fontWeight:800, padding:"1px 5px", borderRadius:8, minWidth:14, textAlign:"center", flexShrink:0 }}>{t.badge}</span>}
+              {(t.badge ?? 0) > 0 && <span style={{ background:C.orange, color:"#fff", fontSize:9, fontWeight:800, padding:"1px 5px", borderRadius:8, minWidth:14, textAlign:"center", flexShrink:0 }}>{t.badge}</span>}
             </button>
           ))}
         </div>
@@ -2394,9 +2394,9 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   const [listings, setListings] = useState<MyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  const [editTarget, setEditTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState<MyListing | null>(null);
   const [busy, setBusy] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState<MyListing | null>(null);
   // 2026/8/22 公開中の出品があるのに入金設定が未完了だと、売れても売上を渡せない。
   //   実測で出品者9人中5人が Stripe を一度も開始していなかった。
   //   購入者側には警告が出ていたが、出品者が気づける場所が無かったためここにも出す。
@@ -2436,15 +2436,16 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
     return true;
   });
 
-  const statusBadge = (s: string) => {
-    const map = {
+  const statusBadge = (s?: string | null) => {
+    const map: Record<string, { text: string; bg: string; color: string }> = {
       draft:    { text:"💾 下書き",    bg:C.lightGray,    color:C.warmGray },
       pending:  { text:"⏳ 審査中",    bg:C.orangePale,   color:C.orange },
       approved: { text:"✅ 公開中",    bg:"#E8F5E9",      color:C.green },
       sold_out: { text:"🔴 売り切れ",  bg:"#FFEBEE",      color:C.red },
       rejected: { text:"❌ 非承認",    bg:"#FFEBEE",      color:C.red },
     };
-    return map[s] || { text:s, bg:C.lightGray, color:C.warmGray };
+    const key = s ?? "";
+    return map[key] || { text:key, bg:C.lightGray, color:C.warmGray };
   };
 
   const handleStockChange = async (listing: SellerListing, delta: number) => {
@@ -2541,14 +2542,14 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
 
       {/* フィルター */}
       <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
-        {[
+        {([
           ["all","すべて",counts.all],
           ["draft","💾 下書き",counts.draft],
           ["pending","⏳ 審査中",counts.pending],
           ["approved","✅ 公開中",counts.approved],
           ["sold_out","🔴 売切",counts.sold_out],
           ["rejected","❌ 非承認",counts.rejected],
-        ].map(([v,l,c])=>(
+        ] as [string, string, number][]).map(([v,l,c])=>(
           <button key={v} onClick={()=>setFilter(v)} style={{
             flexShrink:0, padding:"6px 12px", border:`1.5px solid ${filter===v?C.orange:C.border}`,
             borderRadius:10, background:filter===v?C.orangePale:C.white,
@@ -2739,6 +2740,7 @@ const SalesTab = () => {
   };
 
   const markDelivered = async (sale: any) => {
+    if (!user) return;
     if (!confirm("納品完了として通知しますか？\n購入者が受取確認したら売上が支払われます。")) return;
     setBusy(true);
     try {
@@ -2910,7 +2912,7 @@ const DisputeModal = ({ order, onClose, onSubmit }: {
   const [done, setDone] = useState(false);
 
   const handleSubmit = () => {
-    onSubmit(order.id, reason, desc || DISPUTE_REASONS.find(r=>r.id===reason)?.label);
+    onSubmit(order.id, reason, desc || (DISPUTE_REASONS.find(r=>r.id===reason)?.label ?? ""));
     setDone(true);
   };
 
@@ -2933,7 +2935,7 @@ const DisputeModal = ({ order, onClose, onSubmit }: {
             </div>
             <div style={{ background:C.lightGray, borderRadius:12, padding:"12px", marginBottom:16, fontSize:12, color:C.dark }}>
               <div style={{ fontWeight:700 }}>{order.item}</div>
-              <div style={{ color:C.warmGray, marginTop:2 }}>{order.id} · ¥{order.price.toLocaleString()}</div>
+              <div style={{ color:C.warmGray, marginTop:2 }}>{order.id}{order.price != null ? ` · ¥${order.price.toLocaleString()}` : ""}</div>
             </div>
 
             {step===1 && (

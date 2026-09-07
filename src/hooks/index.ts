@@ -12,7 +12,8 @@ import { formatStat } from "../utils/format";
 
 // 出品データをSupabaseから取得（承認済みのみ）
 export const useListings = () => {
-  const [listings, setListings] = useState([]);
+  // 一覧生成時に表示用フィールドを足した緩い形で持つ (利用側 ListingItem は marketplace 内の型)
+  const [listings, setListings] = useState<any[]>([]);
   const [dbLoading, setDbLoading] = useState(true);
 
   const fetchListings = async () => {
@@ -28,7 +29,7 @@ export const useListings = () => {
       // 出品者名を取得
       const sellerIds = [...new Set(data.map(l => l.seller_id))];
       const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", sellerIds);
-      const profileMap = {};
+      const profileMap: Record<string, { id: string; display_name?: string | null; avatar_url?: string | null }> = {};
       (profiles || []).forEach(p => { profileMap[p.id] = p; });
 
       setListings(data.map(l => {
@@ -49,7 +50,7 @@ export const useListings = () => {
           desc: l.description,
           delivery: l.delivery_days || "要相談",
           delivery_type: l.delivery_type || "data_only",
-          bg: CAT_COLORS[l.category] || "#FFF3E0",
+          bg: CAT_COLORS[l.category as keyof typeof CAT_COLORS] || "#FFF3E0",
           imageUrl: l.image_urls?.[0] || "",
           imageUrls: l.image_urls || [],
           seller_id: l.seller_id,

@@ -11,7 +11,6 @@ import { resolveFontFamily } from "../constants/fonts";
 import { stepIndex } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
-import type { SetPage } from "../types";
 
 // 画面間で共通の props 型。setPage は遷移先ごとに異なるペイロードを渡すため d?: any
 //   (既存の各ページの注釈と同じ慣例に揃えている)
@@ -83,9 +82,9 @@ export const Card = ({ item, onClick, liked, onLike }: {
       </div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <span style={{ fontSize:15, fontWeight:700, color:C.dark }}>¥{item.price?.toLocaleString()}</span>
-        {item.rating > 0 && (
+        {(item.rating ?? 0) > 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-            <Stars rating={item.rating} size={11}/>
+            <Stars rating={item.rating ?? 0} size={11}/>
             <span style={{ fontSize:10, color:C.warmGray }}>({item.reviews})</span>
           </div>
         )}
@@ -99,7 +98,7 @@ export const UserMenu = ({ setPage }: { setPage: SetPage }) => {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; font_display_name?: string | null } | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
