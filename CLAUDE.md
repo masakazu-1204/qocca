@@ -433,13 +433,40 @@ X: @DiaryDogs (公式、本名アカウント)
 
 ```
 .claude/skills/
-├── 01-qocca-vision.md       (詳細ビジョン・思想)
-├── 02-coding-guidelines.md  (コーディング規約)
-├── 03-design-system.md      (デザインルール)
-└── 04-database-rules.md     (DB操作ルール)
+├── 99-safety-protocol.md      (最重要。全作業の前に必ず参照)
+├── 01-qocca-vision.md         (詳細ビジョン・思想)
+├── 02-coding-guidelines.md    (コーディング規約)
+├── 03-design-system.md        (デザインルール)
+├── 04-database-rules.md       (DB操作ルール)
+├── 05-branding-ux.md          (ブランディング・UX)
+├── 05-meta-ads-operations.md  (Meta 広告運用)
+└── 06-sns-content-ops.md      (SNS 投稿の制作・自動投稿・在庫)  ← 2026/9/8 追加
 
 → 必要な作業に応じて、該当スキルを参照する
 → 全部読まなくてOK、関連するスキルだけ
+```
+
+---
+
+## 🧰 クマの道具箱 (2026/9/8 整備)
+
+```
+型チェック    npm run typecheck:check      基準線と比べ、新しい型エラーがあれば exit 1 (行番号つき)
+             npm run typecheck:baseline   減らしたあと基準線を下げる
+             ※ vite build は型を見ない。「緑」は typecheck:check の exit 0 を自分の目で見てから言う
+ビルド        npm run build
+SNS 動画      scripts/finalize-video.mjs <in> <out>       音量正規化・ビットレート (Instagram は約10,000kb/s超を弾く)
+             scripts/upload-neta-video.mjs <mp4> <名前>   Storage sns-neta/video/ へ
+             scripts/stitch-video.mjs                     カット結合
+ネタ画像      scripts/upload-neta-batch4.mjs (雛形)        webp 変換 → Storage。DB は別途 INSERT
+鍵           scripts/.sbkey.local / .falkey.local          gitignore 済。チャットに貼らない
+SNS の手順    .claude/skills/06-sns-content-ops.md
+DB 操作       .claude/skills/04-database-rules.md          確認SQL → 実行 → 結果確認 の3点セット
+
+作業の作法:
+- 新ブランチ → 明示パスで git add (-A は禁止) → PR。生成物 (*-out/ 等) は .gitignore 済
+- 決済ページ (marketplace / mypage) を触る PR は、チェックが緑でも King がマージする
+- 生成AIの動画は Seedance 2.0 Mini が既定。2.5 は使わない (8月に約1,370クレジット溶けた)
 ```
 
 ---
