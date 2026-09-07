@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json",
+    "typecheck:check": "node scripts/typecheck-baseline.mjs",
+    "typecheck:baseline": "node scripts/typecheck-baseline.mjs --update",
     "preview": "vite preview"
   },
   "dependencies": {
