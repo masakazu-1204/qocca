@@ -4,6 +4,8 @@ description: Create distinctive, production-grade frontend interfaces with high 
 license: Complete terms in LICENSE.txt
 ---
 
+> ⚠️ **Qocca プロジェクトでの優先順位**: Qocca 本体 UI (qocca.pet の画面) を作る時は、本スキルの「BOLD / maximalist」方向ではなく **03-design-system (静けさ最優先)** が絶対優先。QC トークン (warmWhite/cream/softBrown 等) を使い、旧オレンジ #F5A94A・純黒・純白・font-weight 700+ (見出しの Shippori Mincho 700 は King 承認済み例外) は禁止。キャッチは「想いを形にして、ふたりをつなぐ。」。本スキルが活きるのは **Qocca 外の単発制作物** (プレゼン資料・実験的LP・社外向けデモ等) のみ。
+
 This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
 
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
