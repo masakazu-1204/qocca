@@ -33,7 +33,7 @@ type PetFacility = {
 type FacilityVisit = {
   id: string; user_id?: string; comment?: string | null;
   mood_tags?: string[] | null; photo_urls?: string[] | null;
-  visited_at?: string; created_at?: string; authorName?: string;
+  visited_at?: string; created_at?: string; authorName?: string; authorAvatar?: string;
 };
 /** 認証ユーザー。AuthContext が未型付けのため any で受ける (AuthContext 自体は変更禁止) */
 type AuthUser = any;
@@ -59,9 +59,10 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }: {
   facilities: PetFacility[]; isPC?: boolean;
   onSelect: (f: PetFacility) => void; catIcon: (c: string) => string;
 }) => {
-  const containerRef = useRef(null);
-  const mapRef = useRef(null);
-  const clusterRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  // markerClusterGroup は leaflet.markercluster の型が L 名前空間に乗らないため any で受ける
+  const clusterRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -294,8 +295,8 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
     setAddForm({ name:"", category:"dogrun", address:"", prefecture:"大阪", phone:"", website:"", hours:"", description:"" });
   };
 
-  const catIcon = (c: string) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
-  const catLabel = (c: string) => FACILITY_CATS.find(fc => fc.id === c)?.label || c;
+  const catIcon = (c?: string | null) => FACILITY_CATS.find(fc => fc.id === c)?.icon || "🐾";
+  const catLabel = (c?: string | null) => FACILITY_CATS.find(fc => fc.id === c)?.label || c || "";
 
   if (selectedFacility) {
     return <FacilityDetailView facility={selectedFacility} onBack={closeFacility} isPC={isPC} setPage={setPage} catIcon={catIcon} catLabel={catLabel}/>;
@@ -459,7 +460,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
             ].map(([label, key, type, ph]) => (
               <div key={key} style={{ marginBottom:12 }}>
                 <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:4 }}>{label}</label>
-                <input type={type} value={addForm[key]} onChange={e=>setAddForm({...addForm, [key]: e.target.value})} placeholder={ph} style={{
+                <input type={type} value={addForm[key as keyof typeof addForm]} onChange={e=>setAddForm({...addForm, [key]: e.target.value})} placeholder={ph} style={{
                   width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
                   fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"
                 }}/>
@@ -582,7 +583,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
                       {f.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}>🚧 閉店</span>}
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(f.category)}</span>
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{f.prefecture}</span>
-                      {(f.review_count > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {f.review_count}件のレポート</span>}
+                      {((f.review_count ?? 0) > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {f.review_count}件のレポート</span>}
                     </div>
                   </div>
                 </div>
@@ -610,14 +611,14 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
 
 const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel }: {
   facility: PetFacility; onBack: () => void; isPC?: boolean; setPage: SetPage;
-  catIcon: (c: string) => string; catLabel: (c: string) => string;
+  catIcon: (c?: string | null) => string; catLabel: (c?: string | null) => string;
 }) => {
   const { user } = useAuth();
   const [visits, setVisits] = useState<FacilityVisit[]>([]);
   const [loadingVisits, setLoadingVisits] = useState(true);
   const [showVisitForm, setShowVisitForm] = useState(false);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
-  const [reportTarget, setReportTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState<FacilityVisit | null>(null);
 
   const fetchVisits = async () => {
     setLoadingVisits(true);
@@ -633,7 +634,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
       const userIds = [...new Set(data.map(v => v.user_id))];
       if (userIds.length > 0) {
         const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds);
-        const profMap = {};
+        const profMap: Record<string, { id: string; display_name?: string | null; avatar_url?: string | null }> = {};
         (profs || []).forEach(p => { profMap[p.id] = p; });
         const enriched = data.map(v => ({
           ...v,
@@ -671,7 +672,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
               {facility.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}>🚧 閉店</span>}
               <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(facility.category)}</span>
               <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{facility.prefecture}</span>
-              {(facility.review_count > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {facility.review_count}件のレポート</span>}
+              {((facility.review_count ?? 0) > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {facility.review_count}件のレポート</span>}
             </div>
           </div>
         </div>
@@ -725,7 +726,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{v.authorName}</div>
                     <div style={{ fontSize:10, color:C.warmGray }}>
-                      {v.visited_at ? `${new Date(v.visited_at).toLocaleDateString("ja-JP")}に訪問` : new Date(v.created_at).toLocaleDateString("ja-JP")}
+                      {v.visited_at ? `${new Date(v.visited_at).toLocaleDateString("ja-JP")}に訪問` : (v.created_at ? new Date(v.created_at).toLocaleDateString("ja-JP") : "")}
                     </div>
                   </div>
                   {user && user.id !== v.user_id && (
@@ -1072,7 +1073,7 @@ const FacilityCorrectionForm = ({ facility, user, onClose }: {
       facility_id: facility.id,
       user_id: user?.id || null,
       field_name: fieldName,
-      current_value: facility[fieldName] || null,
+      current_value: facility[fieldName as keyof PetFacility] || null,
       proposed_value: proposedValue.trim() || null,
     });
     if (insErr) {

@@ -1840,12 +1840,12 @@ const EventsAiManagementPage = () => {
   );
 
   // カテゴリ別 / 都道府県別分布
-  const byCategory = published.reduce((acc, e) => {
+  const byCategory: Record<string, number> = published.reduce((acc, e) => {
     const k = e.event_category || "other";
     acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-  const byPrefecture = published.reduce((acc, e) => {
+  const byPrefecture: Record<string, number> = published.reduce((acc, e) => {
     const k = e.prefecture || "未指定";
     acc[k] = (acc[k] || 0) + 1;
     return acc;

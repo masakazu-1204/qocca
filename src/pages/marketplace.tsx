@@ -23,7 +23,8 @@ type ListingOption = { name: string; price?: number };
 /** 出品バリエーション (listing_variants の行) */
 type ListingVariant = {
   id: string; attributes?: Record<string, string> | null;
-  stock_quantity?: number | null; price?: number | null;
+  // 列名は stock (listing_variants の実列)。listings 側の stock_quantity とは別物
+  stock?: number | null; price?: number | null;
   is_active?: boolean | null; variant_name?: string | null;
 };
 /** 一覧/詳細で扱う出品。listings の列 + 一覧生成時に付与する表示用フィールド */
@@ -36,6 +37,8 @@ type ListingItem = {
   shipping_type?: string | null; shipping_fee?: number | null;
   shipping_rates?: any[] | null; shipping_note?: string | null; shipping_methods?: any[] | null;
   stock_quantity?: number | null; image_urls?: string[] | null; description?: string | null;
+  // 人気順ソート (sortByPopularity) が見る集計列。無ければ undefined のまま
+  created_at?: string | null; sales_count?: number | null; favorite_count?: number | null; view_count?: number | null;
   // 一覧生成時に付与する表示用フィールド
   // imageUrls は image_urls の表示用エイリアス (DetailPageWrapper が詰める)
   bg?: string; emoji?: string; imageUrl?: string; imageUrls?: string[]; tag?: string;
@@ -62,7 +65,7 @@ export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearc
 
   const filtered = listings.filter(l => {
     if (cat !== "all" && l.category !== cat) return false;
-    if (search && !l.title.includes(search) && !l.seller.includes(search)) return false;
+    if (search && !(l.title ?? "").includes(search) && !(l.seller ?? "").includes(search)) return false;
     return true;
   });
 
@@ -162,7 +165,7 @@ export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearc
 export const UserProfilePage = ({ setPage: _setPage }:{ setPage:(p:string)=>void }) => {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name?: string; avatar_url?: string; bio?: string; created_at?: string; font_display_name?: string | null; font_bio?: string | null } | null>(null);
   const [stats, setStats] = useState<{ listings: number; completed: number; avgRating: number | null }>({ listings: 0, completed: 0, avgRating: null });
   const [loading, setLoading] = useState(true);
   const [userListings, setUserListings] = useState<Array<{ id:string; title:string; price:number; image_urls?:string[] }>>([]);
@@ -595,8 +598,8 @@ const submitListing = async (
     delivery_type: form.delivery_type || 'data_only',
     creation_story: form.creation_story?.trim() || null,
     image_urls: imageUrls,
-    options: options.filter(o => o.name && o.price > 0),
-    stock_quantity: isNaN(stockValue) ? null : stockValue,
+    options: options.filter(o => o.name && (o.price ?? 0) > 0),
+    stock_quantity: stockValue == null || isNaN(stockValue) ? null : stockValue,
     status: isDraft ? "draft" : "pending",
     has_variants: hasVariants,
     // 依頼書 #104 Phase B (2026/6/3): 送料設定 4タイプ
@@ -656,7 +659,8 @@ const submitListing = async (
 };
 
 const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
-  item: ListingItem; onBack: () => void; liked: LikedMap;
+  // liked は「この item がいいね済みか」の真偽値。呼び出し側 (DetailPageWrapper) が liked[item.id] を渡す
+  item: ListingItem; onBack: () => void; liked: boolean;
   onLike: (id: string) => void; setPage: SetPage;
 }) => {
   const { user } = useAuth();
@@ -742,7 +746,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
     : [];
   // 各軸の選択肢一覧
   const variantOptionValues: Record<string, string[]> = variantOptionKeys.reduce((acc, key) => {
-    acc[key] = Array.from(new Set(variants.map(v => v.attributes?.[key]).filter(Boolean)));
+    acc[key] = Array.from(new Set(variants.map(v => v.attributes?.[key]).filter((x): x is string => Boolean(x))));
     return acc;
   }, {} as Record<string, string[]>);
 
@@ -941,7 +945,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
       }
     } catch (e) {
       console.error("Checkout error:", e);
-      alert("エラーが発生しました: " + e.message);
+      alert("エラーが発生しました: " + (e instanceof Error ? e.message : String(e)));
     }
     setOrdering(false);
   };
@@ -1034,9 +1038,9 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
             <div style={{ fontSize:13, color:C.orange, fontWeight:700, flexShrink:0 }}>編集する →</div>
           </div>
         )}
-        {item.reviews > 0 && (
+        {(item.reviews ?? 0) > 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-            <Stars rating={item.rating} size={14}/>
+            <Stars rating={item.rating ?? 0} size={14}/>
             <span style={{ color:C.warmGray, fontSize:13 }}>{item.rating} ({item.reviews}件)</span>
           </div>
         )}
@@ -1044,7 +1048,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           <div style={{ width:44, height:44, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{item.sellerIcon}</div>
           <div>
             <div style={{ fontWeight:800, color:C.dark, fontSize:15 }}>{item.seller}</div>
-            {item.reviews > 0 && (
+            {(item.reviews ?? 0) > 0 && (
               <div style={{ fontSize:12, color:C.warmGray }}>評価 {item.rating} · {item.reviews}件</div>
             )}
           </div>
@@ -1149,7 +1153,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                   {variantOptionValues[key].map(val => {
                     // この値を含む variants で、在庫があるものがあるか
                     const hasStock = variants.some(v =>
-                      v.attributes?.[key] === val && v.stock > 0 && v.is_active
+                      v.attributes?.[key] === val && (v.stock ?? 0) > 0 && v.is_active
                     );
                     const isSelected = selectedAttrs[key] === val;
                     return (
@@ -1250,10 +1254,10 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
             else if (st === "methods") shipLabel = "📦 配送方法から選択 (下で選んでください)";
             else if (st === "consultation") shipLabel = "💬 出品者にお問い合わせ";
             const rows: Array<[string, string]> = [
-              ["⏱️ 納期", item.delivery],
+              ["⏱️ 納期", String(item.delivery ?? "")],
               ["📬 受け渡し", item.delivery_type === "shipping" ? "📦 配送" : item.delivery_type === "visit" ? "📍 訪問" : "💻 データ"],
               ["🚚 送料", shipLabel],
-              ["🐾 対象", item.pet === "both" ? "🐾 両対応" : `${petIcon(item.pet)} ${petLabelShort(item.pet)}向け`],
+              ["🐾 対象", item.pet === "both" ? "🐾 両対応" : `${petIcon(item.pet ?? "")} ${petLabelShort(item.pet ?? "")}向け`],
               ["🔒 保証", "エスクロー決済"],
             ];
             return rows.map(([k, v]) => (
@@ -1537,12 +1541,12 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                 <div style={{ fontSize:12, color:C.warmGray, marginBottom:8 }}>{item.seller} · 納期 {item.delivery}</div>
                 <div style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop:`1px solid ${C.border}` }}>
                   <span style={{ fontSize:13, color:C.warmGray }}>基本料金</span>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>¥{item.price.toLocaleString()}</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{item.price != null ? `¥${item.price.toLocaleString()}` : "—"}</span>
                 </div>
                 {itemOptions.filter((_, i) => selectedOptions[i]).map((o, i) => (
                   <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
                     <span style={{ fontSize:12, color:C.warmGray }}>🔧 {o.name}</span>
-                    <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>+¥{o.price.toLocaleString()}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>{o.price != null ? `+¥${o.price.toLocaleString()}` : ""}</span>
                   </div>
                 ))}
                 {/* 🔴 緊急修正 (2026/6/5 King テスト後追い): 送料行表示 (flat_rate / regional / methods 選択時) */}
@@ -1673,7 +1677,8 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
 export const SellPage = ({ setPage }: { setPage: SetPage }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
-  const [done, setDone] = useState(false);
+  // false = 未完了 / { isDraft } = 完了 (下書き保存か出品かを完了画面で出し分ける)
+  const [done, setDone] = useState<false | { isDraft: boolean }>(false);
   // 2026/8/22 出品フローに入金設定の確認が一切なく、出品者9人中5人が
   //   Stripe を一度も開始しないまま出品していた (21件中12件が売れても入金されない状態)。
   //   出品直後は「売る気」が最も高い瞬間なので、ここで一度だけ案内する。
@@ -1707,7 +1712,8 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
     ],
   });
   const [images, setImages] = useState<File[]>([]);
-  const [options, setOptions] = useState<ListingOption[]>([]);
+  // フォーム上の価格は入力途中の文字列。submit 時に parseInt して ListingOption (number) に変換する
+  const [options, setOptions] = useState<{ name: string; price: string }[]>([]);
   // Phase B: Variant (種類) state
   // - hasVariants: チェックON で variant モード
   // - variantOptions: 軸の定義 (例: [{name: "構図", values: ["マズルアップ", "全身"]}]) max 2 項目
@@ -1720,7 +1726,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
   const [foundingFeeRate, setFoundingFeeRate] = useState<number | null>(null);
   const [categoryPriceStats, setCategoryPriceStats] = useState<Record<string, { avg: number; min: number; max: number; count: number }>>({});
   const up = (k: string, v: any) => setForm((p: any)=>({...p,[k]:v}));
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const addOption = () => setOptions(prev => [...prev, { name:"", price:"" }]);
   const updateOption = (idx: number, key: string, val: any) => setOptions(prev => prev.map((o,i) => i===idx ? {...o, [key]:val} : o));
   const removeOption = (idx: number) => setOptions(prev => prev.filter((_,i) => i!==idx));
@@ -1857,6 +1863,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
   const removeImage = (idx: number) => setImages(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async (isDraft = false) => {
+    if (!user) { setError("ログインが必要です"); return; }
     setSubmitting(true);
     setError("");
     // Phase B: variants が有効な時のみ price>0 のものを採用 (バリデーション)
@@ -2632,7 +2639,7 @@ export const DetailPageWrapper = ({ listings, liked, onLike }: {
     </div>
   );
 
-  return <DetailPage item={item} onBack={() => navigate(-1)} liked={liked[item?.id]} onLike={onLike} setPage={setPage}/>;
+  return <DetailPage item={item} onBack={() => navigate(-1)} liked={!!(item && liked[item.id])} onLike={onLike} setPage={setPage}/>;
 };
 
 // Phase8 8b: LikedPage を App.tsx から移動 (元 App.tsx 2343-2361 / C・Card は既import)
