@@ -3,6 +3,9 @@
 > このファイルは、Qoccaプロジェクトで Claude Code (King に "クマ" と呼ばれる) が
 > 永続的に把握しておくべき情報を記載したマスター記憶ファイルです。
 > プロジェクトを開いた時、まずこのファイルを読んでから作業を開始してください。
+>
+> 2026/9/10 更新: King の承認のもと、クマが「古くなった事実」(ファイル構成・数字・Phase の現在地・
+> 技術スタックの版) だけを現状に合わせました。思想・ルール・話し方の文章は 2026/5/12 の King の言葉のままです。
 
 ---
 
@@ -64,8 +67,8 @@ King は Claude Code を「クマ」と呼びます。
 名称: Qocca (クオッカ)
 URL: https://qocca.pet
 種別: ペットオーナー向けクリエイターマーケットプレイス + コミュニティ
-ローンチ予定: 2026年7月1日 (火) グランドオープン
-現在: テスマケ (テスト・マーケットプレイス) 期間中
+グランドオープン: 2026年7月1日 (火) — 済
+現在: Phase 3 スケール期 (2026年後半)
 
 ブランド由来:
 Q (Quokka 世界一幸せな動物) + O (Offer) + C (Craft) + 
@@ -134,13 +137,17 @@ Qocca は単なる EC サイトではなく "街" である:
 ## 🛠 技術スタック
 
 ```
-フロントエンド: React + Vite + TypeScript
-ホスティング: Vercel (自動デプロイ)
-データベース: Supabase (Postgres + Auth + Storage + Edge Functions)
+フロントエンド: React 19 + Vite 8 + TypeScript 6 (vite-plugin-pwa 1.x で PWA)
+ホスティング: Vercel (main への push で自動デプロイ。qocca.pet → www.qocca.pet に転送)
+データベース: Supabase (Postgres + Auth + Storage + Edge Functions 24本 + pg_cron)
 決済: Stripe Connect (Destination Charges, Express)
 メール: Resend (noreply@qocca.pet, ap-northeast-1)
 DNS: Cloudflare (Free)
-PWA: vite-plugin-pwa@1.2.0
+
+自動運用 (pg_cron → Edge Function):
+  SNS 投稿 (X / Threads / Instagram・ネタ画像・動画)、イベント収集、DM メール通知、
+  注文の自動完了、在庫切れアラート、異常検知、ストレージ掃除
+SNS 素材の生成: Higgsfield (画像 Nano Banana / 動画 Seedance 2.0 Mini) → Skill 06 参照
 
 Supabase Project ID: qufrqkuipzuqeqkvuhkx
 Dashboard: https://supabase.com/dashboard/project/qufrqkuipzuqeqkvuhkx
@@ -149,39 +156,36 @@ Stripe Platform Account: acct_1TNbpkHWEvzpoicL
 
 ---
 
-## 📁 主要ファイル位置
+## 📁 主要ファイル位置 (2026/9/10 時点)
+
+App.tsx のモノリシック構造 (旧 約8,671行) は分割済み。今は App.tsx がルーティングと骨組み、機能は pages/ と components/ にある。
 
 ```
 qocca/
 ├── src/
-│   ├── App.tsx (約8671行のモノリシック構造、全機能の中心)
-│   ├── pages/
-│   │   └── AboutPage.tsx
-│   └── components/
-│       └── AboutSection.tsx
-├── public/
-├── package.json
+│   ├── App.tsx            (656行。ルーティング・レイアウトの骨組み)
+│   ├── Admin.tsx          (3,280行。管理画面。イベント AI 管理・統計など)
+│   ├── HelpPage.tsx
+│   ├── pages/             (20ファイル)
+│   │   ├── home.tsx / marketplace.tsx (2,742行) / mypage.tsx (3,656行)
+│   │   ├── facilities.tsx (1,133) / gallery.tsx (893) / community.tsx (833)
+│   │   ├── petwalker.tsx / pet_gallery.tsx / account.tsx / connections.tsx
+│   │   ├── ashiato_shop.tsx / welcome.tsx / static.tsx / AboutPage.tsx
+│   │   └── Admin*.tsx (Analytics / ArkDonations / CorporateSponsors / EventSources)
+│   ├── components/        (26ファイル。ui.tsx = 共通部品、ProfileEditModal、CommentModal など)
+│   ├── constants/         (theme = 色 C、data、fonts、pets、facilitySlugs)
+│   ├── contexts/          (AuthContext — 変更禁止)
+│   ├── hooks/             (useListings / useFavorites / useNav など)
+│   ├── utils/ lib/ legal/ types.ts supabaseClient.ts
+├── supabase/functions/    (Edge Function 24本。sns-*-cron-handler、post-to-*、send-email、stripe-* など)
+├── scripts/               (クマの道具。typecheck-baseline / finalize-video / upload-neta-* など)
+├── docs/                  (仕様書・Qocca動画制作バイブル.md・ブランド人格)
+├── .claude/skills/        (01〜06, 99)
+├── typecheck-baseline.json (型エラーの基準線。現在 0 件)
 └── CLAUDE.md (このファイル)
-```
 
-### App.tsx の主要セクション位置 (2026/5/12 時点)
-
-```
-L96: useAuth フック
-L1196: QC デザイントークン
-L1280-1430: SectionHero
-L1430-1840: SectionTodaysMoments  
-L1846+: SectionTownMap
-L1985+: SectionAtelier
-L2140+: SectionVoices
-L2336+: SectionJoinTown
-L2425+: HomePage (上記6セクションを統合)
-L6437+: 施設系 (FacilitiesPage)
-L7189+: GalleryPage
-L7494: SharedFooter
-L7568+: PCHeroSection / EventsPage
-L7883+: コミュニティ系
-L8310+: PCBanner, useNav, QoccaApp
+大きいファイル: mypage 3,656 / Admin 3,280 / marketplace 2,742
+→ 編集は影響範囲を明示し、Grep で既存を確認してから。
 ```
 
 ---
@@ -217,11 +221,14 @@ WHERE table_name = 'orders' ORDER BY ordinal_position;
 ### コード修正時
 
 ```
-1. App.tsx は約8671行のモノリシック構造、行数を意識
-2. 部分編集ではなく、影響範囲を明示して修正
-3. 修正前に既存コードを Grep で確認
-4. 新ブランチで作業、main 直接コミット禁止
-5. PR レビュー後にマージ
+1. 大きいのは mypage / Admin / marketplace。編集は影響範囲を明示して修正
+2. 修正前に既存コードを Grep で確認
+3. 新ブランチで作業、main 直接コミット禁止
+4. git add は明示パスで (-A は禁止。2026/6/6 の事故の再発防止)
+5. 型チェックは npm run typecheck:check。exit 0 を自分の目で見てから「緑」と言う
+   (vite build は型を見ない。パイプの後ろで echo しない)
+6. PR レビュー後にマージ。追加系で緑ならクマがマージ可、
+   決済ページ (marketplace / mypage)・AuthContext・デザイン刷新・破壊的 DB は King がマージ
 ```
 
 ---
@@ -295,10 +302,10 @@ const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
 
 ---
 
-## 🎉 Welcome Campaign (2026/7/1〜7/31)
+## 🎉 Welcome Campaign (2026/7/1〜7/31・終了)
 
 ```
-期間: 2026年7月1日 〜 7月31日 (31日間)
+期間: 2026年7月1日 〜 7月31日 (31日間) — 終了
 対象: 全登録ユーザー
 特典: 出品者手数料 一律0%
 
@@ -308,8 +315,7 @@ const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
 → ズルできない設計
 → 既存・新規ユーザー間の公平性確保
 
-実装パッケージ: /mnt/user-data/outputs/welcome-campaign/
-(再来週 Day 14-20 で実装予定)
+実装済み (Admin / HelpPage / AboutPage / home / complete-order が参照)
 ```
 
 ---
@@ -320,23 +326,22 @@ const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
 ✅ Phase 1: テスマケ (テスト・マーケットプレイス)
    2026/5/7 〜 2026/7/1
    - 基本機能完成
-   - 初期ユーザー獲得 (現在12名)
+   - 初期ユーザー獲得
    - テスト取引実施
 
-🎯 Phase 1.5: リニューアル (現在、Day 1-50)
+✅ Phase 1.5: リニューアル
    2026/5/11 〜 2026/6/30
    - 静けさ Redesign 完成
    - 22枚の街の風景デザイン
    - SECTION 1-6 完成
    - Welcome Campaign 準備
 
-🚀 Phase 2: グランドオープン
-   2026/7/1
-   - Welcome Campaign 開始
-   - 100ユーザー目標
-   - クリエイター50名目標
+✅ Phase 2: グランドオープン
+   2026/7/1 — 済
+   - Welcome Campaign 実施 (7/1〜7/31)
+   - 目標: 100ユーザー / クリエイター50名
 
-📈 Phase 3: スケール (2026年後半)
+🎯 Phase 3: スケール (2026年後半) ← 現在
    - クラウドファンディング (CAMPFIRE)
    - 創業期メンバー特典
    - 月100取引目標
@@ -365,26 +370,38 @@ const QC_FONT_EN = '"Instrument Serif", "Manrope", serif';
 
 ---
 
-## 📊 現在の状況 (2026/5/12 23:50 時点)
+## 📊 現在の状況 (2026/9/10 時点・DB 実測)
 
 ```
-ユーザー: 12名
-公開出品: 3件 (全部 grace さん、Stripe オンボーディング未完了)
+ユーザー: 90名
+公開出品: 21件 (出品者 9名)
 公式ギャラリー: 22件
-コミュニティ: 11個
-イベント: 12件
-公開ブログ: 2件
-完了取引: 1件
-Stripe残高: ¥87 + ¥292 = ¥379
+コミュニティ: 13個
+登録イベント: 291件 (自動収集を含む)
+公開ブログ: 51件
+取引: 3件 (完了 1件)
+Stripe残高: Stripe ダッシュボードで確認 (ここには書かない)
 
-🌟 重要クリエイター:
-1. grace🌺〜グレイス〜さん (出品3件、Stripeオンボーディング未完了)
-2. Tails Up さん (テスマケ最重要キーパーソン)
-3. Uchinoko Store さん
-4. 大納言まめ さん
+🌟 公開出品が多いクリエイター (2026/9/10):
+1. OnePetal (8件)
+2. eighty eight エゾ鹿無添加犬猫おやつ (3件)
+3. grace🌺〜グレイス〜 (3件)
+4. かわはる (2件)
+5. kuu 小さな命を、羊毛で。 (1件)
 
-⏰ Dday カウントダウン:
-2026/7/1 グランドオープンまで残り 50日 (2026/5/12 時点)
+🌟 King が重視する関係者 (2026/5 時点の記載を保持):
+grace さん / Tails Up さん (テスマケ最重要キーパーソン) / Uchinoko Store さん / 大納言まめ さん
+
+数字の更新はこの SQL で (Supabase MCP):
+select (select count(*) from profiles) users,
+       (select count(*) from listings where status in ('approved','sold_out')) public_listings,
+       (select count(distinct seller_id) from listings where status in ('approved','sold_out')) sellers,
+       (select count(*) from gallery_posts) gallery,
+       (select count(*) from communities where coalesce(is_archived,false)=false) communities,
+       (select count(*) from events) events,
+       (select count(*) from blog_posts where published) blogs,
+       (select count(*) from orders) orders,
+       (select count(*) from orders where status='completed') completed;
 ```
 
 ---
@@ -502,7 +519,7 @@ King の作業フロー:
 ```
 King が「おはよう」と言ったら、ワイが返すセット:
 
-1. Qocca 総合レポート (Dday カウントダウン、ユーザー数、取引数等)
+1. Qocca 総合レポート (ユーザー数、取引数等)
 2. Threads 投稿文案 (200文字程度)
 3. X 投稿文案 (140文字フル活用しなくてもOK、キレ味重視)
 
@@ -535,6 +552,27 @@ King が「おはよう」と言ったら、ワイが返すセット:
   必ず import React, {...} from "react"
 ```
 
+### 2026/6〜9 の4件
+
+```
+🐛 git add -A 事故 (2026/6/6)
+- 原因: 生成物・ローカル状態まで一緒に add された
+- 対策: git add は明示パスのみ。生成物は .gitignore 済 (2026/9/7 整理)
+
+💸 Seedance 2.5 でクレジット約1,370消失 (2026/8/24-25)
+- 原因: 1本32.5の 2.5 を43本まわした。Mini (12.5) で十分な質が出る用途だった
+- 対策: 動画は Seedance 2.0 Mini を既定。作る前に balance、1本テストして King に見せる
+
+🐛 自動投稿が「2日に1回」のはずが「3日に1回」(〜2026/9/7)
+- 原因: 48h ガードに対し、投稿完了のタイムスタンプが cron 発火より約90秒遅れ、
+  2日後の判定が 47:58 で届かず1日余計に待っていた
+- 対策: GUARD_HOURS=46。時刻ベースの閾値には実行遅れぶんの余裕を持たせる
+
+🐛 typecheck の「緑」誤報 (2026/9/7)
+- 原因: npx tsc ... | tail && echo "OK" でパイプが終了コードを隠し、106件赤なのに緑と報告
+- 対策: 終了コードを直接見る。npm run typecheck:check (基準線比較) を使う
+```
+
 ---
 
 ## 🎉 最後に - Phase 7 への約束
@@ -558,5 +596,5 @@ This is the way to Phase 7. 🌟🐾🐨🐻
 
 ---
 
-> **このファイルの最終更新**: 2026/5/12 (Day 2 夜、雛形版)
-> **次回更新予定**: 2026/5/13 (Day 3 朝、King と詳細追加)
+> **このファイルの最終更新**: 2026/9/10 (クマ。King 承認のもと、古くなった事実のみ現状に更新。思想・ルール・話し方の文章は 2026/5/12 の King の言葉のまま)
+> **初版**: 2026/5/12 (Day 2 夜、雛形版)
