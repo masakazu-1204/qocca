@@ -904,9 +904,16 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
         });
       } catch (_) { /* 計測失敗で購入フローを妨げない */ }
 
+      // 2026/9/11 PR2: create-checkout に本人のセッションを渡す。サーバー (v41) はこれを検証して buyer_id を確定する。
+      //   ヘッダが無い場合サーバーは当面 body の buyer_id にフォールバックするので、旧バンドルのユーザーも壊れない。
+      //   account.tsx / connections.tsx と同じ流儀 (Authorization: Bearer <access_token>)。
+      const { data: { session: checkoutSession } } = await supabase.auth.getSession();
       const res = await fetch("https://qufrqkuipzuqeqkvuhkx.supabase.co/functions/v1/create-checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(checkoutSession?.access_token ? { "Authorization": `Bearer ${checkoutSession.access_token}` } : {}),
+        },
         body: JSON.stringify({
           listing_id: item.id,
           listing_title: item.title,
