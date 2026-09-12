@@ -205,7 +205,12 @@ Deno.serve(async (req: Request) => {
       const order_id = session.metadata?.order_id;
 
       if (order_id) {
-        await supabase
+        // v41 (2026/9/11): まだ pending の注文だけ cancelled にし、その場合に限って在庫を戻す。
+        //   .eq("status","pending") の条件付き更新なので、Stripe がイベントを再送しても二重には戻らない。
+        //   従来は cancelled にするだけで在庫を戻さず、購入者が Checkout を閉じただけで在庫が 1 減ったまま
+        //   (最後の 1 個なら sold_out のまま) 残っていた。無認証で create-checkout を連打すれば任意の出品を
+        //   sold_out に固定できる経路でもあった。
+        const { data: cancelledRows } = await supabase
           .from("orders")
           .update({
             status: "cancelled",
@@ -215,7 +220,35 @@ Deno.serve(async (req: Request) => {
             cancelled_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
-          .eq("id", order_id);
+          .eq("id", order_id)
+          .eq("status", "pending")
+          .select("id, listing_id, variant_id");
+
+        const cancelled = cancelledRows?.[0];
+        if (cancelled) {
+          try {
+            // 1) 選択肢 / 種類 の在庫 (create-checkout が RPC・update で減らしたぶん)
+            const { data: choiceRows } = await supabase.from("order_choices").select("choice_id").eq("order_id", order_id);
+            if (choiceRows && choiceRows.length > 0) {
+              await supabase.rpc("restore_choices_stock", { p_choice_ids: choiceRows.map((c: any) => c.choice_id) });
+            } else if (cancelled.variant_id) {
+              const { data: v } = await supabase.from("listing_variants").select("stock").eq("id", cancelled.variant_id).maybeSingle();
+              if (v) await supabase.from("listing_variants").update({ stock: (Number(v.stock) || 0) + 1 }).eq("id", cancelled.variant_id);
+            }
+            // 2) 親 listing の stock_quantity (orders INSERT の trg_decrement_stock が減らしたぶん)。
+            //    null = 在庫管理なしなので触らない。0 → 1 になれば listings の trg_auto_sold_out が approved に戻す。
+            if (cancelled.listing_id) {
+              const { data: l } = await supabase.from("listings").select("stock_quantity").eq("id", cancelled.listing_id).maybeSingle();
+              if (l && l.stock_quantity !== null) {
+                await supabase.from("listings")
+                  .update({ stock_quantity: (Number(l.stock_quantity) || 0) + 1, updated_at: new Date().toISOString() })
+                  .eq("id", cancelled.listing_id);
+              }
+            }
+          } catch (restoreErr) {
+            console.error("Stock restore failed (order stays cancelled):", restoreErr);
+          }
+        }
       }
     }
 

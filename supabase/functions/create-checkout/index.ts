@@ -1,4 +1,14 @@
 // ============================================
+// create-checkout v41 (決済入口の硬化, 2026/9/11)
+//   v41 追加 (PR1: サーバー側だけ・クライアント変更なし):
+//     1. seller_id / オプションの価格 / 商品名 を body でなく listings から確定する
+//        (body の seller_id は listing と一致しなければ 400。options は name で照合し価格はサーバー値)
+//     2. Authorization: Bearer <JWT> があれば auth.getUser で検証し buyer_id をトークンから取る
+//        (無ければ当面 body.buyer_id にフォールバック = 現行クライアント互換。PR2 でヘッダ必須化)
+//     3. 単品在庫の二重減算を撤去。orders INSERT の trg_decrement_stock が唯一の減算元
+//        (従来はトリガー後にもう一度 .gte(1) で減らそうとし、在庫1の商品が必ず「売り切れ」になっていた)
+//   ⚠️ 価格計算 (actualPrice / BP / 送料)・Stripe セッションの組み立ては不変
+// --- 以下 v40 までの履歴 ---
 // create-checkout v40 (Phase2 dual-write, 2026/6/15)
 //   v40 追加: 2軸化 dual-write — 注文INSERT に payment_status/fulfillment_status を併記。
 //     旧 status('pending')/escrow_status は不変。読みは旧statusのまま=挙動不変。
@@ -43,8 +53,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     debugLog.body = body;
 
+    // v41: buyer_id / seller_id / options は「クライアントの申告」として受け取り、下で必ずサーバー値に置き換える
     const {
-      listing_id, listing_title, price, options, buyer_id, seller_id,
+      listing_id, listing_title, price,
+      options: bodyOptions, buyer_id: bodyBuyerId, seller_id: bodySellerId,
       shipping_address_id, variant_id, shipping_region, selected_shipping_method_id,
       choice_ids  // 2026/7/23 Phase 2: 選択肢購入 (N個選択)。choiceモード時のみ使用
     } = body;
@@ -60,6 +72,29 @@ Deno.serve(async (req) => {
     debugLog.step = "create_client";
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // v41: 買い手の確定。Authorization ヘッダがあれば JWT を検証し、トークンの user.id を買い手にする。
+    //   無い場合は当面 body の buyer_id を使う (現行クライアントはヘッダを付けていないため。PR2 で必須化して撤去)。
+    debugLog.step = "resolve_buyer";
+    let buyerId: string | null = bodyBuyerId || null;
+    let authMode = "body-fallback";
+    const authHeader = req.headers.get("authorization") || "";
+    const jwt = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
+    if (jwt) {
+      const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: "Invalid session", message: "ログインし直してください", debugLog }), { status: 401, headers: corsHeaders });
+      }
+      if (bodyBuyerId && bodyBuyerId !== userData.user.id) {
+        return new Response(JSON.stringify({ error: "buyer_id mismatch", debugLog }), { status: 403, headers: corsHeaders });
+      }
+      buyerId = userData.user.id;
+      authMode = "jwt";
+    }
+    debugLog.auth_mode = authMode;
+    if (!buyerId) {
+      return new Response(JSON.stringify({ error: "buyer required", message: "ログインが必要です", debugLog }), { status: 401, headers: corsHeaders });
+    }
+
     debugLog.step = "fetch_listing";
     if (!listing_id) {
       return new Response(JSON.stringify({ error: "listing_id required", debugLog }), { status: 400, headers: corsHeaders });
@@ -67,7 +102,7 @@ Deno.serve(async (req) => {
 
     const { data: listing, error: listingErr } = await supabase
       .from("listings")
-      .select("id, has_variants, price, stock_quantity, status, shipping_type, shipping_fee, shipping_rates, shipping_methods, choice_required_count, choice_set_price")
+      .select("id, seller_id, title, options, has_variants, price, stock_quantity, status, shipping_type, shipping_fee, shipping_rates, shipping_methods, choice_required_count, choice_set_price")
       .eq("id", listing_id)
       .single();
 
@@ -79,18 +114,43 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Listing not available", debugLog }), { status: 400, headers: corsHeaders });
     }
 
+    // v41: 出品者は listings.seller_id で確定する (body の値は照合にだけ使う)。
+    //   complete-order は orders.seller_id の Stripe 口座へ送金するため、ここが送金先を決める最重要ポイント。
+    debugLog.step = "resolve_seller";
+    const sellerId: string | null = listing.seller_id || null;
+    if (!sellerId) {
+      return new Response(JSON.stringify({ error: "Listing has no seller", debugLog }), { status: 400, headers: corsHeaders });
+    }
+    if (bodySellerId && bodySellerId !== sellerId) {
+      return new Response(JSON.stringify({ error: "seller_id mismatch", message: "出品情報が更新されています。ページを開き直してください", debugLog }), { status: 400, headers: corsHeaders });
+    }
+
+    // v41: オプションは名前で listings.options と照合し、価格は必ずサーバー側の値を使う (body の price は捨てる)。
+    //   知らない名前が来たら 400 (改ざんか、出品者がオプションを変えた直後のどちらか)。
+    debugLog.step = "resolve_options";
+    const listingOptions: Array<{ name: string; price: number }> = Array.isArray(listing.options) ? listing.options : [];
+    const resolvedOptions: Array<{ name: string; price: number }> = [];
+    const seenOptionNames = new Set<string>();
+    for (const o of (Array.isArray(bodyOptions) ? bodyOptions : [])) {
+      const name = typeof o?.name === "string" ? o.name : "";
+      if (!name || seenOptionNames.has(name)) continue;
+      const match = listingOptions.find((lo) => lo && lo.name === name);
+      if (!match) {
+        return new Response(JSON.stringify({ error: "option_invalid", message: "選んだオプションは利用できません。ページを開き直してください", debugLog }), { status: 400, headers: corsHeaders });
+      }
+      seenOptionNames.add(name);
+      resolvedOptions.push({ name, price: Math.max(0, parseInt(String(match.price ?? 0)) || 0) });
+    }
+    debugLog.resolvedOptions = resolvedOptions;
+
     // 依頼書 #143 TOP2 (方式B): seller の送金可否を確認 (購入はブロックせず警告フラグのみ)
     // 判定軸 = stripe_payouts_enabled (onboarded は restricted とのズレ実在のため不採用)
     // 読み取り失敗時は安全側 (pending=true で警告) / 購入フローは一切止めない
     let sellerPayoutPending = false;
     try {
-      if (seller_id) {
-        const { data: sellerInfo } = await supabase
-          .from("profiles").select("stripe_payouts_enabled").eq("id", seller_id).maybeSingle();
-        sellerPayoutPending = !(sellerInfo?.stripe_payouts_enabled === true);
-      } else {
-        sellerPayoutPending = true;
-      }
+      const { data: sellerInfo } = await supabase
+        .from("profiles").select("stripe_payouts_enabled").eq("id", sellerId).maybeSingle();
+      sellerPayoutPending = !(sellerInfo?.stripe_payouts_enabled === true);
     } catch (_) {
       sellerPayoutPending = true;
     }
@@ -160,7 +220,7 @@ Deno.serve(async (req) => {
     debugLog.step = "calculate_total";
     debugLog.actualPrice = actualPrice;
 
-    const optionsTotal = (options || []).reduce((sum: number, o: any) => sum + (o.price || 0), 0);
+    const optionsTotal = resolvedOptions.reduce((sum: number, o) => sum + o.price, 0);   // v41: サーバー確定価格のみ
     const listingPrice = actualPrice + optionsTotal;
 
     let serverShippingFee = 0;
@@ -211,8 +271,8 @@ Deno.serve(async (req) => {
     const insertData: any = {
       order_number,
       listing_id: listing_id || null,
-      buyer_id: buyer_id || null,
-      seller_id: seller_id || null,
+      buyer_id: buyerId,      // v41: JWT または body (フォールバック) で確定した値
+      seller_id: sellerId,    // v41: listings.seller_id (body は使わない)
       amount: totalAmount,
       listing_price: listingPrice,
       buyer_protection_fee: buyerProtectionFee,
@@ -265,36 +325,33 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: "Stock reduction failed", message: "売り切れました", debugLog }), { status: 400, headers: corsHeaders });
       }
     } else if (listing.stock_quantity !== null) {
-      const { data: updatedListing, error: updateErr } = await supabase
-        .from("listings").update({ stock_quantity: listing.stock_quantity - 1, updated_at: new Date().toISOString() })
-        .eq("id", listing_id).gte("stock_quantity", 1).select().single();
-      if (updateErr || !updatedListing) {
-        await supabase.from("orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", order.id);
-        return new Response(JSON.stringify({ error: "Stock reduction failed", message: "売り切れました", debugLog }), { status: 400, headers: corsHeaders });
-      }
-      if (updatedListing.stock_quantity === 0) {
-        await supabase.from("listings").update({ status: "sold_out", updated_at: new Date().toISOString() }).eq("id", listing_id);
-      }
+      // v41: 単品の在庫はここでは減らさない。orders INSERT の AFTER トリガー trg_decrement_stock が
+      //   既に 1 減らしており (GREATEST(stock-1, 0))、0 になれば listings の trg_auto_sold_out が sold_out に切り替える。
+      //   従来はこの後にもう一度 .gte(1) で減らそうとしていたため、在庫 1 の商品はトリガーで 0 になった直後に
+      //   更新が空振りし、注文が取り消されて必ず「売り切れました」になっていた (在庫 2 以上では偶然同じ値を書いて隠れていた)。
+      //   売り切れの事前判定は上の validate_price_stock (stock_quantity <= 0 → 400) で行う。
+      debugLog.stock = "trg_decrement_stock に委譲 (v41)";
     }
 
     if (shipping_address_id) {
-      await supabase.from("shipping_addresses").update({ order_id: order.id }).eq("id", shipping_address_id).eq("user_id", buyer_id);
+      await supabase.from("shipping_addresses").update({ order_id: order.id }).eq("id", shipping_address_id).eq("user_id", buyerId);
     }
 
     debugLog.step = "stripe_call";
     debugLog.order_id = order.id;
 
+    const productTitle = listing.title || listing_title;   // v41: 商品名もサーバー値を優先
     const productName = isChoiceMode
-      ? `${listing_title}（${choiceRows.map((c: any) => c.name).join("・")}）`.slice(0, 250)
-      : variantData ? `${listing_title} - ${variantData.variant_name}` : listing_title;
+      ? `${productTitle}（${choiceRows.map((c: any) => c.name).join("・")}）`.slice(0, 250)
+      : variantData ? `${productTitle} - ${variantData.variant_name}` : productTitle;
 
     const line_items: any[] = [{
       price_data: { currency: "jpy", product_data: { name: productName }, unit_amount: actualPrice },
       quantity: 1,
     }];
 
-    if (options && options.length > 0) {
-      for (const opt of options) {
+    if (resolvedOptions.length > 0) {
+      for (const opt of resolvedOptions) {
         if (opt.name && opt.price > 0) {
           line_items.push({
             price_data: { currency: "jpy", product_data: { name: `オプション: ${opt.name}` }, unit_amount: opt.price },
@@ -328,8 +385,8 @@ Deno.serve(async (req) => {
     params.append("metadata[order_id]", order.id);
     params.append("metadata[order_number]", order_number);
     params.append("metadata[listing_id]", listing_id || "");
-    params.append("metadata[buyer_id]", buyer_id || "");
-    params.append("metadata[seller_id]", seller_id || "");
+    params.append("metadata[buyer_id]", buyerId || "");
+    params.append("metadata[seller_id]", sellerId || "");
     params.append("metadata[shipping_address_id]", shipping_address_id || "");
     params.append("metadata[listing_price]", String(listingPrice));
     params.append("metadata[buyer_protection_fee]", String(buyerProtectionFee));
@@ -371,6 +428,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       url: session.url, session_id: session.id, order_id: order.id,
       seller_payout_pending: sellerPayoutPending,
+      auth_mode: authMode,   // v41: "jwt" | "body-fallback" (ログで PR2 移行の進み具合が分かる)
       breakdown: {
         listing_price: listingPrice,
         shipping_fee: serverShippingFee,
