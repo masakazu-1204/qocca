@@ -1,4 +1,9 @@
 // ============================================
+// create-checkout v42 (PR3, 2026/9/18)
+//   v42 追加: orders INSERT が trg_decrement_stock の 'out_of_stock' 例外 (SQLSTATE P0001) で失敗したら
+//             500 ではなく 400「売り切れました」を返す。在庫 1 に同時に 2 人が来たとき、2 人目はここで止まる
+//             (DB 側の行ロックで直列化。migration 20260918000000 で導入)。それ以外の INSERT 失敗は従来どおり 500。
+// --- 以下 v41 までの履歴 ---
 // create-checkout v41 (決済入口の硬化, 2026/9/11)
 //   v41 追加 (PR1: サーバー側だけ・クライアント変更なし):
 //     1. seller_id / オプションの価格 / 商品名 を body でなく listings から確定する
@@ -294,6 +299,11 @@ Deno.serve(async (req) => {
 
     const { data: order, error: insertError } = await supabase.from("orders").insert(insertData).select().single();
     if (insertError) {
+      // v42: trg_decrement_stock が在庫 0 で拒否した場合 (同時購入の 2 人目) は「売り切れ」として 400
+      if (insertError.code === "P0001" && String(insertError.message || "").includes("out_of_stock")) {
+        debugLog.step = "insert_order_out_of_stock";
+        return new Response(JSON.stringify({ error: "Out of stock", message: "売り切れました", debugLog }), { status: 400, headers: corsHeaders });
+      }
       return new Response(JSON.stringify({
         error: "DB insert error", insertError_message: insertError.message,
         insertError_code: insertError.code, insertError_details: insertError.details,
