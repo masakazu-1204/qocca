@@ -32,7 +32,7 @@
 // ⚠️ Windows の drawtext は fontfile のコロンをエスケープする必要がある。
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync, mkdirSync } from "node:fs";
 import ffmpegPath from "ffmpeg-static";
 
 // ── 静けさトークン (src/constants/theme.ts の QC と対応) ──────────────
@@ -53,10 +53,11 @@ const OUTRO_HOLD = 3.4;       // 締めカードの尺
 const FONT = "C:/Windows/Fonts/yumin.ttf";      // 游明朝 (QC_FONT_DISPLAY のフォールバック)
 const FONT_EN = "C:/Windows/Fonts/georgia.ttf"; // QC_FONT_EN のフォールバック (セリフ)
 // 字幕は明朝だと動画の上で細って読めないため、ゴシックにする
-const FONT_CAP = "C:/Windows/Fonts/YuGothM.ttc";
+// 2026/9/21: 環境変数 CAP_FONT / CAP_SIZE で字幕フォントとサイズを差し替えられる (広告はブランドフォント Zen Kaku Gothic New を使う)
+const FONT_CAP = process.env.CAP_FONT || "C:/Windows/Fonts/YuGothM.ttc";
 const CAP_INK = "0xFAF7F2";       // QC.warmWhite
 const CAP_EDGE = "0x2C2926@0.35"; // QC.charcoal を薄く。輪郭は「足りるぶんだけ」
-const CAP_SIZE = 44;
+const CAP_SIZE = Number(process.env.CAP_SIZE) || 44;
 const CAP_LINE = 74;              // 行送り
 const CAP_Y = 0.70;               // 画面の下から3割あたり
 const CAP_FADE = 0.4;             // 出入りのやわらかさ
@@ -100,7 +101,7 @@ for (let raw; (raw = takeOpt("--caption")) !== null; ) {
 }
 
 const [out, ...specs] = argv;
-if (!out || specs.length < 2) {
+if (!out || specs.length < 1) {
   console.error('使い方: node scripts/build-cm.mjs 出力.mp4 "clip.mp4:開始:終了" ... [--copy "..."] [--sub "..."]');
   process.exit(1);
 }
@@ -125,6 +126,11 @@ const esc = (p) => p.replace(/\\/g, "/").replace(/:/g, "\\:");
 // drawtext の text= は単引用符で囲むため、'  \  % だけ潰せばよい
 // (% は drawtext が strftime 展開に使う)
 const escText = (t) => t.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/%/g, "\\%");
+// 2026/9/21: Windows では argv 経由の日本語が ffmpeg に届く前に化けて豆腐になる (実測)。
+//   drawtext には textfile= で UTF-8 ファイルを渡す。
+const TF_DIR = ((process.env.TEMP || ".") + "/qocca-cm-tf").split("\\").join("/");
+let tfN = 0;
+const tf = (t) => { mkdirSync(TF_DIR, { recursive: true }); const p = TF_DIR + "/t" + (tfN++) + ".txt"; writeFileSync(p, t, "utf8"); return p; };
 
 // ── フィルタグラフ ───────────────────────────────────────────
 const parts = [];
@@ -139,6 +145,7 @@ clips.forEach((c, i) => {
 
 // 2) 順にディゾルブで連結。offset は「それまでの尺 - 重なり」
 let prev = "c0", acc = clips[0].dur;
+if (clips.length === 1) parts.push("[c0]null[film]"); // 2026/9/21: 1カットだけの試写 (ディゾルブなし)
 for (let i = 1; i < clips.length; i++) {
   const offset = (acc - XFADE).toFixed(3);
   const label = i === clips.length - 1 ? "film" : `x${i}`;
@@ -153,13 +160,13 @@ for (let i = 1; i < clips.length; i++) {
 // ⚠️ ロゴは透過PNG。overlay の前に yuv420p へ落とすとアルファが死んで
 //    白い箱が出る (2026/8/25 実測)。rgba のまま重ね、最後に yuv420p にする。
 const subLine = SUB
-  ? `drawtext=fontfile='${esc(FONT)}':text='${escText(SUB)}':fontcolor=${SUB_INK}:fontsize=30:` +
+  ? `drawtext=fontfile='${esc(FONT)}':textfile='${esc(tf(SUB))}':fontcolor=${SUB_INK}:fontsize=30:` +
     `x=(w-text_w)/2:y=(h/2)-130,`
   : "";
 
 parts.push(
   `color=c=${BG}:s=${W}x${H}:r=${FPS}:d=${(OUTRO_HOLD + OUTRO_IN).toFixed(3)},format=rgba,` +
-  `drawtext=fontfile='${esc(FONT)}':text='${escText(COPY)}':fontcolor=${INK}:fontsize=58:` +
+  `drawtext=fontfile='${esc(FONT)}':textfile='${esc(tf(COPY))}':fontcolor=${INK}:fontsize=58:` +
   `x=(w-text_w)/2:y=(h/2)-220,` +
   subLine +
   `drawtext=fontfile='${esc(FONT_EN)}':text='Qocca':fontcolor=${MARK_INK}:fontsize=62:` +
@@ -180,7 +187,7 @@ const capChain = captions.flatMap((c) => {
             `\\,if(lt(t\\,${end - F})\\,1\\,if(lt(t\\,${end})\\,(${end}-t)/${F}\\,0))))`;
   // 複数行は1行ずつ別の drawtext にする (drawtext の改行は環境差が出るため)
   return c.lines.map((line, i) =>
-    `drawtext=fontfile='${esc(FONT_CAP)}':text='${escText(line)}':` +
+    `drawtext=fontfile='${esc(FONT_CAP)}':textfile='${esc(tf(line))}':` +
     `fontcolor=${CAP_INK}:fontsize=${CAP_SIZE}:` +
     `borderw=2:bordercolor=${CAP_EDGE}:shadowcolor=0x2C2926@0.45:shadowx=0:shadowy=2:` +
     `x=(w-text_w)/2:y=h*${CAP_Y}+${i * CAP_LINE}:alpha='${a}'`
