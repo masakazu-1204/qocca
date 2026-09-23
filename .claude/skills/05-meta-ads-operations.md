@@ -500,3 +500,15 @@ Phase 7 への "広がりの一歩目" や 📣🐾🐨🐻
   7/17 に決めた命名規約 (`utm_source=meta&utm_medium=cpc&utm_campaign=...&utm_content=<広告スラッグ>`) を必ずリンクに載せる
 - 登録は Pixel の `CompleteRegistration` として送信済 (App.tsx)。**目的は「リード」/ 最適化イベント CompleteRegistration** にする
 - 再開は 1日 ¥1,000 × 2週間の小さなテストから。registration_sources で utm_source='meta' が数えられるようになってから増減を判断する
+
+### 2026/9/23〜 「Qocca_Lead_202610」(リード目的・¥1,500/日) — 街編 v2 で再開
+
+```
+キャンペーン   Qocca_Lead_202610 / 広告セット Lead_日本_1000 / 広告 world_town_v2
+目的          リード → ウェブサイト / データセット Qocca Production (Pixel 末尾 1385) / イベント 登録完了 (CompleteRegistration)
+配信          日本 / Advantage+ オーディエンス・配置 / 予算 ¥1,500/日 (予定 ¥1,000 → King 判断で ¥1,500) / 終了なし (2週間で手動判断)
+クリエイティブ  ads-out/09_world_v2_final.mp4 (21秒・一人称で動物の街を歩く) / CTA 詳細を表示 / ブラウザーのアドオン なし
+リンク         https://www.qocca.pet/?utm_source=meta&utm_medium=cpc&utm_campaign=lead_202610&utm_content=world_town_v2
+判定 (10/7)    select utm_content, count(*) from registration_sources where utm_source='meta' and created_at >= '2026-09-23' group by 1;
+              1登録 ¥1,000 未満なら続行、¥3,000 超なら止める。旧キャンペーン Qocca_PW_202607 はオフのまま
+```
