@@ -2377,7 +2377,13 @@ const OrdersTab = () => {
       {showDispute && <DisputeModal order={{...showDispute, item: showDispute.listing?.title || ""}} onClose={()=>setShowDispute(null)} onSubmit={async (orderId, _reason, _desc)=>{
         try {
           // status のみ更新（dispute_reason/dispute_status カラムは未実装）
-          await supabase.from("orders").update({ status:"disputed", updated_at: new Date().toISOString() }).eq("id", orderId);
+          // PR3b (2026/9/23): 2軸化の fulfillment_status も 'disputed' にする。旧 status だけ変えると
+          //   auto-complete-orders (fulfillment_status ベース) が異議中の注文を自動完了→送金してしまう。
+          //   失敗を握りつぶさない (RLS / 列権限で弾かれたら利用者に伝える)。
+          const { error: disputeErr } = await supabase.from("orders")
+            .update({ status:"disputed", fulfillment_status:"disputed", updated_at: new Date().toISOString() })
+            .eq("id", orderId);
+          if (disputeErr) throw disputeErr;
           alert("問題を報告しました。運営が確認次第対応いたします。");
           await loadOrders();
         } catch(e: any) { alert("エラー: "+e.message); }
@@ -2453,9 +2459,18 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
     const current = listing.stock_quantity ?? 0;
     const newStock = Math.max(0, current + delta);
     setBusy(true);
-    const { error } = await supabase.from("listings").update({ stock_quantity: newStock }).eq("id", listing.id);
+    // PR3b (2026/9/23): 画面に出ている値と DB が同じときだけ書く (楽観ロック)。
+    //   注文の trg_decrement_stock や別タブの操作で先に変わっていたら 0 行更新になるので、上書きせずに読み直す。
+    const q = supabase.from("listings").update({ stock_quantity: newStock }).eq("id", listing.id);
+    const { data: updated, error } = await (listing.stock_quantity == null
+      ? q.is("stock_quantity", null)
+      : q.eq("stock_quantity", listing.stock_quantity)
+    ).select("id");
     setBusy(false);
     if (error) { alert("在庫数変更に失敗: " + error.message); return; }
+    if (!updated || updated.length === 0) {
+      alert("在庫数が別の場所で更新されていたため、最新の数を読み直しました。もう一度お試しください。");
+    }
     await loadListings();
   };
 
