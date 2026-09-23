@@ -574,10 +574,12 @@ const submitListing = async (
     const ext = file.name.split(".").pop();
     const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const { error: upErr } = await supabase.storage.from("listing-images").upload(path, file);
-    if (!upErr) {
-      const { data: urlData } = supabase.storage.from("listing-images").getPublicUrl(path);
-      imageUrls.push(urlData.publicUrl);
+    if (upErr) {
+      // PR3b (2026/9/23): 従来は失敗した画像を黙って飛ばし、写真なしの出品が出来上がっていた → 出品を止めて理由を返す
+      return { data: null, error: { message: `画像「${file.name}」のアップロードに失敗しました: ${upErr.message}` } as any };
     }
+    const { data: urlData } = supabase.storage.from("listing-images").getPublicUrl(path);
+    imageUrls.push(urlData.publicUrl);
   }
 
   const stockValue = form.stock !== "" && form.stock !== null && form.stock !== undefined

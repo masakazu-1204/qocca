@@ -1,0 +1,10 @@
+-- 2026/9/23 (適用済: Supabase MCP apply_migration "anomaly_detection_dedupe_unread_alerts")
+--
+-- run_anomaly_detection() が毎日おなじ info アラート (zero_orders_14d) を積み、admin_alerts の未読が 85 件に
+-- なっていた。check_sns_stock() と同じく「同種の未読があるうちは積まない」。5 ルールの判定条件そのものは不変。
+-- 併せて、当日までに溜まっていた未読 87 件 (zero_orders_14d 85 / 解決済の sns_stock_low_neta 1 / 2026-06 の
+-- sns_events_deduplicator 1) を is_read=true にした。
+--
+-- 本文は本番の関数定義に NOT EXISTS (... AND NOT is_read) を各 INSERT の条件に足したもの。
+-- 戻し方: 各 IF から "AND NOT EXISTS (SELECT 1 FROM admin_alerts WHERE alert_type = '...' AND NOT is_read)" を外す。
+-- (定義全文は Supabase の関数 run_anomaly_detection を参照。ここには差分の意図だけ残す)

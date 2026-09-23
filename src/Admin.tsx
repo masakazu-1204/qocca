@@ -230,7 +230,14 @@ const ListingsPage = () => {
 
   const remove = async (id: string) => {
     if (!confirm("この出品を完全に削除しますか？\n※この操作は取り消せません")) return;
-    await supabase.from("listings").delete().eq("id", id);
+    // PR3b (2026/9/23): 注文が紐づく出品は FK で削除できず、従来は無音で何も起きなかった → 理由を出す
+    const { error } = await supabase.from("listings").delete().eq("id", id);
+    if (error) {
+      alert(error.code === "23503"
+        ? "この出品には注文があるため削除できません。「却下」で非公開にしてください。"
+        : "削除に失敗しました: " + error.message);
+      return;
+    }
     fetch();
   };
 
@@ -632,14 +639,17 @@ const SalesPage = () => {
       setLoading(true);
       const { data } = await supabase
         .from("orders")
-        .select("id, status, created_at, listing_id, listings(title, price)")
+        // PR3b (2026/9/23): 金額は注文時の確定値 (orders.listing_price / qocca_fee) を使う。
+        //   従来は listings.price (現在の出品価格) × 一律 10% で、値下げ後や創業特典 (0〜5%) の注文で実績とズレていた。
+        .select("id, status, created_at, listing_id, listing_price, qocca_fee, seller_payout, listings(title, price)")
         .order("created_at", { ascending: false })
         .limit(50);
       const rows = data || [];
       setOrders(rows);
       const completed = rows.filter((o: any) => o.status === "completed");
-      const revenue = completed.reduce((s: number, o: any) => s + (o.listings?.price || 0), 0);
-      setStats({ total: rows.length, revenue, fee: Math.round(revenue * 0.1) });
+      const revenue = completed.reduce((s: number, o: any) => s + (o.listing_price ?? o.listings?.price ?? 0), 0);
+      const fee = completed.reduce((s: number, o: any) => s + (o.qocca_fee ?? 0), 0);
+      setStats({ total: rows.length, revenue, fee });
       setLoading(false);
     })();
   }, []);
@@ -688,13 +698,15 @@ const SalesPage = () => {
             <tbody>
               {orders.map((o: any) => {
                 const s = statusMap[o.status] || { label: o.status, color: C.warmGray, bg: C.cream };
-                const price = o.listings?.price || 0;
+                const price = o.listing_price ?? o.listings?.price ?? 0;
+                // 手数料は完了時に complete-order が確定する。未完了 (pending / working 等) は「-」
+                const feeText = o.status === "completed" && o.qocca_fee != null ? `¥${Number(o.qocca_fee).toLocaleString()}` : "-";
                 return (
                   <tr key={o.id} style={{ borderBottom: `1px solid ${C.border}` }}>
                     <td style={{ padding: "12px 14px", fontSize: 12, color: C.warmGray }}>{o.created_at?.slice(0, 10)}</td>
                     <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 700, color: C.dark }}>{o.listings?.title || "-"}</td>
                     <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 700, color: C.orange }}>¥{price.toLocaleString()}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, color: C.warmGray }}>¥{Math.round(price * 0.1).toLocaleString()}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, color: C.warmGray }}>{feeText}</td>
                     <td style={{ padding: "12px 14px" }}><Badge text={s.label} color={s.color} bg={s.bg} /></td>
                   </tr>
                 );
