@@ -50,7 +50,8 @@ let measured = null;
 }
 
 let af;
-if (measured?.input_i) {
+// 2026/9/23: 無音のトラックは測定が -inf になり loudnorm が落ちる → 有限値のときだけ2パスにする
+if (measured?.input_i && Number.isFinite(Number(measured.input_i))) {
   af = `loudnorm=I=${I}:TP=${TP}:LRA=${LRA}` +
        `:measured_I=${measured.input_i}:measured_TP=${measured.input_tp}` +
        `:measured_LRA=${measured.input_lra}:measured_thresh=${measured.input_thresh}` +
