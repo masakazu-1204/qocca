@@ -25,6 +25,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { QC, QC_FONT_JP, QC_FONT_DISPLAY } from "../constants/theme";
 import { useSEO } from "../hooks/useSEO";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../supabaseClient";
 
 // 飛び先キー → 実際のルート。着地ページを見せずに目的の画面へ直行させたいとき用。
 // ⚠️ 転送先は既存ルートをそのまま使う (PetWalker は /petwalker/* の内部URL制御を持つため、
@@ -68,9 +69,22 @@ export const WelcomePage = () => {
 
 const WelcomeLanding = () => {
   const navigate = useNavigate();
-  const { tag } = useParams();
+  const { tag, dest } = useParams();
   const { user } = useAuth();
   const [shown, setShown] = useState(false);
+  // 2026/9/25 友達紹介: /welcome/r/<code> で来た人に「〇〇さんの紹介」を見せる。
+  //   code は招いた人の user id の先頭12桁。逆引きは RPC resolve_invite_code (表示名だけ返す)。
+  //   計測は landing_path (= /welcome/r/<code>) が registration_sources に残るので、ここでは何もしない。
+  const inviteCode = tag === "r" && dest && /^[0-9a-f]{12}$/.test(dest) ? dest : null;
+  const [inviter, setInviter] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
+  useEffect(() => {
+    if (!inviteCode) return;
+    let cancelled = false;
+    supabase.rpc("resolve_invite_code", { p_code: inviteCode }).then(({ data }) => {
+      if (!cancelled && Array.isArray(data) && data[0]) setInviter(data[0]);
+    });
+    return () => { cancelled = true; };
+  }, [inviteCode]);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth < 768
   );
@@ -112,6 +126,20 @@ const WelcomeLanding = () => {
         <div style={{ ...fade(0), fontSize: 11, letterSpacing: "0.18em", color: QC.sage, marginBottom: isMobile ? 28 : 36 }}>
           QOCCA
         </div>
+
+        {inviter && (
+          <div style={{ ...fade(0.05), display: "flex", alignItems: "center", gap: 12, marginBottom: isMobile ? 22 : 28 }}>
+            {inviter.avatar_url ? (
+              <img src={inviter.avatar_url} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `1px solid ${QC.lightSand}` }} />
+            ) : (
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: QC.cream, border: `1px solid ${QC.lightSand}` }} />
+            )}
+            <div style={{ fontSize: 13, fontWeight: 300, color: QC.warmGray, lineHeight: 1.8 }}>
+              <span style={{ color: QC.softBrown, fontWeight: 400 }}>{inviter.display_name || "この街の住民"}</span> さんが、<br />
+              あなたをこの街に招いています。
+            </div>
+          </div>
+        )}
 
         <h1 style={{
           ...fade(0.1),
