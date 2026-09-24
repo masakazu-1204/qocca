@@ -678,7 +678,7 @@ const SectionAnnouncement = () => {
           lineHeight: 1.65,
           letterSpacing: '0.04em',
         }}>
-          7月から、少しずつ始まります。
+          この街は、少しずつ育っています。
         </div>
         {/* 日付: Shippori Mincho 500 + 大きめ字間で「号外」風 */}
         <div style={{
@@ -689,7 +689,7 @@ const SectionAnnouncement = () => {
           marginTop: 18,
           letterSpacing: '0.18em',
         }}>
-          2026年7月1日
+          2026年7月1日 開店
         </div>
 
         <Divider />
@@ -701,8 +701,8 @@ const SectionAnnouncement = () => {
           color: C.dark,
           lineHeight: 1.8,
         }}>
-          7月の1ヶ月間、<br />
-          販売手数料を無料にしています。
+          はじめての取引は、手数料 0%。<br />
+          登録から90日間は 5% です。
         </div>
         <div style={{
           fontSize: isMobile ? 13 : 14,

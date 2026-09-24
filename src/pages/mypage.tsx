@@ -681,6 +681,38 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
   // 出品クリエイターが Instagram に貼るための URL。/user/:userId 形式 (依頼書指定)。
   const publicProfileUrl = user?.id ? `https://www.qocca.pet/user/${user.id}` : "";
   const [copyToast, setCopyToast] = useState<"" | "ok" | "fail">("");
+
+  // 2026/9/25 友達紹介: 招待リンク = /welcome/r/<自分の id 先頭12桁>。
+  //   着地は既存の広告用ページ (welcome.tsx) で、landing_path がそのまま registration_sources に残る。
+  //   人数は RPC count_my_referrals (definer) で数える。
+  const inviteCode = user?.id ? user.id.replace(/-/g, "").slice(0, 12) : "";
+  const inviteUrl = inviteCode ? `https://www.qocca.pet/welcome/r/${inviteCode}` : "";
+  const [referralCount, setReferralCount] = useState<number | null>(null);
+  const [inviteToast, setInviteToast] = useState<"" | "ok" | "fail">("");
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    supabase.rpc("count_my_referrals").then(({ data }) => {
+      if (!cancelled && typeof data === "number") setReferralCount(data);
+    });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+  const handleInvite = async () => {
+    if (!inviteUrl) return;
+    const text = "うちの子を愛してる人が集まる街、Qocca。よかったら住民になってください。";
+    try {
+      if (typeof navigator !== "undefined" && (navigator as any).share) {
+        await (navigator as any).share({ title: "Qocca", text, url: inviteUrl });
+        return;
+      }
+      await navigator.clipboard.writeText(inviteUrl);
+      setInviteToast("ok");
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;   // 共有シートを閉じただけ
+      setInviteToast("fail");
+    }
+    setTimeout(() => setInviteToast(""), 2600);
+  };
   const handleCopyPublicUrl = async () => {
     if (!publicProfileUrl) return;
     try {
@@ -811,6 +843,33 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
         </div>
       )}
       <div style={{ maxWidth:600, margin:"0 auto" }}>
+        {/* 2026/9/25 友達紹介: 住民が住民を招く。煽らない・数字で競わせない・一枚の貼り紙の温度で */}
+        {inviteUrl && (
+          <div style={{ marginBottom: 20, padding: "18px 18px 16px", background: C.white, border: `1px solid ${C.border}`, borderRadius: 14 }}>
+            <div style={{ fontSize: 15, fontWeight: 500, color: C.dark, lineHeight: 1.7 }}>この街を、友達にも。</div>
+            <div style={{ fontSize: 12.5, color: C.warmGray, lineHeight: 1.9, marginTop: 6 }}>
+              うちの子を愛してる人が増えるほど、この街はあたたかくなります。<br />
+              あなたのリンクから来た人には、あなたの名前が添えられます。
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14, flexWrap: "wrap" }}>
+              <button
+                onClick={handleInvite}
+                title={inviteUrl}
+                style={{ padding: "10px 18px", background: C.orange, border: `1.5px solid ${C.orange}`, borderRadius: 22, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}
+              >
+                招待リンクを送る
+              </button>
+              <div style={{ fontSize: 12, color: C.warmGray }}>
+                {referralCount === null ? "" : referralCount === 0 ? "まだ誰も来ていません。" : `あなたの紹介で ${referralCount} 人が住民になりました。`}
+              </div>
+            </div>
+            {inviteToast && (
+              <div style={{ marginTop: 10, fontSize: 12, color: inviteToast === "ok" ? "#7A5C00" : "#A33C2E" }}>
+                {inviteToast === "ok" ? "招待リンクをコピーしました。" : "コピーできませんでした。リンク: " + inviteUrl}
+              </div>
+            )}
+          </div>
+        )}
         {/* 依頼書 #138 タスク1 (2026/6/9): SNS 宣伝用 公開ページ共有導線 (8eighty8eight さん DM 起点)
             - 「自分の公開ページを見る」: 新規タブで /user/:userId を開く
             - 「リンクをコピー」: https://www.qocca.pet/user/:userId をクリップボードへ */}

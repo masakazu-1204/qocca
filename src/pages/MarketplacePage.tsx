@@ -370,7 +370,7 @@ function MarketplaceSection<T>({
       ) : items.length === 0 ? (
         <div style={{ background: WHITE, borderRadius: 14, padding: 32, textAlign: "center", fontSize: 13, color: TEXT_MUTED, lineHeight: 1.8, border: `1px dashed ${BORDER_WARM}` }}>
           <div style={{ fontSize: 28, marginBottom: 6 }}>🌱</div>
-          {emptyMessage || "もうすぐ商品が増えます🐾 2026年7月1日のグランドオープンをお楽しみに。"}
+          {emptyMessage || "新しい作品は、まだありません。次の入荷を、ゆっくりお待ちください。"}
         </div>
       ) : (
         <HorizontalScroller>
