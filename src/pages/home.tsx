@@ -1015,7 +1015,7 @@ const MotionPhoto = ({ src, poster }: { src: string; poster: string }) => {
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) v.play().catch(() => { /* 自動再生が拒否されたら写真のまま */ });
       else v.pause();
-    }, { threshold: 0.35 });
+    }, { threshold: 0.15 });   // 2026/9/26: 横スクロールで隣が少し見えている札も動かす (0.35 だと端の札が止まって見えた)
     io.observe(v);
     return () => io.disconnect();
   }, [reduce]);
@@ -1153,9 +1153,9 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
     { img: '/feature-cards/photo_walk.webp',      video: '/feature-cards/motion_walk.mp4',      icon: 'map',      en: 'WALK',       ja: '愛犬と行ける場所を探す',    page: 'petwalker' },
     { img: '/feature-cards/photo_album.webp',     video: '/feature-cards/motion_album.mp4',     icon: 'camera',   en: 'ALBUM',      ja: 'うちの子の写真を共有',      page: 'gallery' },
     { img: '/feature-cards/photo_community.webp', video: '/feature-cards/motion_community.mp4', icon: 'chat',     en: 'COMMUNITY',  ja: '仲間とおしゃべり',          page: 'communities' },
-    { img: '/feature-cards/photo_event.webp',     video: null,                                  icon: 'calendar', en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
-    { img: '/feature-cards/photo_places.webp',    video: null,                                  icon: 'pin',      en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
-    { img: '/feature-cards/photo_blog.webp',      video: null,                                  icon: 'book',     en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
+    { img: '/feature-cards/photo_event.webp',     video: '/feature-cards/motion_event.mp4',     icon: 'calendar', en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
+    { img: '/feature-cards/photo_places.webp',    video: '/feature-cards/motion_places.mp4',    icon: 'pin',      en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
+    { img: '/feature-cards/photo_blog.webp',      video: '/feature-cards/motion_blog.mp4',      icon: 'book',     en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
   ];
 
   return (
