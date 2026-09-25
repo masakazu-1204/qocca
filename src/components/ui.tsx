@@ -5,6 +5,7 @@
 // ロジック・参照名は App.tsx 時点から1文字も改変なし (切り取って移動)。
 
 import { useState, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { C, QC_FONT_DISPLAY } from "../constants/theme";
 import { ORDER_STEPS } from "../constants/data";
 import { resolveFontFamily } from "../constants/fonts";
@@ -533,15 +534,32 @@ export const SharedFooter = ({ setPage }: { setPage: SetPage }) => (
 );
 
 // ── Bottom Tab Bar (Mobile) ───────────────────────────────────────────────
+// 2026/9/26 (King「a と c」): 絵文字を、ホームの「できること」カードと同じ線画 (stroke 1.5・丸端) に揃えた。
+//   行き先・並び・文言は不変。出品の丸ボタンは塗りつぶしから線の丸に。
+const TAB_ICON: Record<string, ReactNode> = {
+  home:        <><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></>,
+  communities: <><path d="M9 4h9a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-3l-3 3v-3H9a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" /><path d="M6.5 18.5a2 2 0 1 0 0-.01M17.5 18.5a2 2 0 1 0 0-.01" /></>,
+  plus:        <><path d="M12 5v14M5 12h14" /></>,
+  events:      <><rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
+  petwalker:   <><path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z" /><path d="M9 4v14M15 6v14" /></>,
+  person:      <><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></>,
+};
+const TabIcon = ({ name, size = 22 }: { name: string; size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"
+    style={{ stroke:"currentColor", fill:"none", strokeWidth:1.5, strokeLinecap:"round", strokeLinejoin:"round", display:"block" }}>
+    {TAB_ICON[name] ?? TAB_ICON.home}
+  </svg>
+);
+
 export const TabBar = ({ page, setPage }: { page: string; setPage: SetPage }) => {
   const { user } = useAuth();
   const tabs = [
-    { id:"home", icon:"🏠", label:"ホーム" },
-    { id:"communities", icon:"💬", label:"コミュニティ" },
-    { id:"sell", icon:"➕", label:"" },
-    { id:"events", icon:"📅", label:"イベント" },
-    { id:"petwalker", icon:"🧭", label:"おでかけ" },
-    { id: user ? "mypage" : "signup", icon:"👤", label: user ? "マイページ" : "ログイン" },
+    { id:"home", icon:"home", label:"ホーム" },
+    { id:"communities", icon:"communities", label:"コミュニティ" },
+    { id:"sell", icon:"plus", label:"" },
+    { id:"events", icon:"events", label:"イベント" },
+    { id:"petwalker", icon:"petwalker", label:"おでかけ" },
+    { id: user ? "mypage" : "signup", icon:"person", label: user ? "マイページ" : "ログイン" },
   ];
   return (
     <div style={{
@@ -556,15 +574,16 @@ export const TabBar = ({ page, setPage }: { page: string; setPage: SetPage }) =>
           cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2
         }}>
           {t.id==="sell" ? (
-            <div style={{
-              width:46, height:46, borderRadius:"50%", background:C.orange,
+            <div aria-label="出品する" style={{
+              width:44, height:44, borderRadius:"50%", background:C.white,
+              border:`1.5px solid ${C.orange}`, color:C.orange,
               display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:22, marginTop:-20, boxShadow:`0 4px 14px rgba(245,169,74,0.45)`
-            }}>➕</div>
+              marginTop:-18, boxShadow:"0 4px 14px rgba(245,169,74,0.22)"
+            }}><TabIcon name="plus" size={20} /></div>
           ) : (
             <>
-              <span style={{ fontSize:20 }}>{t.icon}</span>
-              <span style={{ fontSize:9, fontWeight:700, color: page===t.id ? C.orange : C.warmGray, whiteSpace:"nowrap" }}>{t.label}</span>
+              <span style={{ color: page===t.id ? C.orange : C.warmGray, transition:"color 0.6s ease" }}><TabIcon name={t.icon} /></span>
+              <span style={{ fontSize:9, fontWeight:500, letterSpacing:"0.04em", color: page===t.id ? C.orange : C.warmGray, whiteSpace:"nowrap" }}>{t.label}</span>
             </>
           )}
         </button>

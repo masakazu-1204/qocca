@@ -981,6 +981,64 @@ const SectionDynamicCTABanner = ({ setPage }: { setPage: (page: string) => void 
 // 画像内に英語ラベル+日本語コピーが焼き込み済み → コード側で文字を重ねない。
 // 未アップでも落ちないように、画像エラー時は QC.cream 背景 + ラベルテキストでフォールバック表示。
 // ============================================================================
+// 2026/9/26: 「できること」の札の英字・線画に使うオレンジ。元カードに焼き込まれていた色 (King が気に入っている色) をそのまま。
+const FEATURE_ACCENT = '#E8894A';
+
+// 線画アイコン (stroke 1.4・丸端)。元カードの線画と同じ細さ・同じ位置で HTML 側に描く。
+const FeatureIcon = ({ name }: { name: string }) => {
+  const paths: Record<string, ReactNode> = {
+    basket:   <><path d="M4 9h16l-1.4 9.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8L4 9z" /><path d="M8 9l3-5M16 9l-3-5" /><path d="M9 13v3M12 13v3M15 13v3" /></>,
+    map:      <><path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z" /><path d="M9 4v14M15 6v14" /><circle cx="12" cy="10" r="1.6" /></>,
+    camera:   <><rect x="3" y="7" width="18" height="13" rx="2.5" /><path d="M8 7l1.5-3h5L16 7" /><circle cx="12" cy="13.5" r="3.4" /></>,
+    chat:     <><path d="M9 4h9a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-3l-3 3v-3H9a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" /><circle cx="6.5" cy="18" r="2" /><circle cx="17.5" cy="18" r="2" /><path d="M3 22c.6-1.4 2-2 3.5-2s2.9.6 3.5 2M14 22c.6-1.4 2-2 3.5-2s2.9.6 3.5 2" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 10h18M8 3v4M16 3v4" /><path d="M8 14h3M13 14h3M8 17h3" /></>,
+    pin:      <><path d="M12 21s-6-5.2-6-10.5a6 6 0 0 1 12 0C18 15.8 12 21 12 21z" /><circle cx="12" cy="10.5" r="2.3" /></>,
+    book:     <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" /><path d="M4 20.5V5.5M8 7h8M8 10.5h6" /></>,
+  };
+  return (
+    <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"
+      style={{ stroke: 'currentColor', fill: 'none', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+      {paths[name] ?? paths.basket}
+    </svg>
+  );
+};
+
+// 写真の中だけが動く札。見えている間だけ再生 (電池とデータの節約)、読み込めたら写真の上にゆっくり現れる。
+// prefers-reduced-motion のときは描画しない (写真のまま)。
+const MotionPhoto = ({ src, poster }: { src: string; poster: string }) => {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [ready, setReady] = useState(false);
+  const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || reduce || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) v.play().catch(() => { /* 自動再生が拒否されたら写真のまま */ });
+      else v.pause();
+    }, { threshold: 0.35 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, [reduce]);
+  if (reduce) return null;
+  return (
+    <video
+      ref={ref}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      poster={poster}
+      onLoadedData={() => setReady(true)}
+      style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+        opacity: ready ? 1 : 0, transition: 'opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+    >
+      <source src={src} type="video/mp4" />
+    </video>
+  );
+};
+
 const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => void }) => {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [allLinkHover, setAllLinkHover] = useState(false);
@@ -1087,13 +1145,17 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
   // 画像パスは Vite の public/ ルート絶対パス。King スマホアップ→UUID→feature_*.webp までリネーム+変換済。
   // (画像内に英語ラベル+日本語が焼き込み済のため、コード側 ja は alt用 / フォールバック用のみ)
   const cards = [
-    { img: '/feature-cards/feature_market.webp',    en: 'MARKET',     ja: '作家さんの作品に出会う',    page: 'marketplace' },
-    { img: '/feature-cards/feature_walk.webp',      en: 'WALK',       ja: '愛犬と行ける場所を探す',    page: 'petwalker' },
-    { img: '/feature-cards/feature_album.webp',     en: 'ALBUM',      ja: 'うちの子の写真を共有',      page: 'gallery' },
-    { img: '/feature-cards/feature_community.webp', en: 'COMMUNITY',  ja: '仲間とおしゃべり',          page: 'communities' },
-    { img: '/feature-cards/feature_event.webp',     en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
-    { img: '/feature-cards/feature_places.webp',    en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
-    { img: '/feature-cards/feature_blog.webp',      en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
+    // 2026/9/26 (King「a と c」): 写真と文字を分けた。写真は photo_*.webp (元カードの写真部分だけ切り出し・720px)、
+    //   文字と線画アイコンは HTML で描く。motion_*.mp4 がある札は、見えている間だけ写真の中が静かに動く
+    //   (Seedance 2.0 fast のシネマグラフ・音なし・5秒ループ・200〜370KB)。無い札は写真のまま。
+    //   元の feature_*.webp (文字焼き込み) は温存。戻すときは img を feature_ に、photo/icon 描画を外すだけ。
+    { img: '/feature-cards/photo_market.webp',    video: '/feature-cards/motion_market.mp4',    icon: 'basket',   en: 'MARKET',     ja: '作家さんの作品に出会う',    page: 'marketplace' },
+    { img: '/feature-cards/photo_walk.webp',      video: '/feature-cards/motion_walk.mp4',      icon: 'map',      en: 'WALK',       ja: '愛犬と行ける場所を探す',    page: 'petwalker' },
+    { img: '/feature-cards/photo_album.webp',     video: '/feature-cards/motion_album.mp4',     icon: 'camera',   en: 'ALBUM',      ja: 'うちの子の写真を共有',      page: 'gallery' },
+    { img: '/feature-cards/photo_community.webp', video: '/feature-cards/motion_community.mp4', icon: 'chat',     en: 'COMMUNITY',  ja: '仲間とおしゃべり',          page: 'communities' },
+    { img: '/feature-cards/photo_event.webp',     video: null,                                  icon: 'calendar', en: 'EVENT',      ja: '全国のイベントを探す',      page: 'events' },
+    { img: '/feature-cards/photo_places.webp',    video: null,                                  icon: 'pin',      en: 'PLACES',     ja: '施設を探す',                page: 'facilities' },
+    { img: '/feature-cards/photo_blog.webp',      video: null,                                  icon: 'book',     en: 'BLOG',       ja: 'ペットの読みもの',          page: 'blog' },
   ];
 
   return (
@@ -1257,71 +1319,65 @@ const SectionWhatIsQoccaV3Carousel = ({ setPage }: { setPage: (page: string) => 
                   transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
                 }}
               >
-                {/* 画像 (実比 1003x1568 ≈ 0.6397、焼き込み済み・コード側で文字重ねない)
-                    2026/6/29 見切れ修正: 4/5 (0.8) → 1003/1568 (0.6397) に合わせて
-                    objectFit:'cover' でも上下トリミングなしで日本語サブテキストまで全表示 */}
+                {/* 2026/9/26: 札 = 白地 + 角丸 (元カードの見た目を HTML で再現)。上 2/3 が写真、下に線画・英字・一行。
+                    写真は photo_*.webp、動く札は motion_*.mp4 を重ねる (見えている間だけ再生・音なし)。 */}
                 <div style={{
                   width: '100%',
-                  aspectRatio: '1003 / 1568',
-                  overflow: 'hidden',
-                  background: QC.cream,
-                  borderRadius: 4,
+                  background: '#FFFEFC',
+                  borderRadius: 22,
                   border: `1px solid ${isHover ? QC.softBrown : QC.lightSand}`,
-                  transition: 'border-color 0.8s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
+                  transition: 'border-color 0.8s ease, box-shadow 0.9s ease',
+                  boxShadow: isHover ? '0 18px 40px rgba(139,111,92,0.14)' : 'none',
+                  padding: isMobile ? '14px 14px 24px' : '16px 16px 26px',
+                  boxSizing: 'border-box',
                 }}>
-                  {!failed ? (
-                    <img
-                      src={c.img}
-                      alt={`${c.en} — ${c.ja}`}
-                      loading="lazy"
-                      decoding="async"
-                      onError={() => setImgFailed(prev => { const next = new Set(prev); next.add(i); return next; })}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
-                        transition: 'transform 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease',
-                        transform: isHover ? 'scale(1.02)' : 'scale(1)',
-                        opacity: isHover ? 1.0 : 0.96,
-                      }}
-                    />
-                  ) : (
-                    // 画像未アップ時のフォールバック (静けさデザイン踏襲)
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 24,
-                      textAlign: 'center',
-                      width: '100%',
-                      height: '100%',
-                    }}>
-                      <p style={{
-                        fontFamily: QC_FONT_EN,
-                        fontSize: 18,
-                        fontStyle: 'italic',
-                        fontWeight: 300,
-                        color: QC.softBrown,
-                        letterSpacing: 2,
-                        margin: '0 0 12px 0',
-                      }}>{c.en}</p>
-                      <p style={{
-                        fontFamily: QC_FONT_JP,
-                        fontSize: 12,
-                        fontWeight: 300,
-                        color: QC.warmGray,
-                        letterSpacing: 0.5,
-                        margin: 0,
-                        lineHeight: 1.7,
-                      }}>{c.ja}</p>
-                    </div>
-                  )}
+                  <div style={{
+                    width: '100%',
+                    aspectRatio: '909 / 1008',
+                    overflow: 'hidden',
+                    background: QC.cream,
+                    borderRadius: 14,
+                    position: 'relative',
+                  }}>
+                    {!failed ? (
+                      <img
+                        src={c.img}
+                        alt={`${c.en} — ${c.ja}`}
+                        loading="lazy"
+                        decoding="async"
+                        onError={() => setImgFailed(prev => { const next = new Set(prev); next.add(i); return next; })}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    ) : null}
+                    {c.video && !failed && (
+                      <MotionPhoto src={c.video} poster={c.img} />
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: 22, color: FEATURE_ACCENT }}>
+                    <FeatureIcon name={c.icon} />
+                  </div>
+                  <p style={{
+                    fontFamily: QC_FONT_EN,
+                    fontSize: isMobile ? 24 : 28,
+                    fontWeight: 300,
+                    letterSpacing: '0.34em',
+                    textIndent: '0.34em',
+                    color: FEATURE_ACCENT,
+                    textAlign: 'center',
+                    margin: '10px 0 0',
+                    lineHeight: 1.2,
+                  }}>{c.en}</p>
+                  <div style={{ width: 40, height: 1, background: FEATURE_ACCENT, opacity: 0.6, margin: '10px auto 0' }} />
+                  <p style={{
+                    fontFamily: QC_FONT_JP,
+                    fontSize: 12,
+                    fontWeight: 300,
+                    letterSpacing: '0.2em',
+                    color: QC.warmGray,
+                    textAlign: 'center',
+                    margin: '12px 0 0',
+                    lineHeight: 1.7,
+                  }}>{c.ja}</p>
                 </div>
               </div>
             );
