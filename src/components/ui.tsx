@@ -11,6 +11,35 @@ import { ORDER_STEPS } from "../constants/data";
 import { resolveFontFamily } from "../constants/fonts";
 import { stepIndex } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
+
+// 2026/9/26 (King「絵文字ダサい」): ナビ・メニュー・ボタンの絵文字を、ホームの「できること」カードと同じ線画
+//   (stroke 1.5・丸端・currentColor) に揃えた。行き先・並び・文言は不変。
+const TAB_ICON: Record<string, ReactNode> = {
+  home:        <><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></>,
+  communities: <><path d="M9 4h9a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-3l-3 3v-3H9a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" /><path d="M6.5 18.5a2 2 0 1 0 0-.01M17.5 18.5a2 2 0 1 0 0-.01" /></>,
+  plus:        <><path d="M12 5v14M5 12h14" /></>,
+  events:      <><rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
+  petwalker:   <><path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z" /><path d="M9 4v14M15 6v14" /></>,
+  person:      <><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></>,
+  gallery:     <><rect x="3" y="7" width="18" height="13" rx="2.5" /><path d="M8 7l1.5-3h5L16 7" /><circle cx="12" cy="13.5" r="3.4" /></>,
+  petgallery:  <><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /><ellipse cx="12" cy="16" rx="2.2" ry="1.8" /><circle cx="9.3" cy="13" r=".9" /><circle cx="14.7" cy="13" r=".9" /></>,
+  facilities:  <><path d="M12 21s-6-5.2-6-10.5a6 6 0 0 1 12 0C18 15.8 12 21 12 21z" /><circle cx="12" cy="10.5" r="2.3" /></>,
+  blog:        <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" /><path d="M4 20.5V5.5M8 7h8M8 10.5h6" /></>,
+  sell:        <><path d="M4 20l4-1L19 8a2 2 0 0 0-3-3L5 16z" /><path d="M13 7l4 4" /></>,
+  manage:      <><path d="M3 8l9-4 9 4v9l-9 4-9-4z" /><path d="M3 8l9 4 9-4M12 12v9" /></>,
+  contact:     <><rect x="3" y="6" width="18" height="13" rx="2.5" /><path d="M3 8l9 6 9-6" /></>,
+  orders:      <><path d="M6 8h12l-1 12H7z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></>,
+  settings:    <><circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" /></>,
+  logout:      <><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" /><path d="M14 8l4 4-4 4M18 12H9" /></>,
+  search:      <><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.3-4.3" /></>,
+  heart:       <><path d="M12 20s-7-4.4-7-9.5A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.5C19 15.6 12 20 12 20z" /></>,
+};
+export const TabIcon = ({ name, size = 22, filled = false }: { name: string; size?: number; filled?: boolean }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"
+    style={{ stroke:"currentColor", fill: filled ? "currentColor" : "none", strokeWidth:1.5, strokeLinecap:"round", strokeLinejoin:"round", display:"block", flexShrink:0 }}>
+    {TAB_ICON[name] ?? TAB_ICON.home}
+  </svg>
+);
 import { supabase } from "../supabaseClient";
 
 // 画面間で共通の props 型。setPage は遷移先ごとに異なるペイロードを渡すため d?: any
@@ -66,8 +95,8 @@ export const Card = ({ item, onClick, liked, onLike }: {
       <button onClick={e=>{e.stopPropagation();onLike(item.id);}} style={{
         position:"absolute", top:8, right:8, width:30, height:30, borderRadius:"50%",
         background:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontSize:14,
-        display:"flex", alignItems:"center", justifyContent:"center"
-      }}>{liked?"❤️":"🤍"}</button>
+        display:"flex", alignItems:"center", justifyContent:"center", color: liked ? C.red : C.warmGray
+      }} aria-label={liked ? "お気に入りから外す" : "お気に入りに入れる"}><TabIcon name="heart" size={16} filled={liked} /></button>
     </div>
     <div style={{ padding:"10px 12px 12px" }}>
       <div style={{ fontSize:13, fontWeight:700, color:C.dark, lineHeight:1.4, marginBottom:4,
@@ -148,16 +177,16 @@ export const UserMenu = ({ setPage }: { setPage: SetPage }) => {
           {[
             // 2026/7/7 設定タブ消失バグ修正: setTimeout+CustomEvent の取りこぼしレースを廃し、
             //   navigate state (setPage 第2引数 {tab}) でマウント時に確実にタブを開く。
-            { icon:"👤", label:"マイページ", action:()=>{ setPage("mypage"); setOpen(false); }},
-            { icon:"📦", label:"注文履歴", action:()=>{ setPage("mypage", { tab: "orders" }); setOpen(false); }},
-            { icon:"⚙️", label:"設定", action:()=>{ setPage("mypage", { tab: "addresses" }); setOpen(false); }},
+            { icon:"person", label:"マイページ", action:()=>{ setPage("mypage"); setOpen(false); }},
+            { icon:"orders", label:"注文履歴", action:()=>{ setPage("mypage", { tab: "orders" }); setOpen(false); }},
+            { icon:"settings", label:"設定", action:()=>{ setPage("mypage", { tab: "addresses" }); setOpen(false); }},
           ].map(item=>(
             <button key={item.label} onClick={item.action} style={{
               width:"100%", padding:"10px 14px", border:"none", borderRadius:10,
               background:"transparent", cursor:"pointer", display:"flex", alignItems:"center",
               gap:10, fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.dark, textAlign:"left"
             }}>
-              <span>{item.icon}</span>{item.label}
+              <span style={{ color:C.warmGray }}><TabIcon name={item.icon} size={18} /></span>{item.label}
             </button>
           ))}
           <div style={{ borderTop:`1px solid ${C.border}`, marginTop:4, paddingTop:4 }}>
@@ -166,7 +195,7 @@ export const UserMenu = ({ setPage }: { setPage: SetPage }) => {
               background:"transparent", cursor:"pointer", display:"flex", alignItems:"center",
               gap:10, fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.red, textAlign:"left"
             }}>
-              <span>🚪</span>ログアウト
+              <TabIcon name="logout" size={18} />ログアウト
             </button>
           </div>
         </div>
@@ -190,27 +219,27 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
     {
       heading: "街を歩く",
       items: [
-        { key: "gallery",     icon: "🐾", label: "ギャラリー",      onClick: () => setPage("gallery") },
-        { key: "petgallery",  icon: "🏡", label: "うちの子たち",    onClick: () => setPage("petgallery") },
-        { key: "communities", icon: "💬", label: "広場",            onClick: () => setPage("communities") },
-        { key: "events",      icon: "📅", label: "イベント",        onClick: () => setPage("events") },
-        { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => setPage("facilities") },
-        { key: "petwalker",   icon: "🧭", label: "おでかけ",        onClick: () => setPage("petwalker") },
-        { key: "blog",        icon: "📝", label: "ブログ",          onClick: () => setPage("blog") },
+        { key: "gallery",     icon: "gallery",     label: "ギャラリー",      onClick: () => setPage("gallery") },
+        { key: "petgallery",  icon: "petgallery",  label: "うちの子たち",    onClick: () => setPage("petgallery") },
+        { key: "communities", icon: "communities", label: "広場",            onClick: () => setPage("communities") },
+        { key: "events",      icon: "events",      label: "イベント",        onClick: () => setPage("events") },
+        { key: "facilities",  icon: "facilities",  label: "地図",            onClick: () => setPage("facilities") },
+        { key: "petwalker",   icon: "petwalker",   label: "おでかけ",        onClick: () => setPage("petwalker") },
+        { key: "blog",        icon: "blog",        label: "ブログ",          onClick: () => setPage("blog") },
       ],
     },
     {
       heading: "作品を置く",
       items: [
-        { key: "sell",        icon: "✎",  label: "出品する",        onClick: () => setPage("sell") },
-        { key: "manage",      icon: "📦", label: "管理する",        onClick: () => openMyPageTab("sales") },
+        { key: "sell",        icon: "sell",        label: "出品する",        onClick: () => setPage("sell") },
+        { key: "manage",      icon: "manage",      label: "管理する",        onClick: () => openMyPageTab("sales") },
       ],
     },
     {
       heading: "暮らしの設定",
       items: [
-        { key: "mypage",      icon: "👤", label: "マイページ",      onClick: () => setPage("mypage") },
-        { key: "contact",     icon: "✉️", label: "お問い合わせ",    onClick: () => setPage("contact") },
+        { key: "mypage",      icon: "person",      label: "マイページ",      onClick: () => setPage("mypage") },
+        { key: "contact",     icon: "contact",     label: "お問い合わせ",    onClick: () => setPage("contact") },
       ],
     },
   ];
@@ -256,7 +285,7 @@ export const Sidebar = ({ setPage, activeCat: _activeCat, setActiveCat: _setActi
                   transition: "color 0.4s ease",
                 }}
               >
-                <span style={{ fontSize: 18, opacity: 0.85, width: 22, display: "inline-flex", justifyContent: "center" }}>{item.icon}</span>
+                <span style={{ opacity: 0.85, width: 22, display: "inline-flex", justifyContent: "center" }}><TabIcon name={item.icon} size={19} /></span>
                 <span>{item.label}</span>
               </button>
             );
@@ -291,7 +320,7 @@ export const PCNavbar = ({ setPage, search, setSearch }: {
     }}>
       <div onClick={()=>setPage("home")} style={{ flexShrink:0 }}><Logo size={32}/></div>
       <div style={{ flex:1, maxWidth:480, position:"relative" }}>
-        <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:16, color:C.warmGray }}>🔍</span>
+        <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:C.warmGray, display:"flex" }}><TabIcon name="search" size={16} /></span>
         <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
           placeholder="ペット専門サービスを探す..."
           style={{ width:"100%", padding:"10px 14px 10px 42px", borderRadius:12, border:`1.5px solid ${C.border}`,
@@ -357,27 +386,27 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
     {
       heading: "街を歩く",
       items: [
-        { key: "gallery",     icon: "🐾", label: "ギャラリー",      onClick: () => navigate("gallery") },
-        { key: "petgallery",  icon: "🏡", label: "うちの子たち",    onClick: () => navigate("petgallery") },
-        { key: "communities", icon: "💬", label: "広場",            onClick: () => navigate("communities") },
-        { key: "events",      icon: "📅", label: "イベント",        onClick: () => navigate("events") },
-        { key: "facilities",  icon: "🐕", label: "地図",            onClick: () => navigate("facilities") },
-        { key: "petwalker",   icon: "🧭", label: "おでかけ",        onClick: () => navigate("petwalker") },
-        { key: "blog",        icon: "📝", label: "ブログ",          onClick: () => navigate("blog") },
+        { key: "gallery",     icon: "gallery",     label: "ギャラリー",      onClick: () => navigate("gallery") },
+        { key: "petgallery",  icon: "petgallery",  label: "うちの子たち",    onClick: () => navigate("petgallery") },
+        { key: "communities", icon: "communities", label: "広場",            onClick: () => navigate("communities") },
+        { key: "events",      icon: "events",      label: "イベント",        onClick: () => navigate("events") },
+        { key: "facilities",  icon: "facilities",  label: "地図",            onClick: () => navigate("facilities") },
+        { key: "petwalker",   icon: "petwalker",   label: "おでかけ",        onClick: () => navigate("petwalker") },
+        { key: "blog",        icon: "blog",        label: "ブログ",          onClick: () => navigate("blog") },
       ],
     },
     {
       heading: "作品を置く",
       items: [
-        { key: "sell",        icon: "✎",  label: "出品する",        onClick: () => navigate("sell") },
-        { key: "manage",      icon: "📦", label: "管理する",        onClick: () => openMyPageTab("sales"), requireAuth: true },
+        { key: "sell",        icon: "sell",        label: "出品する",        onClick: () => navigate("sell") },
+        { key: "manage",      icon: "manage",      label: "管理する",        onClick: () => openMyPageTab("sales"), requireAuth: true },
       ],
     },
     {
       heading: "暮らしの設定",
       items: [
-        { key: "mypage",      icon: "👤", label: "マイページ",      onClick: () => navigate("mypage"), requireAuth: true },
-        { key: "contact",     icon: "✉️", label: "お問い合わせ",    onClick: () => navigate("contact") },
+        { key: "mypage",      icon: "person",      label: "マイページ",      onClick: () => navigate("mypage"), requireAuth: true },
+        { key: "contact",     icon: "contact",     label: "お問い合わせ",    onClick: () => navigate("contact") },
       ],
     },
   ];
@@ -398,7 +427,7 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
         </div>
         <div onClick={()=>setPage("home")} style={{ flexShrink:0, cursor:"pointer" }}><Logo size={30}/></div>
         <div style={{ flex:1, maxWidth:280, position:"relative" }}>
-          <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:14, color:C.warmGray }}>🔍</span>
+          <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:C.warmGray, display:"flex" }}><TabIcon name="search" size={14} /></span>
           <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setPage("search")}
             placeholder="サービスを探す..."
             style={{ width:"100%", padding:"8px 10px 8px 30px", borderRadius:10, border:`1.5px solid ${C.border}`,
@@ -465,7 +494,7 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
                         textAlign: "left",
                       }}
                     >
-                      <span style={{ fontSize: 20, opacity: 0.85, width: 24, display: "inline-flex", justifyContent: "center" }}>{item.icon}</span>
+                      <span style={{ opacity: 0.85, width: 24, display: "inline-flex", justifyContent: "center" }}><TabIcon name={item.icon} size={20} /></span>
                       <span>{item.label}</span>
                     </button>
                   ))}
@@ -534,23 +563,6 @@ export const SharedFooter = ({ setPage }: { setPage: SetPage }) => (
 );
 
 // ── Bottom Tab Bar (Mobile) ───────────────────────────────────────────────
-// 2026/9/26 (King「a と c」): 絵文字を、ホームの「できること」カードと同じ線画 (stroke 1.5・丸端) に揃えた。
-//   行き先・並び・文言は不変。出品の丸ボタンは塗りつぶしから線の丸に。
-const TAB_ICON: Record<string, ReactNode> = {
-  home:        <><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></>,
-  communities: <><path d="M9 4h9a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-3l-3 3v-3H9a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" /><path d="M6.5 18.5a2 2 0 1 0 0-.01M17.5 18.5a2 2 0 1 0 0-.01" /></>,
-  plus:        <><path d="M12 5v14M5 12h14" /></>,
-  events:      <><rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
-  petwalker:   <><path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z" /><path d="M9 4v14M15 6v14" /></>,
-  person:      <><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></>,
-};
-const TabIcon = ({ name, size = 22 }: { name: string; size?: number }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"
-    style={{ stroke:"currentColor", fill:"none", strokeWidth:1.5, strokeLinecap:"round", strokeLinejoin:"round", display:"block" }}>
-    {TAB_ICON[name] ?? TAB_ICON.home}
-  </svg>
-);
-
 export const TabBar = ({ page, setPage }: { page: string; setPage: SetPage }) => {
   const { user } = useAuth();
   const tabs = [
