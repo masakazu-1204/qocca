@@ -11,6 +11,7 @@ import { ORDER_STEPS } from "../constants/data";
 import { resolveFontFamily } from "../constants/fonts";
 import { stepIndex } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
+import { LineIcon } from "./LineIcon";
 
 // 2026/9/26 (King「絵文字ダサい」): ナビ・メニュー・ボタンの絵文字を、ホームの「できること」カードと同じ線画
 //   (stroke 1.5・丸端・currentColor) に揃えた。行き先・並び・文言は不変。
@@ -520,7 +521,7 @@ export const OrderStatusBar = ({ status }: { status: string }) => {
   const idx = stepIndex(status);
   if (idx < 0) return (
     <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:status==="refunded"?"#FFEBEE":"#FFF3E0", borderRadius:12 }}>
-      <span style={{ fontSize:18 }}>{status==="refunded"?"💸":"❌"}</span>
+      <span style={{ fontSize:18, color:status==="refunded"?C.red:C.orange, display:"inline-flex" }}><LineIcon name={status==="refunded"?"coin":"closeCircle"} size={18} /></span>
       <span style={{ fontSize:13, fontWeight:700, color:status==="refunded"?C.red:C.orange }}>{status==="refunded"?"返金済み":"キャンセル"}</span>
     </div>
   );
@@ -539,7 +540,7 @@ export const OrderStatusBar = ({ status }: { status: string }) => {
               color:isDisputed?C.red:isActive?"#fff":C.warmGray,
               border:isCurrent?`3px solid ${isDisputed?C.red:C.orange}`:"3px solid transparent",
               fontWeight:800
-            }}>{isDisputed?"⚠️":step.icon}</div>
+            }}>{isDisputed?<LineIcon name="warning" size={16} />:step.icon}</div>
             <div style={{ fontSize:9, fontWeight:700, color:isDisputed?C.red:isActive?C.orange:C.warmGray, marginTop:4, textAlign:"center", whiteSpace:"nowrap" }}>
               {isDisputed?"異議中":step.label}
             </div>
@@ -611,12 +612,12 @@ export const PCBanner = ({ setPage }: { setPage: SetPage }) => (
     display:"flex", alignItems:"center", justifyContent:"space-between",
     marginTop:32, marginBottom:8
   }}>
-    <div style={{ position:"absolute", right:-10, top:-10, fontSize:120, opacity:0.1, pointerEvents:"none" }}>🐾</div>
+    <div style={{ position:"absolute", right:-10, top:-10, fontSize:120, opacity:0.1, pointerEvents:"none", color:"#fff" }}><LineIcon name="paw" size={120} strokeWidth={1} /></div>
     <div style={{ position:"relative", zIndex:1 }}>
       <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", marginBottom:4 }}>CREATOR WANTED</div>
       <h3 style={{ fontSize:22, fontWeight:900, color:"#fff", lineHeight:1.3 }}>あなたのスキルをペット好きに届けよう</h3>
       <p style={{ color:"rgba(255,255,255,0.85)", fontSize:13, marginTop:6 }}>初回出品は手数料0%！購入者は表示価格のみ</p>
     </div>
-    <button onClick={()=>setPage("sell")} style={{ padding:"12px 28px", background:"#fff", border:"none", borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", flexShrink:0, position:"relative", zIndex:1 }}>🐾 無料で出品を始める</button>
+    <button onClick={()=>setPage("sell")} style={{ padding:"12px 28px", background:"#fff", border:"none", borderRadius:12, color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", flexShrink:0, position:"relative", zIndex:1 }}><LineIcon name="paw" size={14} /> 無料で出品を始める</button>
   </div>
 );

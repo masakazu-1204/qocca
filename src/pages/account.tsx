@@ -9,6 +9,7 @@ import { petLabelShort, petIcon } from "../constants/pets";
 import { resolveFontFamily } from "../constants/fonts";
 // 2026/7/15 CV精度修正: CompleteRegistration の発火は App.tsx (初回ログイン検知) へ移設したため import 不要に。
 import { Logo } from "../components/ui";
+import { LineIcon } from "../components/LineIcon";
 import { MyPage } from "./mypage";
 
 // Phase8 8b: account 系7ページを App.tsx から byte同一 line-slice 移動 (元 App.tsx 141-1514)
@@ -74,7 +75,7 @@ export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void 
         } else if (data?.user?.identities?.length === 0) {
           setError("このメールアドレスは既に登録されています。");
         } else {
-          setMessage("✉️ 確認メールを送信しました！メール内のリンクをクリックして登録を完了してください。");
+          setMessage("確認メールを送信しました！メール内のリンクをクリックして登録を完了してください。");
           // 2026/7/15 CV精度修正: ここでの CompleteRegistration 発火は廃止。
           //   確認メール"送信"時点の発火 = メール未認証もCVに計上(過大計上)だった。
           //   さらに Google(OAuth)経由はここを通らず計測漏れ(過少計上)。
@@ -105,7 +106,7 @@ export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void 
     if (error) {
       setError(error.message);
     } else {
-      setMessage("✉️ パスワードリセットメールを送信しました。メールをご確認ください。");
+      setMessage("パスワードリセットメールを送信しました。メールをご確認ください。");
     }
     setLoading(false);
   };
@@ -135,12 +136,12 @@ export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void 
           {/* Error / Success */}
           {error && (
             <div style={{ background:C.redPale, border:`1px solid ${C.red}`, borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:13, color:C.red, fontWeight:600 }}>
-              ⚠️ {error}
+              <LineIcon name="warning" size={14} /> {error}
             </div>
           )}
           {message && (
             <div style={{ background:C.greenPale, border:`1px solid ${C.green}`, borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:13, color:C.green, fontWeight:600 }}>
-              {message}
+              <LineIcon name="mail" size={14} /> {message}
             </div>
           )}
 
@@ -460,7 +461,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
             borderRadius: 14,
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}>
-            🌈 虹の橋を渡った子
+            <LineIcon name="rainbow" size={13} /> 虹の橋を渡った子
           </div>
         )}
       </div>
@@ -542,7 +543,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
         textAlign: "center",
       }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 8 }}>
-          📜 うちの子の軌跡
+          <LineIcon name="scroll" size={16} /> うちの子の軌跡
         </div>
         <div style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.7 }}>
           {photos.length > 0
@@ -559,7 +560,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
           {/* セクションヘッダー */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 22, fontWeight: 700, color: C.dark, marginBottom: 6, letterSpacing: "0.04em" }}>
-              📋 健康のきろく
+              <LineIcon name="clipboard" size={20} /> 健康のきろく
             </div>
             <div style={{ fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
               あなた専用 — このページは飼い主にしか見えません
@@ -568,11 +569,11 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
 
           {/* 獣医師相談 定型文 (設計憲法 #6) */}
           <div style={{ background: "#FFF8E1", border: "1px solid #F5D680", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#7A5C00", lineHeight: 1.7 }}>
-            ⚠️ 体調の急変や気になる症状がある場合は、必ず獣医師にご相談ください。Qocca は記録の保存・可視化のみを行います。
+            <LineIcon name="warning" size={14} /> 体調の急変や気になる症状がある場合は、必ず獣医師にご相談ください。Qocca は記録の保存・可視化のみを行います。
           </div>
 
           {hrError && (
-            <div style={{ background: C.redPale, color: C.red, padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {hrError}</div>
+            <div style={{ background: C.redPale, color: C.red, padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}><LineIcon name="warning" size={14} /> {hrError}</div>
           )}
 
           {/* 2 カード レイアウト: 体重 / 通院 */}
@@ -581,7 +582,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
             {/* 体重カード */}
             <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>⚖️ 体重 ({weights.length})</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}><LineIcon name="scale" size={15} /> 体重 ({weights.length})</div>
                 <button onClick={() => setShowWeightForm(!showWeightForm)} style={{ background: showWeightForm ? C.lightGray : C.orange, color: showWeightForm ? C.dark : "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                   {showWeightForm ? "閉じる" : "+ 記録する"}
                 </button>
@@ -594,7 +595,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
                   </div>
                   <input type="text" value={wMemo} onChange={(e) => setWMemo(e.target.value)} maxLength={100} placeholder="メモ (任意・100文字以内)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
                   <button onClick={handleAddWeight} disabled={hrSaving} style={{ width: "100%", padding: "9px", background: hrSaving ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: hrSaving ? "wait" : "pointer", fontFamily: "inherit" }}>
-                    {hrSaving ? "保存中..." : "💾 記録する"}
+                    {hrSaving ? "保存中..." : <><LineIcon name="save" size={14} /> 記録する</>}
                   </button>
                 </div>
               )}
@@ -617,7 +618,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
                 const first = sorted[0], last = sorted[sorted.length - 1];
                 return (
                   <div style={{ background: C.cream, borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 4 }}>📈 直近 {sorted.length} 件の推移 (過去並列・判定なし)</div>
+                    <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 4 }}><LineIcon name="chart" size={12} /> 直近 {sorted.length} 件の推移 (過去並列・判定なし)</div>
                     <svg viewBox={`0 0 ${W} ${H + 18}`} style={{ width: "100%", height: 96, display: "block" }} preserveAspectRatio="none" role="img" aria-label="体重推移グラフ">
                       <path d={pathD} stroke={C.orange} strokeWidth={1.5} fill="none" strokeLinejoin="round" strokeLinecap="round" />
                       {points.map((p, i) => (
@@ -650,15 +651,15 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
             {/* 依頼書 #136 B1 Step 4 (2026/6/8): 時系列タイムライン (体重 + 通院 を merge) */}
             {(weights.length > 0 || clinicVisits.length > 0) && (() => {
               const merged: Array<{ type: 'w' | 'c'; date: string; key: string; line1: string; line2?: string }> = [];
-              weights.forEach(w => merged.push({ type: 'w', date: w.recorded_at, key: `w-${w.id}`, line1: `⚖️ ${w.weight_kg} kg`, line2: w.memo || undefined }));
+              weights.forEach(w => merged.push({ type: 'w', date: w.recorded_at, key: `w-${w.id}`, line1: `${w.weight_kg} kg`, line2: w.memo || undefined }));
               clinicVisits.forEach(c => merged.push({ type: 'c', date: c.visited_at, key: `c-${c.id}`,
-                line1: `🏥 ${c.clinic_name || "(病院名なし)"}${c.reason ? ` · ${c.reason}` : ""}`,
+                line1: `${c.clinic_name || "(病院名なし)"}${c.reason ? ` · ${c.reason}` : ""}`,
                 line2: c.memo || undefined }));
               merged.sort((a, b) => b.date.localeCompare(a.date)); // DESC
               const top = merged.slice(0, 30);
               return (
                 <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, marginBottom: 4 }}>📜 時系列 ({merged.length})</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, marginBottom: 4 }}><LineIcon name="scroll" size={15} /> 時系列 ({merged.length})</div>
                   <div style={{ fontSize: 10, color: C.warmGray, marginBottom: 10 }}>体重と通院を時系列で並べた振り返り (飼い主専用 / 判定なし)</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {top.map((e) => (
@@ -669,7 +670,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
                       }}>
                         <div style={{ fontSize: 10, color: C.warmGray, minWidth: 56, fontFamily: "monospace" }}>{e.date.slice(5)}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: C.dark, fontWeight: 600 }}>{e.line1}</div>
+                          <div style={{ fontSize: 12, color: C.dark, fontWeight: 600 }}><LineIcon name={e.type === 'c' ? "hospital" : "scale"} size={13} /> {e.line1}</div>
                           {e.line2 && <div style={{ fontSize: 10, color: C.warmGray, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{e.line2}</div>}
                         </div>
                       </div>
@@ -685,7 +686,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
             {/* 通院カード */}
             <div style={{ background: C.white, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>🏥 通院 ({clinicVisits.length})</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}><LineIcon name="hospital" size={15} /> 通院 ({clinicVisits.length})</div>
                 <button onClick={() => setShowClinicForm(!showClinicForm)} style={{ background: showClinicForm ? C.lightGray : C.orange, color: showClinicForm ? C.dark : "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                   {showClinicForm ? "閉じる" : "+ 記録する"}
                 </button>
@@ -697,7 +698,7 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
                   <input type="text" value={cReason} onChange={(e) => setCReason(e.target.value)} maxLength={50} placeholder="理由 (定期検診/ワクチン/その他)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
                   <input type="text" value={cMemo} onChange={(e) => setCMemo(e.target.value)} maxLength={200} placeholder="メモ (任意・200文字以内)" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontFamily: "inherit", background: "#fff", boxSizing: "border-box", marginBottom: 8 }} />
                   <button onClick={handleAddClinic} disabled={hrSaving} style={{ width: "100%", padding: "9px", background: hrSaving ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: hrSaving ? "wait" : "pointer", fontFamily: "inherit" }}>
-                    {hrSaving ? "保存中..." : "💾 記録する"}
+                    {hrSaving ? "保存中..." : <><LineIcon name="save" size={14} /> 記録する</>}
                   </button>
                 </div>
               )}
@@ -782,7 +783,7 @@ export const UpdatePasswordPage = () => {
     return (
       <div style={{ paddingTop: 60, minHeight: "100vh", background: "#FAF5EC", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 16px" }}>
         <div style={{ maxWidth: 440, width: "100%", background: "#fff", borderRadius: 18, padding: "32px 22px", textAlign: "center", border: `1px solid ${C.border}`, boxShadow: "0 4px 18px rgba(0,0,0,0.04)" }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>🔒</div>
+          <div style={{ marginBottom: 10, color: C.warmGray }}><LineIcon name="lock" size={32} /></div>
           <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 18, fontWeight: 700, color: C.dark, marginBottom: 10, letterSpacing: "0.04em" }}>
             無効なアクセスです
           </div>
@@ -804,7 +805,7 @@ export const UpdatePasswordPage = () => {
     <div style={{ paddingTop: 60, minHeight: "100vh", background: "#FAF5EC", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
       <div style={{ maxWidth: 440, width: "100%", background: "#fff", borderRadius: 18, padding: "32px 22px", border: `1px solid ${C.border}`, boxShadow: "0 4px 18px rgba(0,0,0,0.04)" }}>
         <div style={{ textAlign: "center", marginBottom: 22 }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🔑</div>
+          <div style={{ marginBottom: 8, color: C.warmGray }}><LineIcon name="key" size={32} /></div>
           <div style={{ fontFamily: QC_FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: C.dark, marginBottom: 8, letterSpacing: "0.04em" }}>
             新しいパスワードを設定
           </div>
@@ -815,7 +816,7 @@ export const UpdatePasswordPage = () => {
 
         {success ? (
           <div style={{ background: "#E8F5E9", color: "#2E7D32", padding: "18px 14px", borderRadius: 12, textAlign: "center", fontSize: 13, fontWeight: 700, lineHeight: 1.7 }}>
-            ✅ パスワードを変更しました<br />
+            <LineIcon name="checkCircle" size={14} /> パスワードを変更しました<br />
             <span style={{ fontSize: 11, fontWeight: 400, color: "#558B5C" }}>ログイン画面へ移動します...</span>
           </div>
         ) : (
@@ -829,7 +830,7 @@ export const UpdatePasswordPage = () => {
               <input type="password" value={pass2} onChange={(e) => setPass2(e.target.value)} placeholder="もう一度入力" autoComplete="new-password" style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}/>
             </div>
             {errMsg && (
-              <div style={{ background: "#FFE4E1", color: "#A33C2E", padding: "10px 12px", borderRadius: 8, fontSize: 12.5, marginBottom: 14, lineHeight: 1.6 }}>⚠️ {errMsg}</div>
+              <div style={{ background: "#FFE4E1", color: "#A33C2E", padding: "10px 12px", borderRadius: 8, fontSize: 12.5, marginBottom: 14, lineHeight: 1.6 }}><LineIcon name="warning" size={14} /> {errMsg}</div>
             )}
             <button onClick={handleSubmit} disabled={submitting} style={{ width: "100%", padding: 13, background: submitting ? C.warmGray : C.orange, color: "#fff", border: "none", borderRadius: 24, fontSize: 14, fontWeight: 700, cursor: submitting ? "wait" : "pointer", fontFamily: "inherit", minHeight: 46 }}>
               {submitting ? "変更中..." : "パスワードを変更する"}
@@ -902,11 +903,11 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
     <div style={{ minHeight: "100vh", background: C.cream, paddingTop: 64, paddingBottom: 80, fontFamily: "'Noto Sans JP',sans-serif" }}>
       <div style={{ maxWidth: 540, margin: "0 auto", padding: "0 20px" }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>🎁</div>
+          <div style={{ marginBottom: 8, color: C.warmGray }}><LineIcon name="gift" size={40} /></div>
           <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, margin: "0 0 6px" }}>クラファン特典を受け取る</h1>
           <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.6, margin: 0 }}>
-            CAMPFIRE のメールで届いた引き換えコードを入力してや🐾<br />
-            <span style={{ fontSize: 11, opacity: 0.7 }}>創業期住民として、Qocca の街にようこそ🌅</span>
+            CAMPFIRE のメールで届いた引き換えコードを入力してや<br />
+            <span style={{ fontSize: 11, opacity: 0.7 }}>創業期住民として、Qocca の街にようこそ</span>
           </p>
         </div>
 
@@ -933,7 +934,7 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
 
             {error && (
               <div style={{ marginTop: 16, padding: "12px 14px", background: "#FFEBEE", color: "#C62828", borderRadius: 10, fontSize: 13, lineHeight: 1.5 }}>
-                ⚠️ {error}
+                <LineIcon name="warning" size={14} /> {error}
               </div>
             )}
 
@@ -948,11 +949,11 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
                 transition: "background 0.2s",
               }}
             >
-              {loading ? "確認中..." : "🎉 特典を受け取る"}
+              {loading ? "確認中..." : <><LineIcon name="sparkle" size={15} /> 特典を受け取る</>}
             </button>
 
             <div style={{ marginTop: 20, padding: 12, background: C.cream, borderRadius: 10, fontSize: 11, color: C.warmGray, lineHeight: 1.7 }}>
-              💡 <strong style={{ color: C.dark }}>困った時は:</strong><br />
+              <LineIcon name="bulb" size={12} /> <strong style={{ color: C.dark }}>困った時は:</strong><br />
               ・コードが届いてない → CAMPFIRE のメッセージ機能でお問い合わせください<br />
               ・「既に使用されています」と出る → 既に引き換え済みです。マイページで特典をご確認ください<br />
               ・その他 → <span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => navigate("/contact")}>お問い合わせ</span>
@@ -962,21 +963,21 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
 
         {result && theme && (
           <div style={{ background: C.white, borderRadius: 20, padding: 28, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", textAlign: "center" }}>
-            <div style={{ fontSize: 64, marginBottom: 12, animation: "qoccaBounce 0.6s ease" }}>{theme.icon}</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, animation: "qoccaBounce 0.6s ease", color: theme.color }}><LineIcon name={theme.icon} size={64} /></div>
             <div style={{ background: theme.bg, color: theme.color, display: "inline-block", padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 800, marginBottom: 14 }}>
               {theme.label}
             </div>
             <h2 style={{ fontSize: 20, fontWeight: 900, color: C.dark, margin: "0 0 8px" }}>
-              ありがとうございます🌅
+              <LineIcon name="sunrise" size={18} /> ありがとうございます
             </h2>
             <p style={{ fontSize: 13, color: C.warmGray, lineHeight: 1.7, margin: "0 0 20px" }}>
               <strong style={{ color: C.dark }}>{result.reward_name}</strong> の特典を受け取りました。<br />
-              Qocca の街は、あなたという住民を得て<br />一歩深くなりました🐾
+              Qocca の街は、あなたという住民を得て<br />一歩深くなりました
             </p>
 
             {/* 受け取った特典リスト */}
             <div style={{ background: C.cream, borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "left" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.dark, marginBottom: 10 }}>✨ 受け取った特典</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.dark, marginBottom: 10 }}><LineIcon name="sparkle" size={14} /> 受け取った特典</div>
               {(result.benefits || []).filter((b: string) => !b.startsWith("badge:") && b !== "founding_creator" && b !== "founding_mayor" && b !== "founding_fee_rate_3" && b !== "early_supporter").map((b: string, i: number) => (
                 <div key={i} style={{ fontSize: 12, color: C.dark, padding: "4px 0", borderBottom: i < (result.benefits.length - 1) ? `1px solid ${C.border}` : "none" }}>
                   ・{b}
@@ -984,7 +985,7 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
               ))}
               {(result.newly_granted_badges || []).length > 0 && (
                 <div style={{ marginTop: 10, padding: "10px 0 0", borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>🏅 獲得バッジ</div>
+                  <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}><LineIcon name="medal" size={12} /> 獲得バッジ</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {result.newly_granted_badges.map((b: string) => (
                       <span key={b} style={{ background: theme.bg, color: theme.color, padding: "4px 10px", borderRadius: 14, fontSize: 11, fontWeight: 700 }}>
@@ -996,12 +997,12 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
               )}
               {(result.profile_flags_set || []).length > 0 && (
                 <div style={{ marginTop: 10, padding: "10px 0 0", borderTop: `1px solid ${C.border}` }}>
-                  <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}>⭐ プロフィール特典</div>
+                  <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 6 }}><LineIcon name="star" size={12} /> プロフィール特典</div>
                   {result.profile_flags_set.includes("is_founding_creator") && (
-                    <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}>🎨 創業クリエイター認定 (事業が存続する限り手数料 3%)</div>
+                    <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}><LineIcon name="palette" size={14} /> 創業クリエイター認定 (事業が存続する限り手数料 3%)</div>
                   )}
                   {result.profile_flags_set.includes("is_founding_mayor") && (
-                    <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}>👑 創業首長認定</div>
+                    <div style={{ fontSize: 12, color: C.dark, marginTop: 2 }}><LineIcon name="crown" size={14} /> 創業首長認定</div>
                   )}
                 </div>
               )}
@@ -1011,7 +1012,7 @@ export const RedeemPage = ({ setPage }: { setPage: (p: string) => void }) => {
               onClick={() => { setPage("mypage"); navigate("/mypage"); }}
               style={{ width: "100%", padding: "14px", background: C.orange, color: "#fff", border: "none", borderRadius: 12, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginBottom: 8 }}
             >
-              🏠 マイページで確認
+              <LineIcon name="home" size={15} /> マイページで確認
             </button>
             <button
               onClick={() => { setResult(null); setCode(""); }}
@@ -1229,7 +1230,7 @@ export const PhoneVerificationPage = ({ setPage: _setPage }: any) => {
             既に verified_at がある住民は alreadyVerified=true → Step 3 表示で本ブロックを通らず無影響。 */}
         {step === 1 && alreadyVerified === false && !SMS_VERIFICATION_AVAILABLE && (
           <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "28px 22px", textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 14, opacity: 0.6 }}>🌿</div>
+            <div style={{ marginBottom: 14, opacity: 0.6, color: C.warmGray }}><LineIcon name="leaf" size={32} /></div>
             <div style={{ fontSize: 16, fontWeight: 600, color: C.dark, marginBottom: 12, lineHeight: 1.6 }}>
               {SMS_UNAVAILABLE_COPY.title}
             </div>
@@ -1345,7 +1346,7 @@ export const PhoneVerificationPage = ({ setPage: _setPage }: any) => {
         {/* Step 3: 完了 */}
         {step === 3 && (
           <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "24px 20px", textAlign: "center" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🌿</div>
+            <div style={{ marginBottom: 12, color: C.warmGray }}><LineIcon name="leaf" size={32} /></div>
             <div style={{ fontSize: 16, fontWeight: 600, color: C.dark, marginBottom: 8 }}>
               {alreadyVerified ? "認証済みです" : "認証が完了しました"}
             </div>
@@ -1387,7 +1388,7 @@ export const DeletionStatusPage: React.FC = () => {
 
   return (
     <div style={{ minHeight: "70vh", maxWidth: 600, margin: "0 auto", padding: "60px 20px 40px" }}>
-      <div style={{ fontSize: 56, textAlign: "center", marginBottom: 16 }}>🗑️</div>
+      <div style={{ textAlign: "center", marginBottom: 16, color: C.warmGray }}><LineIcon name="trash" size={40} /></div>
       <h1 style={{ fontSize: 22, fontWeight: 900, color: C.dark, textAlign: "center", marginBottom: 16 }}>
         データ削除リクエストを受け付けました
       </h1>

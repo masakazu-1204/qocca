@@ -17,6 +17,7 @@ import { FACILITY_CATS, MOOD_TAGS, FACILITY_REPORT_REASONS, PREFS } from "../con
 import { checkFacilityNGWords } from "../utils/moderation";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+import { LineIcon } from "../components/LineIcon";
 import type { ChangeEvent } from "react";
 import type { SetPage } from "../types";
 
@@ -103,7 +104,7 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }: {
       title.textContent = `${closed ? "🚧" : catIcon(f.category)} ${f.name}${closed ? "（閉店）" : ""}`;
       const addr = document.createElement("div");
       addr.style.cssText = "font-size:11px;color:#8C7B6B;margin-bottom:8px";
-      addr.textContent = `📍 ${f.address || f.prefecture || ""}`;
+      addr.textContent = `${f.address || f.prefecture || ""}`;
       const btn = document.createElement("button");
       btn.textContent = "詳細を見る →";
       btn.style.cssText = "padding:6px 14px;background:#F5A94A;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit";
@@ -307,7 +308,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
       <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>🐕 ペット施設マップ</h1>
+            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}><LineIcon name="dog" size={20} /> ペット施設マップ</h1>
             <p style={{ fontSize:12, color:C.warmGray }}>みんなのリアルな訪問レポートをチェック</p>
           </div>
           {user && (
@@ -326,7 +327,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
             border:`1.5px solid ${searchInput ? C.orange : C.border}`,
             transition:"border-color 0.2s"
           }}>
-            <span style={{ fontSize:16, color:C.warmGray, flexShrink:0 }}>🔍</span>
+            <span style={{ fontSize:16, color:C.warmGray, flexShrink:0, display:"inline-flex" }}><LineIcon name="search" size={16} /></span>
             <input
               type="text"
               value={searchInput}
@@ -377,7 +378,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
                   onMouseEnter={(e) => (e.currentTarget.style.background = C.cream)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <span style={{ color:C.warmGray, fontSize:12 }}>🕐</span>
+                  <span style={{ color:C.warmGray, fontSize:12, display:"inline-flex" }}><LineIcon name="clock" size={12} /></span>
                   <span>{h}</span>
                 </button>
               ))}
@@ -413,7 +414,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
           padding:"8px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13,
           fontFamily:"inherit", outline:"none", background:C.white, color:C.dark
         }}>
-          <option value="">📍 全国</option>
+          <option value="">全国</option>
           {PREFS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         {/* 依頼書 #143 U1: 市区町村ドロップダウン (都道府県選択時のみ / 食べログ式の2段階エリア) */}
@@ -422,23 +423,23 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
             marginLeft:8, padding:"8px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13,
             fontFamily:"inherit", outline:"none", background:C.white, color:C.dark, maxWidth:180
           }}>
-            <option value="">🏘 市区町村: すべて</option>
+            <option value="">市区町村: すべて</option>
             {cityOptions.map((c:any) => <option key={c.city} value={c.city}>{c.city} ({c.cnt})</option>)}
           </select>
         )}
         <span style={{ marginLeft:12, fontSize:12, color:C.warmGray }}>
           {searchQuery
-            ? <>🔎 「{searchQuery}」: <b style={{ color:C.dark }}>{filtered.length}{hasMore ? "+" : ""}</b>件</>
+            ? <><LineIcon name="search" size={12} /> 「{searchQuery}」:<b style={{ color:C.dark }}>{filtered.length}{hasMore ? "+" : ""}</b>件</>
             : <>{filtered.length}{hasMore ? "+" : ""}件の施設</>}
         </span>
         {/* 依頼書 U2 (2026/6/13): 地図↔リスト切替トグル */}
         <div style={{ marginLeft:"auto", flexShrink:0, display:"flex", border:`1.5px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-          {[["list","📋 リスト"],["map","🗺️ 地図"]].map(([mode, label]) => (
+          {[["list","clipboard","リスト"],["map","map","地図"]].map(([mode, icon, label]) => (
             <button key={mode} onClick={()=>setViewMode(mode)} style={{
               padding:"6px 12px", background:viewMode===mode?C.orange:C.white,
               color:viewMode===mode?"#fff":C.warmGray, border:"none",
               fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit"
-            }}>{label}</button>
+            }}><LineIcon name={icon} size={12} /> {label}</button>
           ))}
         </div>
       </div>
@@ -447,7 +448,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:440, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>🐕 施設を追加</h2>
+              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="dog" size={18} /> 施設を追加</h2>
               <button onClick={()=>setShowAdd(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
             <p style={{ fontSize:11, color:C.warmGray, marginBottom:16 }}>投稿後、運営の審査を経て公開されます</p>
@@ -495,14 +496,14 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
               width:"100%", padding:"13px", background:(!user || !addForm.name || !addForm.address || submitting)?C.warmGray:C.orange,
               border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14,
               cursor:(!user || !addForm.name || !addForm.address || submitting)?"not-allowed":"pointer", fontFamily:"inherit"
-            }}>{submitting ? "送信中..." : "🐕 投稿する"}</button>
+            }}>{submitting ? "送信中..." : <><LineIcon name="dog" size={14} /> 投稿する</>}</button>
           </div>
         </div>
       )}
 
       {submitted && (
         <div style={{ position:"fixed", top:80, left:"50%", transform:"translateX(-50%)", background:C.green, color:"#fff", padding:"12px 24px", borderRadius:12, zIndex:400, fontWeight:800, fontSize:13 }}>
-          ✅ 投稿ありがとうございます！審査後に公開されます
+          <LineIcon name="checkCircle" size={14} /> 投稿ありがとうございます！審査後に公開されます
         </div>
       )}
 
@@ -513,15 +514,15 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
       {viewMode === "map" ? (
         <div style={{ padding:16 }}>
           {mapLoading && (
-            <div style={{ textAlign:"center", padding:"8px 0", color:C.warmGray, fontSize:12 }}>🗺️ 地図データ読み込み中...</div>
+            <div style={{ textAlign:"center", padding:"8px 0", color:C.warmGray, fontSize:12 }}><LineIcon name="map" size={12} /> 地図データ読み込み中...</div>
           )}
           <FacilityMapView facilities={mapFacilities} isPC={isPC} onSelect={openFacility} catIcon={catIcon}/>
           {!mapLoading && (() => {
             const noCoords = mapFacilities.filter((f) => f.latitude == null || f.longitude == null).length;
             return (
               <div style={{ marginTop:8, fontSize:11, color:C.warmGray, lineHeight:1.7 }}>
-                <div>🗺️ 地図上のピン: {mapFacilities.length - noCoords}件{mapFacilities.length >= MAP_LIMIT ? `（表示上限${MAP_LIMIT}件に達しています。エリアやカテゴリで絞り込むと全件表示されます）` : ""}</div>
-                {noCoords > 0 && <div>📍 座標未登録の施設 {noCoords}件 は地図に表示されません。リスト表示でご確認ください。</div>}
+                <div><LineIcon name="map" size={11} /> 地図上のピン:{mapFacilities.length - noCoords}件{mapFacilities.length >= MAP_LIMIT ? `（表示上限${MAP_LIMIT}件に達しています。エリアやカテゴリで絞り込むと全件表示されます）` : ""}</div>
+                {noCoords > 0 && <div><LineIcon name="pin" size={11} /> 座標未登録の施設 {noCoords}件 は地図に表示されません。リスト表示でご確認ください。</div>}
               </div>
             );
           })()}
@@ -533,7 +534,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
         ) : filtered.length === 0 ? (
           /* 依頼書 #11 #5 (5/25): 空状態 温度感UP - 「住民が見つけた場所」温度 */
           <div style={{ textAlign:"center", padding:"60px 24px" }}>
-            <div style={{ fontSize:56, marginBottom:14, opacity:0.85 }}>🐕</div>
+            <div style={{ fontSize:56, marginBottom:14, opacity:0.85 }}><LineIcon name="dog" size={56} strokeWidth={1} /></div>
             <div style={{ fontSize:17, fontWeight:700, color:C.dark, marginBottom:10, letterSpacing:0.2 }}>
               {!hasActiveFilter
                 ? "街の住民が見つけた場所が、ここに集まります"
@@ -543,7 +544,7 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
               {!hasActiveFilter ? (
                 <>
                   ドッグラン、動物病院、ペット同伴カフェ、トリミング——<br/>
-                  あなたが「ここよかったよ」と思った場所を、そっと共有してや🌅
+                  あなたが「ここよかったよ」と思った場所を、そっと共有してや
                 </>
               ) : (
                 <>
@@ -576,14 +577,14 @@ export const FacilitiesPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boo
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:15, fontWeight:800, color:C.dark, marginBottom:4 }}>{f.name}</div>
-                    <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📍 {f.address}</div>
-                    {f.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {f.hours}</div>}
+                    <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}><LineIcon name="pin" size={11} /> {f.address}</div>
+                    {f.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}><LineIcon name="clock" size={11} /> {f.hours}</div>}
                     <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
                       {/* 依頼書 #146 Step3 (2026/6/13): 閉店バッジ (承認済の閉店報告) */}
-                      {f.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}>🚧 閉店</span>}
+                      {f.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}><LineIcon name="cone" size={10} /> 閉店</span>}
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(f.category)}</span>
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{f.prefecture}</span>
-                      {((f.review_count ?? 0) > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {f.review_count}件のレポート</span>}
+                      {((f.review_count ?? 0) > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}><LineIcon name="note" size={10} /> {f.review_count}件のレポート</span>}
                     </div>
                   </div>
                 </div>
@@ -664,21 +665,21 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <h1 style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>{facility.name}</h1>
-            <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📍 {facility.address}</div>
-            {facility.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>🕐 {facility.hours}</div>}
-            {facility.phone && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}>📞 {facility.phone}</div>}
+            <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}><LineIcon name="pin" size={11} /> {facility.address}</div>
+            {facility.hours && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}><LineIcon name="clock" size={11} /> {facility.hours}</div>}
+            {facility.phone && <div style={{ fontSize:11, color:C.warmGray, marginBottom:2 }}><LineIcon name="phone" size={11} /> {facility.phone}</div>}
             <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
               {/* 依頼書 #146 Step3 (2026/6/13): 閉店バッジ (承認済の閉店報告) */}
-              {facility.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}>🚧 閉店</span>}
+              {facility.is_closed && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#FFEBEE", color:"#C62828", fontWeight:800 }}><LineIcon name="cone" size={10} /> 閉店</span>}
               <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{catLabel(facility.category)}</span>
               <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>{facility.prefecture}</span>
-              {((facility.review_count ?? 0) > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}>📝 {facility.review_count}件のレポート</span>}
+              {((facility.review_count ?? 0) > 0) && <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:"#E8F5E9", color:C.green, fontWeight:700 }}><LineIcon name="note" size={10} /> {facility.review_count}件のレポート</span>}
             </div>
           </div>
         </div>
         {/* 依頼書 #146 Step1 (2026/6/13): 登録番号・出典は非表示 (DB保持・表示のみフィルタ) */}
         {facilityDisplayDesc(facility.description) && <div style={{ fontSize:12, color:"#666", lineHeight:1.7, marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}`, whiteSpace:"pre-wrap" }}>{facilityDisplayDesc(facility.description)}</div>}
-        {facility.website && <a href={facility.website} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:12, color:C.blue, fontWeight:700 }}>🔗 ウェブサイトを見る</a>}
+        {facility.website && <a href={facility.website} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:12, color:C.blue, fontWeight:700 }}><LineIcon name="link" size={12} /> ウェブサイトを見る</a>}
         <button onClick={()=>setShowCorrectionForm(true)} style={{ display:"block", marginTop:8, fontSize:11, color:C.warmGray, background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline", fontFamily:"inherit" }}>この情報を訂正する</button>
       </div>
 
@@ -688,17 +689,17 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
             width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12,
             color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit",
             boxShadow:"0 4px 12px rgba(245, 169, 74, 0.3)"
-          }}>📝 {visits.length === 0 ? "この場所の、最初の記録を残す" : "訪問レポートを投稿する"}</button>
+          }}><LineIcon name="note" size={14} /> {visits.length === 0 ? "この場所の、最初の記録を残す" : "訪問レポートを投稿する"}</button>
         ) : (
           <button onClick={()=>setPage("login")} style={{
             width:"100%", padding:"14px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:12,
             color:C.orange, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit"
-          }}>🔒 {visits.length === 0 ? "ログインして、最初のひとりになる" : "ログインしてレポートを投稿"}</button>
+          }}><LineIcon name="lock" size={14} /> {visits.length === 0 ? "ログインして、最初のひとりになる" : "ログインしてレポートを投稿"}</button>
         )}
       </div>
 
       <div style={{ padding:"0 16px 80px" }}>
-        <h2 style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}>🐾 みんなの訪問レポート</h2>
+        <h2 style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:12 }}><LineIcon name="paw" size={14} /> みんなの訪問レポート</h2>
         {/* 2026/8/25 最初のひとり: 一番乗りの名前を場所に残す。3,613施設に対しレポートが
             1件も無く、「最初の一人になるのが怖い」を崩す必要があった。
             ⚠️ fetchVisits は新しい順50件までしか取らないため、50件に達している場合は
@@ -712,7 +713,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
         ) : visits.length === 0 ? (
           <div style={{ background:C.white, borderRadius:16, padding:"40px 20px", border:`1px dashed ${C.border}`, textAlign:"center" }}>
-            <div style={{ fontSize:40, marginBottom:8 }}>🐾</div>
+            <div style={{ fontSize:40, marginBottom:8 }}><LineIcon name="paw" size={40} strokeWidth={1} /></div>
             <div style={{ fontSize:13, color:C.warmGray, lineHeight:1.7 }}>この場所のことは、まだ誰も書いていません<br/>あなたが、最初のひとりになれます</div>
           </div>
         ) : (
@@ -721,7 +722,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
               <div key={v.id} style={{ background:C.white, borderRadius:16, padding:"14px 16px", border:`1px solid ${C.border}` }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                   <div style={{ width:32, height:32, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:14 }}>
-                    {v.authorAvatar ? <img src={v.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+                    {v.authorAvatar ? <img src={v.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <LineIcon name="paw" size={14} />}
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{v.authorName}</div>
@@ -730,7 +731,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
                     </div>
                   </div>
                   {user && user.id !== v.user_id && (
-                    <button onClick={()=>setReportTarget(v)} style={{ background:"none", border:"none", color:C.warmGray, fontSize:11, cursor:"pointer", fontFamily:"inherit", padding:"4px 8px" }}>⚠ 通報</button>
+                    <button onClick={()=>setReportTarget(v)} style={{ background:"none", border:"none", color:C.warmGray, fontSize:11, cursor:"pointer", fontFamily:"inherit", padding:"4px 8px" }}><LineIcon name="warning" size={11} /> 通報</button>
                   )}
                 </div>
                 {Array.isArray(v.mood_tags) && v.mood_tags.length > 0 && (
@@ -886,18 +887,18 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }: {
     return (
       <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
         <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%" }}>
-          <div style={{ fontSize:40, textAlign:"center", marginBottom:12 }}>🐾</div>
+          <div style={{ fontSize:40, textAlign:"center", marginBottom:12 }}><LineIcon name="paw" size={40} strokeWidth={1} /></div>
           <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, textAlign:"center", marginBottom:12 }}>投稿前に最終確認</h2>
           <div style={{ background:C.cream, borderRadius:12, padding:"14px", fontSize:12, color:C.dark, lineHeight:1.7, marginBottom:16 }}>
-            ✅ 他の人を傷つけない内容ですか？<br/>
-            ✅ 個人を特定できる情報は含まれていませんか？<br/>
-            ✅ 事実に基づいた内容ですか？<br/>
+            <LineIcon name="checkCircle" size={12} /> 他の人を傷つけない内容ですか？<br/>
+            <LineIcon name="checkCircle" size={12} /> 個人を特定できる情報は含まれていませんか？<br/>
+            <LineIcon name="checkCircle" size={12} /> 事実に基づいた内容ですか？<br/>
             <br/>
             <span style={{ color:C.warmGray, fontSize:11 }}>※ 通報が3件以上集まると自動的に非表示になります</span>
           </div>
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={()=>setConfirming(false)} disabled={submitting} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:submitting?"not-allowed":"pointer", fontFamily:"inherit" }}>戻って修正</button>
-            <button onClick={handleConfirmSubmit} disabled={submitting} style={{ flex:2, padding:"12px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:submitting?"not-allowed":"pointer", fontFamily:"inherit" }}>{submitting ? "投稿中..." : "🐾 投稿する"}</button>
+            <button onClick={handleConfirmSubmit} disabled={submitting} style={{ flex:2, padding:"12px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:submitting?"not-allowed":"pointer", fontFamily:"inherit" }}>{submitting ? "投稿中..." : <><LineIcon name="paw" size={14} /> 投稿する</>}</button>
           </div>
         </div>
       </div>
@@ -908,7 +909,7 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }: {
     <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:480, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📝 訪問レポート</h2>
+          <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="note" size={18} /> 訪問レポート</h2>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
         </div>
         <p style={{ fontSize:11, color:C.warmGray, marginBottom:14 }}>{facility.name} のレポート</p>
@@ -937,7 +938,7 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }: {
 
         <div style={{ marginBottom:14 }}>
           <label style={{ fontSize:12, fontWeight:800, color:C.dark, display:"block", marginBottom:6 }}>コメント(任意・1000文字以内)</label>
-          <textarea value={comment} onChange={e=>setComment(e.target.value)} rows={4} placeholder="うちの子の様子、おすすめポイントを教えてね 🐾" maxLength={1000} style={{
+          <textarea value={comment} onChange={e=>setComment(e.target.value)} rows={4} placeholder="うちの子の様子、おすすめポイントを教えてね" maxLength={1000} style={{
             width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`,
             fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box"
           }}/>
@@ -961,14 +962,14 @@ const FacilityVisitForm = ({ facility, user, onClose, onSubmitted }: {
             <button onClick={()=>fileRef.current?.click()} style={{
               width:"100%", padding:"20px", border:`2px dashed ${C.border}`, borderRadius:12,
               background:C.lightGray, cursor:"pointer", color:C.warmGray, fontSize:13, fontFamily:"inherit"
-            }}>📷 写真を追加(残り{3 - photoFiles.length}枚)</button>
+            }}><LineIcon name="camera" size={14} /> 写真を追加(残り{3 - photoFiles.length}枚)</button>
           )}
         </div>
 
         {error && <div style={{ background:"#FFEBEE", color:C.red, padding:"10px 12px", borderRadius:10, fontSize:12, marginBottom:12, whiteSpace:"pre-wrap" }}>{error}</div>}
 
         <div style={{ background:"#FFF8E1", borderRadius:10, padding:"10px 12px", fontSize:11, color:"#5D4037", lineHeight:1.7, marginBottom:14 }}>
-          📜 投稿は<a href="https://qocca.pet/terms" target="_blank" rel="noopener noreferrer" style={{ color:C.orange, fontWeight:700 }}>利用規約</a>に従い、誹謗中傷や個人を特定できる情報は禁止です
+          <LineIcon name="scroll" size={12} /> 投稿は<a href="https://qocca.pet/terms" target="_blank" rel="noopener noreferrer" style={{ color:C.orange, fontWeight:700 }}>利用規約</a>に従い、誹謗中傷や個人を特定できる情報は禁止です
         </div>
 
         <button onClick={handleSubmitClick} style={{
@@ -1016,7 +1017,7 @@ const FacilityReportModal = ({ visit, user, onClose, onSubmitted }: {
     <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark }}>⚠ 通報する</h2>
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark }}><LineIcon name="warning" size={16} /> 通報する</h2>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
         </div>
         <div style={{ marginBottom:14 }}>
@@ -1090,12 +1091,12 @@ const FacilityCorrectionForm = ({ facility, user, onClose }: {
     <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark }}>📝 情報を訂正</h2>
+          <h2 style={{ fontSize:16, fontWeight:900, color:C.dark }}><LineIcon name="note" size={16} /> 情報を訂正</h2>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
         </div>
         {done ? (
           <div style={{ textAlign:"center", padding:"30px 10px" }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+            <div style={{ fontSize:40, marginBottom:12 }}><LineIcon name="checkCircle" size={40} strokeWidth={1} /></div>
             <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:6 }}>送信ありがとうございます</div>
             <div style={{ fontSize:12, color:C.warmGray }}>運営が確認後、情報を更新します</div>
           </div>

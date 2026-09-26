@@ -13,6 +13,8 @@ import { PET_CATEGORIES, evPetLabel, evPetColor, evPetBg } from "../constants/pe
 import { EVENT_CATS, PREFS_47_ORDER, COMMUNITY_CATEGORIES } from "../constants/data";
 import { detectContacts, detectNGWords } from "../utils/moderation";
 import CommentModal from "../components/CommentModal";
+import { LineIcon } from "../components/LineIcon";
+import type { ReactNode } from "react";
 import type { CommentTargetType } from "../types";
 import type { SetPage } from "../types";
 
@@ -133,7 +135,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
     if (!error) {
       setShowPost(false);
       setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"", image_url:"" });
-      alert("投稿ありがとうございます！審査後に公開されます🐾");
+      alert("投稿ありがとうございます！審査後に公開されます");
     } else {
       alert("投稿に失敗しました: " + error.message);
     }
@@ -165,12 +167,12 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       <div style={{ background:`linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, padding: isPC ? "24px 0 0" : "20px 16px 0", borderRadius: isPC ? 16 : 0, marginBottom:16, overflow:"hidden" }}>
         <div>
-          <div style={{ fontSize:22, fontWeight:900, color:C.white, marginBottom:4 }}>🐾 ペットイベント</div>
+          <div style={{ fontSize:22, fontWeight:900, color:C.white, marginBottom:4 }}><LineIcon name="paw" size={20} /> ペットイベント</div>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", marginBottom:16 }}>全国のペットイベントを探そう・投稿しよう</div>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          <button style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:C.cream, color:C.orange, fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>📋 一覧</button>
-          <button onClick={()=>{ if(!user){ setPage&&setPage("login"); return; } setShowPost(true); }} style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.7)", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>✏️ 投稿する</button>
+          <button style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:C.cream, color:C.orange, fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="clipboard" size={13} /> 一覧</button>
+          <button onClick={()=>{ if(!user){ setPage&&setPage("login"); return; } setShowPost(true); }} style={{ padding:"10px 16px", border:"none", borderRadius:"10px 10px 0 0", background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.7)", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="pencil" size={13} /> 投稿する</button>
         </div>
       </div>
       <div style={{ marginBottom:16, padding: isPC ? 0 : "0 16px" }}>
@@ -190,7 +192,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
         <div style={{ fontSize:12, fontWeight:700, color:C.warmGray, margin:"10px 0 8px" }}>対象ペット</div>
         <div style={{ display:"flex", gap:6 }}>
           {/* 依頼書 #19 (5/27): 動物カテゴリ 17種フィルター (横スクロール) */}
-          {[["すべて","🐾 すべて"],["both","🐾 両方"],...PET_CATEGORIES.map(c=>[c.id, `${c.icon} ${c.label}`] as [string,string])].map(([v,l])=>(
+          {[["すべて",<><LineIcon name="paw" size={12} /> すべて</>] as [string,ReactNode],["both",<><LineIcon name="paw" size={12} /> 両方</>] as [string,ReactNode],...PET_CATEGORIES.map(c=>[c.id, `${c.icon} ${c.label}`] as [string,ReactNode])].map(([v,l])=>(
             <button key={v} onClick={()=>setPet(v)} style={{ flexShrink:0, padding:"6px 14px", border:`1.5px solid ${pet===v?C.orange:C.border}`, borderRadius:20, background:pet===v?C.orangePale:C.white, color:pet===v?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
           ))}
         </div>
@@ -204,22 +206,22 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
             <div style={{ height: isPC ? "auto" : 120, width: isPC ? 200 : "auto", flexShrink:0, background:ev.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize: isPC ? 48 : 60, position:"relative", minHeight: isPC ? 160 : "auto" }}>
               {ev.image && ev.image.startsWith("http") 
   ? <img src={ev.image} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> 
-  : ev.image}
+  : ev.image === "🐾" ? <LineIcon name="paw" size={isPC ? 48 : 60} strokeWidth={1} color={C.orange} /> : ev.image}
               <div style={{ position:"absolute", top:10, left:10 }}><span style={{ background:C.orange, color:"#fff", fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:10 }}>{ev.category}</span></div>
               <div style={{ position:"absolute", top:10, right:10 }}><span style={{ background:evPetBg(ev.pet), color:evPetColor(ev.pet), fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:10 }}>{evPetLabel(ev.pet)}</span></div>
             </div>
             <div style={{ padding:"14px", flex:1 }}>
               <div style={{ fontSize:15, fontWeight:800, color:C.dark, marginBottom:8, lineHeight:1.4 }}>{ev.title}</div>
               <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:10 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>📅</span><span>{ev.date} {ev.time}</span></div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>📍</span><span>{ev.pref} {ev.place}</span></div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><span>💰</span><span>参加費:{ev.fee}</span></div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><LineIcon name="calendar" size={12} /><span>{ev.date} {ev.time}</span></div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><LineIcon name="pin" size={12} /><span>{ev.pref} {ev.place}</span></div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.warmGray }}><LineIcon name="coin" size={12} /><span>参加費:{ev.fee}</span></div>
               </div>
               <div style={{ fontSize:12, color:"#555", lineHeight:1.6, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{ev.desc}</div>
               <div style={{ display:"flex", gap:8, borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
-                <button onClick={e2=>{e2.stopPropagation();setEvLiked(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:1, padding:"8px", border:`1.5px solid ${evLiked[ev.id]?C.orange:C.border}`, borderRadius:10, background:evLiked[ev.id]?C.orangePale:C.white, color:evLiked[ev.id]?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {ev.likes+(evLiked[ev.id]?1:0)}</button>
-                <button onClick={e2=>{e2.stopPropagation();setJoined(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:2, padding:"8px", border:"none", borderRadius:10, background:joined[ev.id]?C.green:C.orange, color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>{joined[ev.id]?"✅ 参加予定":"🐾 参加する"}</button>
-                <button onClick={e2=>{ e2.stopPropagation(); setCommentTarget({ type:"event", id: ev.id, ownerId: ev.organizer_id || "" }); setCommentOpen(true); }} style={{ padding:"8px 12px", border:`1.5px solid ${C.border}`, borderRadius:10, background:C.white, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.warmGray }}>💬</button>
+                <button onClick={e2=>{e2.stopPropagation();setEvLiked(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:1, padding:"8px", border:`1.5px solid ${evLiked[ev.id]?C.orange:C.border}`, borderRadius:10, background:evLiked[ev.id]?C.orangePale:C.white, color:evLiked[ev.id]?C.orange:C.warmGray, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="heart" size={12} filled={!!evLiked[ev.id]} /> {ev.likes+(evLiked[ev.id]?1:0)}</button>
+                <button onClick={e2=>{e2.stopPropagation();setJoined(p=>({...p,[ev.id]:!p[ev.id]}));}} style={{ flex:2, padding:"8px", border:"none", borderRadius:10, background:joined[ev.id]?C.green:C.orange, color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>{joined[ev.id]?<><LineIcon name="checkCircle" size={12} /> 参加予定</>:<><LineIcon name="paw" size={12} /> 参加する</>}</button>
+                <button onClick={e2=>{ e2.stopPropagation(); setCommentTarget({ type:"event", id: ev.id, ownerId: ev.organizer_id || "" }); setCommentOpen(true); }} style={{ padding:"8px 12px", border:`1.5px solid ${C.border}`, borderRadius:10, background:C.white, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.warmGray }}><LineIcon name="bubble" size={12} /></button>
               </div>
             </div>
           </div>
@@ -232,7 +234,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
             <div style={{ height:180, background:selected.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:80, position:"relative" }}>
               {selected.image && selected.image.startsWith("http")
   ? <img src={selected.image} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-  : selected.image}
+  : selected.image === "🐾" ? <LineIcon name="paw" size={80} strokeWidth={1} color={C.orange} /> : selected.image}
               <button onClick={closeEvent} style={{ position:"absolute", top:12, right:12, width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.9)", border:"none", cursor:"pointer", fontSize:18 }}>✕</button>
             </div>
             <div style={{ padding:"20px 16px" }}>
@@ -241,20 +243,20 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
                 <span style={{ background:evPetBg(selected.pet), color:evPetColor(selected.pet), fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:10 }}>{evPetLabel(selected.pet)}</span>
               </div>
               <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:14, lineHeight:1.4 }}>{selected.title}</div>
-              {[["📅 日時",`${selected.date} ${selected.time}`],["📍 場所",`${selected.pref} ${selected.place}`],["💰 参加費",selected.fee]].map(([k,v])=>(
+              {[["calendar","日時",`${selected.date} ${selected.time}`],["pin","場所",`${selected.pref} ${selected.place}`],["coin","参加費",selected.fee]].map(([ic,k,v])=>(
                 <div key={k} style={{ display:"flex", gap:10, padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
-                  <span style={{ fontSize:13, color:C.warmGray, minWidth:80 }}>{k}</span>
+                  <span style={{ fontSize:13, color:C.warmGray, minWidth:80 }}><LineIcon name={ic} size={13} /> {k}</span>
                   <span style={{ fontSize:13, fontWeight:700, color:C.dark }}>{v}</span>
                 </div>
               ))}
               <div style={{ margin:"14px 0", fontSize:14, color:"#555", lineHeight:1.8 }}>{selected.desc}</div>
               {selected.url && (
-  <a href={selected.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:12, padding:"10px 16px", background:"#F5A94A", borderRadius:10, color:"#fff", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none" }}>🔗 公式サイトで詳細を見る</a>
+  <a href={selected.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:12, padding:"10px 16px", background:"#F5A94A", borderRadius:10, color:"#fff", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none" }}><LineIcon name="link" size={13} /> 公式サイトで詳細を見る</a>
 )}
               <div style={{ display:"flex", gap:10 }}>
-                <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>❤️ {selected.likes+(evLiked[selected.id]?1:0)}</button>
-                <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?"✅ 参加予定!":"🐾 参加する"}</button>
-                <button onClick={()=>{ setCommentTarget({ type:"event", id: selected.id, ownerId: selected.organizer_id || "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>💬 コメント</button>
+                <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="heart" size={14} filled={!!evLiked[selected.id]} /> {selected.likes+(evLiked[selected.id]?1:0)}</button>
+                <button onClick={()=>setJoined(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:2, padding:"12px", border:"none", borderRadius:12, background:joined[selected.id]?C.green:C.orange, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}>{joined[selected.id]?<><LineIcon name="checkCircle" size={15} /> 参加予定!</>:<><LineIcon name="paw" size={15} /> 参加する</>}</button>
+                <button onClick={()=>{ setCommentTarget({ type:"event", id: selected.id, ownerId: selected.organizer_id || "" }); setCommentOpen(true); }} style={{ padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:12, background:"#fff", color:C.dark, fontWeight:700, fontSize:15, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="bubble" size={15} /> コメント</button>
               </div>
             </div>
           </div>
@@ -265,7 +267,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, overflowY:"auto" }}>
           <div style={{ background:C.white, margin: isPC ? "60px auto" : "40px 16px", maxWidth:500, borderRadius:24, padding:"24px 16px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>✏️ イベントを投稿</div>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="pencil" size={18} /> イベントを投稿</div>
               <button onClick={()=>setShowPost(false)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
             {[["イベント名","title","例:わんわんフェスタ in 東京"],["日付","event_date","例:2026-05-01"],["時間","event_time","例:10:00〜17:00"],["会場名","place","例:代々木公園"],["都道府県","prefecture","例:東京都"],["参加費","fee","例:無料 / 500円"]].map(([label,key,ph])=>(
@@ -279,7 +281,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
               <label style={{ fontSize:12, fontWeight:700, color:C.dark, display:"block", marginBottom:5 }}>対象ペット</label>
               <div style={{ display:"flex", gap:8 }}>
                 {/* 依頼書 #19 (5/27): イベント投稿フォーム 動物カテゴリ 17種 */}
-                {[["both","🐾 両方"],...PET_CATEGORIES.map(c=>[c.id, `${c.icon} ${c.label}`] as [string,string])].map(([v,l])=>(
+                {[["both",<><LineIcon name="paw" size={13} /> 両方</>] as [string,ReactNode],...PET_CATEGORIES.map(c=>[c.id, `${c.icon} ${c.label}`] as [string,ReactNode])].map(([v,l])=>(
                   <button key={v} onClick={()=>setForm(p=>({...p,pet_type:v}))} style={{ flex:1, padding:"10px", border:`2px solid ${form.pet_type===v?C.orange:C.border}`, borderRadius:10, background:form.pet_type===v?C.orangePale:C.white, color:form.pet_type===v?C.orange:C.warmGray, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
                 ))}
               </div>
@@ -330,9 +332,9 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
     <img src={form.image_url} style={{ width:"100%", height:120, objectFit:"cover", borderRadius:10, marginTop:8 }}/>
   )}
 </div>
-            <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}>🐾 投稿後、管理者が審査(最大24時間)してから公開されます。</div>
+            <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}><LineIcon name="paw" size={12} /> 投稿後、管理者が審査(最大24時間)してから公開されます。</div>
             <button disabled={submitting||!form.title||!form.event_date} onClick={handleSubmitEvent} style={{ width:"100%", padding:"14px", background:(submitting||!form.title||!form.event_date)?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(submitting||!form.title||!form.event_date)?"not-allowed":"pointer", fontFamily:"inherit" }}>
-              {submitting ? "送信中..." : "🐾 投稿する"}
+              {submitting ? "送信中..." : <><LineIcon name="paw" size={15} /> 投稿する</>}
             </button>
           </div>
         </div>
@@ -384,7 +386,7 @@ const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onC
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:C.white, borderRadius:20, padding:"24px 20px", width:"100%", maxWidth:480, maxHeight:"85vh", overflowY:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div style={{ fontSize:17, fontWeight:900, color:C.dark }}>💬 コミュニティを作成</div>
+          <div style={{ fontSize:17, fontWeight:900, color:C.dark }}><LineIcon name="bubble" size={17} /> コミュニティを作成</div>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>×</button>
         </div>
         <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>アイコン</div>
@@ -403,7 +405,7 @@ const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onC
         <textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={200} placeholder="どんなコミュニティか紹介してください" style={{ width:"100%", minHeight:80, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
         <div style={{ fontSize:11, color:C.warmGray, textAlign:"right", marginBottom:16 }}>{description.length}/200</div>
         <div style={{ background:C.orangePale, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:11, color:C.dark, lineHeight:1.5 }}>
-          📌 ルール: Qocca内の商品紹介はOK。外部サイト誘導や個人連絡先交換は禁止です。
+          <LineIcon name="pin" size={11} /> ルール: Qocca内の商品紹介はOK。外部サイト誘導や個人連絡先交換は禁止です。
         </div>
         <button onClick={handleCreate} disabled={!name.trim() || submitting} style={{ width:"100%", padding:"14px", background: !name.trim() || submitting ? "#ccc" : C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor: !name.trim() || submitting ? "not-allowed" : "pointer", fontFamily:"inherit" }}>
           {submitting ? "作成中..." : "コミュニティを作成"}
@@ -483,7 +485,7 @@ export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:
       <div style={{ background:`linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, padding: isPC ? "24px 28px" : "20px 16px", borderRadius: isPC ? 16 : 14, marginBottom:16, color:C.white }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:10 }}>
           <div>
-            <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>💬 コミュニティ</div>
+            <div style={{ fontSize:22, fontWeight:900, marginBottom:4 }}><LineIcon name="bubble" size={20} /> コミュニティ</div>
             <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)" }}>同じペット・趣味のなかまとつながろう</div>
           </div>
           <button onClick={()=>{ if(!user){setPage("signup"); return;} setShowCreate(true); }} style={{ padding:"10px 18px", background:C.orange, border:"none", borderRadius:10, color:C.white, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>+ 作成</button>
@@ -498,7 +500,7 @@ export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:
         <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>読み込み中...</div>
       ) : filtered.length === 0 ? (
         <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>
-          <div style={{ fontSize:36, marginBottom:12 }}>💬</div>
+          <div style={{ fontSize:36, marginBottom:12 }}><LineIcon name="bubble" size={36} strokeWidth={1} /></div>
           <div>このカテゴリのコミュニティはまだありません</div>
           <div style={{ fontSize:11, marginTop:6 }}>最初のコミュニティを作成してみましょう！</div>
         </div>
@@ -508,17 +510,17 @@ export const CommunitiesPage = ({ isPC, setPage }: { isPC?: boolean; setPage:(p:
             const isMember = myCommunityIds.has(c.id);
             return (
               <div key={c.id} onClick={()=>setPage(`community/${c.id}`)} style={{ background:C.white, borderRadius:14, padding:"14px", border:`1px solid ${C.border}`, cursor:"pointer", display:"flex", gap:12, alignItems:"flex-start" }}>
-                <div style={{ width:48, height:48, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{c.icon || "🐾"}</div>
+                <div style={{ width:48, height:48, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{c.icon || <LineIcon name="paw" size={24} />}</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
                     {c.is_official && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:C.orange, color:"#fff", fontWeight:800 }}>公式</span>}
-                    {lockLabel(c.required_badges) && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"#F3E5F5", color:"#AB47BC", fontWeight:800, flexShrink:0 }}>🔒 {lockLabel(c.required_badges)}</span>}
+                    {lockLabel(c.required_badges) && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"#F3E5F5", color:"#AB47BC", fontWeight:800, flexShrink:0 }}><LineIcon name="lock" size={9} /> {lockLabel(c.required_badges)}</span>}
                   </div>
-                  <div style={{ fontSize:11, color:C.warmGray, marginBottom:6 }}>{c.category} · 👥 {c.member_count || 0}人</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginBottom:6 }}>{c.category} · <LineIcon name="people" size={11} /> {c.member_count || 0}人</div>
                   {c.description && <div style={{ fontSize:12, color:"#555", marginBottom:8, lineHeight:1.5, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{c.description}</div>}
                   <button onClick={(e)=>handleJoin(e, c.id)} style={{ padding:"6px 14px", background: isMember ? C.white : (canEnter(c.required_badges, myBadges) ? C.orange : "#EEE6D9"), border: isMember ? `1.5px solid ${C.orange}` : "none", borderRadius:16, color: isMember ? C.orange : (canEnter(c.required_badges, myBadges) ? "#fff" : C.warmGray), fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                    {isMember ? "参加中" : canEnter(c.required_badges, myBadges) ? "+ 参加する" : "🔒 特典限定"}
+                    {isMember ? "参加中" : canEnter(c.required_badges, myBadges) ? "+ 参加する" : <><LineIcon name="lock" size={12} /> 特典限定</>}
                   </button>
                 </div>
               </div>
@@ -660,21 +662,21 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
   if (loading) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>読み込み中...</div>;
   if (!community) return <div style={{ padding:40, textAlign:"center", color:C.warmGray }}>コミュニティが見つかりません</div>;
 
-  const pinnedMsg = `📌 ようこそ「${community.name}」へ！\nイベント開催の方は「イベント」ページから投稿をお願いします。\nQocca内の商品紹介はOK！外部サイト誘導・個人連絡先交換は禁止です。`;
+  const pinnedMsg = `ようこそ「${community.name}」へ！\nイベント開催の方は「イベント」ページから投稿をお願いします。\nQocca内の商品紹介はOK！外部サイト誘導・個人連絡先交換は禁止です。`;
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, padding: isPC ? 0 : "60px 0 80px", maxWidth: 800, margin:"0 auto" }}>
       {/* ヘッダー */}
       <div style={{ background:`linear-gradient(135deg, ${C.dark}, ${C.darkBrown})`, padding: isPC ? "24px 28px" : "16px", borderRadius: isPC ? 16 : 0, marginBottom:0, color:C.white, display:"flex", alignItems:"center", gap:14 }}>
         <button onClick={()=>navigate("/communities")} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, width:32, height:32, color:"#fff", fontSize:16, cursor:"pointer", flexShrink:0 }}>←</button>
-        <div style={{ width:48, height:48, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>{community.icon || "🐾"}</div>
+        <div style={{ width:48, height:48, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>{community.icon || <LineIcon name="paw" size={26} />}</div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <div style={{ fontSize:16, fontWeight:900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{community.name}</div>
             {community.is_official && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:C.orange, color:"#fff", fontWeight:800 }}>公式</span>}
-            {lockLabel(community.required_badges) && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"#F3E5F5", color:"#AB47BC", fontWeight:800, flexShrink:0 }}>🔒 {lockLabel(community.required_badges)}</span>}
+            {lockLabel(community.required_badges) && <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"#F3E5F5", color:"#AB47BC", fontWeight:800, flexShrink:0 }}><LineIcon name="lock" size={9} /> {lockLabel(community.required_badges)}</span>}
           </div>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{community.category} · 👥 {community.member_count || 0}人</div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{community.category} · <LineIcon name="people" size={11} /> {community.member_count || 0}人</div>
         </div>
         {isMember && (
           <button onClick={handleLeave} style={{ padding:"6px 12px", background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>退出</button>
@@ -694,7 +696,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
             </>
           ) : (
             <>
-              <div style={{ fontSize:32, marginBottom:10 }}>🔒</div>
+              <div style={{ fontSize:32, marginBottom:10 }}><LineIcon name="lock" size={32} strokeWidth={1} /></div>
               <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:8 }}>{lockLabel(community.required_badges)}のコミュニティです</div>
               <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.8, marginBottom:14 }}>
                 クラウドファンディングで Qocca の創業を支えてくださった方だけが入れる部屋です。<br/>
@@ -735,9 +737,9 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
                   {m.sender_id !== user?.id && (
                     <div style={{ marginTop:2, marginLeft:2 }}>
                       {reportedIds.has(m.id) ? (
-                        <span style={{ fontSize:10, color:C.warmGray }}>✓ 通報済み</span>
+                        <span style={{ fontSize:10, color:C.warmGray }}><LineIcon name="check" size={10} /> 通報済み</span>
                       ) : (
-                        <button onClick={()=>setReportTarget(m)} style={{ background:"none", border:"none", color:C.warmGray, fontSize:10, cursor:"pointer", padding:"2px 0", fontFamily:"inherit", textDecoration:"underline" }}>⚠️ 通報</button>
+                        <button onClick={()=>setReportTarget(m)} style={{ background:"none", border:"none", color:C.warmGray, fontSize:10, cursor:"pointer", padding:"2px 0", fontFamily:"inherit", textDecoration:"underline" }}><LineIcon name="warning" size={10} /> 通報</button>
                       )}
                     </div>
                   )}
@@ -750,7 +752,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
           {/* NGワード警告（送信ブロック） */}
           {ngError && (
             <div style={{ padding:"12px 16px", background:"#FFCDD2", borderTop:`1px solid #E57373` }}>
-              <div style={{ fontSize:12, fontWeight:800, color:"#B71C1C", marginBottom:6 }}>🚫 不適切な表現が含まれています</div>
+              <div style={{ fontSize:12, fontWeight:800, color:"#B71C1C", marginBottom:6 }}><LineIcon name="ban" size={12} /> 不適切な表現が含まれています</div>
               <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>暴言・誹謗中傷・差別的な発言はコミュニティガイドラインに違反します。表現を変更してください。</div>
               <button onClick={()=>setNgError(null)} style={{ width:"100%", padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
             </div>
@@ -759,7 +761,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
           {/* 警告 */}
           {warning && (
             <div style={{ padding:"12px 16px", background:"#FFE5E5", borderTop:`1px solid #FFB3B3` }}>
-              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}>⚠️ 連絡先・外部誘導が含まれています ({warning.types.join(", ")})</div>
+              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}><LineIcon name="warning" size={12} /> 連絡先・外部誘導が含まれています ({warning.types.join(", ")})</div>
               <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>コミュニティでの個人連絡先交換は禁止です。<br/>取引はQocca内で完結してください。</div>
               <div style={{ display:"flex", gap:6 }}>
                 <button onClick={()=>setWarning(null)} style={{ flex:1, padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
@@ -806,7 +808,7 @@ const ReportMessageModal = ({ target, onClose, onReport }: { target:any; onClose
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:C.white, borderRadius:20, padding:"24px 20px", width:"100%", maxWidth:440, maxHeight:"85vh", overflowY:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div style={{ fontSize:17, fontWeight:900, color:C.dark }}>⚠️ メッセージを通報</div>
+          <div style={{ fontSize:17, fontWeight:900, color:C.dark }}><LineIcon name="warning" size={17} /> メッセージを通報</div>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.warmGray }}>×</button>
         </div>
         <div style={{ background:C.lightGray, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:12, color:"#555", lineHeight:1.5, maxHeight:120, overflowY:"auto" }}>
@@ -822,7 +824,7 @@ const ReportMessageModal = ({ target, onClose, onReport }: { target:any; onClose
         <textarea value={detail} onChange={e=>setDetail(e.target.value)} maxLength={300} placeholder="状況を詳しく教えてください" style={{ width:"100%", minHeight:70, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
         <div style={{ fontSize:11, color:C.warmGray, textAlign:"right", marginBottom:14 }}>{detail.length}/300</div>
         <div style={{ background:"#FFF8E1", borderRadius:8, padding:"10px 12px", marginBottom:14, fontSize:11, color:"#996200", lineHeight:1.5 }}>
-          📌 通報内容は運営が確認します。同じメッセージが3人以上から通報されると自動的に非表示になります。虚偽の通報は禁止です。
+          <LineIcon name="pin" size={11} /> 通報内容は運営が確認します。同じメッセージが3人以上から通報されると自動的に非表示になります。虚偽の通報は禁止です。
         </div>
         <button onClick={handleSubmit} disabled={!reason} style={{ width:"100%", padding:"14px", background: !reason ? "#ccc" : "#E57373", border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor: !reason ? "not-allowed" : "pointer", fontFamily:"inherit" }}>
           通報する

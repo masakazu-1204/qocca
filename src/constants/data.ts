@@ -207,11 +207,12 @@ export const CROWDFUNDING_ACTIVE = false;
 // ── クラファン リターン階層テーマ (App.tsx から移管 / Phase7 循環import回避) ─────────
 // RedeemPage(App.tsx 残留) と MyPage(pages/mypage.tsx) の両方が参照するため中立化。
 export const REDEEM_TIER_THEME: Record<string, { color: string; bg: string; icon: string; label: string }> = {
-  supporter_1000:   { color: "#42A5F5", bg: "#E3F2FD", icon: "🤝", label: "応援サポーター" },
-  resident_3000:    { color: "#66BB6A", bg: "#E8F5E9", icon: "🏘️", label: "創業メンバー｜街の住民" },
-  creator_8000:     { color: "#AB47BC", bg: "#F3E5F5", icon: "🎨", label: "創業クリエイター" },
-  family_15000:     { color: "#F5A94A", bg: "#FFF3E0", icon: "🐾", label: "創業ファミリー" },
-  mayor_30000:      { color: "#FFA000", bg: "#FFF8E1", icon: "👑", label: "街の首長" },
-  ark_patron_50000: { color: "#26A69A", bg: "#E0F2F1", icon: "🏥", label: "動物福祉パトロン" },
-  corporate_300000: { color: "#5C6BC0", bg: "#E8EAF6", icon: "🏢", label: "法人スポンサー" },
+  // 2026/9/26: icon は絵文字から components/LineIcon の名前に (King「絵文字ダサい」)
+  supporter_1000:   { color: "#42A5F5", bg: "#E3F2FD", icon: "people",   label: "応援サポーター" },
+  resident_3000:    { color: "#66BB6A", bg: "#E8F5E9", icon: "house",    label: "創業メンバー｜街の住民" },
+  creator_8000:     { color: "#AB47BC", bg: "#F3E5F5", icon: "palette",  label: "創業クリエイター" },
+  family_15000:     { color: "#F5A94A", bg: "#FFF3E0", icon: "paw",      label: "創業ファミリー" },
+  mayor_30000:      { color: "#FFA000", bg: "#FFF8E1", icon: "crown",    label: "街の首長" },
+  ark_patron_50000: { color: "#26A69A", bg: "#E0F2F1", icon: "hospital", label: "動物福祉パトロン" },
+  corporate_300000: { color: "#5C6BC0", bg: "#E8EAF6", icon: "building", label: "法人スポンサー" },
 };

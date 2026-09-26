@@ -50,6 +50,7 @@ import { ListingEditModal } from "../components/ListingEditModal";
 import { FloatingBackButton } from "../components/FloatingBackButton";
 // 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (公開プロフィール・equipped=trueはRLSで他人も閲覧可)
 import { DecoratedAvatar } from "../components/DecoratedAvatar";
+import { LineIcon } from "../components/LineIcon";
 
 export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearch, isPC }: {
   listings: ListingItem[]; liked: LikedMap; onLike: (id: string) => void;
@@ -93,7 +94,7 @@ export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearc
       {!isPC && (
         <div style={{ padding:"12px 16px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
           <div style={{ position:"relative" }}>
-            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:14 }}>🔍</span>
+            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:14, display:"flex" }}><LineIcon name="search" size={14} /></span>
             <input value={search} onChange={e=>setSearch(e.target.value)}
               placeholder="キーワードで検索..."
               style={{ width:"100%", padding:"12px 12px 12px 34px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", fontFamily:"inherit", background:C.lightGray, boxSizing:"border-box" }}
@@ -133,7 +134,7 @@ export const SearchPage = ({ listings, liked, onLike, onDetail, search, setSearc
       <div style={{ padding: isPC ? "0 0 24px" : "0 16px 24px" }}>
         {results.length === 0 ? (
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🐾</div>
+            <div style={{ fontSize:48, marginBottom:12 }}><LineIcon name="paw" size={48} /></div>
             <div style={{ fontSize:15, fontWeight:600, color:C.dark, marginBottom:16, lineHeight:1.7 }}>
               まだこの街にいないみたいです。
             </div>
@@ -336,7 +337,7 @@ const handleFollow = async () => {
           </div>
           <div style={{ flex:1, textAlign:"center" }}>
             <div style={{ fontSize:20, fontWeight:800, color:C.orange }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
-            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}><LineIcon name="star" size={14} /> 評価</div>
           </div>
         </div>
       </div>
@@ -349,7 +350,7 @@ const handleFollow = async () => {
               navigate state で messages タブ + DM相手をマウント時に確実に渡す。CustomEvent 経路は mypage 側で後方互換温存。 */}
           {isFollowing && (
             <button onClick={()=>{ navigate("/mypage", { state: { tab: "messages", dm: userId } }); }} style={{ padding:"8px 20px", background:C.white, border:`1.5px solid ${C.orange}`, borderRadius:20, color:C.orange, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
-              💬 メッセージ
+              <LineIcon name="bubble" size={14} /> メッセージ
             </button>
           )}
         </div>
@@ -357,7 +358,7 @@ const handleFollow = async () => {
       {pets.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12, paddingLeft: 4 }}>
-            🐾 うちの子 ({pets.length})
+            <LineIcon name="paw" size={16} /> うちの子 ({pets.length})
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
             {pets.map((p) => {
@@ -412,7 +413,7 @@ const handleFollow = async () => {
                         padding: "3px 8px",
                         borderRadius: 10,
                       }}>
-                        🌈 虹の橋
+                        <LineIcon name="sparkle" size={14} /> 虹の橋
                       </div>
                     )}
                   </div>
@@ -443,7 +444,7 @@ const handleFollow = async () => {
       {userGallery.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12, paddingLeft: 4 }}>
-            🖼️ ギャラリー ({userGallery.length})
+            <LineIcon name="image" size={16} /> ギャラリー ({userGallery.length})
           </div>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16, scrollbarWidth: "thin" }}>
             {userGallery.map((g) => (
@@ -475,7 +476,7 @@ const handleFollow = async () => {
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
                 ) : (
-                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🖼️</div>
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}><LineIcon name="image" size={32} /></div>
                 )}
               </div>
             ))}
@@ -486,7 +487,7 @@ const handleFollow = async () => {
       {userBlogPosts.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12, paddingLeft: 4 }}>
-            📝 ブログ ({userBlogPosts.length})
+            <LineIcon name="note" size={16} /> ブログ ({userBlogPosts.length})
           </div>
           <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
             {userBlogPosts.map((b) => (
@@ -523,7 +524,7 @@ const handleFollow = async () => {
                 }}>
                   {b.cover_image_url ? (
                     <img src={b.cover_image_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  ) : "📝"}
+                  ) : <LineIcon name="note" size={28} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, lineHeight: 1.4, marginBottom: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -1002,7 +1003,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           position:"absolute", top:12, right:12, width:40, height:40, borderRadius:"50%",
           background:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontSize:20,
           display:"flex", alignItems:"center", justifyContent:"center"
-        }}>{liked ? "❤️" : "🤍"}</button>
+        }}><LineIcon name="heart" size={20} filled={liked} color={liked ? C.red : undefined} /></button>
       </div>
 
       {/* 2枚以上あるときだけサムネイルを出す。1枚しかない出品の見た目は変えない */}
@@ -1037,11 +1038,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
             border:`1.5px solid ${C.orange}`, borderRadius:12, padding:"12px 16px",
             marginBottom:14, cursor:"pointer", display:"flex", alignItems:"center", gap:12,
           }}>
-            <div style={{ fontSize:26, lineHeight:1 }}>✏️</div>
+            <div style={{ fontSize:26, lineHeight:1 }}><LineIcon name="pencil" size={26} /></div>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:13, fontWeight:800, color:C.orange, marginBottom:2 }}>あなたの出品です</div>
               <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5 }}>
-                タップして編集 (タイトル / 価格 / 説明 / 納期 / 🚚 送料設定)
+                タップして編集 (タイトル / 価格 / 説明 / 納期 / <LineIcon name="truck" size={11} /> 送料設定)
               </div>
             </div>
             <div style={{ fontSize:13, color:C.orange, fontWeight:700, flexShrink:0 }}>編集する →</div>
@@ -1064,7 +1065,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
         </div>
         {item.seller_id && (
           <button onClick={()=>setPage(`user/${item.seller_id}`)} style={{ width:"100%", padding:"12px", marginBottom:14, background:C.white, color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-            👤 出品者のプロフィールを見る
+            <LineIcon name="person" size={14} /> 出品者のプロフィールを見る
           </button>
         )}
         <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
@@ -1082,7 +1083,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
             border: "1px solid #F0E0C0",
           }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-              <span style={{ fontSize: 16 }}>💝</span>
+              <span style={{ fontSize: 16, display: "flex" }}><LineIcon name="heart" size={16} /></span>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#7A5A2E", letterSpacing: 0.3 }}>
                 この作品が生まれたストーリー
               </div>
@@ -1230,7 +1231,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
         {/* 有料オプション */}
         {itemOptions.length > 0 && (
           <div style={{ background:C.white, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
-            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:10 }}>🔧 有料オプション</div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.dark, marginBottom:10 }}><LineIcon name="wrench" size={13} /> 有料オプション</div>
             {itemOptions.map((opt, i) => (
               <div key={i} onClick={()=>toggleOption(i)} style={{
                 display:"flex", alignItems:"center", gap:10, padding:"10px", marginBottom:6,
@@ -1242,7 +1243,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                   background:selectedOptions[i]?C.orange:"transparent", display:"flex", alignItems:"center", justifyContent:"center",
                   flexShrink:0
                 }}>
-                  {selectedOptions[i] && <span style={{ color:"#fff", fontSize:14, fontWeight:900 }}>✓</span>}
+                  {selectedOptions[i] && <span style={{ color:"#fff", fontSize:14, fontWeight:900, display:"flex" }}><LineIcon name="check" size={14} strokeWidth={2.5} /></span>}
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{opt.name}</div>
@@ -1256,22 +1257,22 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           {(() => {
             // 依頼書 #104 Phase B (2026/6/3): 送料表示 4タイプ別
             const st = item.shipping_type || "included";
-            let shipLabel: string = "";
-            if (st === "included") shipLabel = "✅ 送料込み";
-            else if (st === "flat_rate") shipLabel = `📮 全国一律 ¥${(item.shipping_fee || 0).toLocaleString()}`;
-            else if (st === "regional") shipLabel = "🗾 地域により異なる";
-            else if (st === "methods") shipLabel = "📦 配送方法から選択 (下で選んでください)";
-            else if (st === "consultation") shipLabel = "💬 出品者にお問い合わせ";
-            const rows: Array<[string, string]> = [
-              ["⏱️ 納期", String(item.delivery ?? "")],
-              ["📬 受け渡し", item.delivery_type === "shipping" ? "📦 配送" : item.delivery_type === "visit" ? "📍 訪問" : "💻 データ"],
-              ["🚚 送料", shipLabel],
-              ["🐾 対象", item.pet === "both" ? "🐾 両対応" : `${petIcon(item.pet ?? "")} ${petLabelShort(item.pet ?? "")}向け`],
-              ["🔒 保証", "エスクロー決済"],
+            let shipLabel: React.ReactNode = "";
+            if (st === "included") shipLabel = <><LineIcon name="checkCircle" size={13} /> 送料込み</>;
+            else if (st === "flat_rate") shipLabel = <><LineIcon name="mailbox" size={13} /> 全国一律 ¥{(item.shipping_fee || 0).toLocaleString()}</>;
+            else if (st === "regional") shipLabel = <><LineIcon name="map" size={13} /> 地域により異なる</>;
+            else if (st === "methods") shipLabel = <><LineIcon name="box" size={13} /> 配送方法から選択 (下で選んでください)</>;
+            else if (st === "consultation") shipLabel = <><LineIcon name="bubble" size={13} /> 出品者にお問い合わせ</>;
+            const rows: Array<[string, string, React.ReactNode]> = [
+              ["clock", "納期", String(item.delivery ?? "")],
+              ["mailbox", "受け渡し", item.delivery_type === "shipping" ? <><LineIcon name="box" size={13} /> 配送</> : item.delivery_type === "visit" ? <><LineIcon name="pin" size={13} /> 訪問</> : <><LineIcon name="laptop" size={13} /> データ</>],
+              ["truck", "送料", shipLabel],
+              ["paw", "対象", item.pet === "both" ? <><LineIcon name="paw" size={13} /> 両対応</> : `${petIcon(item.pet ?? "")} ${petLabelShort(item.pet ?? "")}向け`],
+              ["lock", "保証", "エスクロー決済"],
             ];
-            return rows.map(([k, v]) => (
+            return rows.map(([icon, k, v]) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
-                <span style={{ fontSize: 13, color: C.warmGray }}>{k}</span>
+                <span style={{ fontSize: 13, color: C.warmGray }}><LineIcon name={icon} size={13} /> {k}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{v}</span>
               </div>
             ));
@@ -1279,7 +1280,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           {/* regional 時の地域別送料 - 依頼書 #104 Phase B-2 (2026/6/3) で選択可能ラジオ化 */}
           {item.shipping_type === "regional" && Array.isArray(item.shipping_rates) && item.shipping_rates.length > 0 && (
             <div style={{ marginTop: 10, padding: 10, background: C.cream, borderRadius: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}>📍 配送先地域を選択</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}><LineIcon name="pin" size={11} /> 配送先地域を選択</div>
               {item.shipping_rates.map((r: any, i: number) => {
                 const isSelected = selectedShippingRegion === r.region;
                 return (
@@ -1302,7 +1303,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
               })}
               {selectedShippingRegion && (
                 <div style={{ marginTop:6, padding:"6px 10px", background:C.orangePale, borderRadius:6, fontSize:11, color:C.orange, fontWeight:700, textAlign:"center" }}>
-                  ✓ {selectedShippingRegion} を選択中
+                  <LineIcon name="check" size={11} /> {selectedShippingRegion} を選択中
                 </div>
               )}
             </div>
@@ -1310,7 +1311,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           {/* 依頼書 #127 Phase C (2026/6/5): methods 時の配送方法選択ラジオ (購入者) */}
           {item.shipping_type === "methods" && Array.isArray(item.shipping_methods) && item.shipping_methods.length > 0 && (
             <div style={{ marginTop: 10, padding: 10, background: C.cream, borderRadius: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}>📦 配送方法を選択</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.warmGray, marginBottom: 6 }}><LineIcon name="box" size={11} /> 配送方法を選択</div>
               {item.shipping_methods.map((m: any, i: number) => {
                 const isSelected = selectedShippingMethodId === m.id || (!selectedShippingMethodId && i === 0);
                 return (
@@ -1339,14 +1340,14 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           {/* shipping_note 補足説明 */}
           {item.shipping_note && (
             <div style={{ marginTop: 8, padding: "8px 10px", background: C.cream, borderRadius: 6, fontSize: 11, color: C.warmGray, lineHeight: 1.5 }}>
-              💡 {item.shipping_note}
+              <LineIcon name="bulb" size={11} /> {item.shipping_note}
             </div>
           )}
         </div>
 
         {/* エスクロー説明 */}
         <div style={{ background:"#E3F2FD", borderRadius:14, padding:"14px", marginBottom:14, border:"1px solid #BBDEFB" }}>
-          <div style={{ fontSize:13, fontWeight:800, color:C.blue, marginBottom:6 }}>🔒 安心のエスクロー決済</div>
+          <div style={{ fontSize:13, fontWeight:800, color:C.blue, marginBottom:6 }}><LineIcon name="lock" size={13} /> 安心のエスクロー決済</div>
           <div style={{ fontSize:12, color:"#555", lineHeight:1.7 }}>
             お支払いはQoccaが一時お預かりし、取引完了後に出品者へ支払われます。万が一トラブルがあった場合も返金対応いたします。
           </div>
@@ -1354,7 +1355,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
 
         {/* キャンセルポリシー */}
         <div style={{ background:C.lightGray, borderRadius:14, padding:"14px", marginBottom:14, border:`1px solid ${C.border}` }}>
-          <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:6 }}>📋 キャンセルポリシー</div>
+          <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:6 }}><LineIcon name="clipboard" size={13} /> キャンセルポリシー</div>
           <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.7 }}>
             ・作業開始前（購入者都合）：決済手数料を差し引いて返金{"\n"}
             ・作業開始前（出品者都合）：全額返金{"\n"}
@@ -1382,7 +1383,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           </div>
         )}
         <div style={{ textAlign:"center", marginBottom:80 }}>
-          <button onClick={()=>setShowReport(true)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#ccc", textDecoration:"underline", fontFamily:"inherit" }}>🚨 このサービスを通報する</button>
+          <button onClick={()=>setShowReport(true)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#ccc", textDecoration:"underline", fontFamily:"inherit" }}><LineIcon name="alert" size={12} /> このサービスを通報する</button>
         </div>
       </div>
 
@@ -1392,23 +1393,23 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px", width:"100%" }} onClick={e=>e.stopPropagation()}>
             {reportDone ? (
               <div style={{ textAlign:"center", padding:"20px 0" }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+                <div style={{ fontSize:48, marginBottom:12 }}><LineIcon name="checkCircle" size={48} /></div>
                 <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>通報を受け付けました</div>
                 <div style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>管理者が確認次第、対応いたします。</div>
                 <button onClick={()=>{setShowReport(false);setReportDone(false);}} style={{ padding:"12px 32px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>閉じる</button>
               </div>
             ) : (
               <>
-                <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}>🚨 通報する</div>
+                <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:4 }}><LineIcon name="alert" size={18} /> 通報する</div>
                 <div style={{ fontSize:12, color:C.warmGray, marginBottom:20 }}>通報内容を選択してください</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
-                  {["🐾 生体動物の売買","💬 プラットフォーム外への誘導","🎭 なりすまし・偽サービス","⚠️ 著作権侵害","🔞 不適切なコンテンツ","💰 詐欺・虚偽の内容","その他"].map(type => (
+                  {[["paw","生体動物の売買"],["bubble","プラットフォーム外への誘導"],["person","なりすまし・偽サービス"],["warning","著作権侵害"],["ban","不適切なコンテンツ"],["coin","詐欺・虚偽の内容"],["","その他"]].map(([icon, type]) => (
                     <button key={type} onClick={()=>setReportType(type)} style={{
                       padding:"12px 16px", border:`2px solid ${reportType===type?C.red:C.border}`,
                       borderRadius:12, background:reportType===type?C.redPale:"#fff",
                       color:reportType===type?C.red:"#3D3B38",
                       fontWeight:700, fontSize:14, cursor:"pointer", textAlign:"left", fontFamily:"inherit"
-                    }}>{type}</button>
+                    }}>{icon ? <><LineIcon name={icon} size={14} /> {type}</> : type}</button>
                   ))}
                 </div>
                 <div style={{ display:"flex", gap:10 }}>
@@ -1426,11 +1427,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:201, display:"flex", alignItems:"flex-end" }} onClick={()=>setShowAddressStep(false)}>
           <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px", width:"100%", maxHeight:"85vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>📦 配送先を選択</div>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="box" size={18} /> 配送先を選択</div>
               <button onClick={()=>setShowAddressStep(false)} style={{ background:"none", border:"none", fontSize:20, color:C.warmGray, cursor:"pointer" }}>✕</button>
             </div>
             <div style={{ background:"#FFF8F0", padding:"10px 12px", borderRadius:10, fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.5 }}>
-              🔒 配送先情報は出品者に共有され、配送目的のみに使用されます。取引完了後30日で自動削除されます。
+              <LineIcon name="lock" size={11} /> 配送先情報は出品者に共有され、配送目的のみに使用されます。取引完了後30日で自動削除されます。
             </div>
 
             {savedAddresses.length > 0 && (
@@ -1439,12 +1440,12 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                   flex:1, padding:"10px", border:`1.5px solid ${addressMode==="select"?C.orange:C.border}`,
                   borderRadius:10, background:addressMode==="select"?C.orangePale:C.white,
                   color:addressMode==="select"?C.orange:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
-                }}>📋 保存済みから選択</button>
+                }}><LineIcon name="clipboard" size={13} /> 保存済みから選択</button>
                 <button onClick={()=>setAddressMode("new")} style={{
                   flex:1, padding:"10px", border:`1.5px solid ${addressMode==="new"?C.orange:C.border}`,
                   borderRadius:10, background:addressMode==="new"?C.orangePale:C.white,
                   color:addressMode==="new"?C.orange:C.warmGray, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
-                }}>➕ 新規入力</button>
+                }}><LineIcon name="plus" size={13} /> 新規入力</button>
               </div>
             )}
 
@@ -1459,13 +1460,13 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                       <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{addr.label || "住所"}</span>
                       {addr.is_default && <span style={{ fontSize:10, padding:"2px 8px", background:C.orange, color:"#fff", borderRadius:6, fontWeight:700 }}>デフォルト</span>}
-                      {selectedAddressId===addr.id && <span style={{ marginLeft:"auto", color:C.orange, fontSize:18 }}>✓</span>}
+                      {selectedAddressId===addr.id && <span style={{ marginLeft:"auto", color:C.orange, fontSize:18, display:"flex" }}><LineIcon name="check" size={18} /></span>}
                     </div>
                     <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.5 }}>
                       <div>{addr.recipient_name} 様</div>
                       <div>〒{addr.postal_code} {addr.prefecture}{addr.city}</div>
                       <div>{addr.address_line}</div>
-                      <div>📱 {addr.phone}</div>
+                      <div><LineIcon name="mobile" size={12} /> {addr.phone}</div>
                     </div>
                   </button>
                 ))}
@@ -1544,7 +1545,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:200, display:"flex", alignItems:"flex-end" }} onClick={()=>!ordering&&setShowConfirm(false)}>
           <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"28px 20px", width:"100%" }} onClick={e=>e.stopPropagation()}>
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:16 }}>🛒 注文内容の確認</div>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:16 }}><LineIcon name="cart" size={18} /> 注文内容の確認</div>
               <div style={{ background:C.lightGray, borderRadius:14, padding:"14px", marginBottom:16 }}>
                 <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:4 }}>{item.title}</div>
                 <div style={{ fontSize:12, color:C.warmGray, marginBottom:8 }}>{item.seller} · 納期 {item.delivery}</div>
@@ -1554,7 +1555,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                 </div>
                 {itemOptions.filter((_, i) => selectedOptions[i]).map((o, i) => (
                   <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
-                    <span style={{ fontSize:12, color:C.warmGray }}>🔧 {o.name}</span>
+                    <span style={{ fontSize:12, color:C.warmGray }}><LineIcon name="wrench" size={12} /> {o.name}</span>
                     <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>{o.price != null ? `+¥${o.price.toLocaleString()}` : ""}</span>
                   </div>
                 ))}
@@ -1562,15 +1563,15 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                 {(() => {
                   const st = item.shipping_type || "included";
                   let shipFeeConfirm = 0;
-                  let shipLabel = "";
-                  if (st === "flat_rate") { shipFeeConfirm = item.shipping_fee || 0; shipLabel = "📮 送料 (全国一律)"; }
+                  let shipLabel: React.ReactNode = "";
+                  if (st === "flat_rate") { shipFeeConfirm = item.shipping_fee || 0; shipLabel = <><LineIcon name="mailbox" size={12} /> 送料 (全国一律)</>; }
                   else if (st === "regional" && selectedShippingRegion) {
                     const rate = (item.shipping_rates || []).find((r: any) => r.region === selectedShippingRegion);
-                    shipFeeConfirm = rate?.fee || 0; shipLabel = `🗾 送料 (${selectedShippingRegion})`;
+                    shipFeeConfirm = rate?.fee || 0; shipLabel = <><LineIcon name="map" size={12} /> 送料 ({selectedShippingRegion})</>;
                   } else if (st === "methods") {
                     const methods = Array.isArray(item.shipping_methods) ? item.shipping_methods : [];
                     const chosen = methods.find((m: any) => m.id === selectedShippingMethodId) || methods[0];
-                    if (chosen) { shipFeeConfirm = chosen.fee || 0; shipLabel = `📦 送料 (${chosen.name})`; }
+                    if (chosen) { shipFeeConfirm = chosen.fee || 0; shipLabel = <><LineIcon name="box" size={12} /> 送料 ({chosen.name})</>; }
                   }
                   return shipFeeConfirm > 0 ? (
                     <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
@@ -1580,7 +1581,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
                   ) : null;
                 })()}
                 <div style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderTop:`1px solid ${C.border}` }}>
-                  <span style={{ fontSize:12, color:C.warmGray }}>🛡️ バイヤープロテクション(4%)</span>
+                  <span style={{ fontSize:12, color:C.warmGray }}><LineIcon name="shield" size={12} /> バイヤープロテクション(4%)</span>
                   <span style={{ fontSize:12, fontWeight:700, color:C.warmGray }}>+¥{Math.floor(totalPrice * 0.04).toLocaleString()}</span>
                 </div>
                 {/* 🔴 緊急修正 (2026/6/5): 合計に送料を加算 (Stripe 側 ¥1,589 と一致させる / 旧: 商品+BP のみで Stripe と不整合) */}
@@ -1609,11 +1610,11 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
               {/* 依頼書 #143 TOP2 方式B (2026/6/10): 出品者が送金未連携の場合の警告 (購入は止めない / 同意の上で進める) */}
               {sellerPayoutsEnabled === false && (
                 <div style={{ background:"#FFF8E1", border:"1px solid #F5D680", borderRadius:10, padding:"10px 12px", marginBottom:12, fontSize:11.5, color:"#7A5C00", lineHeight:1.7 }}>
-                  ⚠️ この出品者はまだ売上の受け取り準備中です。発送・対応が遅れる場合があります。ご了承の上でお進みください。
+                  <LineIcon name="warning" size={12} /> この出品者はまだ売上の受け取り準備中です。発送・対応が遅れる場合があります。ご了承の上でお進みください。
                 </div>
               )}
               <div style={{ background:"#E3F2FD", borderRadius:10, padding:"10px", marginBottom:12, fontSize:11, color:C.blue, lineHeight:1.6 }}>
-                🔒 Stripe安全決済：クレジットカード情報はStripeが安全に処理します。Qoccaにカード情報は保存されません。
+                <LineIcon name="lock" size={11} /> Stripe安全決済：クレジットカード情報はStripeが安全に処理します。Qoccaにカード情報は保存されません。
               </div>
               <div style={{ fontSize:10, color:C.warmGray, lineHeight:1.6, marginBottom:16 }}>
                 「決済に進む」をクリックすると、Stripeの決済ページに移動します。<span style={{ color:C.orange, fontWeight:700 }}>利用規約</span>・<span style={{ color:C.orange, fontWeight:700 }}>キャンセルポリシー</span>に同意したものとみなされます。
@@ -1621,7 +1622,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
               <div style={{ display:"flex", gap:10 }}>
                 <button disabled={ordering} onClick={()=>setShowConfirm(false)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
                 <button disabled={ordering} onClick={handleConfirmOrder} style={{ flex:2, padding:"13px", background:ordering?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:ordering?"not-allowed":"pointer", fontFamily:"inherit" }}>
-                  {ordering ? "処理中..." : "💳 決済に進む"}
+                  {ordering ? "処理中..." : <><LineIcon name="card" size={15} /> 決済に進む</>}
                 </button>
               </div>
             </>
@@ -1646,7 +1647,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           </div>
         </div>
         {ordered ? (
-          <div style={{ flex:2, textAlign:"center", padding:"12px", background:C.green, borderRadius:12, color:"#fff", fontWeight:800 }}>🎉 注文完了！</div>
+          <div style={{ flex:2, textAlign:"center", padding:"12px", background:C.green, borderRadius:12, color:"#fff", fontWeight:800 }}><LineIcon name="sparkle" size={14} /> 注文完了！</div>
         ) : (
           /* Phase B: hasVariants で variant 未選択時は無効化、ラベルも変化 */
           <button
@@ -1669,7 +1670,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
               ? "種類を選んでください"
               : (isChoiceMode && !choiceComplete)
                 ? `あと${choiceRequired - selectedChoiceIds.length}つ選んでください`
-                : (user ? "🐾 注文する" : "🔒 ログインして注文")}
+                : (user ? <><LineIcon name="paw" size={16} /> 注文する</> : <><LineIcon name="lock" size={16} /> ログインして注文</>)}
           </button>
         )}
       </div>
@@ -1896,11 +1897,11 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
   if (!user) return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ textAlign:"center", padding:32, maxWidth:420 }}>
-        <div style={{ fontSize:56, marginBottom:12 }}>🐾</div>
+        <div style={{ fontSize:56, marginBottom:12 }}><LineIcon name="paw" size={56} /></div>
         <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:8 }}>あなたの想いを、街に置きにきませんか</h2>
         <p style={{ color:C.warmGray, fontSize:13, lineHeight:1.8, marginBottom:20 }}>
           Qocca は、ペット作家さんの作品を<br />
-          「想いごと」街に置く場所です🌅
+          「想いごと」街に置く場所です
         </p>
         <div style={{
           background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
@@ -1909,10 +1910,10 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
           textAlign:"left", lineHeight:1.7,
         }}>
           <div style={{ fontSize:13, fontWeight:800, color:"#D84315", marginBottom:4 }}>
-            ⭐ 今だけ：テスマケ期間中は出品手数料 0%
+            <LineIcon name="star" size={13} /> 今だけ：テスマケ期間中は出品手数料 0%
           </div>
           <div style={{ fontSize:11, color:"#BF360C" }}>
-            2026/7/31 までに出品 → 通常 10% の手数料が無料に🌸
+            2026/7/31 までに出品 → 通常 10% の手数料が無料に
           </div>
         </div>
         <button onClick={()=>setPage("signup")} style={{ width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", marginBottom:8 }}>ログイン / 新規登録して出品する</button>
@@ -1932,7 +1933,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
     return (
     <div style={{ paddingTop:60, minHeight:"100vh", background:C.cream, display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ textAlign:"center", padding:32, maxWidth:440 }}>
-        <div style={{ fontSize:56, marginBottom:12, animation:"qoccaSellFloat 1.4s ease infinite" }}>{isDraftDone ? "💾" : "🐾"}</div>
+        <div style={{ fontSize:56, marginBottom:12, animation:"qoccaSellFloat 1.4s ease infinite" }}>{isDraftDone ? <LineIcon name="save" size={56} /> : <LineIcon name="paw" size={56} />}</div>
         <h2 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:10 }}>
           {isDraftDone ? "下書き保存しました！" : "ありがとうございます！"}
         </h2>
@@ -1945,17 +1946,17 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
         )}
         {isDraftDone && (
           <p style={{ color:C.warmGray, fontSize:13, lineHeight:1.8, marginBottom:20 }}>
-            マイページの「下書き一覧」から、いつでも編集して投稿できます🐾
+            マイページの「下書き一覧」から、いつでも編集して投稿できます
           </p>
         )}
         {!isDraftDone && (
           <>
             <div style={{ background:"#FFF8E1", border:`1px solid #FFC107`, borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:11, color:"#7B5E00", lineHeight:1.7 }}>
-              ⏱ テスマケ期間中は <strong>通常数時間以内</strong> に公開されます<br />
+              <LineIcon name="clock" size={11} /> テスマケ期間中は <strong>通常数時間以内</strong> に公開されます<br />
               <span style={{ opacity:0.7 }}>(最大24時間以内。審査基準: ① ペットの安全 ② 著作権 ③ 価格妥当性)</span>
             </div>
             <p style={{ color:C.warmGray, fontSize:12, lineHeight:1.8, marginBottom:20 }}>
-              ✨ 街であなたの想いが届きますように
+              <LineIcon name="sparkle" size={12} /> 街であなたの想いが届きますように
             </p>
             <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap", justifyContent:"center" }}>
               <a href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`} target="_blank" rel="noopener noreferrer"
@@ -2018,7 +2019,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                 border:`2px solid ${C.orange}`, borderRadius:14,
                 padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12,
               }}>
-                <div style={{ fontSize:28 }}>🌅</div>
+                <div style={{ fontSize:28 }}><LineIcon name="sunrise" size={28} /></div>
                 <div style={{ flex:1, lineHeight:1.6 }}>
                   <div style={{ fontSize:13, fontWeight:800, color:"#D84315" }}>
                     テスマケ期間中 — 出品手数料 <strong style={{ fontSize:16 }}>0%</strong>
@@ -2035,13 +2036,13 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                 border:`2px solid #AB47BC`, borderRadius:14,
                 padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12,
               }}>
-                <div style={{ fontSize:28 }}>🎨</div>
+                <div style={{ fontSize:28 }}><LineIcon name="palette" size={28} /></div>
                 <div style={{ flex:1, lineHeight:1.6 }}>
                   <div style={{ fontSize:13, fontWeight:800, color:"#6A1B9A" }}>
                     創業クリエイター事業が存続する限り {foundingFeeRate ?? 3}% 手数料
                   </div>
                   <div style={{ fontSize:11, color:"#7B1FA2" }}>
-                    出品し続けても事業が存続する限りに優遇率で支えますで🌸
+                    出品し続けても事業が存続する限りに優遇率で支えますで
                   </div>
                 </div>
               </div>
@@ -2052,7 +2053,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                 padding:"10px 14px", marginBottom:14, cursor:"pointer",
                 display:"flex", alignItems:"center", gap:10,
               }}>
-                <div style={{ fontSize:18 }}>🎁</div>
+                <div style={{ fontSize:18 }}><LineIcon name="gift" size={18} /></div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12, fontWeight:800, color:"#2E7D32" }}>
                     クラファン参加で 事業が存続する限り 3% 手数料に
@@ -2104,7 +2105,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                 ))}
               </div>
               <div style={{ fontSize:10, color:C.warmGray, marginTop:6, lineHeight:1.5 }}>
-                💡 「両方」は犬猫どちらにも使える汎用商品 / 該当する種類が見当たらない場合は「その他」を選択してや
+                <LineIcon name="bulb" size={10} /> 「両方」は犬猫どちらにも使える汎用商品 / 該当する種類が見当たらない場合は「その他」を選択してや
               </div>
             </div>
           </>}
@@ -2123,10 +2124,10 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
             {/* 依頼書 #8 Phase E (5/25) 機能 #2: 💝 この作品が生まれたストーリー (任意) */}
             <div style={{ marginBottom:14, padding:"14px 14px 12px", background:"#FFF9F0", borderRadius:12, border:`1px dashed #E8C089` }}>
               <label style={{ fontSize:13, fontWeight:700, color:"#7A5A2E", display:"block", marginBottom:4 }}>
-                💝 この作品が生まれたストーリー <span style={{ fontSize:11, color:C.warmGray, fontWeight:500 }}>(任意)</span>
+                <LineIcon name="heart" size={13} /> この作品が生まれたストーリー <span style={{ fontSize:11, color:C.warmGray, fontWeight:500 }}>(任意)</span>
               </label>
               <div style={{ fontSize:11, color:"#8B7355", lineHeight:1.6, marginBottom:8 }}>
-                作品を生んだきっかけ・想い・温度感を、自由に書いてや🌸<br/>
+                作品を生んだきっかけ・想い・温度感を、自由に書いてや<br/>
                 <span style={{ fontSize:10, opacity:0.8 }}>記入は任意。書かれた言葉はそのまま街に残り、購入者だけでなく未来の住民にも伝わります。</span>
               </div>
               <textarea
@@ -2152,13 +2153,13 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                   if (!s || s.count < 3) {
                     return (
                       <div style={{ marginTop:6, padding:"6px 8px", background:C.cream, borderRadius:6, fontSize:10, color:C.warmGray, lineHeight:1.5 }}>
-                        💭 このカテゴリはまだ出品が少ない。<strong style={{ color:C.dark }}>自由に価格を決めてや</strong>🌸
+                        <LineIcon name="bubble" size={10} /> このカテゴリはまだ出品が少ない。<strong style={{ color:C.dark }}>自由に価格を決めてや</strong>
                       </div>
                     );
                   }
                   return (
                     <div style={{ marginTop:6, padding:"6px 8px", background:"#FFF8E1", borderRadius:6, fontSize:10, color:"#6D4C00", lineHeight:1.5 }}>
-                      📊 このカテゴリの相場: 平均 <strong>¥{s.avg.toLocaleString()}</strong> ({s.min.toLocaleString()}〜{s.max.toLocaleString()}円 · {s.count}件)
+                      <LineIcon name="chart" size={10} /> このカテゴリの相場: 平均 <strong>¥{s.avg.toLocaleString()}</strong> ({s.min.toLocaleString()}〜{s.max.toLocaleString()}円 · {s.count}件)
                     </div>
                   );
                 })()}
@@ -2178,16 +2179,16 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
               <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>サービスの提供方法を選択してください（プライバシー保護のため正確に選んでください）</p>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {[
-                  { v:"data_only", icon:"💻", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要・ペット情報も渡さず安心）", recommend:"🌸 初心者おすすめ", example:"例: ペット似顔絵 / 写真加工 / 動画編集" },
-                  { v:"shipping", icon:"📦", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送", safety:"🔒 住所は 30 日で自動削除・購入者と出品者のみ閲覧・Qoccaが守ります", example:"例: ハンドメイド服 / オーダー耳タグ / おやつ" },
-                  { v:"visit", icon:"📍", label:"訪問あり", desc:"しつけ・撮影など、対面で提供", safety:"📍 場所は取引メッセージで個別調整・公開されません", example:"例: しつけ教室 / 出張撮影 / 訪問トリミング" },
+                  { v:"data_only", icon:"laptop", label:"データのみ", desc:"似顔絵・写真データなど、メッセージで納品（住所不要・ペット情報も渡さず安心）", recommend:<><LineIcon name="flower" size={10} /> 初心者おすすめ</>, example:"例: ペット似顔絵 / 写真加工 / 動画編集" },
+                  { v:"shipping", icon:"box", label:"配送あり", desc:"洋服・グッズ・フードなど、購入者の住所へ郵送", safety:<><LineIcon name="lock" size={10} /> 住所は 30 日で自動削除・購入者と出品者のみ閲覧・Qoccaが守ります</>, example:"例: ハンドメイド服 / オーダー耳タグ / おやつ" },
+                  { v:"visit", icon:"pin", label:"訪問あり", desc:"しつけ・撮影など、対面で提供", safety:<><LineIcon name="pin" size={10} /> 場所は取引メッセージで個別調整・公開されません</>, example:"例: しつけ教室 / 出張撮影 / 訪問トリミング" },
                 ].map(opt => (
                   <button key={opt.v} type="button" onClick={()=>up("delivery_type", opt.v)} style={{
                     padding:"12px 14px", border:`2px solid ${form.delivery_type===opt.v ? C.orange : C.border}`,
                     borderRadius:10, background:form.delivery_type===opt.v ? C.orangePale : C.white,
                     cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:12, alignItems:"flex-start"
                   }}>
-                    <span style={{ fontSize:24, flexShrink:0, marginTop:2 }}>{opt.icon}</span>
+                    <span style={{ fontSize:24, flexShrink:0, marginTop:2, display:"flex" }}><LineIcon name={opt.icon} size={24} /></span>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:2, display:"flex", alignItems:"center", gap:6 }}>
                         {opt.label}
@@ -2205,7 +2206,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                         </div>
                       )}
                     </div>
-                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18, marginTop:2 }}>✓</span>}
+                    {form.delivery_type===opt.v && <span style={{ color:C.orange, fontSize:18, marginTop:2, display:"flex" }}><LineIcon name="check" size={18} /></span>}
                   </button>
                 ))}
               </div>
@@ -2216,23 +2217,23 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
               <p style={{ fontSize:11, color:C.warmGray, marginBottom:8 }}>配送方法を選択してください (海外展開・地域別対応)</p>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {[
-                  { v:"included", icon:"✅", label:"送料込み (無料配送)", desc:"商品代金に送料を含めます" },
-                  { v:"flat_rate", icon:"📮", label:"全国一律", desc:"日本全国どこでも同じ送料" },
-                  { v:"regional", icon:"🗾", label:"地域別", desc:"地域ごとに送料を設定 (本州・北海道・沖縄等)" },
-                  { v:"methods", icon:"📦", label:"配送方法から選ぶ (購入者が選択)", desc:"クリックポスト ¥185 / 宅急便 ¥750 等を登録 → 購入者が選びます" },
-                  { v:"consultation", icon:"💬", label:"要相談 (個別連絡)", desc:"取引後にメッセージで送料を相談" },
+                  { v:"included", icon:"checkCircle", label:"送料込み (無料配送)", desc:"商品代金に送料を含めます" },
+                  { v:"flat_rate", icon:"mailbox", label:"全国一律", desc:"日本全国どこでも同じ送料" },
+                  { v:"regional", icon:"map", label:"地域別", desc:"地域ごとに送料を設定 (本州・北海道・沖縄等)" },
+                  { v:"methods", icon:"box", label:"配送方法から選ぶ (購入者が選択)", desc:"クリックポスト ¥185 / 宅急便 ¥750 等を登録 → 購入者が選びます" },
+                  { v:"consultation", icon:"bubble", label:"要相談 (個別連絡)", desc:"取引後にメッセージで送料を相談" },
                 ].map(opt => (
                   <button key={opt.v} type="button" onClick={()=>up("shipping_type", opt.v)} style={{
                     padding:"10px 14px", border:`2px solid ${form.shipping_type===opt.v ? C.orange : C.border}`,
                     borderRadius:10, background:form.shipping_type===opt.v ? C.orangePale : C.white,
                     cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", gap:10, alignItems:"flex-start"
                   }}>
-                    <span style={{ fontSize:20, flexShrink:0 }}>{opt.icon}</span>
+                    <span style={{ fontSize:20, flexShrink:0, display:"flex" }}><LineIcon name={opt.icon} size={20} /></span>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:13, fontWeight:800, color:C.dark }}>{opt.label}</div>
                       <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5 }}>{opt.desc}</div>
                     </div>
-                    {form.shipping_type===opt.v && <span style={{ color:C.orange, fontSize:16 }}>✓</span>}
+                    {form.shipping_type===opt.v && <span style={{ color:C.orange, fontSize:16, display:"flex" }}><LineIcon name="check" size={16} /></span>}
                   </button>
                 ))}
               </div>
@@ -2264,7 +2265,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
               {/* consultation: 補足説明 */}
               {form.shipping_type === "consultation" && (
                 <div style={{ marginTop:10, padding:12, background:C.cream, borderRadius:10, fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
-                  💬 購入後、取引メッセージで配送先・送料を個別相談します。送料は購入者・出品者間で合意の上、別途お支払いください。
+                  <LineIcon name="bubble" size={11} /> 購入後、取引メッセージで配送先・送料を個別相談します。送料は購入者・出品者間で合意の上、別途お支払いください。
                 </div>
               )}
               {/* 依頼書 #127 Phase B (2026/6/5): methods - 配送方法選択 (購入者がラジオで選ぶ / 最大 5件) */}
@@ -2290,7 +2291,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                     <button type="button" onClick={() => { up("shipping_methods", [ ...(form.shipping_methods || []), { id: `m${(form.shipping_methods?.length || 0) + 1}_${Date.now().toString(36)}`, name: "", fee: 0, note: "" } ]); }} style={{ padding:"6px 12px", background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, color:C.warmGray, fontSize:12, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>+ 配送方法を追加 ({(form.shipping_methods || []).length}/5)</button>
                   )}
                   {((form.shipping_methods || []).filter((m:any)=>m?.name?.trim()).length === 0) && (
-                    <div style={{ marginTop:8, fontSize:11, color:"#E57373" }}>⚠️ 配送方法は最低 1件 必要です (名前を入力)</div>
+                    <div style={{ marginTop:8, fontSize:11, color:"#E57373" }}><LineIcon name="warning" size={11} /> 配送方法は最低 1件 必要です (名前を入力)</div>
                   )}
                 </div>
               )}
@@ -2484,7 +2485,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                 ["タイトル", form.title||"未入力"],
                 ["料金", form.price?`¥${Number(form.price).toLocaleString()}`:"未設定"],
                 ["納期", form.delivery||"未設定"],
-                ["受け渡し方法", form.delivery_type==="shipping"?"📦 配送あり":form.delivery_type==="visit"?"📍 訪問あり":"💻 データのみ"],
+                ["受け渡し方法", form.delivery_type==="shipping"?"配送あり":form.delivery_type==="visit"?"訪問あり":"データのみ"],
                 ["在庫数", form.stock!==""&&form.stock!==null?`${form.stock}個`:"管理しない"],
                 ["画像", `${images.length}枚`],
               ].map(([k,v])=>(
@@ -2498,7 +2499,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                   <div style={{ fontSize:12, fontWeight:700, color:C.warmGray, marginBottom:6 }}>有料オプション</div>
                   {options.filter(o=>o.name&&o.price).map((o,i) => (
                     <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}` }}>
-                      <span style={{ fontSize:12, color:C.dark }}>🔧 {o.name}</span>
+                      <span style={{ fontSize:12, color:C.dark }}><LineIcon name="wrench" size={12} /> {o.name}</span>
                       <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>+¥{Number(o.price).toLocaleString()}</span>
                     </div>
                   ))}
@@ -2508,7 +2509,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
             {/* 依頼書 #9 (5/25) P4: 公開までの流れ・審査基準明示 */}
             <div style={{ background:"#FFF8E1", border:`1px solid #FFC107`, borderRadius:14, padding:"14px 16px", marginBottom:16, lineHeight:1.7 }}>
               <div style={{ fontSize:13, fontWeight:800, color:"#7B5E00", marginBottom:6 }}>
-                ⏱ 公開までの流れ
+                <LineIcon name="clock" size={13} /> 公開までの流れ
               </div>
               <div style={{ fontSize:11, color:"#6D4C00", marginBottom:8 }}>
                 {testmakeActive
@@ -2524,13 +2525,13 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
                 ③ <strong>価格妥当性</strong> (相場と極端に離れていないか)
               </div>
               <div style={{ fontSize:10, color:C.warmGray, marginTop:8, lineHeight:1.6 }}>
-                🚫 NG 例: 不安を煽る表現 / 医療診断を断定する内容 / 第三者作品の無断使用<br />
-                ➡️ 詳しい審査基準は <a href="/help/fees" style={{ color:"#7B5E00", textDecoration:"underline" }}>/help/fees</a> に書いてあるで
+                <LineIcon name="ban" size={10} /> NG 例: 不安を煽る表現 / 医療診断を断定する内容 / 第三者作品の無断使用<br />
+                <LineIcon name="arrowRight" size={10} /> 詳しい審査基準は <a href="/help/fees" style={{ color:"#7B5E00", textDecoration:"underline" }}>/help/fees</a> に書いてあるで
               </div>
             </div>
             {form.price && Number(form.price) > 0 && (
               <div style={{ background:C.orangePale, borderRadius:14, padding:"14px", marginBottom:16, border:`1px solid ${C.orange}` }}>
-                <div style={{ fontSize:13, fontWeight:800, color:C.orange, marginBottom:8 }}>💰 あなたの手取り目安</div>
+                <div style={{ fontSize:13, fontWeight:800, color:C.orange, marginBottom:8 }}><LineIcon name="coin" size={13} /> あなたの手取り目安</div>
                 {(() => {
                   const basePrice = Number(form.price) + options.filter(o=>o.name&&o.price).reduce((sum, o) => sum + Number(o.price||0), 0);
                   const firstNet = basePrice;
@@ -2566,13 +2567,13 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
               </div>
             )}
             <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 14px", fontSize:12, color:C.orange, lineHeight:1.6, fontWeight:600 }}>
-              🐾 出品後、審査（最大24時間）を経て公開されます。
+              <LineIcon name="paw" size={12} /> 出品後、審査（最大24時間）を経て公開されます。
             </div>
           </>}
           <div style={{ display:"flex", gap:10, marginTop:24 }}>
             {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, fontWeight:800, fontSize:14, cursor:"pointer", color:C.warmGray, fontFamily:"inherit" }}>← 戻る</button>}
             <button disabled={submitting} onClick={()=>step<3?setStep(s=>s+1):handleSubmit(false)} style={{ flex:2, padding:"13px", background:submitting?C.warmGray:C.orange, border:"none", borderRadius:12, fontWeight:800, fontSize:14, cursor:submitting?"not-allowed":"pointer", color:"#fff", fontFamily:"inherit" }}>
-              {submitting ? "送信中..." : step<3 ? "次へ →" : "🐾 出品する！"}
+              {submitting ? "送信中..." : step<3 ? "次へ →" : <><LineIcon name="paw" size={14} /> 出品する！</>}
             </button>
           </div>
           {step===3 && (
@@ -2580,7 +2581,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
               width:"100%", marginTop:10, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`,
               borderRadius:12, fontWeight:700, fontSize:13, cursor:submitting?"not-allowed":"pointer",
               color:C.warmGray, fontFamily:"inherit"
-            }}>💾 下書き保存（後で編集して投稿できます）</button>
+            }}><LineIcon name="save" size={13} /> 下書き保存（後で編集して投稿できます）</button>
           )}
         </div>
       </div>
@@ -2643,7 +2644,7 @@ export const DetailPageWrapper = ({ listings, liked, onLike }: {
 
   if (!item) return (
     <div style={{ paddingTop:80, textAlign:"center", color:C.warmGray }}>
-      <div style={{ fontSize:40, marginBottom:8 }}>🔍</div>
+      <div style={{ fontSize:40, marginBottom:8 }}><LineIcon name="search" size={40} /></div>
       <div>{fetchTried ? "出品が見つかりません" : "読み込み中..."}</div>
     </div>
   );
@@ -2689,7 +2690,7 @@ export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }: {
 
   return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream, padding: isPC ? "0 0 40px" : "80px 16px 40px" }}>
-      <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:14 }}>❤️ お気に入り</h1>
+      <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:14 }}><LineIcon name="heart" size={22} /> お気に入り</h1>
       <div style={{ display:"flex", gap:8, marginBottom:20 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={()=>setTab(t.key)} style={{
@@ -2707,7 +2708,7 @@ export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }: {
       {tab === "listing" && (
         items.length===0 ? (
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+            <div style={{ fontSize:48, marginBottom:12 }}><LineIcon name="heart" size={48} /></div>
             <div style={{ fontSize:16, fontWeight:800, color:C.dark }}>まだお気に入りがありません</div>
           </div>
         ) : (
@@ -2722,7 +2723,7 @@ export const LikedPage = ({ listings, liked, onLike, onDetail, isPC }: {
           <p style={{ color:C.warmGray, fontSize:14, padding:"40px 0", textAlign:"center" }}>読み込んでいます。</p>
         ) : spots.length===0 ? (
           <div style={{ textAlign:"center", padding:"60px 20px" }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🤍</div>
+            <div style={{ fontSize:48, marginBottom:12 }}><LineIcon name="heart" size={48} /></div>
             <div style={{ fontSize:16, fontWeight:800, color:C.dark, marginBottom:8 }}>まだ保存した場所がありません</div>
             <button onClick={()=>navigate("/petwalker")} style={{ marginTop:10, padding:"10px 24px", borderRadius:999, border:`1.5px solid ${C.orange}`, background:C.white, color:C.orange, fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
               おでかけ先をさがす →

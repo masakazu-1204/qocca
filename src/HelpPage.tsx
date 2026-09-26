@@ -5,6 +5,7 @@
 // ============================================================
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { LineIcon } from "./components/LineIcon";
 
 // ── ブランドカラー ─────────────────────────────────────────────
 const C = {
@@ -24,28 +25,28 @@ const C = {
 };
 
 // ── ヘルプ記事メタデータ ──────────────────────────────────────
-const HELP_ARTICLES: Record<string, { title: string; emoji: string; description: string; category: string }> = {
+const HELP_ARTICLES: Record<string, { title: string; icon: string; description: string; category: string }> = {
   "getting-started": {
     title: "出品の始め方",
-    emoji: "📝",
+    icon: "note",
     description: "アカウント作成から初めての出品までを丁寧にご案内します。",
     category: "出品者向け",
   },
   "stripe-connect": {
     title: "Stripe Connect 登録ガイド",
-    emoji: "💳",
+    icon: "card",
     description: "売上を受け取るために必要な Stripe Connect の登録方法を解説します。",
     category: "出品者向け",
   },
   "fees": {
     title: "手数料の仕組み",
-    emoji: "💰",
+    icon: "coin",
     description: "出品・販売・振込にかかる手数料を、ひとつずつ静かにご説明します。",
     category: "出品者向け",
   },
   "buying": {
     title: "購入ガイド",
-    emoji: "🛒",
+    icon: "cart",
     description: "商品を探してから受け取りまでの流れをご案内します。",
     category: "購入者向け",
   },
@@ -72,15 +73,15 @@ const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const Note: React.FC<{ children: React.ReactNode; color?: "blue" | "orange" | "red" | "green" }> = ({ children, color = "blue" }) => {
   const map = {
-    blue: { bg: C.bluePale, border: C.blue, icon: "💡" },
-    orange: { bg: C.orangePale, border: C.orange, icon: "⚠️" },
-    red: { bg: "#FFEBEE", border: C.red, icon: "🚨" },
-    green: { bg: C.greenPale, border: C.green, icon: "✅" },
+    blue: { bg: C.bluePale, border: C.blue, icon: "bulb" },
+    orange: { bg: C.orangePale, border: C.orange, icon: "warning" },
+    red: { bg: "#FFEBEE", border: C.red, icon: "alert" },
+    green: { bg: C.greenPale, border: C.green, icon: "checkCircle" },
   };
   const s = map[color];
   return (
     <div style={{ background: s.bg, borderLeft: `4px solid ${s.border}`, padding: "12px 16px", margin: "12px 0", borderRadius: 8, fontSize: 13, lineHeight: 1.7, color: C.dark }}>
-      <span style={{ marginRight: 6 }}>{s.icon}</span>{children}
+      <span style={{ marginRight: 6 }}><LineIcon name={s.icon} size={15} /></span>{children}
     </div>
   );
 };
@@ -113,7 +114,7 @@ const BackToTop: React.FC = () => {
 
 const ContactCard: React.FC = () => (
   <div style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "18px 20px", marginTop: 30 }}>
-    <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>📧 解決しない場合は</div>
+    <div style={{ fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}><LineIcon name="mail" size={16} /> 解決しない場合は</div>
     <div style={{ fontSize: 13, lineHeight: 1.7, color: "#555", marginBottom: 12 }}>
       上記の手順で解決しない場合や、ご不明な点がある場合はお気軽にお問い合わせください。
     </div>
@@ -134,12 +135,12 @@ const HelpIndex: React.FC = () => {
         <button onClick={() => navigate("/")} style={{ background: "transparent", border: "none", color: C.warmGray, fontSize: 13, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>← ホームに戻る</button>
       </div>
 
-      <h1 style={{ fontSize: 28, fontWeight: 900, color: C.dark, marginTop: 0, marginBottom: 8 }}>📚 ヘルプセンター</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 900, color: C.dark, marginTop: 0, marginBottom: 8 }}><LineIcon name="book" size={20} /> ヘルプセンター</h1>
       <p style={{ fontSize: 14, color: C.warmGray, lineHeight: 1.7, marginBottom: 28 }}>
         Qocca のご利用に関するご質問や使い方をご案内しています。
       </p>
 
-      <H2>🛍 出品者向け</H2>
+      <H2><LineIcon name="bag" size={18} /> 出品者向け</H2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
         {Object.entries(HELP_ARTICLES)
           .filter(([_, a]) => a.category === "出品者向け")
@@ -148,7 +149,7 @@ const HelpIndex: React.FC = () => {
               background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "16px 18px",
               display: "flex", gap: 14, alignItems: "center", cursor: "pointer", textAlign: "left", fontFamily: "inherit"
             }}>
-              <div style={{ fontSize: 32, flexShrink: 0 }}>{a.emoji}</div>
+              <div style={{ flexShrink: 0, display: "flex", color: C.warmGray }}><LineIcon name={a.icon} size={28} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: C.dark, marginBottom: 4 }}>{a.title}</div>
                 <div style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.6 }}>{a.description}</div>
@@ -158,7 +159,7 @@ const HelpIndex: React.FC = () => {
           ))}
       </div>
 
-      <H2>🛒 購入者向け</H2>
+      <H2><LineIcon name="cart" size={18} /> 購入者向け</H2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
         {Object.entries(HELP_ARTICLES)
           .filter(([_, a]) => a.category === "購入者向け")
@@ -167,7 +168,7 @@ const HelpIndex: React.FC = () => {
               background: C.white, borderRadius: 14, border: `1px solid ${C.border}`, padding: "16px 18px",
               display: "flex", gap: 14, alignItems: "center", cursor: "pointer", textAlign: "left", fontFamily: "inherit"
             }}>
-              <div style={{ fontSize: 32, flexShrink: 0 }}>{a.emoji}</div>
+              <div style={{ flexShrink: 0, display: "flex", color: C.warmGray }}><LineIcon name={a.icon} size={28} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: C.dark, marginBottom: 4 }}>{a.title}</div>
                 <div style={{ fontSize: 12, color: C.warmGray, lineHeight: 1.6 }}>{a.description}</div>
@@ -186,7 +187,7 @@ const HelpIndex: React.FC = () => {
 const GettingStarted: React.FC = () => (
   <PageWrap>
     <BackToTop />
-    <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>📝 出品の始め方</h1>
+    <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}><LineIcon name="note" size={20} /> 出品の始め方</h1>
     <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>所要時間: 約10〜15分</p>
 
     <Note color="blue">
@@ -194,7 +195,7 @@ const GettingStarted: React.FC = () => (
       このガイドでは、はじめての出品までの流れを丁寧にご案内します。
     </Note>
 
-    <H2>📋 出品までの流れ</H2>
+    <H2><LineIcon name="clipboard" size={18} /> 出品までの流れ</H2>
     <Step n={1} title="アカウント作成・ログイン">
       ホーム画面の「ログイン」からメールアドレスでアカウント登録してください。<br/>
       届いた認証メールのリンクをクリックすると登録完了です。
@@ -217,16 +218,16 @@ const GettingStarted: React.FC = () => (
       審査通過後、サイトに公開されます。
     </Step>
 
-    <H2>🖼 出品作成のポイント</H2>
+    <H2><LineIcon name="image" size={18} /> 出品作成のポイント</H2>
     <H3>カテゴリ</H3>
     <P>適切なカテゴリを選択することで、購入者に見つけてもらいやすくなります。</P>
     <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22 }}>
-      <li>🎨 似顔絵・イラスト</li>
-      <li>👕 お洋服・アクセサリー</li>
-      <li>📸 写真撮影</li>
-      <li>✨ ペットグッズ</li>
-      <li>🍖 ペットフード・おやつ</li>
-      <li>🐕 しつけ・トレーニング</li>
+      <li><LineIcon name="palette" size={14} /> 似顔絵・イラスト</li>
+      <li><LineIcon name="shirt" size={14} /> お洋服・アクセサリー</li>
+      <li><LineIcon name="camera" size={14} /> 写真撮影</li>
+      <li><LineIcon name="sparkle" size={14} /> ペットグッズ</li>
+      <li><LineIcon name="bone" size={14} /> ペットフード・おやつ</li>
+      <li><LineIcon name="dog" size={14} /> しつけ・トレーニング</li>
     </ul>
 
     <H3>写真</H3>
@@ -243,19 +244,19 @@ const GettingStarted: React.FC = () => (
       ・登録から3ヶ月以内: <strong>5%</strong>(お得な期間)<br/>
       ・3ヶ月以降: <strong>10%</strong>(標準手数料)<br/>
       <br/>
-      💡 購入者が支払う金額は、出品ページに表示されている価格のみです。<br/>
+      <LineIcon name="bulb" size={14} /> 購入者が支払う金額は、出品ページに表示されている価格のみです。<br/>
       出品者の手取りは、表示価格から販売手数料を引いた金額です。
     </Note>
 
     <H3>配送タイプ</H3>
     <P>商品の性質に合わせて配送方法を選択してください。</P>
     <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22 }}>
-      <li>📦 <strong>配送あり</strong>: 物理的な商品を購入者の住所に送る</li>
-      <li>💻 <strong>データのみ</strong>: デジタルデータのみ（取引メッセージで受け渡し）</li>
-      <li>📍 <strong>訪問あり</strong>: トレーニング・撮影など対面で実施</li>
+      <li><LineIcon name="box" size={14} /> <strong>配送あり</strong>: 物理的な商品を購入者の住所に送る</li>
+      <li><LineIcon name="laptop" size={14} /> <strong>データのみ</strong>: デジタルデータのみ（取引メッセージで受け渡し）</li>
+      <li><LineIcon name="pin" size={14} /> <strong>訪問あり</strong>: トレーニング・撮影など対面で実施</li>
     </ul>
 
-    <H2>🚫 出品できないもの・禁止事項</H2>
+    <H2><LineIcon name="ban" size={18} /> 出品できないもの・禁止事項</H2>
     <Note color="red">
       以下に該当する出品・行為は禁止されています。違反した場合、出品の削除・アカウント停止の対象となります。<br/>
       <strong>特に重大な違反（生体売買・詐欺など）は即時アカウント停止</strong>となります。
@@ -278,17 +279,17 @@ const GettingStarted: React.FC = () => (
       <li>当サービスのシステムへの不正アクセス</li>
     </ul>
 
-    <H2>📞 取引の流れ</H2>
+    <H2><LineIcon name="phone" size={18} /> 取引の流れ</H2>
     <P>注文が入ると、以下の流れで取引が進みます。</P>
     <Step n={1} title="注文確定">
       購入者が決済を完了すると、販売管理タブに新しい注文が表示されます。
     </Step>
     <Step n={2} title="作業を開始">
-      販売管理タブから「🎨 作業を開始」ボタンを押し、購入者に通知します。<br/>
+      販売管理タブから「作業を開始」ボタンを押し、購入者に通知します。<br/>
       取引メッセージで購入者と詳細をやり取りできます。
     </Step>
     <Step n={3} title="納品">
-      商品の制作・配送・データ送信が完了したら「📦 納品完了として通知」を押します。
+      商品の制作・配送・データ送信が完了したら「納品完了として通知」を押します。
     </Step>
     <Step n={4} title="売上受取">
       購入者が受取確認を行うと、Stripe Connect で売上が自動的に振り込まれます。<br/>
@@ -304,7 +305,7 @@ const GettingStarted: React.FC = () => (
 const StripeConnectGuide: React.FC = () => (
   <PageWrap>
     <BackToTop />
-    <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>💳 Stripe Connect 登録ガイド</h1>
+    <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}><LineIcon name="card" size={20} /> Stripe Connect 登録ガイド</h1>
     <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>所要時間: 約15〜20分</p>
 
     <Note color="blue">
@@ -312,16 +313,16 @@ const StripeConnectGuide: React.FC = () => (
       登録は無料で、一度設定すれば毎月の振込が自動で行われます。
     </Note>
 
-    <H2>📋 登録前に準備するもの</H2>
+    <H2><LineIcon name="clipboard" size={18} /> 登録前に準備するもの</H2>
     <ul style={{ fontSize: 13, lineHeight: 2, color: "#555", paddingLeft: 22 }}>
-      <li>📱 <strong>本人確認書類</strong>（いずれか1点）<br/>
+      <li><LineIcon name="mobile" size={14} /> <strong>本人確認書類</strong>（いずれか1点）<br/>
         運転免許証 / マイナンバーカード / パスポート / 在留カード
       </li>
-      <li>🏦 <strong>銀行口座情報</strong>（売上振込先）<br/>
+      <li><LineIcon name="bank" size={14} /> <strong>銀行口座情報</strong>（売上振込先）<br/>
         銀行名・支店名・口座番号・口座名義
       </li>
-      <li>📞 <strong>電話番号</strong>（SMS認証を受けられるもの）</li>
-      <li>🏠 <strong>住所</strong>（本人確認書類と一致するもの）</li>
+      <li><LineIcon name="phone" size={14} /> <strong>電話番号</strong>（SMS認証を受けられるもの）</li>
+      <li><LineIcon name="home" size={14} /> <strong>住所</strong>（本人確認書類と一致するもの）</li>
     </ul>
 
     <Note color="orange">
@@ -329,12 +330,12 @@ const StripeConnectGuide: React.FC = () => (
       情報が異なると審査が通らないことがあります。
     </Note>
 
-    <H2>🎯 登録手順</H2>
+    <H2><LineIcon name="target" size={18} /> 登録手順</H2>
     <Step n={1} title="マイページから「売上タブ」を開く">
-      ログイン後、マイページのタブから「💰 売上」を選択します。
+      ログイン後、マイページのタブから「売上」を選択します。
     </Step>
     <Step n={2} title="「銀行口座・支払い設定」セクションへ">
-      売上タブの中に「🏦 銀行口座・支払い設定」のセクションがあります。<br/>
+      売上タブの中に「銀行口座・支払い設定」のセクションがあります。<br/>
       初回は「Stripe Connect を設定する」のようなボタンが表示されます。
     </Step>
     <Step n={3} title="Stripe Express にリダイレクト">
@@ -360,16 +361,16 @@ const StripeConnectGuide: React.FC = () => (
       これで売上を受け取れる状態になります。
     </Step>
 
-    <H2>💰 売上の振込について</H2>
+    <H2><LineIcon name="coin" size={18} /> 売上の振込について</H2>
     <H3>振込のルール</H3>
     <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22 }}>
-      <li>📅 <strong>月末自動振込</strong>(月1回・自動)
+      <li><LineIcon name="calendar" size={14} /> <strong>月末自動振込</strong>(月1回・自動)
         <ul style={{ marginTop: 4 }}>
           <li>月の売上 <strong>¥30,000以上</strong> → 振込手数料 <strong style={{ color: "#F5A94A" }}>無料!</strong></li>
           <li>月の売上 <strong>¥30,000未満</strong> → 振込手数料 <strong>¥275(税込)</strong></li>
         </ul>
       </li>
-      <li>⚡ <strong>即時受取</strong>(任意・手動)
+      <li><LineIcon name="bolt" size={14} /> <strong>即時受取</strong>(任意・手動)
         <ul style={{ marginTop: 4 }}>
           <li>一律 <strong>¥275(税込)</strong> / 数分で着金</li>
         </ul>
@@ -389,7 +390,7 @@ const StripeConnectGuide: React.FC = () => (
     </ul>
 
     <Note color="green">
-      <strong>💡 決済処理はQoccaが行うため、出品者の追加負担はありません。</strong><br/>
+      <strong><LineIcon name="bulb" size={14} /> 決済処理はQoccaが行うため、出品者の追加負担はありません。</strong><br/>
       出品者の手取りはわかりやすくシンプルです。
     </Note>
 
@@ -401,7 +402,7 @@ const StripeConnectGuide: React.FC = () => (
       <span style={{ fontSize: 11, color: C.warmGray }}>※ 月の売上が ¥30,000 未満の場合は振込手数料 ¥275(税込)が別途かかります。</span>
     </Note>
 
-    <H2>❓ よくあるご質問</H2>
+    <H2><LineIcon name="question" size={18} /> よくあるご質問</H2>
     <FAQ q="屋号で登録できますか？" a="個人事業主の方は本名で登録した上で、屋号を併記する形になります。法人として登録する場合は法人名義で登録できます。" />
     <FAQ q="海外口座は使えますか？" a="現在は日本国内の銀行口座のみ対応しています。" />
     <FAQ q="本人確認書類が承認されません" a="書類のピンボケ・反射・切れがないか確認してください。光が反射していると承認されないことがあります。再アップロードを試してください。" />
@@ -409,7 +410,7 @@ const StripeConnectGuide: React.FC = () => (
     <FAQ q="登録した情報を変更したい" a="売上タブの「設定を変更する」ボタンから Stripe Express ダッシュボードにアクセスし、変更できます。" />
     <FAQ q="登録は無料ですか？" a="登録自体は無料です。料金は取引が発生したときの手数料のみです。" />
 
-    <H2>🚨 トラブル時の対応</H2>
+    <H2><LineIcon name="alert" size={18} /> トラブル時の対応</H2>
     <Note color="red">
       <strong>登録途中でエラーが出た場合</strong><br/>
       1. ブラウザを更新して再試行<br/>
@@ -429,7 +430,7 @@ const FeesGuide: React.FC = () => {
   return (
     <PageWrap>
       <BackToTop />
-      <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>💰 手数料の仕組み</h1>
+      <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}><LineIcon name="coin" size={20} /> 手数料の仕組み</h1>
       <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>最終更新日: 2026年5月22日</p>
 
       <H2>はじめに</H2>
@@ -473,7 +474,7 @@ const FeesGuide: React.FC = () => {
         成立した取引です。
       </Note>
 
-      <H2>⭐ ウェルカムキャンペーン実施中</H2>
+      <H2><LineIcon name="star" size={18} /> ウェルカムキャンペーン実施中</H2>
       <P><strong>2026年7月31日まで、すべての取引手数料を0%にします。</strong></P>
       <P>Qoccaのグランドオープン(2026年7月1日)に向けて、<br/>
       創業期にご参加いただく出品者の皆様への<br/>
@@ -492,7 +493,7 @@ const FeesGuide: React.FC = () => {
         <li>終了: <strong>2026年7月31日</strong></li>
       </ul>
 
-      <H2>⭐ 創業期出品者枠 (クラウドファンディング特典)</H2>
+      <H2><LineIcon name="star" size={18} /> 創業期出品者枠 (クラウドファンディング特典)</H2>
       <P>Qoccaのクラウドファンディングで<br/>
       「創業期出品者枠」を獲得された方には、<br/>
       特別な手数料優遇を適用します。</P>
@@ -514,7 +515,7 @@ const FeesGuide: React.FC = () => {
       実質 <strong>14ヶ月の手数料優遇</strong> となります。</P>
 
       <Note color="blue">
-        ⭐ 創業期出品者の方は、マイページに<br/>
+        <LineIcon name="star" size={14} /> 創業期出品者の方は、マイページに<br/>
         「創業期出品者 (残り◯日)」と表示されます。
       </Note>
 
@@ -586,7 +587,7 @@ const FeesGuide: React.FC = () => {
       </div>
 
       <p style={{ fontSize: 13, color: C.warmGray, textAlign: "center", marginTop: 32, marginBottom: 8, lineHeight: 1.9 }}>
-        🌷 ペットへの想いを、形に。<br/>
+        <LineIcon name="flower" size={14} /> ペットへの想いを、形に。<br/>
         ふたりをつなぐ場所を、一緒に育てていきましょう。
       </p>
 
@@ -600,7 +601,7 @@ const FeesGuide: React.FC = () => {
 const BuyingGuide: React.FC = () => (
   <PageWrap>
     <BackToTop />
-    <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>🛒 購入ガイド</h1>
+    <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}><LineIcon name="cart" size={20} /> 購入ガイド</h1>
     <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 24 }}>所要時間: 約5〜10分</p>
 
     <Note color="blue">
@@ -608,7 +609,7 @@ const BuyingGuide: React.FC = () => (
       安心して取引いただけるよう、決済はすべて Stripe を経由した安全な仕組みになっています。
     </Note>
 
-    <H2>📋 購入の流れ</H2>
+    <H2><LineIcon name="clipboard" size={18} /> 購入の流れ</H2>
     <Step n={1} title="商品を探す">
       ホームの検索ボックスやカテゴリから商品を探せます。<br/>
       ギャラリー・ランキング・新着商品もご活用ください。
@@ -618,10 +619,10 @@ const BuyingGuide: React.FC = () => (
       写真・説明・出品者プロフィール・配送タイプを確認しましょう。
     </Step>
     <Step n={3} title="出品者プロフィール確認（任意）">
-      「👤 出品者のプロフィールを見る」から、過去の出品実績や評価を確認できます。
+      「出品者のプロフィールを見る」から、過去の出品実績や評価を確認できます。
     </Step>
     <Step n={4} title="購入ボタンを押す">
-      商品ページの「🛒 購入する」ボタンを押します。<br/>
+      商品ページの「購入する」ボタンを押します。<br/>
       未ログインの場合はログイン画面に遷移します。
     </Step>
     <Step n={5} title="決済情報入力">
@@ -637,17 +638,17 @@ const BuyingGuide: React.FC = () => (
       注文履歴タブで取引状況を確認できます。
     </Step>
 
-    <H2>📊 取引のステータス</H2>
+    <H2><LineIcon name="chart" size={18} /> 取引のステータス</H2>
     <P>注文後、取引は以下のステータスで進行します。</P>
     <div style={{ background: C.white, borderRadius: 12, border: `1px solid ${C.border}`, padding: 16, fontSize: 13, lineHeight: 2, color: "#444" }}>
-      📝 <strong>注文確定</strong> → 出品者が注文を確認します<br/>
-      🎨 <strong>作業中</strong> → 出品者が制作・準備中です<br/>
-      📦 <strong>納品済み</strong> → 商品の発送・データ送信が完了しました<br/>
-      ✅ <strong>取引完了</strong> → 受取確認が完了しました
+      <LineIcon name="note" size={14} /> <strong>注文確定</strong> → 出品者が注文を確認します<br/>
+      <LineIcon name="palette" size={14} /> <strong>作業中</strong> → 出品者が制作・準備中です<br/>
+      <LineIcon name="box" size={14} /> <strong>納品済み</strong> → 商品の発送・データ送信が完了しました<br/>
+      <LineIcon name="checkCircle" size={14} /> <strong>取引完了</strong> → 受取確認が完了しました
     </div>
 
-    <H2>✅ 受取確認のタイミング</H2>
-    <P>商品を受け取り、内容に問題がないことを確認したら、注文履歴タブから「✅ 受取完了」ボタンを押してください。</P>
+    <H2><LineIcon name="checkCircle" size={18} /> 受取確認のタイミング</H2>
+    <P>商品を受け取り、内容に問題がないことを確認したら、注文履歴タブから「受取完了」ボタンを押してください。</P>
     <Note color="orange">
       受取確認を行うと、出品者へ売上が支払われます。<br/>
       確認前にトラブルがある場合は「問題を報告」から異議申し立てができます。
@@ -664,7 +665,7 @@ const BuyingGuide: React.FC = () => (
       <li>運営が両者の主張を確認し、公正に判断します</li>
     </ul>
 
-    <H2>💬 取引メッセージ</H2>
+    <H2><LineIcon name="bubble" size={18} /> 取引メッセージ</H2>
     <P>取引中は出品者と取引メッセージでやり取りできます。</P>
     <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22 }}>
       <li>マイページの「メッセージ」タブから取引メッセージを確認</li>
@@ -672,11 +673,11 @@ const BuyingGuide: React.FC = () => (
       <li>個人情報（電話番号など）の交換はトラブルの元になるため、Qocca内で完結させましょう</li>
     </ul>
 
-    <H2>⭐ レビュー</H2>
+    <H2><LineIcon name="star" size={18} /> レビュー</H2>
     <P>取引完了後、出品者へのレビューを書くことができます。</P>
     <P>あなたのレビューは他のユーザーが安心して購入する助けになります。良かった点は具体的に書いていただけると喜ばれます。</P>
 
-    <H2>🚨 トラブル時の対応</H2>
+    <H2><LineIcon name="alert" size={18} /> トラブル時の対応</H2>
     <H3>商品が届かない</H3>
     <P>まず取引メッセージで出品者に連絡してください。<br/>
     数日返信がない場合や解決しない場合は、注文履歴タブの「問題を報告」から運営に通報してください。</P>
@@ -689,7 +690,7 @@ const BuyingGuide: React.FC = () => (
     <P>3〜5 日経っても返信がない場合は、運営にご相談ください。<br/>
     必要に応じて返金などの対応を行います。</P>
 
-    <H2>❓ よくあるご質問</H2>
+    <H2><LineIcon name="question" size={18} /> よくあるご質問</H2>
     <FAQ q="使える支払い方法は？" a="クレジットカード（Visa / Mastercard / JCB / American Express / Diners）でのお支払いが可能です。" />
     <FAQ q="領収書は発行できますか？" a="決済後、登録メールアドレスに Stripe から領収書のリンクが送信されます。再発行が必要な場合は support@qocca.pet までご連絡ください。" />
     <FAQ q="キャンセルしたい" a={<>
@@ -712,71 +713,83 @@ const BuyingGuide: React.FC = () => (
 // ── ⑤ Qoccaクラウドファンディング よくある質問 (FAQ v1.1, 2026/5/23 King 確定) ──
 type FaqItem = { section: string; q: string; a: string };
 
+// section 見出しの線画 (絵文字 → LineIcon, 2026/9/26)
+const FAQ_SECTION_ICONS: Record<string, string> = {
+  "Qocca について": "target",
+  "リターンについて": "gift",
+  "ストレッチゴールについて": "calendar",
+  "サービス利用について": "home",
+  "クリエイターについて": "palette",
+  "寄付・社会貢献について": "coin",
+  "技術・運営について": "tools",
+  "お問い合わせ": "phone",
+};
+
 const CAMPFIRE_FAQS: FaqItem[] = [
   // 🎯 Qocca について
-  { section: "🎯 Qocca について", q: "Qoccaってどんなサービスですか?",
+  { section: "Qocca について", q: "Qoccaってどんなサービスですか?",
     a: "Qoccaは、ペットオーナー向けのクリエイターマーケットプレイス兼コミュニティプラットフォームです。ペットのための作品が並ぶマーケットと、うちの子の物語を残せるアルバム、住民同士のつながりが生まれる街。「想いを形にして、ふたりをつなぐ」そんな場所を目指しています。" },
-  { section: "🎯 Qocca について", q: "なぜ「街」と呼んでいるのですか?",
+  { section: "Qocca について", q: "なぜ「街」と呼んでいるのですか?",
     a: "Qoccaは単なる売買の場でも、ただのSNSでもありません。ペットと暮らす毎日のための「もう一つの人生を置いておける街」を目指しているからです。住民として加わり、近所さんと話し、うちの子と暮らす日々を、ここに残していくことができます。" },
-  { section: "🎯 Qocca について", q: "グランドオープンはいつですか?",
+  { section: "Qocca について", q: "グランドオープンはいつですか?",
     a: "2026年7月1日(火)です。このクラウドファンディング(6/3〜)で最初の住民となってくださった方は、グランドオープンと同時に「創業期住民」として街にお越しいただけます。\n\n※ 現在もQoccaは利用可能です。今すぐアカウント作成いただけます。" },
 
   // 🎁 リターンについて
-  { section: "🎁 リターンについて", q: "「創業期住民」って何ですか?",
+  { section: "リターンについて", q: "「創業期住民」って何ですか?",
     a: "クラウドファンディング期間中にご支援くださった方を、私たちは「創業期住民」と呼びます。Qoccaの一番最初の住民として、バッジや特別な記念アイテム、グランドオープンへの早期招待などさまざまな特典が含まれています。これは「数量」ではなく「最初の温度」を共有してくださった証として、事業が存続する限りに残ります。" },
-  { section: "🎁 リターンについて", q: "リターンはいつ届きますか?",
+  { section: "リターンについて", q: "リターンはいつ届きますか?",
     a: "デジタル特典(バッジ、創業期住民認定など)は、あなたのQoccaアカウントを確認次第、順次付与いたします(2026年6月中旬以降)。すでにQoccaは https://qocca.pet でご利用いただけますので、アカウント未作成の方はお早めにご登録ください。" },
-  { section: "🎁 リターンについて", q: "創業期出品者枠(¥5,000)って何ですか?",
+  { section: "リターンについて", q: "創業期出品者枠(¥5,000)って何ですか?",
     a: "クリエイター作家さん向けの特別リターンです。Qoccaでは作品が売れた(売買取引が完了した)際にのみ手数料が発生する仕組みで、通常は取引完了時の手数料が10%ですが、創業期出品者枠を確保された方は、1年間 5%の優遇手数料となります。\n(ウェルカムキャンペーン期間中 2026/6/3〜7/31は、全員 0%の特別措置)\n50枠限定で、創業期出品者バッジも付与されます。\n\n※ 出品自体は無料です。\n※ 作品が売れた時のみ、手数料が発生します。" },
-  { section: "🎁 リターンについて", q: "動物福祉団体募金リターンって何ですか?",
+  { section: "リターンについて", q: "動物福祉団体募金リターンって何ですか?",
     a: "¥3,000のリターンには、¥2,000が特定非営利活動法人アニマルレフュージ関西(認定NPO法人)へ寄付される仕組みが含まれています。特定非営利活動法人アニマルレフュージ関西(認定NPO法人)は1990年から活動されている日本最大級の動物保護施設です。Qoccaは売上の3%も特定非営利活動法人アニマルレフュージ関西(認定NPO法人)へ寄付しており、本リターンは「Qoccaの応援 + 動物保護への直接貢献」を同時にできる特別なリターンです。\n\n※特定非営利活動法人アニマルレフュージ関西(認定NPO法人)との連携を運用ルールに沿って進めています。" },
-  { section: "🎁 リターンについて", q: "創業パートナー(¥100,000)とは?",
+  { section: "リターンについて", q: "創業パートナー(¥100,000)とは?",
     a: "Qoccaの歴史に「創業パートナー」として名前を刻むリターンです。利用規約に明記され、Qoccaのトップページに事業が存続する限り掲載、運営代表(大木 政和)との1時間個別ミーティング、ロードマップへの意見反映機会などが含まれます。5枠限定で、Qoccaの未来を一緒に作っていただく方向けです。" },
 
   // 📅 ストレッチゴールについて
-  { section: "📅 ストレッチゴールについて", q: "ストレッチゴールって何ですか?",
+  { section: "ストレッチゴールについて", q: "ストレッチゴールって何ですか?",
     a: "基本目標(¥500,000)を達成した後も、さらにご支援が集まった場合に発動する「感謝の輪」です。追加でARKへの寄付や、創業期住民への記念アイテム、機能強化などをお約束します。「達成圧」ではなく「集まった想いの分だけ、もっと良い街にする」という姿勢で進めます。" },
-  { section: "📅 ストレッチゴールについて", q: "目標金額に達しなかったらどうなりますか?",
+  { section: "ストレッチゴールについて", q: "目標金額に達しなかったらどうなりますか?",
     a: "Qoccaはオールイン方式を採用しています。基本目標(¥500,000)に達成できなくても、ご支援くださった金額はすべてQoccaの育みに使わせていただきます。グランドオープン(7/1)は予定通り行います。「一人でも多く、最初の住民として加わってくださること」が私たちにとっての本当の成功です。" },
 
   // 🏠 サービス利用について
-  { section: "🏠 サービス利用について", q: "いつから使えますか?",
+  { section: "サービス利用について", q: "いつから使えますか?",
     a: "Qoccaは現在すでにご利用いただけます! https://qocca.pet から今すぐアカウントを作成いただけます。クリエイター作家さんは出品も可能です。2026年7月1日のグランドオープンに向けて、機能を順次強化していきます。" },
-  { section: "🏠 サービス利用について", q: "月額料金はかかりますか?",
+  { section: "サービス利用について", q: "月額料金はかかりますか?",
     a: "いいえ、Qoccaのアカウント作成・利用は完全無料です。有料サブスクリプションはありません。作品が売れた(売買取引が完了した)時のみ手数料が発生する仕組みです。" },
-  { section: "🏠 サービス利用について", q: "ペットを飼っていないと参加できませんか?",
+  { section: "サービス利用について", q: "ペットを飼っていないと参加できませんか?",
     a: "もちろん参加いただけます! これからペットを迎える方、ペットを愛する家族や友人の方、ペットクリエイターの作家さん、動物福祉に関心がある方など、ペットと心でつながるすべての方が住民になれます。" },
-  { section: "🏠 サービス利用について", q: "虹の橋を渡った子のことも記録できますか?",
-    a: "はい、「memorial」モードで記録いただけます。うちの子と過ごした時間を、誰にも消されず、誰にも見られたくない時もある、あなただけの大切な記録としてここに残せます。他の住民から見ると🌈のバッジが付くなど、温度感に配慮した表示にしています。" },
-  { section: "🏠 サービス利用について", q: "多頭飼いでも使えますか?",
+  { section: "サービス利用について", q: "虹の橋を渡った子のことも記録できますか?",
+    a: "はい、「memorial」モードで記録いただけます。うちの子と過ごした時間を、誰にも消されず、誰にも見られたくない時もある、あなただけの大切な記録としてここに残せます。他の住民から見ると虹の橋のバッジが付くなど、温度感に配慮した表示にしています。" },
+  { section: "サービス利用について", q: "多頭飼いでも使えますか?",
     a: "もちろん使えます。1つのアカウントで複数のプロフィール(うちの子)を作成・管理できます。それぞれの子に、それぞれの物語を残していけます。" },
 
   // 🎨 クリエイターについて
-  { section: "🎨 クリエイターについて", q: "出品するにはどうすればいいですか?",
+  { section: "クリエイターについて", q: "出品するにはどうすればいいですか?",
     a: "すでに今すぐ、qocca.pet にアカウントを作成して出品いただけます! 出品自体は完全無料です。作品が売れた(売買取引が完了した)時のみ手数料が発生する仕組みです。ウェルカムキャンペーン期間 (2026/6/3〜7/31)は全員手数料無料、創業期出品者枠(¥5,000)の方は1年間 取引完了時の手数料が5%の特別優遇があります。" },
-  { section: "🎨 クリエイターについて", q: "どんな作品を出品できますか?",
-    a: "ペットオーナーのための作品が中心です。例えば:\n🐾 ペットの肖像画・イラスト\n🐾 オーダーメイドグッズ\n🐾 手作り雑貨\n🐾 ペット用おやつ・フード(法的許可ある場合)\n🐾 ペット関連のクラフト作品\nなど、想いがこもった作品をお待ちしています。\n\n※ 違法・不適切な商品は出品できません。\n※ 売買取引が完了した時のみ、手数料が発生します。" },
-  { section: "🎨 クリエイターについて", q: "出品者として法人参加も可能ですか?",
+  { section: "クリエイターについて", q: "どんな作品を出品できますか?",
+    a: "ペットオーナーのための作品が中心です。例えば:\n・ペットの肖像画・イラスト\n・オーダーメイドグッズ\n・手作り雑貨\n・ペット用おやつ・フード(法的許可ある場合)\n・ペット関連のクラフト作品\nなど、想いがこもった作品をお待ちしています。\n\n※ 違法・不適切な商品は出品できません。\n※ 売買取引が完了した時のみ、手数料が発生します。" },
+  { section: "クリエイターについて", q: "出品者として法人参加も可能ですか?",
     a: "はい、可能です。個人事業主の方、法人の方、どちらも参加いただけます。ただしStripe Connect経由の決済システム(現在JCB審査中)を利用するため、それに対応する本人確認・事業者情報の登録が必要になります。" },
 
   // 💰 寄付・社会貢献について
-  { section: "💰 寄付・社会貢献について", q: "なぜARKに寄付するのですか?",
+  { section: "寄付・社会貢献について", q: "なぜARKに寄付するのですか?",
     a: "私たちは「対立ではなく、寄り添いと根本解決」を信じています。保護犬・保護猫を減らすには、ペットを飼った後の責任ある飼育環境とコミュニティが必要だと考えるからです。Qoccaは間接的にペットビジネスに関わっているからこそ、動物福祉に向き合う責任があります。ARKは1990年からこの問題に取り組まれてきた信頼できるパートナーです。" },
-  { section: "💰 寄付・社会貢献について", q: "売上3%以外にも、ARKに貢献できますか?",
+  { section: "寄付・社会貢献について", q: "売上3%以外にも、ARKに貢献できますか?",
     a: "はい、Qocca内で別途「ARK募金システム」を構築する予定です。住民が任意でARKへ募金できる仕組みを提供予定です。(2026年6月以降実装予定)\n\nあなたの想いが、直接保護動物の命を支えます。" },
 
   // 🛠 技術・運営について
-  { section: "🛠 技術・運営について", q: "個人情報は安全ですか?",
+  { section: "技術・運営について", q: "個人情報は安全ですか?",
     a: "はい、Qoccaは個人情報保護に細心の注意を払っています。\n- Supabase(セキュアなBaaS)を利用\n- すべての通信はSSL/TLS暗号化\n- パスワードは安全にハッシュ化\n- 不要な個人情報は収集しない\n\n詳細はプライバシーポリシーをご確認ください。" },
-  { section: "🛠 技術・運営について", q: "クラファンの支払い方法は?",
+  { section: "技術・運営について", q: "クラファンの支払い方法は?",
     a: "CAMPFIREの決済システムをご利用いただきます。\n- クレジットカード\n- コンビニ決済\n- 銀行振込\n- キャリア決済\nなど、複数の決済方法に対応しています。" },
-  { section: "🛠 技術・運営について", q: "海外からも支援できますか?",
+  { section: "技術・運営について", q: "海外からも支援できますか?",
     a: "はい、CAMPFIREは海外からのご支援にも対応しています。グランドオープン後のQoccaも、将来的には世界中のペットオーナーがつながれる場を目指しています。" },
 
   // 📞 お問い合わせ
-  { section: "📞 お問い合わせ", q: "プロジェクトについて質問があります",
+  { section: "お問い合わせ", q: "プロジェクトについて質問があります",
     a: "CAMPFIREのプロジェクトページ内メッセージ機能からお問い合わせください。順次回答させていただきます。" },
-  { section: "📞 お問い合わせ", q: "運営者はどんな人ですか?",
+  { section: "お問い合わせ", q: "運営者はどんな人ですか?",
     a: "Qoccaの運営代表は大木政和です。美容室・サロン・広告代理店・飲食店・営業代行などを既存法人で経営するマルチ事業経営者で、ペット業界には今回初めて挑戦しています。一度Qoccaのアイデアを諦めた経験を経て、今回は4つのAI体制とパートナーシップを駆使しながら、本気で「ペット業界の標準」を目指しています。" },
 ];
 
@@ -799,7 +812,7 @@ const CampfireFaqGuide: React.FC = () => {
     <PageWrap>
       <BackToTop />
       <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, marginTop: 16, marginBottom: 8 }}>
-        🌷 Qoccaクラウドファンディング よくある質問 (FAQ)
+        <LineIcon name="flower" size={20} /> Qoccaクラウドファンディング よくある質問 (FAQ)
       </h1>
       <p style={{ fontSize: 13, color: C.warmGray, marginBottom: 8 }}>最終更新日: 2026年5月23日 / v1.1</p>
 
@@ -810,7 +823,7 @@ const CampfireFaqGuide: React.FC = () => {
 
       {groupedSections.map(group => (
         <div key={group.section} style={{ marginBottom: 32 }}>
-          <H2>{group.section}</H2>
+          <H2><LineIcon name={FAQ_SECTION_ICONS[group.section] ?? "dot"} size={18} /> {group.section}</H2>
           {group.items.map(faq => (
             <div key={faq.idx} style={{ marginBottom: 18, paddingBottom: 14, borderBottom: `1px solid ${C.border}` }}>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: C.dark, marginTop: 14, marginBottom: 8, lineHeight: 1.5 }}>
@@ -825,7 +838,7 @@ const CampfireFaqGuide: React.FC = () => {
       ))}
 
       <div style={{ background: C.orangePale, borderRadius: 14, padding: "24px 22px", marginTop: 32, textAlign: "center" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12 }}>🌷 最後に</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 12 }}><LineIcon name="flower" size={16} /> 最後に</div>
         <p style={{ fontSize: 13, color: C.dark, lineHeight: 1.9, margin: 0 }}>
           このページをここまで読んでくださって、本当にありがとうございます。<br/>
           ご支援くださる方も、これから一緒に街を育てる方も、<br/>
