@@ -37,6 +37,7 @@ import { ReviewModal } from "../components/ReviewModal";
 import ProfileEditModal from "../components/ProfileEditModal";
 import PetEditModal from "../components/PetEditModal";
 import { ListingEditModal } from "../components/ListingEditModal";
+import { LineIcon } from "../components/LineIcon";
 
 // ── 暮らしの空気 (v3.2 第23章: "設定" でなく "模様替え") ──────────────────
 // MyPage 内だけ色が変わる。5 プリセット。保存ボタンなし、即タップ反映。
@@ -51,11 +52,11 @@ type AtmospherePreset = {
 };
 
 const ATMOSPHERE_PRESETS: AtmospherePreset[] = [
-  { id: "asa",      icon: "☀️", label: "朝",        bg: "#FAFAF7", accent: "#FFB47A", cardBorder: "#E8C99A" },
-  { id: "yuugata",  icon: "🌆", label: "夕方",      bg: "#FCF5ED", accent: "#F5A94A", cardBorder: "#D87B5A" },
-  { id: "yoru",     icon: "🌙", label: "夜",        bg: "#ECEFF2", accent: "#4A6FA5", cardBorder: "#8DAEC9" },
-  { id: "kokage",   icon: "🌿", label: "木陰",      bg: "#F2F5EC", accent: "#7A9968", cardBorder: "#A8C09A" },
-  { id: "atatakai", icon: "🕯", label: "あたたかい", bg: "#FAF3E8", accent: "#C9925E", cardBorder: "#E0B788" },
+  { id: "asa",      icon: "sun", label: "朝",        bg: "#FAFAF7", accent: "#FFB47A", cardBorder: "#E8C99A" },
+  { id: "yuugata",  icon: "sunrise", label: "夕方",      bg: "#FCF5ED", accent: "#F5A94A", cardBorder: "#D87B5A" },
+  { id: "yoru",     icon: "moon", label: "夜",        bg: "#ECEFF2", accent: "#4A6FA5", cardBorder: "#8DAEC9" },
+  { id: "kokage",   icon: "leaf", label: "木陰",      bg: "#F2F5EC", accent: "#7A9968", cardBorder: "#A8C09A" },
+  { id: "atatakai", icon: "candle", label: "あたたかい", bg: "#FAF3E8", accent: "#C9925E", cardBorder: "#E0B788" },
 ];
 const DEFAULT_ATMOSPHERE = ATMOSPHERE_PRESETS[4]; // atatakai
 const findAtmosphere = (id?: string | null): AtmospherePreset =>
@@ -140,18 +141,18 @@ const PostsTab = () => {
       {/* 投稿ボタン 2列 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
         <button onClick={() => setMode("compose-gallery")} style={{ ...btn(C.orange), display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-          📸 ギャラリー投稿
+          <LineIcon name="camera" size={16} /> ギャラリー投稿
         </button>
         <button onClick={() => setMode("compose-blog")} style={{ ...btn("#4A90E2"), display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-          📝 ブログ投稿
+          <LineIcon name="note" size={16} /> ブログ投稿
         </button>
       </div>
 
       {/* セクション切替 */}
       <div style={{ display: "flex", gap: 4, marginBottom: 14, borderBottom: `2px solid ${C.border}` }}>
         {[
-          { id: "gallery" as const, label: `📸 ギャラリー (${myGallery.length})` },
-          { id: "blog" as const,    label: `📝 ブログ (${myBlog.length})` },
+          { id: "gallery" as const, label: <><LineIcon name="camera" size={14} /> ギャラリー ({myGallery.length})</> },
+          { id: "blog" as const,    label: <><LineIcon name="note" size={14} /> ブログ ({myBlog.length})</> },
         ].map(s => (
           <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
             padding: "10px 14px", background: activeSection === s.id ? C.orange : "transparent",
@@ -168,7 +169,7 @@ const PostsTab = () => {
         myGallery.length === 0 ? (
           <div style={{ ...card, textAlign: "center", padding: 32, color: C.warmGray, fontSize: 13 }}>
             まだギャラリーへの投稿はありません<br/>
-            <span style={{ fontSize: 11 }}>上の「📸 ギャラリー投稿」から、うちの子の一枚を置いてください</span>
+            <span style={{ fontSize: 11 }}>上の「<LineIcon name="camera" size={12} /> ギャラリー投稿」から、うちの子の一枚を置いてください</span>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
@@ -180,7 +181,7 @@ const PostsTab = () => {
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: C.warmGray, marginBottom: 2 }}>
-                      {g.pet_type && <>🐾 {g.pet_type}</>}
+                      {g.pet_type && <><LineIcon name="paw" size={14} /> {g.pet_type}</>}
                       {g.pet_name && <> · {g.pet_name}</>}
                       {" "}· {new Date(g.created_at).toLocaleDateString("ja-JP")}
                     </div>
@@ -188,9 +189,9 @@ const PostsTab = () => {
                       {g.caption || <span style={{ color: C.warmGray }}>(キャプションなし)</span>}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => startEdit(g, "gallery")} style={btn(C.cream, C.dark)}>✏️ 編集</button>
+                      <button onClick={() => startEdit(g, "gallery")} style={btn(C.cream, C.dark)}><LineIcon name="pencil" size={14} /> 編集</button>
                       <button onClick={() => setConfirmDelete({ type: "gallery", id: g.id, title: g.pet_name || "投稿" })}
-                        style={btn("#FFEBEE", C.red)}>🗑️ 削除</button>
+                        style={btn("#FFEBEE", C.red)}><LineIcon name="trash" size={14} /> 削除</button>
                     </div>
                   </div>
                 </div>
@@ -202,7 +203,7 @@ const PostsTab = () => {
         myBlog.length === 0 ? (
           <div style={{ ...card, textAlign: "center", padding: 32, color: C.warmGray, fontSize: 13 }}>
             まだブログへの投稿はありません<br/>
-            <span style={{ fontSize: 11 }}>上の「📝 ブログ投稿」から、書きはじめてください</span>
+            <span style={{ fontSize: 11 }}>上の「<LineIcon name="note" size={12} /> ブログ投稿」から、書きはじめてください</span>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
@@ -215,14 +216,14 @@ const PostsTab = () => {
                   {b.title || "(タイトルなし)"}
                 </div>
                 <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 8 }}>
-                  {b.published ? "🌅 公開中" : "📝 下書き"}
+                  {b.published ? <><LineIcon name="sunrise" size={12} /> 公開中</> : <><LineIcon name="note" size={12} /> 下書き</>}
                   {b.category && <> · {b.category}</>}
                   {" "}· {new Date(b.created_at).toLocaleDateString("ja-JP")}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => startEdit(b, "blog")} style={btn(C.cream, C.dark)}>✏️ 編集</button>
+                  <button onClick={() => startEdit(b, "blog")} style={btn(C.cream, C.dark)}><LineIcon name="pencil" size={14} /> 編集</button>
                   <button onClick={() => setConfirmDelete({ type: "blog", id: b.id, title: b.title || "ブログ" })}
-                    style={btn("#FFEBEE", C.red)}>🗑️ 削除</button>
+                    style={btn("#FFEBEE", C.red)}><LineIcon name="trash" size={14} /> 削除</button>
                 </div>
               </div>
             ))}
@@ -307,21 +308,21 @@ const GalleryComposeForm = ({ user, petCategories, editing, onClose }: any) => {
     <div>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 16, gap: 8 }}>
         <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 14, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>← キャンセル</button>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark }}>{isEdit ? "📸 ギャラリーを編集" : "📸 ギャラリーに投稿"}</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark }}>{isEdit ? <><LineIcon name="camera" size={18} /> ギャラリーを編集</> : <><LineIcon name="camera" size={18} /> ギャラリーに投稿</>}</div>
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }}/>
       {preview ? (
         <div style={{ marginBottom: 14 }}>
           <img src={preview} alt="" style={{ width: "100%", borderRadius: 12, maxHeight: 320, objectFit: "cover", background: "#000" }}/>
-          <button onClick={() => fileRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: C.orange, background: "none", border: "none", cursor: "pointer" }}>📷 画像を変更</button>
+          <button onClick={() => fileRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: C.orange, background: "none", border: "none", cursor: "pointer" }}><LineIcon name="camera" size={14} /> 画像を変更</button>
         </div>
       ) : (
         <button onClick={() => fileRef.current?.click()} style={{
           width: "100%", padding: "40px 20px", border: `2px dashed ${C.border}`, borderRadius: 14,
           background: C.cream, cursor: "pointer", marginBottom: 14, textAlign: "center", fontFamily: "inherit",
         }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>📷</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}><LineIcon name="camera" size={40} color={C.warmGray} /></div>
           <div style={{ fontSize: 13, color: C.warmGray }}>タップして写真を選ぶ</div>
         </button>
       )}
@@ -351,7 +352,7 @@ const GalleryComposeForm = ({ user, petCategories, editing, onClose }: any) => {
 
       <div style={{ marginBottom: 18 }}>
         <label style={{ fontSize: 12, fontWeight: 700, color: C.dark, display: "block", marginBottom: 4 }}>キャプション</label>
-        <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="うちの子のエピソードを書いてね🐾" rows={4} maxLength={500}
+        <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="うちの子のエピソードを書いてね" rows={4} maxLength={500}
           style={{ width: "100%", padding: 12, borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }}/>
         <div style={{ textAlign: "right", fontSize: 11, color: C.warmGray, marginTop: 2 }}>{caption.length} / 500</div>
       </div>
@@ -360,7 +361,7 @@ const GalleryComposeForm = ({ user, petCategories, editing, onClose }: any) => {
         width: "100%", padding: 14, background: busy ? C.warmGray : C.orange, color: "#fff",
         border: "none", borderRadius: 12, fontWeight: 800, fontSize: 15,
         cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
-      }}>{busy ? "送信中…" : isEdit ? "💾 変更を保存" : "🐾 投稿する"}</button>
+      }}>{busy ? "送信中…" : isEdit ? <><LineIcon name="save" size={16} /> 変更を保存</> : <><LineIcon name="paw" size={16} /> 投稿する</>}</button>
     </div>
   );
 };
@@ -413,32 +414,32 @@ const BlogComposeForm = ({ user, editing, onClose }: any) => {
   };
 
   const BLOG_CATEGORIES = [
-    { slug: "diary",     icon: "📔", label: "うちの子日記" },
-    { slug: "tips",      icon: "💡", label: "暮らしのコツ" },
-    { slug: "review",    icon: "⭐", label: "レビュー" },
-    { slug: "memorial",  icon: "🌸", label: "そらの子へ" },
-    { slug: "other",     icon: "📝", label: "その他" },
+    { slug: "diary",     icon: "book", label: "うちの子日記" },
+    { slug: "tips",      icon: "bulb", label: "暮らしのコツ" },
+    { slug: "review",    icon: "star", label: "レビュー" },
+    { slug: "memorial",  icon: "flower", label: "そらの子へ" },
+    { slug: "other",     icon: "note", label: "その他" },
   ];
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 16, gap: 8 }}>
         <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 14, color: C.warmGray, cursor: "pointer", fontFamily: "inherit" }}>← キャンセル</button>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark }}>{isEdit ? "📝 ブログを編集" : "📝 ブログに投稿"}</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark }}>{isEdit ? <><LineIcon name="note" size={18} /> ブログを編集</> : <><LineIcon name="note" size={18} /> ブログに投稿</>}</div>
       </div>
 
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCover} style={{ display: "none" }}/>
       {coverPreview ? (
         <div style={{ marginBottom: 14 }}>
           <img src={coverPreview} alt="" style={{ width: "100%", borderRadius: 12, maxHeight: 220, objectFit: "cover" }}/>
-          <button onClick={() => coverRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: C.orange, background: "none", border: "none", cursor: "pointer" }}>📷 カバー画像を変更</button>
+          <button onClick={() => coverRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: C.orange, background: "none", border: "none", cursor: "pointer" }}><LineIcon name="camera" size={14} /> カバー画像を変更</button>
         </div>
       ) : (
         <button onClick={() => coverRef.current?.click()} style={{
           width: "100%", padding: "32px 20px", border: `2px dashed ${C.border}`, borderRadius: 14,
           background: C.cream, cursor: "pointer", marginBottom: 14, textAlign: "center", fontFamily: "inherit",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>🖼️</div>
+          <div style={{ fontSize: 32, marginBottom: 6 }}><LineIcon name="image" size={32} color={C.warmGray} /></div>
           <div style={{ fontSize: 12, color: C.warmGray }}>カバー画像を選ぶ (任意)</div>
         </button>
       )}
@@ -458,7 +459,7 @@ const BlogComposeForm = ({ user, editing, onClose }: any) => {
               color: category === c.slug ? "#fff" : C.warmGray,
               border: `1.5px solid ${category === c.slug ? C.orange : C.border}`, borderRadius: 16,
               fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-            }}>{c.icon} {c.label}</button>
+            }}><LineIcon name={c.icon} size={14} /> {c.label}</button>
           ))}
         </div>
       </div>
@@ -472,7 +473,7 @@ const BlogComposeForm = ({ user, editing, onClose }: any) => {
       <div style={{ marginBottom: 18, padding: 12, background: C.cream, borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
         <input type="checkbox" id="blog-published" checked={published} onChange={e => setPublished(e.target.checked)} style={{ width: 18, height: 18, cursor: "pointer" }}/>
         <label htmlFor="blog-published" style={{ fontSize: 13, color: C.dark, cursor: "pointer" }}>
-          🌅 すぐ公開する {!published && <span style={{ fontSize: 11, color: C.warmGray }}>(チェックを外すと下書き保存)</span>}
+          <LineIcon name="sunrise" size={14} /> すぐ公開する {!published && <span style={{ fontSize: 11, color: C.warmGray }}>(チェックを外すと下書き保存)</span>}
         </label>
       </div>
 
@@ -480,7 +481,7 @@ const BlogComposeForm = ({ user, editing, onClose }: any) => {
         width: "100%", padding: 14, background: busy ? C.warmGray : "#4A90E2", color: "#fff",
         border: "none", borderRadius: 12, fontWeight: 800, fontSize: 15,
         cursor: busy ? "wait" : "pointer", fontFamily: "inherit",
-      }}>{busy ? "送信中…" : isEdit ? "💾 変更を保存" : (published ? "🌅 公開する" : "📝 下書き保存")}</button>
+      }}>{busy ? "送信中…" : isEdit ? <><LineIcon name="save" size={16} /> 変更を保存</> : (published ? <><LineIcon name="sunrise" size={16} /> 公開する</> : <><LineIcon name="note" size={16} /> 下書き保存</>)}</button>
     </div>
   );
 };
@@ -812,16 +813,16 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
   }, [user?.id, refreshKey]);
 
   const tabs = [
-    { id:"profile", icon:"👤", label:"プロフィール" },
-    { id:"posts", icon:"📸", label:"投稿管理" }, // 依頼書 #38 Phase C-E
-    { id:"listings", icon:"🐾", label:"マイ出品" },
-    { id:"sales", icon:"🛍️", label:"販売管理", badge:pendingSalesCount },
-    { id:"orders", icon:"📦", label:"注文履歴", badge:pendingOrdersCount },
-    { id:"earnings", icon:"💰", label:"売上" },
-    { id:"addresses", icon:"🏠", label:"配送先" },
-    { id:"messages", icon:"💬", label:"メッセージ", badge:unreadMsgs },
-    { id:"notifications", icon:"🔔", label:"通知", badge:unreadNotifs },
-    { id:"support", icon:"🎧", label:"サポート" },
+    { id:"profile", icon:"person", label:"プロフィール" },
+    { id:"posts", icon:"camera", label:"投稿管理" }, // 依頼書 #38 Phase C-E
+    { id:"listings", icon:"paw", label:"マイ出品" },
+    { id:"sales", icon:"bag", label:"販売管理", badge:pendingSalesCount },
+    { id:"orders", icon:"box", label:"注文履歴", badge:pendingOrdersCount },
+    { id:"earnings", icon:"coin", label:"売上" },
+    { id:"addresses", icon:"home", label:"配送先" },
+    { id:"messages", icon:"bubble", label:"メッセージ", badge:unreadMsgs },
+    { id:"notifications", icon:"bell", label:"通知", badge:unreadNotifs },
+    { id:"support", icon:"headset", label:"サポート" },
   ];
 
   return (
@@ -839,7 +840,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
           opacity: 0.98,
           maxWidth: "90vw", textAlign: "center", lineHeight: 1.5,
         }}>
-          {copyToast === "ok" ? "🔗 公開ページのリンクをコピーしました。SNS にどうぞ。" : "コピーできませんでした。手動で URL をコピーしてください。"}
+          {copyToast === "ok" ? <><LineIcon name="link" size={14} /> 公開ページのリンクをコピーしました。SNS にどうぞ。</> : "コピーできませんでした。手動で URL をコピーしてください。"}
         </div>
       )}
       <div style={{ maxWidth:600, margin:"0 auto" }}>
@@ -893,7 +894,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               minHeight: 44,
             }}
           >
-            🔗 自分の公開ページを見る
+            <LineIcon name="link" size={14} /> 自分の公開ページを見る
           </button>
           <button
             onClick={handleCopyPublicUrl}
@@ -914,7 +915,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               minHeight: 44,
             }}
           >
-            📋 リンクをコピー
+            <LineIcon name="clipboard" size={14} /> リンクをコピー
           </button>
         </div>
         {/* Tab Navigation - レスポンシブ：スマホ2列(4行) / PC4列(2行) */}
@@ -926,7 +927,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               color:tab===t.id?C.orange:C.warmGray, fontSize:12, fontWeight:700,
               cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:5, position:"relative", minHeight:42
             }}>
-              <span style={{ fontSize:14 }}>{t.icon}</span>
+              <LineIcon name={t.icon} size={14} />
               <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.label}</span>
               {(t.badge ?? 0) > 0 && <span style={{ background:C.orange, color:"#fff", fontSize:9, fontWeight:800, padding:"1px 5px", borderRadius:8, minWidth:14, textAlign:"center", flexShrink:0 }}>{t.badge}</span>}
             </button>
@@ -959,7 +960,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                     minHeight: 36,
                   }}
                 >
-                  ✏️ 編集
+                  <LineIcon name="pencil" size={14} /> 編集
                 </button>
                 <button
                   onClick={openPublicProfile}
@@ -977,7 +978,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                     minHeight: 36,
                   }}
                 >
-                  🔗 公開ページを見る
+                  <LineIcon name="link" size={14} /> 公開ページを見る
                 </button>
                 <button
                   onClick={handleCopyPublicUrl}
@@ -995,7 +996,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                     minHeight: 36,
                   }}
                 >
-                  📋 リンクをコピー
+                  <LineIcon name="clipboard" size={14} /> リンクをコピー
                 </button>
               </div>
             </div>
@@ -1020,7 +1021,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   lineHeight: 1.7,
                 }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: C.orange, marginBottom: 4 }}>
-                    ⭐ 創業期出品者
+                    <LineIcon name="star" size={16} /> 創業期出品者
                   </div>
                   <div style={{ fontSize: 12, color: C.warmGray }}>
                     手数料 5%・残り {daysLeft} 日 (〜{expiresAt.toLocaleDateString("ja-JP")})
@@ -1040,7 +1041,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   textAlign: "center", boxShadow: "0 4px 12px rgba(255,160,0,0.15)",
                 }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color: "#E65100", marginBottom: 2, letterSpacing: 0.5 }}>
-                    👑 Founding Mayor 2026
+                    <LineIcon name="crown" size={22} /> Founding Mayor 2026
                   </div>
                   <div style={{ fontSize: 11, color: "#8B6F00", lineHeight: 1.6 }}>
                     Qocca の街の首長として、創業期から街を支える方
@@ -1056,7 +1057,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   textAlign: "center", boxShadow: "0 4px 12px rgba(171,71,188,0.12)",
                 }}>
                   <div style={{ fontSize: 18, fontWeight: 900, color: "#6A1B9A", marginBottom: 2 }}>
-                    🎨 Founding Creator
+                    <LineIcon name="palette" size={18} /> Founding Creator
                   </div>
                   <div style={{ fontSize: 11, color: "#7B1FA2", lineHeight: 1.6 }}>
                     事業が存続する限り手数料 <strong style={{ fontSize: 14 }}>{profile.founding_creator_fee_rate ?? 3}%</strong> (通常10% → 創業特典)
@@ -1074,13 +1075,13 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                     textAlign: "left", display: "flex", alignItems: "center", gap: 12,
                   }}
                 >
-                  <div style={{ fontSize: 28 }}>🎁</div>
+                  <div style={{ fontSize: 28 }}><LineIcon name="gift" size={28} /></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: "#2E7D32", marginBottom: 2 }}>
                       未受け取りの特典が {crowdfundPendingBackers.length} 件あります
                     </div>
                     <div style={{ fontSize: 11, color: "#388E3C" }}>
-                      タップして引き換えコードを入力してや 🌅
+                      タップして引き換えコードを入力してや
                     </div>
                   </div>
                   <div style={{ fontSize: 18, color: "#2E7D32" }}>→</div>
@@ -1090,21 +1091,21 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               {crowdfundCodes.length > 0 && (
                 <div style={{ marginTop: 20, background: C.white, borderRadius: 16, padding: "16px 16px 14px", border: `1px solid ${C.border}` }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <span style={{ fontSize: 18 }}>🎁</span>
+                    <LineIcon name="gift" size={18} />
                     <span style={{ fontSize: 14, fontWeight: 800, color: C.dark }}>私のクラファン特典</span>
                     <span style={{ fontSize: 10, color: C.warmGray, marginLeft: "auto" }}>{crowdfundCodes.length} 件</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {crowdfundCodes.map((c: any) => {
                       const tierId = c.reward_id || c.crowdfunding_rewards?.id;
-                      const theme = REDEEM_TIER_THEME[tierId] || { color: C.orange, bg: C.orangePale, icon: "🎁", label: c.crowdfunding_rewards?.name || tierId };
+                      const theme = REDEEM_TIER_THEME[tierId] || { color: C.orange, bg: C.orangePale, icon: "gift", label: c.crowdfunding_rewards?.name || tierId };
                       const redeemedDate = c.redeemed_at ? new Date(c.redeemed_at).toLocaleDateString("ja-JP") : "-";
                       return (
                         <div key={c.id} style={{
                           display: "flex", alignItems: "center", gap: 12,
                           padding: "10px 12px", background: theme.bg, borderRadius: 12, border: `1px solid ${theme.color}40`,
                         }}>
-                          <div style={{ fontSize: 22 }}>{theme.icon}</div>
+                          <div style={{ display: "flex", color: theme.color }}><LineIcon name={theme.icon} size={22} /></div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 12, fontWeight: 800, color: theme.color, marginBottom: 2 }}>
                               {theme.label}
@@ -1119,7 +1120,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                     })}
                   </div>
                   <div style={{ fontSize: 10, color: C.warmGray, marginTop: 10, textAlign: "center", lineHeight: 1.6 }}>
-                    ありがとうございます。Qocca の街は、あなたの想いで一歩深くなりました🌅
+                    ありがとうございます。Qocca の街は、あなたの想いで一歩深くなりました
                   </div>
                 </div>
               )}
@@ -1127,7 +1128,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               <div style={{ marginTop: 20, background: C.white, borderRadius: 16, padding: "16px 16px 14px", border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>
-                    🐾 うちの子 ({myPets.length})
+                    <LineIcon name="paw" size={16} /> うちの子 ({myPets.length})
                   </div>
                   <button
                     onClick={() => { setEditingPetId(null); setPetEditOpen(true); }}
@@ -1196,7 +1197,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                                 padding: "2px 6px",
                                 borderRadius: 8,
                               }}>
-                                🌈 虹の橋
+                                <LineIcon name="rainbow" size={11} /> 虹の橋
                               </div>
                             )}
                           </div>
@@ -1220,7 +1221,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                                   minHeight: 28,
                                 }}
                               >
-                                ✏️ 編集
+                                <LineIcon name="pencil" size={12} /> 編集
                               </button>
                               <button
                                 onClick={() => navigate(`/pet/${p.id}`)}
@@ -1233,7 +1234,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                                   minHeight: 28,
                                 }}
                               >
-                                👁️ 公開で見る
+                                <LineIcon name="eye" size={12} /> 公開で見る
                               </button>
                             </div>
                           </div>
@@ -1254,7 +1255,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                 </button>
                 <button onClick={()=>openActivityModal("reviews")} style={{ flex:1, textAlign:"center", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
                   <div style={{ fontSize:18, fontWeight:600, color:C.dark }}>{stats.avgRating !== null ? stats.avgRating.toFixed(1) : "-"}</div>
-                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>⭐ 評価</div>
+                  <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}><LineIcon name="star" size={12} /> 評価</div>
                 </button>
               </div>
 
@@ -1275,16 +1276,16 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               <div style={{ fontSize:13, fontWeight:700, color:C.warmGray, marginBottom:8, paddingLeft:4 }}>マイ活動</div>
               <div style={{ background:C.white, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden" }}>
                 {[
-                  { id:"communities", icon:"💬", label:"参加中のコミュニティ", count:activity.communities },
-                  { id:"events", icon:"📅", label:"投稿したイベント", count:activity.events },
-                  { id:"gallery", icon:"🐾", label:"投稿したギャラリー", count:activity.gallery },
-                  { id:"blog", icon:"📝", label:"投稿したブログ", count:activity.blog },
+                  { id:"communities", icon:"bubble", label:"参加中のコミュニティ", count:activity.communities },
+                  { id:"events", icon:"calendar", label:"投稿したイベント", count:activity.events },
+                  { id:"gallery", icon:"paw", label:"投稿したギャラリー", count:activity.gallery },
+                  { id:"blog", icon:"note", label:"投稿したブログ", count:activity.blog },
                 ].map((item, i) => (
                   <button key={item.id} onClick={()=>openActivityModal(item.id)} style={{
                     width:"100%", padding:"14px 16px", border:"none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none",
                     background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:12, fontFamily:"inherit", textAlign:"left"
                   }}>
-                    <div style={{ width:36, height:36, borderRadius:10, background:C.cream, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
+                    <div style={{ width:36, height:36, borderRadius:10, background:C.cream, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}><LineIcon name={item.icon} size={18} /></div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>{item.label}</div>
                     </div>
@@ -1295,22 +1296,22 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               </div>
             </div>
        
-            <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:"transparent", color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"background 0.3s ease, color 0.3s ease" }}>✏️ プロフィールを編集</button>
+            <button onClick={()=>setEditOpen(true)} style={{ marginTop:16, background:"transparent", color:C.orange, border:`1.5px solid ${C.orange}`, borderRadius:20, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"background 0.3s ease, color 0.3s ease" }}><LineIcon name="pencil" size={14} /> プロフィールを編集</button>
             <div style={{ background:C.white, borderRadius:20, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {[
-                { icon:"❤️", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
-                { icon:"📦", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
-                { icon:"💰", label:"売上", desc:"売上・出金管理", action:()=>setTab("earnings") },
-                { icon:"🏠", label:"配送先住所", desc:"住所の管理", action:()=>setTab("addresses") },
-                { icon:"💬", label:"メッセージ", desc:"取引メッセージ", action:()=>setTab("messages") },
-                { icon:"🔔", label:"通知", desc:`${unreadNotifs}件の未読`, action:()=>setTab("notifications") },
-                { icon:"🎧", label:"サポート", desc:"お問い合わせ", action:()=>setTab("support") },
+                { icon:"heart", label:"お気に入り", desc:"気になる出品", action:()=>setPage("liked") },
+                { icon:"box", label:"注文履歴", desc:"過去の注文を確認", action:()=>setTab("orders") },
+                { icon:"coin", label:"売上", desc:"売上・出金管理", action:()=>setTab("earnings") },
+                { icon:"home", label:"配送先住所", desc:"住所の管理", action:()=>setTab("addresses") },
+                { icon:"bubble", label:"メッセージ", desc:"取引メッセージ", action:()=>setTab("messages") },
+                { icon:"bell", label:"通知", desc:`${unreadNotifs}件の未読`, action:()=>setTab("notifications") },
+                { icon:"headset", label:"サポート", desc:"お問い合わせ", action:()=>setTab("support") },
               ].map((item, i) => (
                 <button key={item.label} onClick={item.action} style={{
                   width:"100%", padding:"16px 20px", border:"none", borderBottom: i < 6 ? `1px solid ${C.border}` : "none",
                   background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit", textAlign:"left"
                 }}>
-                  <div style={{ width:40, height:40, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{item.icon}</div>
+                  <div style={{ width:40, height:40, borderRadius:12, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}><LineIcon name={item.icon} size={18} /></div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:C.dark }}>{item.label}</div>
                     <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>{item.desc}</div>
@@ -1334,7 +1335,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   transition:"border-color 0.3s ease",
                 }}
               >
-                <div style={{ width:36, height:36, borderRadius:10, background:C.cream, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>📱</div>
+                <div style={{ width:36, height:36, borderRadius:10, background:C.cream, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}><LineIcon name="mobile" size={18} /></div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>電話番号の認証</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>出品をはじめる方におすすめ</div>
@@ -1358,7 +1359,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   transition:"border-color 0.3s ease",
                 }}
               >
-                <div style={{ width:36, height:36, borderRadius:10, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}>🐦</div>
+                <div style={{ width:36, height:36, borderRadius:10, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}><LineIcon name="bird" size={18} /></div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>X 連携</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>Qocca から X (Twitter) に投稿できます</div>
@@ -1376,7 +1377,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   transition:"border-color 0.3s ease",
                 }}
               >
-                <div style={{ width:36, height:36, borderRadius:10, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}>🧵</div>
+                <div style={{ width:36, height:36, borderRadius:10, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}><LineIcon name="thread" size={18} /></div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>Threads 連携</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>Qocca から Threads に投稿できます</div>
@@ -1394,7 +1395,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                   transition:"border-color 0.3s ease",
                 }}
               >
-                <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}>📷</div>
+                <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0, color:"#fff" }}><LineIcon name="camera" size={18} /></div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:C.dark }}>Instagram 連携</div>
                   <div style={{ fontSize:11, color:C.warmGray, marginTop:2, lineHeight:1.5 }}>Qocca から Instagram に投稿できます (Business Account 必須)</div>
@@ -1406,7 +1407,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
             {/* 暮らしの空気 (v3.2 第23章): "設定" でなく "模様替え" */}
             <div style={{ marginTop:24 }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.warmGray, marginBottom:10, paddingLeft:4 }}>
-                🏠 暮らしの空気
+                <LineIcon name="home" size={14} /> 暮らしの空気
               </div>
               <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch" }}>
                 {ATMOSPHERE_PRESETS.map(preset => {
@@ -1434,7 +1435,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                         transition: "background 0.4s ease, color 0.4s ease, border-color 0.4s ease",
                       }}
                     >
-                      <span style={{ fontSize: 15 }}>{preset.icon}</span>
+                      <LineIcon name={preset.icon} size={15} />
                       <span>{preset.label}</span>
                     </button>
                   );
@@ -1445,7 +1446,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               </div>
             </div>
 
-            <button onClick={handleSignOut} style={{ width:"100%", padding:"14px", marginTop:20, background:C.white, border:`1.5px solid ${C.red}`, borderRadius:14, color:C.red, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>🚪 ログアウト</button>
+            <button onClick={handleSignOut} style={{ width:"100%", padding:"14px", marginTop:20, background:C.white, border:`1.5px solid ${C.red}`, borderRadius:14, color:C.red, fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="logout" size={16} /> ログアウト</button>
           </>
         )}
 
@@ -1562,11 +1563,11 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
     })();
   }, [type, userId]);
 
-  const titles: Record<string, string> = {
-    listings: "📦 出品中の商品", completed: "✅ 取引完了履歴", reviews: "⭐ もらったレビュー",
-    communities: "💬 参加中のコミュニティ", events: "📅 投稿したイベント",
-    gallery: "🐾 投稿したギャラリー", blog: "📝 投稿したブログ",
-    following: "👥 フォロー中", followers: "👥 フォロワー",
+  const titles: Record<string, React.ReactNode> = {
+    listings: <><LineIcon name="box" size={16} /> 出品中の商品</>, completed: <><LineIcon name="checkCircle" size={16} /> 取引完了履歴</>, reviews: <><LineIcon name="star" size={16} /> もらったレビュー</>,
+    communities: <><LineIcon name="bubble" size={16} /> 参加中のコミュニティ</>, events: <><LineIcon name="calendar" size={16} /> 投稿したイベント</>,
+    gallery: <><LineIcon name="paw" size={16} /> 投稿したギャラリー</>, blog: <><LineIcon name="note" size={16} /> 投稿したブログ</>,
+    following: <><LineIcon name="people" size={16} /> フォロー中</>, followers: <><LineIcon name="people" size={16} /> フォロワー</>,
   };
 
   const handleNavigate = (path:string) => { onClose(); setPage(path); };
@@ -1589,7 +1590,7 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
           <div style={{ width:50, height:50, borderRadius:8, background: item.listing?.image_urls?.[0] ? `url(${item.listing.image_urls[0]}) center/cover` : C.orangePale, flexShrink:0 }}/>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.listing?.title || "商品"}</div>
-            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>✅ {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}><LineIcon name="checkCircle" size={12} /> {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
           </div>
         </div>
       );
@@ -1601,7 +1602,7 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
             <div style={{ width:28, height:28, borderRadius:"50%", background: item.reviewer_avatar ? `url(${item.reviewer_avatar}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:C.orange }}>{!item.reviewer_avatar && (item.reviewer_name||"?").charAt(0).toUpperCase()}</div>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12, fontWeight:700, color:C.dark }}>{item.reviewer_name}</div>
-              <div style={{ fontSize:10, color:C.warmGray }}>{"⭐".repeat(item.rating)} ・ {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
+              <div style={{ fontSize:10, color:C.warmGray }}>{"★".repeat(item.rating)} ・ {new Date(item.created_at).toLocaleDateString("ja-JP")}</div>
             </div>
           </div>
           {item.comment && <div style={{ fontSize:12, color:C.dark, lineHeight:1.5 }}>{item.comment}</div>}
@@ -1611,10 +1612,10 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
     if (type === "communities") {
       return (
         <button key={item.id} onClick={()=>handleNavigate(`community/${item.id}`)} style={{ width:"100%", display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", textAlign:"left", fontFamily:"inherit", alignItems:"center" }}>
-          <div style={{ width:44, height:44, borderRadius:10, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{item.icon || "🐾"}</div>
+          <div style={{ width:44, height:44, borderRadius:10, background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{item.icon || <LineIcon name="paw" size={22} />}</div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.name}</div>
-            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>{item.category} · 👥 {item.member_count || 0}人</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>{item.category} · <LineIcon name="people" size={12} /> {item.member_count || 0}人</div>
           </div>
         </button>
       );
@@ -1628,10 +1629,10 @@ const ActivityDetailModal = ({ type, userId, onClose, setPage }: { type:string; 
       const sb = statusBadge[item.status] || statusBadge.pending;
       return (
         <div key={item.id} style={{ display:"flex", gap:12, padding:"12px", background:C.white, border:`1px solid ${C.border}`, borderRadius:12, alignItems:"center" }}>
-          <div style={{ width:50, height:50, borderRadius:8, background: item.image_url?.startsWith("http") ? `url(${item.image_url}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{!item.image_url?.startsWith("http") && (item.image_url || "🐾")}</div>
+          <div style={{ width:50, height:50, borderRadius:8, background: item.image_url?.startsWith("http") ? `url(${item.image_url}) center/cover` : C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{!item.image_url?.startsWith("http") && (item.image_url || <LineIcon name="paw" size={24} />)}</div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.dark, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.title}</div>
-            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}>📅 {item.event_date} · 📍 {item.prefecture}</div>
+            <div style={{ fontSize:11, color:C.warmGray, marginTop:2 }}><LineIcon name="calendar" size={12} /> {item.event_date} · <LineIcon name="pin" size={12} /> {item.prefecture}</div>
           </div>
           <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:sb.bg, color:sb.color, fontWeight:700, flexShrink:0 }}>{sb.label}</span>
         </div>
@@ -1843,7 +1844,7 @@ const handleOpenDashboard = async () => {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`✅ 即時受け取りが完了しました！\n\n出金額: ¥${data.breakdown.gross.toLocaleString()}\n手数料: ¥${data.breakdown.fee.toLocaleString()}\n受取額: ¥${data.breakdown.net.toLocaleString()}`);
+        alert(`即時受け取りが完了しました！\n\n出金額: ¥${data.breakdown.gross.toLocaleString()}\n手数料: ¥${data.breakdown.fee.toLocaleString()}\n受取額: ¥${data.breakdown.net.toLocaleString()}`);
         setShowInstantModal(false);
         setInstantAmount("");
         loadData();
@@ -1873,7 +1874,7 @@ const handleOpenDashboard = async () => {
       {!isConnected && (
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-            <span style={{ fontSize:20 }}>{completedCount > 0 ? "💰" : "🏦"}</span>
+            <LineIcon name={completedCount > 0 ? "coin" : "bank"} size={20} />
             <h3 style={{ margin:0, fontSize:15, fontWeight:700, color:C.dark }}>
               {completedCount > 0
                 ? `完了した取引が ${completedCount}件 あります`
@@ -1882,7 +1883,7 @@ const handleOpenDashboard = async () => {
           </div>
           <p style={{ margin:"8px 0 12px", fontSize:13, color:C.dark, lineHeight:1.6 }}>
             {completedCount > 0
-              ? <>売上を受け取るには、Stripe で銀行口座の連携が必要です🐾<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>
+              ? <>売上を受け取るには、Stripe で銀行口座の連携が必要です<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>
               : <>売上を受け取るには、Stripe で銀行口座を連携する必要があります。<br/>セキュアな本人確認を経て、安全に振込が可能になります。</>}
           </p>
           <button
@@ -1905,7 +1906,7 @@ const handleOpenDashboard = async () => {
           display: "flex", alignItems: "center", gap: 14,
           boxShadow: "0 4px 12px rgba(171,71,188,0.12)",
         }}>
-          <div style={{ fontSize: 32 }}>🎨</div>
+          <div style={{ fontSize: 32 }}><LineIcon name="palette" size={32} /></div>
           <div style={{ flex: 1, lineHeight: 1.6 }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: "#6A1B9A", marginBottom: 2 }}>
               あなたは創業クリエイター
@@ -1941,7 +1942,7 @@ const handleOpenDashboard = async () => {
 
       {/* 振込スケジュール案内 */}
       <div style={{ background:"#F8F9FA", borderRadius:16, padding:16, fontSize:12, lineHeight:1.7, color:C.dark }}>
-        <div style={{ fontWeight:800, marginBottom:6 }}>📅 振込について</div>
+        <div style={{ fontWeight:800, marginBottom:6 }}><LineIcon name="calendar" size={14} /> 振込について</div>
         <div>• <strong>月末自動振込</strong>: ¥{monthlyThreshold.toLocaleString()}以上は手数料無料、未満は¥275(税込)</div>
         <div>• <strong>即時受け取り</strong>: 一律¥275(税込) / 数分で着金</div>
       </div>
@@ -1960,7 +1961,7 @@ const handleOpenDashboard = async () => {
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:16 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
             <div style={{ flex:1, minWidth:200 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:4 }}>🏦 銀行口座・支払い設定</div>
+              <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:4 }}><LineIcon name="bank" size={14} /> 銀行口座・支払い設定</div>
               <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.5 }}>
                 銀行口座の変更、住所変更、税情報の更新などはStripeのページから安全に行えます。
               </div>
@@ -1977,7 +1978,7 @@ const handleOpenDashboard = async () => {
       )}
       {/* 出金履歴 */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:20 }}>
-        <h3 style={{ margin:"0 0 12px", fontSize:14, fontWeight:800, color:C.dark }}>📜 出金履歴</h3>
+        <h3 style={{ margin:"0 0 12px", fontSize:14, fontWeight:800, color:C.dark }}><LineIcon name="scroll" size={16} /> 出金履歴</h3>
         {payouts.length === 0 ? (
           <div style={{ padding:20, textAlign:"center", color:C.warmGray, fontSize:13 }}>まだ出金履歴はありません</div>
         ) : (
@@ -1986,7 +1987,7 @@ const handleOpenDashboard = async () => {
               <div key={p.id} style={{ padding:12, border:`1px solid ${C.border}`, borderRadius:10, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div>
                   <div style={{ fontSize:11, color:C.warmGray }}>
-                    {new Date(p.created_at).toLocaleDateString("ja-JP")} - {p.payout_type === "instant" ? "⚡即時" : p.payout_type === "monthly_auto" ? "📅月末" : "🖱️手動"}
+                    {new Date(p.created_at).toLocaleDateString("ja-JP")} - {p.payout_type === "instant" ? <><LineIcon name="bolt" size={12} /> 即時</> : p.payout_type === "monthly_auto" ? <><LineIcon name="calendar" size={12} /> 月末</> : <><LineIcon name="laptop" size={12} /> 手動</>}
                   </div>
                   <div style={{ fontSize:14, fontWeight:700, color:C.dark }}>¥{p.net_amount.toLocaleString()}</div>
                   {p.fee > 0 && <div style={{ fontSize:11, color:C.warmGray }}>手数料 ¥{p.fee.toLocaleString()}</div>}
@@ -1996,7 +1997,7 @@ const handleOpenDashboard = async () => {
                   background: p.status === "paid" ? "#E8F5E9" : p.status === "in_transit" ? "#FFF3E0" : p.status === "failed" ? "#FFEBEE" : "#F5F5F5",
                   color: p.status === "paid" ? "#2E7D32" : p.status === "in_transit" ? "#EF6C00" : p.status === "failed" ? "#C62828" : "#666"
                 }}>
-                  {p.status === "paid" ? "✅完了" : p.status === "in_transit" ? "🚀 振込中" : p.status === "failed" ? "❌失敗" : "保留中"}
+                  {p.status === "paid" ? <><LineIcon name="checkCircle" size={12} /> 完了</> : p.status === "in_transit" ? <><LineIcon name="rocket" size={12} /> 振込中</> : p.status === "failed" ? <><LineIcon name="closeCircle" size={12} /> 失敗</> : "保留中"}
                 </span>
               </div>
             ))}
@@ -2008,7 +2009,7 @@ const handleOpenDashboard = async () => {
       {showInstantModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999 }}>
           <div style={{ background:C.white, borderRadius:16, padding:24, maxWidth:400, width:"90%", maxHeight:"88vh", overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
-            <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:800 }}>⚡ 即時受け取り</h3>
+            <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:800 }}><LineIcon name="bolt" size={16} /> 即時受け取り</h3>
             <p style={{ fontSize:13, color:C.dark, lineHeight:1.6, margin:"0 0 16px" }}>
               手数料: 一律¥275(税込)<br/>
               受取可能残高: <strong>¥{(balance?.pending_balance || 0).toLocaleString()}</strong>
@@ -2152,20 +2153,20 @@ const AddressesTab = () => {
   return (
     <div style={{ padding:"20px 16px", paddingBottom:80 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-        <h2 style={{ fontSize:20, fontWeight:900, color:C.dark, margin:0 }}>🏠 配送先住所</h2>
+        <h2 style={{ fontSize:20, fontWeight:900, color:C.dark, margin:0 }}><LineIcon name="home" size={20} /> 配送先住所</h2>
         <button onClick={()=>{ resetForm(); setShowForm(true); }} style={{
           padding:"8px 14px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
         }}>+ 追加</button>
       </div>
       <div style={{ background:"#FFF8F0", padding:"12px 14px", borderRadius:10, fontSize:11, color:C.warmGray, marginBottom:14, lineHeight:1.5 }}>
-        🔒 配送が必要な取引時に出品者に共有される住所です。取引完了後30日で自動削除されます。
+        <LineIcon name="lock" size={12} /> 配送が必要な取引時に出品者に共有される住所です。取引完了後30日で自動削除されます。
       </div>
 
       {loading && <div style={{ textAlign:"center", padding:20, color:C.warmGray }}>読み込み中...</div>}
 
       {!loading && addresses.length === 0 && !showForm && (
         <div style={{ textAlign:"center", padding:"40px 20px", background:C.white, borderRadius:14, border:`1px solid ${C.border}` }}>
-          <div style={{ fontSize:36, marginBottom:10 }}>📭</div>
+          <div style={{ fontSize:36, marginBottom:10 }}><LineIcon name="mailbox" size={36} /></div>
           <div style={{ fontSize:14, color:C.warmGray, marginBottom:14 }}>登録された住所はありません</div>
           <button onClick={()=>setShowForm(true)} style={{ padding:"10px 20px", background:C.orange, border:"none", borderRadius:10, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>+ 住所を追加</button>
         </div>
@@ -2181,14 +2182,14 @@ const AddressesTab = () => {
             <div>{addr.recipient_name} 様</div>
             <div>〒{addr.postal_code} {addr.prefecture}{addr.city}</div>
             <div>{addr.address_line}</div>
-            <div>📱 {addr.phone}</div>
+            <div><LineIcon name="mobile" size={12} /> {addr.phone}</div>
           </div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {!addr.is_default && (
               <button onClick={()=>handleSetDefault(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.orange}`, borderRadius:8, color:C.orange, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>デフォルトに設定</button>
             )}
-            <button onClick={()=>handleEdit(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:8, color:C.warmGray, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>✏️ 編集</button>
-            <button onClick={()=>handleDelete(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.red}`, borderRadius:8, color:C.red, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>🗑️ 削除</button>
+            <button onClick={()=>handleEdit(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.border}`, borderRadius:8, color:C.warmGray, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="pencil" size={12} /> 編集</button>
+            <button onClick={()=>handleDelete(addr)} style={{ padding:"6px 10px", background:C.white, border:`1px solid ${C.red}`, borderRadius:8, color:C.red, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="trash" size={12} /> 削除</button>
           </div>
         </div>
       ))}
@@ -2197,7 +2198,7 @@ const AddressesTab = () => {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:300, display:"flex", alignItems:"flex-end" }} onClick={resetForm}>
           <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", padding:"24px 20px", width:"100%", maxHeight:"85vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>{editingId ? "✏️ 住所を編集" : "+ 住所を追加"}</div>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>{editingId ? <><LineIcon name="pencil" size={18} /> 住所を編集</> : "+ 住所を追加"}</div>
               <button onClick={resetForm} style={{ background:"none", border:"none", fontSize:20, color:C.warmGray, cursor:"pointer" }}>✕</button>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
@@ -2346,7 +2347,7 @@ const OrdersTab = () => {
         <div style={{ textAlign:"center", padding:"48px 20px", color:C.warmGray, fontSize:13 }}>読み込み中…</div>
       ) : filtered.length===0 ? (
         <div style={{ textAlign:"center", padding:"48px 20px" }}>
-          <div style={{ fontSize:40, marginBottom:8 }}>📦</div>
+          <div style={{ fontSize:40, marginBottom:8 }}><LineIcon name="box" size={40} /></div>
           <div style={{ fontWeight:700, color:C.warmGray }}>注文がありません</div>
           <div style={{ fontSize:11, color:C.warmGray, marginTop:6 }}>気になる商品を購入してみましょう</div>
         </div>
@@ -2363,7 +2364,7 @@ const OrdersTab = () => {
               }}>
                 <div style={{ padding:"16px", display:"flex", gap:14, alignItems:"center" }}>
                   <div style={{ width:48, height:48, borderRadius:12, background:img?`url(${img}) center/cover`:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
-                    {!img && "📦"}
+                    {!img && <LineIcon name="box" size={24} />}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
@@ -2393,14 +2394,14 @@ const OrdersTab = () => {
 
                     {orderStatusKey(order)==="disputed" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
-                        <div style={{ fontWeight:700, marginBottom:4 }}>⚠️ 異議申し立て中</div>
+                        <div style={{ fontWeight:700, marginBottom:4 }}><LineIcon name="warning" size={12} /> 異議申し立て中</div>
                         <div style={{ fontSize:11, color:C.warmGray }}>運営にて対応中です</div>
                       </div>
                     )}
 
                     {orderStatusKey(order)==="refunded" && (
                       <div style={{ background:"#FFEBEE", borderRadius:12, padding:"12px", marginTop:8, fontSize:12, color:C.red }}>
-                        <div style={{ fontWeight:700 }}>💸 返金済み</div>
+                        <div style={{ fontWeight:700 }}><LineIcon name="coin" size={12} /> 返金済み</div>
                       </div>
                     )}
 
@@ -2410,7 +2411,7 @@ const OrdersTab = () => {
                           <button disabled={confirming} onClick={(e)=>{e.stopPropagation();handleConfirm(order.id);}} style={{
                             flex:2, padding:"11px", background:confirming?C.warmGray:C.green, border:"none", borderRadius:10,
                             color:"#fff", fontWeight:800, fontSize:13, cursor:confirming?"not-allowed":"pointer", fontFamily:"inherit"
-                          }}>{confirming ? "処理中..." : "✅ 受取完了"}</button>
+                          }}>{confirming ? "処理中..." : <><LineIcon name="checkCircle" size={14} /> 受取完了</>}</button>
                           <button onClick={(e)=>{e.stopPropagation();setShowDispute(order);}} style={{
                             flex:1, padding:"11px", background:C.white, border:`1.5px solid ${C.red}`,
                             borderRadius:10, color:C.red, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit"
@@ -2421,7 +2422,7 @@ const OrdersTab = () => {
                         <button onClick={(e)=>{e.stopPropagation();setShowReview({...order, item:title, seller:sellerName});}} style={{
                           flex:1, padding:"11px", background:C.orange, border:"none", borderRadius:10,
                           color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer", fontFamily:"inherit"
-                        }}>⭐ レビューを書く</button>
+                        }}><LineIcon name="star" size={14} /> レビューを書く</button>
                       )}
                     </div>
                   </div>
@@ -2502,12 +2503,12 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   });
 
   const statusBadge = (s?: string | null) => {
-    const map: Record<string, { text: string; bg: string; color: string }> = {
-      draft:    { text:"💾 下書き",    bg:C.lightGray,    color:C.warmGray },
-      pending:  { text:"⏳ 審査中",    bg:C.orangePale,   color:C.orange },
-      approved: { text:"✅ 公開中",    bg:"#E8F5E9",      color:C.green },
-      sold_out: { text:"🔴 売り切れ",  bg:"#FFEBEE",      color:C.red },
-      rejected: { text:"❌ 非承認",    bg:"#FFEBEE",      color:C.red },
+    const map: Record<string, { text: React.ReactNode; bg: string; color: string }> = {
+      draft:    { text:<><LineIcon name="save" size={11} /> 下書き</>,    bg:C.lightGray,    color:C.warmGray },
+      pending:  { text:<><LineIcon name="clock" size={11} /> 審査中</>,    bg:C.orangePale,   color:C.orange },
+      approved: { text:<><LineIcon name="checkCircle" size={11} /> 公開中</>,    bg:"#E8F5E9",      color:C.green },
+      sold_out: { text:<><LineIcon name="dot" size={11} /> 売り切れ</>,  bg:"#FFEBEE",      color:C.red },
+      rejected: { text:<><LineIcon name="closeCircle" size={11} /> 非承認</>,    bg:"#FFEBEE",      color:C.red },
     };
     const key = s ?? "";
     return map[key] || { text:key, bg:C.lightGray, color:C.warmGray };
@@ -2591,7 +2592,7 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
   return (
     <div>
       <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginBottom:14, fontSize:11, color:C.dark, lineHeight:1.6 }}>
-        🐾 出品した商品の一覧です。下書きの編集・公開、在庫管理、削除ができます。
+        <LineIcon name="paw" size={12} /> 出品した商品の一覧です。下書きの編集・公開、在庫管理、削除ができます。
       </div>
 
       {/* 2026/8/22 公開中の出品があるのに入金設定が未完了なら警告する。
@@ -2618,12 +2619,12 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
       <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
         {([
           ["all","すべて",counts.all],
-          ["draft","💾 下書き",counts.draft],
-          ["pending","⏳ 審査中",counts.pending],
-          ["approved","✅ 公開中",counts.approved],
-          ["sold_out","🔴 売切",counts.sold_out],
-          ["rejected","❌ 非承認",counts.rejected],
-        ] as [string, string, number][]).map(([v,l,c])=>(
+          ["draft",<><LineIcon name="save" size={12} /> 下書き</>,counts.draft],
+          ["pending",<><LineIcon name="clock" size={12} /> 審査中</>,counts.pending],
+          ["approved",<><LineIcon name="checkCircle" size={12} /> 公開中</>,counts.approved],
+          ["sold_out",<><LineIcon name="dot" size={12} /> 売切</>,counts.sold_out],
+          ["rejected",<><LineIcon name="closeCircle" size={12} /> 非承認</>,counts.rejected],
+        ] as [string, React.ReactNode, number][]).map(([v,l,c])=>(
           <button key={v} onClick={()=>setFilter(v)} style={{
             flexShrink:0, padding:"6px 12px", border:`1.5px solid ${filter===v?C.orange:C.border}`,
             borderRadius:10, background:filter===v?C.orangePale:C.white,
@@ -2638,7 +2639,7 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
         <div style={{ textAlign:"center", padding:40, color:C.warmGray, fontSize:13 }}>読み込み中...</div>
       ) : filtered.length === 0 ? (
         <div style={{ background:C.white, borderRadius:16, padding:"40px 20px", textAlign:"center", border:`1px dashed ${C.border}` }}>
-          <div style={{ fontSize:48, marginBottom:8 }}>🐾</div>
+          <div style={{ fontSize:48, marginBottom:8 }}><LineIcon name="paw" size={48} /></div>
           <div style={{ fontSize:14, fontWeight:800, color:C.dark, marginBottom:6 }}>
             {filter === "all" ? "まだ出品がありません" : "該当する出品がありません"}
           </div>
@@ -2662,19 +2663,19 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
                   {photo ? (
                     <img src={photo} alt="" style={{ width:64, height:64, borderRadius:10, objectFit:"cover", flexShrink:0 }}/>
                   ) : (
-                    <div style={{ width:64, height:64, borderRadius:10, background:C.lightGray, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>🐾</div>
+                    <div style={{ width:64, height:64, borderRadius:10, background:C.lightGray, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}><LineIcon name="paw" size={28} /></div>
                   )}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", gap:6, marginBottom:4, flexWrap:"wrap" }}>
                       <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:badge.bg, color:badge.color, fontWeight:800 }}>{badge.text}</span>
                       {stockManaged && (
                         <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:stock===0?"#FFEBEE":"#E3F2FD", color:stock===0?C.red:C.blue, fontWeight:800 }}>
-                          📦 在庫{stock}
+                          <LineIcon name="box" size={11} /> 在庫{stock}
                         </span>
                       )}
                       {!stockManaged && (
                         <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.lightGray, color:C.warmGray, fontWeight:700 }}>
-                          ♾ 在庫管理なし
+                          <LineIcon name="infinity" size={11} /> 在庫管理なし
                         </span>
                       )}
                     </div>
@@ -2688,21 +2689,21 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
                   {/* 在庫管理 */}
                   {stockManaged ? (
                     <>
-                      <button disabled={busy} onClick={()=>handleStockChange(l, -1)} style={miniBtnStyle(C.white, C.warmGray, busy)}>📦 在庫 −1</button>
-                      <button disabled={busy} onClick={()=>handleStockChange(l, +1)} style={miniBtnStyle(C.white, C.green, busy)}>📦 在庫 +1</button>
-                      <button disabled={busy} onClick={()=>handleDisableStock(l)} style={miniBtnStyle(C.white, C.warmGray, busy)}>♾ 在庫管理OFF</button>
+                      <button disabled={busy} onClick={()=>handleStockChange(l, -1)} style={miniBtnStyle(C.white, C.warmGray, busy)}><LineIcon name="box" size={12} /> 在庫 −1</button>
+                      <button disabled={busy} onClick={()=>handleStockChange(l, +1)} style={miniBtnStyle(C.white, C.green, busy)}><LineIcon name="box" size={12} /> 在庫 +1</button>
+                      <button disabled={busy} onClick={()=>handleDisableStock(l)} style={miniBtnStyle(C.white, C.warmGray, busy)}><LineIcon name="infinity" size={12} /> 在庫管理OFF</button>
                     </>
                   ) : (
-                    <button disabled={busy} onClick={()=>handleEnableStock(l)} style={miniBtnStyle(C.white, C.blue, busy)}>📦 在庫管理ON</button>
+                    <button disabled={busy} onClick={()=>handleEnableStock(l)} style={miniBtnStyle(C.white, C.blue, busy)}><LineIcon name="box" size={12} /> 在庫管理ON</button>
                   )}
                   {/* 下書きの公開申請 (v3.1: 🚀 絵文字 + orange solid → 普通の line CTA) */}
                   {l.status === "draft" && (
                     <button disabled={busy} onClick={()=>handlePublishDraft(l)} style={miniBtnStyle(C.white, C.orange, busy)}>公開申請</button>
                   )}
                   {/* 編集 */}
-                  <button disabled={busy} onClick={()=>setEditTarget(l)} style={miniBtnStyle(C.white, C.blue, busy)}>✏️ 編集</button>
+                  <button disabled={busy} onClick={()=>setEditTarget(l)} style={miniBtnStyle(C.white, C.blue, busy)}><LineIcon name="pencil" size={12} /> 編集</button>
                   {/* 削除 */}
-                  <button disabled={busy} onClick={()=>setDeleteTarget(l)} style={miniBtnStyle(C.white, C.red, busy)}>🗑 削除</button>
+                  <button disabled={busy} onClick={()=>setDeleteTarget(l)} style={miniBtnStyle(C.white, C.red, busy)}><LineIcon name="trash" size={12} /> 削除</button>
                 </div>
               </div>
             );
@@ -2723,15 +2724,15 @@ const MyListingsTab = ({ setPage }: { setPage: SetPage }) => {
       {deleteTarget && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:380, width:"100%" }}>
-            <div style={{ fontSize:40, textAlign:"center", marginBottom:12 }}>🗑</div>
+            <div style={{ fontSize:40, textAlign:"center", marginBottom:12 }}><LineIcon name="trash" size={40} /></div>
             <h2 style={{ fontSize:16, fontWeight:900, color:C.dark, textAlign:"center", marginBottom:8 }}>本当に削除しますか？</h2>
             <p style={{ fontSize:12, color:C.warmGray, textAlign:"center", marginBottom:14, lineHeight:1.7 }}>
               「{deleteTarget.title}」<br/>
-              ⚠️ この操作は取り消せません
+              <LineIcon name="warning" size={12} /> この操作は取り消せません
             </p>
             <div style={{ display:"flex", gap:8 }}>
               <button onClick={()=>setDeleteTarget(null)} disabled={busy} style={{ flex:1, padding:"12px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit" }}>キャンセル</button>
-              <button onClick={handleDelete} disabled={busy} style={{ flex:2, padding:"12px", background:busy?C.warmGray:C.red, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit" }}>{busy ? "削除中..." : "🗑 削除する"}</button>
+              <button onClick={handleDelete} disabled={busy} style={{ flex:2, padding:"12px", background:busy?C.warmGray:C.red, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit" }}>{busy ? "削除中..." : <><LineIcon name="trash" size={14} /> 削除する</>}</button>
             </div>
           </div>
         </div>
@@ -2855,7 +2856,7 @@ const SalesTab = () => {
   return (
     <div>
       <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginBottom:14, fontSize:11, color:C.dark, lineHeight:1.6 }}>
-        💡 受けた注文の管理画面です。作業状況を更新すると購入者に通知されます。
+        <LineIcon name="bulb" size={12} /> 受けた注文の管理画面です。作業状況を更新すると購入者に通知されます。
       </div>
 
       <div style={{ display:"flex", gap:6, marginBottom:16, overflowX:"auto" }}>
@@ -2872,7 +2873,7 @@ const SalesTab = () => {
         <div style={{ textAlign:"center", padding:"48px 20px", color:C.warmGray, fontSize:13 }}>読み込み中…</div>
       ) : filtered.length===0 ? (
         <div style={{ textAlign:"center", padding:"48px 20px" }}>
-          <div style={{ fontSize:40, marginBottom:8 }}>🛍️</div>
+          <div style={{ fontSize:40, marginBottom:8 }}><LineIcon name="bag" size={40} /></div>
           <div style={{ fontWeight:700, color:C.warmGray }}>該当する販売がありません</div>
           <div style={{ fontSize:11, color:C.warmGray, marginTop:6 }}>注文が入るとここに表示されます</div>
         </div>
@@ -2890,7 +2891,7 @@ const SalesTab = () => {
               }}>
                 <div style={{ padding:"16px", display:"flex", gap:14, alignItems:"center" }}>
                   <div style={{ width:48, height:48, borderRadius:12, background:img?`url(${img}) center/cover`:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
-                    {!img && "🛍️"}
+                    {!img && <LineIcon name="bag" size={24} />}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
@@ -2899,7 +2900,7 @@ const SalesTab = () => {
                     </div>
                     <div style={{ fontSize:11, color:C.warmGray }}>
                       購入者: {buyerName} · {formatDate(sale.created_at)}
-                      {sale.shipping_region && <span style={{ marginLeft:6, color:C.orange, fontWeight:700 }}>· 📍 {sale.shipping_region}</span>}
+                      {sale.shipping_region && <span style={{ marginLeft:6, color:C.orange, fontWeight:700 }}>· <LineIcon name="pin" size={11} /> {sale.shipping_region}</span>}
                     </div>
                     {/* 依頼書 #104 Phase B-2 (2026/6/3): 送料込み売上 (shipping_total > 0 なら shipping_fee 内訳表示) */}
                     <div style={{ fontSize:15, fontWeight:700, color:C.dark, marginTop:4 }}>
@@ -2917,7 +2918,7 @@ const SalesTab = () => {
                     {/* 2026/7/23 Phase 2.1: 選択肢購入で購入者が選んだN個 (何を作る/詰めるか) */}
                     {Array.isArray(sale.choices) && sale.choices.length > 0 && (
                       <div style={{ background:"#FFF8F0", border:`2px solid ${C.orange}`, borderRadius:10, padding:"10px 12px", marginBottom:10 }}>
-                        <div style={{ fontSize:11, fontWeight:800, color:C.orange, marginBottom:6 }}>📋 選ばれたもの（{sale.choices.length}点）</div>
+                        <div style={{ fontSize:11, fontWeight:800, color:C.orange, marginBottom:6 }}><LineIcon name="clipboard" size={12} /> 選ばれたもの（{sale.choices.length}点）</div>
                         <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                           {sale.choices.map((n:string, i:number) => (
                             <span key={i} style={{ fontSize:12.5, fontWeight:700, color:C.dark, background:C.white, border:`1px solid ${C.orange}40`, borderRadius:8, padding:"4px 10px" }}>{n}</span>
@@ -2929,7 +2930,7 @@ const SalesTab = () => {
 
                     {isShipping && sale.shipping_address_id && (
                       <div style={{ background:C.orangePale, borderRadius:12, padding:"10px 14px", marginTop:10, fontSize:11, color:C.dark, lineHeight:1.6 }}>
-                        🔒 配送先住所が登録されています。<br/>
+                        <LineIcon name="lock" size={12} /> 配送先住所が登録されています。<br/>
                         メッセージタブの取引メッセージから詳細を確認できます。<br/>
                         <span style={{ fontSize:10, color:C.warmGray }}>※ 取引完了後30日で自動削除されます</span>
                       </div>
@@ -2940,13 +2941,13 @@ const SalesTab = () => {
                         <div style={{
                           flex:1, minWidth:140, padding:"11px", background:C.lightGray, borderRadius:10,
                           color:C.warmGray, fontWeight:700, fontSize:12, textAlign:"center", fontFamily:"inherit"
-                        }}>⏳ 購入者の決済待ち（決済完了後に作業を開始できます）</div>
+                        }}><LineIcon name="clock" size={12} /> 購入者の決済待ち（決済完了後に作業を開始できます）</div>
                       )}
                       {orderStatusKey(sale)==="working" && (
                         <button disabled={busy} onClick={(e)=>{e.stopPropagation();markDelivered(sale);}} style={{
                           flex:1, minWidth:140, padding:"11px", background:C.orange, border:"none", borderRadius:10,
                           color:"#fff", fontWeight:800, fontSize:13, cursor:busy?"not-allowed":"pointer", fontFamily:"inherit", opacity:busy?0.6:1
-                        }}>📦 納品完了として通知</button>
+                        }}><LineIcon name="box" size={14} /> 納品完了として通知</button>
                       )}
                       {orderStatusKey(sale)==="delivered" && (
                         <div style={{ flex:1, padding:"11px", background:"#FFF3E0", borderRadius:10, color:C.orange, fontWeight:700, fontSize:12, textAlign:"center" }}>
@@ -2955,12 +2956,12 @@ const SalesTab = () => {
                       )}
                       {orderStatusKey(sale)==="completed" && (
                         <div style={{ flex:1, padding:"11px", background:C.greenPale, borderRadius:10, color:C.green, fontWeight:700, fontSize:12, textAlign:"center" }}>
-                          ✅ 取引完了 · 売上反映済み
+                          <LineIcon name="checkCircle" size={12} /> 取引完了 · 売上反映済み
                         </div>
                       )}
                       {orderStatusKey(sale)==="disputed" && (
                         <div style={{ flex:1, padding:"11px", background:"#FFEBEE", borderRadius:10, color:C.red, fontWeight:700, fontSize:12, textAlign:"center" }}>
-                          ⚠️ 異議申し立て中（運営にて対応中）
+                          <LineIcon name="warning" size={12} /> 異議申し立て中（運営にて対応中）
                         </div>
                       )}
                     </div>
@@ -2995,7 +2996,7 @@ const DisputeModal = ({ order, onClose, onSubmit }: {
       <div style={{ background:C.white, borderRadius:"24px 24px 0 0", padding:"28px 20px", width:"100%", maxWidth:500, maxHeight:"80vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
         {done ? (
           <div style={{ textAlign:"center", padding:"20px 0" }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+            <div style={{ fontSize:48, marginBottom:12 }}><LineIcon name="checkCircle" size={48} /></div>
             <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>異議を受け付けました</div>
             <div style={{ fontSize:13, color:C.warmGray, marginBottom:4 }}>エスクローは保留中です。48時間以内にサポートからご連絡いたします。</div>
             <div style={{ background:C.orangePale, borderRadius:10, padding:"10px", margin:"12px 0", fontSize:12, color:C.orange }}>自動メッセージ: 出品者にも通知が送信されました。</div>
@@ -3004,7 +3005,7 @@ const DisputeModal = ({ order, onClose, onSubmit }: {
         ) : (
           <>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}>⚠️ 問題を報告</div>
+              <div style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="warning" size={18} /> 問題を報告</div>
               <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
             <div style={{ background:C.lightGray, borderRadius:12, padding:"12px", marginBottom:16, fontSize:12, color:C.dark }}>
@@ -3042,11 +3043,11 @@ const DisputeModal = ({ order, onClose, onSubmit }: {
                   style={{ width:"100%", padding:"12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:12 }}
                 />
                 <div style={{ background:C.orangePale, borderRadius:10, padding:"10px", marginBottom:16, fontSize:11, color:C.orange, lineHeight:1.6 }}>
-                  🔒 エスクローは自動的に保留されます。出品者に48時間の回答期限が設定されます。回答がない場合は自動的に返金されます。
+                  <LineIcon name="lock" size={12} /> エスクローは自動的に保留されます。出品者に48時間の回答期限が設定されます。回答がない場合は自動的に返金されます。
                 </div>
                 <div style={{ display:"flex", gap:10 }}>
                   <button onClick={()=>setStep(1)} style={{ flex:1, padding:"13px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:12, color:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>← 戻る</button>
-                  <button onClick={handleSubmit} style={{ flex:2, padding:"13px", background:C.red, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>⚠️ 異議を申し立てる</button>
+                  <button onClick={handleSubmit} style={{ flex:2, padding:"13px", background:C.red, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="warning" size={14} /> 異議を申し立てる</button>
                 </div>
               </>
             )}
@@ -3206,7 +3207,7 @@ const OrderMessagesTab = () => {
       {!selected ? (
         convos.length === 0 ? (
           <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>
-            <div style={{ fontSize:36, marginBottom:12 }}>💬</div>
+            <div style={{ fontSize:36, marginBottom:12 }}><LineIcon name="bubble" size={36} /></div>
             <div>取引メッセージはまだありません</div>
             <div style={{ fontSize:11, marginTop:6 }}>商品を購入すると、ここに取引相手とのメッセージが表示されます</div>
           </div>
@@ -3223,7 +3224,7 @@ const OrderMessagesTab = () => {
                   <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>{c.partner_name}</span>
                   <span style={{ fontSize:10, color:C.warmGray }}>{c.last_msg_date ? new Date(c.last_msg_date).toLocaleDateString("ja-JP") : ""}</span>
                 </div>
-                <div style={{ fontSize:11, color:C.warmGray, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.listing_title} · {c.status === "completed" ? "✅ 取引完了" : c.status === "working" ? "🔧 作業中" : c.status === "delivered" ? "📦 納品済み" : "🛒 取引中"}</div>
+                <div style={{ fontSize:11, color:C.warmGray, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.listing_title} · {c.status === "completed" ? <><LineIcon name="checkCircle" size={12} /> 取引完了</> : c.status === "working" ? <><LineIcon name="wrench" size={12} /> 作業中</> : c.status === "delivered" ? <><LineIcon name="box" size={12} /> 納品済み</> : <><LineIcon name="cart" size={12} /> 取引中</>}</div>
                 <div style={{ fontSize:12, color:"#555", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.last_msg}</div>
               </div>
               {c.unread>0 && <div style={{ width:20, height:20, borderRadius:"50%", background:C.orange, color:"#fff", fontSize:10, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.unread}</div>}
@@ -3246,7 +3247,7 @@ const OrderMessagesTab = () => {
           {shippingAddr && selected.seller_id === user?.id && (
             <div style={{ padding:"12px 16px", background:"#FFF8F0", borderBottom:`1px solid ${C.border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-                <span style={{ fontSize:13, fontWeight:800, color:C.dark }}>📦 配送先住所</span>
+                <span style={{ fontSize:13, fontWeight:800, color:C.dark }}><LineIcon name="box" size={14} /> 配送先住所</span>
                 {shippingAddr.delete_at && (
                   <span style={{ fontSize:9, padding:"2px 6px", background:"#FFE0B2", color:"#E65100", borderRadius:4, fontWeight:700 }}>
                     {Math.ceil((new Date(shippingAddr.delete_at).getTime() - Date.now()) / (1000*60*60*24))}日後に自動削除
@@ -3257,17 +3258,17 @@ const OrderMessagesTab = () => {
                 <div><strong style={{ color:C.dark }}>{shippingAddr.recipient_name}</strong> 様</div>
                 <div>〒{shippingAddr.postal_code}</div>
                 <div>{shippingAddr.prefecture}{shippingAddr.city}{shippingAddr.address_line}</div>
-                <div>📱 {shippingAddr.phone}</div>
+                <div><LineIcon name="mobile" size={12} /> {shippingAddr.phone}</div>
               </div>
               <div style={{ fontSize:10, color:C.warmGray, marginTop:6, padding:"6px 8px", background:"#FFF", borderRadius:6 }}>
-                ⚠️ この情報は配送目的のみに使用してください。第三者への漏洩は規約違反となります。
+                <LineIcon name="warning" size={11} /> この情報は配送目的のみに使用してください。第三者への漏洩は規約違反となります。
               </div>
             </div>
           )}
 
           {selected.status !== "completed" && (
             <div style={{ padding:"8px 16px", background:"#FFF8E1", borderBottom:`1px solid ${C.border}`, fontSize:11, color:"#996200", display:"flex", alignItems:"center", gap:6 }}>
-              ⚠️ 取引完了前は外部連絡先（電話・メール・SNS等）の交換は禁止されています
+              <LineIcon name="warning" size={12} /> 取引完了前は外部連絡先（電話・メール・SNS等）の交換は禁止されています
             </div>
           )}
 
@@ -3294,7 +3295,7 @@ const OrderMessagesTab = () => {
 
           {warning && (
             <div style={{ padding:"12px 16px", background:"#FFE5E5", borderTop:`1px solid #FFB3B3` }}>
-              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}>⚠️ 連絡先が含まれています ({warning.types.join(", ")})</div>
+              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}><LineIcon name="warning" size={13} /> 連絡先が含まれています ({warning.types.join(", ")})</div>
               <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>取引完了前のサイト外連絡は規約違反です。<br/>取引完了後はそのまま送信できます。</div>
               <div style={{ display:"flex", gap:6 }}>
                 <button onClick={()=>setWarning(null)} style={{ flex:1, padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
@@ -3480,9 +3481,9 @@ const DirectMessagesTab = () => {
       {!selected ? (
         convos.length === 0 ? (
           <div style={{ padding:40, textAlign:"center", color:C.warmGray, fontSize:13 }}>
-            <div style={{ fontSize:36, marginBottom:12 }}>✉️</div>
+            <div style={{ fontSize:36, marginBottom:12 }}><LineIcon name="mail" size={36} /></div>
             <div>DMはまだありません</div>
-            <div style={{ fontSize:11, marginTop:6 }}>気になる出品者のプロフィールから<br/>「💬 メッセージ」でDMを送れます</div>
+            <div style={{ fontSize:11, marginTop:6 }}>気になる出品者のプロフィールから<br/>「<LineIcon name="bubble" size={12} /> メッセージ」でDMを送れます</div>
           </div>
         ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -3538,7 +3539,7 @@ const DirectMessagesTab = () => {
 
           {warning && (
             <div style={{ padding:"12px 16px", background:"#FFE5E5", borderTop:`1px solid #FFB3B3` }}>
-              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}>⚠️ 連絡先が含まれています ({warning.types.join(", ")})</div>
+              <div style={{ fontSize:12, fontWeight:800, color:"#C62828", marginBottom:6 }}><LineIcon name="warning" size={13} /> 連絡先が含まれています ({warning.types.join(", ")})</div>
               <div style={{ fontSize:11, color:"#666", marginBottom:8, lineHeight:1.5 }}>相互フォロー（お互いをフォロー）すれば連絡先交換できます。<br/>今は一方フォローなのでマスク送信になります。</div>
               <div style={{ display:"flex", gap:6 }}>
                 <button onClick={()=>setWarning(null)} style={{ flex:1, padding:"8px", background:C.white, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", color:C.dark }}>修正する</button>
@@ -3616,8 +3617,8 @@ const MessagesTab = () => {
       <div style={{ display:"flex", gap:8, marginBottom:14, background:C.lightGray, borderRadius:12, padding:4 }}>
         {/* 2026/7/27 ★4: どちらに何が入っているか一目で分かるラベルにする */}
         {([
-          { id: "order" as const, label: "📦 取引メッセージ", n: unread.order },
-          { id: "dm" as const, label: "✉️ DM（運営・出品者）", n: unread.dm },
+          { id: "order" as const, label: <><LineIcon name="box" size={13} /> 取引メッセージ</>, n: unread.order },
+          { id: "dm" as const, label: <><LineIcon name="mail" size={13} /> DM（運営・出品者）</>, n: unread.dm },
         ]).map(t => (
           <button key={t.id} onClick={()=>setSubTab(t.id)} style={{ flex:1, padding:"8px 6px", background: subTab === t.id ? C.white : "transparent", border:"none", borderRadius:8, fontSize:11, fontWeight:800, color: subTab === t.id ? C.orange : C.warmGray, cursor:"pointer", fontFamily:"inherit", boxShadow: subTab === t.id ? "0 2px 4px rgba(0,0,0,0.05)" : "none", display:"flex", alignItems:"center", justifyContent:"center", gap:5, whiteSpace:"nowrap" }}>
             {t.label}
@@ -3638,7 +3639,7 @@ const NotificationsTab = () => {
   // 通知DBは未実装。実装までは空状態で運用。
   return (
     <div style={{ textAlign:"center", padding:"48px 20px" }}>
-      <div style={{ fontSize:40, marginBottom:8 }}>🔔</div>
+      <div style={{ fontSize:40, marginBottom:8 }}><LineIcon name="bell" size={40} /></div>
       <div style={{ fontWeight:700, color:C.warmGray, marginBottom:6 }}>新しい通知はありません</div>
       <div style={{ fontSize:11, color:C.warmGray, lineHeight:1.6 }}>
         重要なお知らせは登録メールアドレス宛にお送りしています。<br/>
@@ -3654,27 +3655,27 @@ const SupportTab = () => {
   const supportEmail = "support@qocca.pet";
   return (
     <div>
-      <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:14 }}>🎧 サポート</div>
+      <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:14 }}><LineIcon name="headset" size={16} /> サポート</div>
 
       {/* ヘルプセンター */}
       <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
-        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📚 ヘルプセンター</div>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}><LineIcon name="book" size={14} /> ヘルプセンター</div>
         <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
           よくあるご質問や使い方をまとめています。お問い合わせの前にご確認ください。
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:8 }}>
           <a href="/help/getting-started" style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.cream, borderRadius:10, textDecoration:"none", color:C.dark, fontSize:12, fontWeight:700 }}>
-            <span style={{ fontSize:18 }}>📝</span>
+            <LineIcon name="note" size={18} />
             <span style={{ flex:1 }}>出品の始め方</span>
             <span style={{ color:C.orange }}>→</span>
           </a>
           <a href="/help/stripe-connect" style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.cream, borderRadius:10, textDecoration:"none", color:C.dark, fontSize:12, fontWeight:700 }}>
-            <span style={{ fontSize:18 }}>💳</span>
+            <LineIcon name="card" size={18} />
             <span style={{ flex:1 }}>Stripe Connect 登録ガイド</span>
             <span style={{ color:C.orange }}>→</span>
           </a>
           <a href="/help/buying" style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.cream, borderRadius:10, textDecoration:"none", color:C.dark, fontSize:12, fontWeight:700 }}>
-            <span style={{ fontSize:18 }}>🛒</span>
+            <LineIcon name="cart" size={18} />
             <span style={{ flex:1 }}>購入ガイド</span>
             <span style={{ color:C.orange }}>→</span>
           </a>
@@ -3686,7 +3687,7 @@ const SupportTab = () => {
 
       {/* メッセージ機能（準備中） */}
       <div style={{ background:"#FFF8E7", borderRadius:16, border:`1px solid #F0D898`, padding:"16px 20px", marginBottom:14 }}>
-        <div style={{ fontSize:13, fontWeight:800, color:"#8B6914", marginBottom:6 }}>💬 アプリ内サポートメッセージ</div>
+        <div style={{ fontSize:13, fontWeight:800, color:"#8B6914", marginBottom:6 }}><LineIcon name="bubble" size={14} /> アプリ内サポートメッセージ</div>
         <div style={{ fontSize:12, color:"#8B6914", lineHeight:1.7 }}>
           現在、こちらの機能は準備中です。<br/>
           お問い合わせは下記の方法でお願いいたします。
@@ -3695,7 +3696,7 @@ const SupportTab = () => {
 
       {/* メールでお問い合わせ */}
       <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
-        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📧 メールでお問い合わせ</div>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}><LineIcon name="mail" size={14} /> メールでお問い合わせ</div>
         <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
           ヘルプで解決しない場合はメールでお問い合わせください。<br/>
           件名に「お問い合わせ」と注文番号（お持ちの場合）をご記入ください。
@@ -3708,7 +3709,7 @@ const SupportTab = () => {
 
       {/* Instagram DM */}
       <div style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`, padding:"20px", marginBottom:14 }}>
-        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}>📷 Instagram DM</div>
+        <div style={{ fontSize:13, fontWeight:800, color:C.dark, marginBottom:10 }}><LineIcon name="camera" size={14} /> Instagram DM</div>
         <div style={{ fontSize:12, color:"#555", lineHeight:1.7, marginBottom:14 }}>
           Instagram からもお問い合わせいただけます。
         </div>
@@ -3720,7 +3721,7 @@ const SupportTab = () => {
 
       {/* 対応時間 */}
       <div style={{ background:C.cream, borderRadius:12, padding:"14px 18px", fontSize:12, color:C.warmGray, lineHeight:1.7 }}>
-        <strong style={{ color:C.dark }}>📅 対応時間</strong><br/>
+        <strong style={{ color:C.dark }}><LineIcon name="calendar" size={13} /> 対応時間</strong><br/>
         平日 10:00〜18:00（土日祝休み）<br/>
         通常 48 時間以内にご返信いたします。<br/>
         ※ 緊急の不正利用報告は 24 時間受付

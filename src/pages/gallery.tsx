@@ -12,6 +12,7 @@ import { BLOG_CATS } from "../constants/data";
 import CommentModal from "../components/CommentModal";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 import { FloatingBackButton } from "../components/FloatingBackButton";
+import { LineIcon } from "../components/LineIcon";
 import type { CommentTargetType, SetPage } from "../types";
 import type { ChangeEvent } from "react";
 
@@ -194,11 +195,11 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
         <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, lineHeight:1.4, marginBottom:12 }}>{viewPost.title}</h1>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20 }}>
           <div style={{ width:32, height:32, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:14 }}>
-            {viewPost.authorAvatar ? <img src={viewPost.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+            {viewPost.authorAvatar ? <img src={viewPost.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <LineIcon name="paw" size={14} />}
           </div>
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:C.dark }}>{viewPost.authorName}</div>
-            <div style={{ fontSize:11, color:C.warmGray }}>{viewPost.created_at ? new Date(viewPost.created_at).toLocaleDateString("ja-JP") : ""} · 👁 {viewPost.views_count||0}</div>
+            <div style={{ fontSize:11, color:C.warmGray }}>{viewPost.created_at ? new Date(viewPost.created_at).toLocaleDateString("ja-JP") : ""} · <LineIcon name="eye" size={11} /> {viewPost.views_count||0}</div>
           </div>
         </div>
         <div style={{ fontSize:15, color:"#333", lineHeight:2, whiteSpace:"pre-wrap" }}>{viewPost.content}</div>
@@ -208,9 +209,9 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
           </div>
         )}
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, paddingTop:16, borderTop:`1px solid ${C.border}` }}>
-          <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20 }}>{likedPosts[viewPost.id]?"❤️":"🤍"}</button>
+          <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange }}><LineIcon name="heart" size={20} filled={!!likedPosts[viewPost.id]} /></button>
           <span style={{ fontSize:13, color:C.warmGray }}>{viewPost.likes_count||0} いいね</span>
-          <button onClick={()=>{ setCommentTarget({ type:"blog", id: viewPost.id, ownerId: viewPost.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:C.warmGray, marginLeft:8, fontFamily:"inherit" }}>💬 コメント</button>
+          <button onClick={()=>{ setCommentTarget({ type:"blog", id: viewPost.id, ownerId: viewPost.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:C.warmGray, marginLeft:8, fontFamily:"inherit" }}><LineIcon name="bubble" size={13} /> コメント</button>
         </div>
       </div>
     {commentTarget && (
@@ -236,14 +237,14 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
       <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>📝 ペットブログ</h1>
+            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}><LineIcon name="note" size={20} /> ペットブログ</h1>
             <p style={{ fontSize:12, color:C.warmGray }}>ペットの豆知識やクリエイターの裏側をチェック</p>
           </div>
           {user && (
             <button onClick={()=>setShowWrite(true)} style={{
               padding:"10px 14px", background:C.orange, border:"none", borderRadius:12,
               color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer"
-            }}>✍️ 書く</button>
+            }}><LineIcon name="pencil" size={12} /> 書く</button>
           )}
         </div>
       </div>
@@ -265,7 +266,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:520, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>✍️ ブログを書く</h2>
+              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="pencil" size={18} /> ブログを書く</h2>
               <button onClick={()=>setShowWrite(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
             <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverSelect} style={{ display:"none" }}/>
@@ -279,7 +280,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
                 width:"100%", padding:"24px", border:`2px dashed ${C.border}`, borderRadius:12,
                 background:C.lightGray, cursor:"pointer", marginBottom:14, textAlign:"center"
               }}>
-                <div style={{ fontSize:28, marginBottom:4 }}>🖼</div>
+                <div style={{ fontSize:28, marginBottom:4, color:C.warmGray }}><LineIcon name="image" size={28} strokeWidth={1} /></div>
                 <div style={{ fontSize:12, color:C.warmGray }}>カバー画像を追加（任意）</div>
               </button>
             )}
@@ -302,7 +303,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
             <button disabled={!form.title||!form.content||submitting} onClick={handlePublish} style={{
               width:"100%", padding:"14px", background:(!form.title||!form.content||submitting)?C.warmGray:C.orange,
               border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(!form.title||!form.content||submitting)?"not-allowed":"pointer"
-            }}>{submitting ? "投稿中..." : "📝 公開する"}</button>
+            }}>{submitting ? "投稿中..." : <><LineIcon name="note" size={15} /> 公開する</>}</button>
           </div>
         </div>
       )}
@@ -313,10 +314,10 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
           <div style={{ textAlign:"center", padding:40, color:C.warmGray }}>読み込み中...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign:"center", padding:60 }}>
-            <div style={{ fontSize:64, marginBottom:12 }}>📝</div>
+            <div style={{ fontSize:64, marginBottom:12, color:C.warmGray }}><LineIcon name="note" size={64} strokeWidth={1} /></div>
             <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>まだ記事がありません</div>
             <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>最初のブロガーになりませんか？</p>
-            {user && <button onClick={()=>setShowWrite(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}>✍️ 記事を書く</button>}
+            {user && <button onClick={()=>setShowWrite(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}><LineIcon name="pencil" size={14} /> 記事を書く</button>}
           </div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:16 }}>
@@ -339,15 +340,15 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <div style={{ width:22, height:22, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:10 }}>
-                        {post.authorAvatar ? <img src={post.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : "🐾"}
+                        {post.authorAvatar ? <img src={post.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <LineIcon name="paw" size={10} />}
                       </div>
                       <span style={{ fontSize:11, fontWeight:600, color:C.dark }}>{post.authorName}</span>
                       <span style={{ fontSize:10, color:C.warmGray }}>{post.created_at ? new Date(post.created_at).toLocaleDateString("ja-JP") : ""}</span>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:11, color:C.warmGray }}>
-                      <span>❤️ {post.likes_count||0}</span>
-                      <span>👁 {post.views_count||0}</span>
-                      <button onClick={(e)=>{ e.stopPropagation(); setCommentTarget({ type:"blog", id: post.id, ownerId: post.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0, color:C.warmGray }}>💬 コメント</button>
+                      <span><LineIcon name="heart" size={11} /> {post.likes_count||0}</span>
+                      <span><LineIcon name="eye" size={11} /> {post.views_count||0}</span>
+                      <button onClick={(e)=>{ e.stopPropagation(); setCommentTarget({ type:"blog", id: post.id, ownerId: post.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0, color:C.warmGray }}><LineIcon name="bubble" size={11} /> コメント</button>
                     </div>
                   </div>
                 </div>
@@ -572,14 +573,14 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
       <div style={{ padding:"20px 16px 12px", background:C.white, borderBottom:`1px solid ${C.border}` }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}>🐾 うちの子ギャラリー</h1>
+            <h1 style={{ fontSize:22, fontWeight:900, color:C.dark, marginBottom:4 }}><LineIcon name="paw" size={20} /> うちの子ギャラリー</h1>
             <p style={{ fontSize:12, color:C.warmGray }}>街の住民の景色がぎっしり集まる場所</p>
           </div>
           {user && (
             <button onClick={()=>setShowUpload(true)} style={{
               padding:"10px 18px", background:C.orange, border:"none", borderRadius:12,
               color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer"
-            }}>📸 投稿する</button>
+            }}><LineIcon name="camera" size={13} /> 投稿する</button>
           )}
         </div>
 
@@ -591,7 +592,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
             border:`1.5px solid ${searchInput ? C.orange : C.border}`,
             transition:"border-color 0.2s"
           }}>
-            <span style={{ fontSize:16, color:C.warmGray, flexShrink:0 }}>🔍</span>
+            <span style={{ fontSize:16, color:C.warmGray, flexShrink:0, display:"inline-flex" }}><LineIcon name="search" size={16} /></span>
             <input
               type="text"
               value={searchInput}
@@ -630,7 +631,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                   onMouseEnter={(e) => (e.currentTarget.style.background = C.cream)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <span style={{ color:C.warmGray, fontSize:12 }}>🕐</span><span>{h}</span>
+                  <span style={{ color:C.warmGray, fontSize:12, display:"inline-flex" }}><LineIcon name="clock" size={12} /></span><span>{h}</span>
                 </button>
               ))}
             </div>
@@ -672,7 +673,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}>📸 写真を投稿</h2>
+              <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="camera" size={18} /> 写真を投稿</h2>
               <button onClick={()=>{setShowUpload(false);setSelectedFile(null);setPreview("");setCaption("");}} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display:"none" }}/>
@@ -686,16 +687,16 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 width:"100%", padding:"40px 20px", border:`2px dashed ${C.border}`, borderRadius:14,
                 background:C.lightGray, cursor:"pointer", marginBottom:16, textAlign:"center"
               }}>
-                <div style={{ fontSize:40, marginBottom:8 }}>📷</div>
+                <div style={{ fontSize:40, marginBottom:8, color:C.warmGray }}><LineIcon name="camera" size={40} strokeWidth={1} /></div>
                 <div style={{ fontSize:13, color:C.warmGray }}>タップして写真を選ぶ</div>
               </button>
             )}
-            <textarea value={caption} onChange={e=>setCaption(e.target.value)} placeholder="うちの子の紹介やエピソードを書いてね🐾" rows={3}
+            <textarea value={caption} onChange={e=>setCaption(e.target.value)} placeholder="うちの子の紹介やエピソードを書いてね" rows={3}
               style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:16 }}/>
             <button disabled={!selectedFile||uploading} onClick={handleUpload} style={{
               width:"100%", padding:"14px", background:(!selectedFile||uploading)?C.warmGray:C.orange,
               border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(!selectedFile||uploading)?"not-allowed":"pointer"
-            }}>{uploading ? "投稿中..." : "🐾 投稿する"}</button>
+            }}>{uploading ? "投稿中..." : <><LineIcon name="paw" size={15} /> 投稿する</>}</button>
           </div>
         </div>
       )}
@@ -710,7 +711,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
         ) : posts.length === 0 ? (
           /* 依頼書 #11 #1 (5/25): 空状態 温度感UP - 「住める速度」哲学準拠 */
           <div style={{ textAlign:"center", padding:"60px 24px" }}>
-            <div style={{ fontSize:56, marginBottom:14, opacity:0.85 }}>🐾</div>
+            <div style={{ fontSize:56, marginBottom:14, opacity:0.85, color:C.warmGray }}><LineIcon name="paw" size={56} strokeWidth={1} /></div>
             <div style={{ fontSize:17, fontWeight:700, color:C.dark, marginBottom:10, letterSpacing:0.2 }}>
               街の最初の写真を、そっと置いてみませんか
             </div>
@@ -725,7 +726,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 onMouseEnter={(e)=>{(e.target as HTMLButtonElement).style.background = C.orangePale;}}
                 onMouseLeave={(e)=>{(e.target as HTMLButtonElement).style.background = "transparent";}}
               >
-                📸 写真を置く →
+                <LineIcon name="camera" size={13} /> 写真を置く →
               </button>
             )}
           </div>
@@ -801,11 +802,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 >
                   {post.petName && (
                     <div style={{ fontSize: 10, fontWeight: 800, marginBottom: 2, textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
-                      🐾 {post.petName}
+                      <LineIcon name="paw" size={10} /> {post.petName}
                     </div>
                   )}
                   <div style={{ fontSize: 9, opacity: 0.95 }}>
-                    ❤️ {post.likes_count || 0}
+                    <LineIcon name="heart" size={9} /> {post.likes_count || 0}
                   </div>
                 </div>
               </div>
@@ -845,11 +846,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
               <div style={{ padding:"16px 20px 20px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                   <div style={{ width:36, height:36, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexShrink:0 }}>
-                    {selectedPost.userAvatar ? <img src={selectedPost.userAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <span style={{ fontSize:16 }}>🐾</span>}
+                    {selectedPost.userAvatar ? <img src={selectedPost.userAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <LineIcon name="paw" size={16} />}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{selectedPost.userName}</div>
-                    {selectedPost.petName && <div style={{ fontSize:11, color:C.warmGray }}>🐾 {selectedPost.petName}{selectedPost.pet_type ? ` · ${selectedPost.pet_type}` : ""}</div>}
+                    {selectedPost.petName && <div style={{ fontSize:11, color:C.warmGray }}><LineIcon name="paw" size={11} /> {selectedPost.petName}{selectedPost.pet_type ? ` · ${selectedPost.pet_type}` : ""}</div>}
                   </div>
                 </div>
                 {selectedPost.caption && (
@@ -860,13 +861,13 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 <div style={{ display:"flex", alignItems:"center", gap:14, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
                   <button
                     onClick={() => { toggleLike(selectedPost.id); setSelectedPost({ ...selectedPost, likes_count: (selectedPost.likes_count || 0) + (likedPosts[selectedPost.id] ? -1 : 1) }); }}
-                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, padding:0, lineHeight:1 }}
-                  >{likedPosts[selectedPost.id] ? "❤️" : "🤍"}</button>
+                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, padding:0, lineHeight:1, color:C.orange }}
+                  ><LineIcon name="heart" size={22} filled={!!likedPosts[selectedPost.id]} /></button>
                   <span style={{ fontSize:13, color:C.warmGray }}>{selectedPost.likes_count || 0} いいね</span>
                   <button
                     onClick={() => { setCommentTarget({ type:"gallery", id: selectedPost.id, ownerId: selectedPost.user_id }); setCommentOpen(true); setSelectedPost(null); }}
                     style={{ marginLeft:"auto", padding:"8px 14px", background:C.cream, border:`1px solid ${C.border}`, borderRadius:10, fontSize:12, fontWeight:700, color:C.dark, cursor:"pointer", fontFamily:"inherit" }}
-                  >💬 コメントを見る</button>
+                  ><LineIcon name="bubble" size={12} /> コメントを見る</button>
                 </div>
               </div>
             </div>
