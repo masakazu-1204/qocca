@@ -512,3 +512,10 @@ Phase 7 への "広がりの一歩目" や 📣🐾🐨🐻
 判定 (10/7)    select utm_content, count(*) from registration_sources where utm_source='meta' and created_at >= '2026-09-23' group by 1;
               1登録 ¥1,000 未満なら続行、¥3,000 超なら止める。旧キャンペーン Qocca_PW_202607 はオフのまま
 ```
+
+### 2026/9/26 追記: 広告のリンク先は必ず /welcome/<slug>/home
+
+街編 v2 (9/23〜) の登録 2 人の流入元が空だった。原因は 7/31 と同じで、Instagram のアプリ内ブラウザから外に出るときに
+`?utm_...` が落ちる。**広告のリンク先は `https://www.qocca.pet/welcome/<広告スラッグ>/home`** にする (例: `/welcome/world_town_v2/home`)。
+パスそのものが registration_sources.landing_path に残り、着地した人はホームへ転送される。
+実測: 広告停止中 (9/21〜23) は登録 0、再開後の 9/24・25 に各 1 → 広告は効いている。
