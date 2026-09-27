@@ -689,8 +689,8 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
   const inviteCode = user?.id ? user.id.replace(/-/g, "").slice(0, 12) : "";
   const inviteUrl = inviteCode ? `https://www.qocca.pet/welcome/r/${inviteCode}` : "";
   const [referralCount, setReferralCount] = useState<number | null>(null);
-  // 2026/9/27 クリエイター紹介 (King「b でいこう。10回取引まで」): 自分の招待リンクから来た人が自分の作品を買うと、
-  //   その取引の手数料は 5% (出品者 1 人 10 回まで)。判定と適用は complete-order v38。ここは使った回数を見せるだけ。
+  // 2026/9/28 クリエイター紹介 (King「一回目が5%、二回目からは10%。紹介人数に制限なし」): 自分の招待リンクから来た人が
+  //   初めて自分の作品を買うとき、その取引の手数料は 5%。判定と適用は complete-order v39。ここは成立した件数を見せるだけ。
   const [referralOrders, setReferralOrders] = useState<number | null>(null);
   useEffect(() => {
     if (!user?.id) return;
@@ -862,8 +862,8 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
             <div style={{ fontSize: 12.5, color: C.warmGray, lineHeight: 1.9, marginTop: 6 }}>
               うちの子を愛してる人が増えるほど、この街はあたたかくなります。<br />
               あなたのリンクから来た人には、あなたの名前が添えられます。<br />
-              その人があなたの作品を買うと、その取引の手数料は 5% になります (10回まで)。
-              {referralOrders != null && referralOrders > 0 && <span style={{ color: C.dark }}>　いま {referralOrders}/10 回。</span>}
+              その人が初めてあなたの作品を買うとき、その取引の手数料は 5% です。紹介する人数に上限はありません。
+              {referralOrders != null && referralOrders > 0 && <span style={{ color: C.dark }}>　これまで {referralOrders} 件。</span>}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 14, flexWrap: "wrap" }}>
               <button
