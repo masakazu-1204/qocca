@@ -701,12 +701,21 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
     return () => { cancelled = true; };
   }, [user?.id]);
   const [inviteToast, setInviteToast] = useState<"" | "ok" | "fail">("");
+  // 2026/9/28 住民紹介のお礼 (King「GO」): 招いた人が住民になった時点で、招いた側に あしあと 5 (1日3人まで)。
+  //   付与は DB トリガー grant_invite_reward (registration_sources の INSERT を拾う)。ここは受け取った合計を見せるだけ。
+  const [inviteAshiato, setInviteAshiato] = useState<number>(0);
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
     supabase.rpc("count_my_referrals").then(({ data }) => {
       if (!cancelled && typeof data === "number") setReferralCount(data);
     });
+    supabase.from("currency_transactions").select("amount")
+      .eq("user_id", user.id).eq("source", "invite_resident").eq("tx_type", "earn")
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setInviteAshiato(data.reduce((s, r) => s + (Number(r.amount) || 0), 0));
+      });
     return () => { cancelled = true; };
   }, [user?.id]);
   const handleInvite = async () => {
@@ -862,6 +871,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
             <div style={{ fontSize: 12.5, color: C.warmGray, lineHeight: 1.9, marginTop: 6 }}>
               うちの子を愛してる人が増えるほど、この街はあたたかくなります。<br />
               あなたのリンクから来た人には、あなたの名前が添えられます。<br />
+              その人が住民になったとき、あなたに あしあと 5 が届きます。<br />
               その人が初めてあなたの作品を買うとき、その取引の手数料は 5% です。紹介する人数に上限はありません。
               {referralOrders != null && referralOrders > 0 && <span style={{ color: C.dark }}>　これまで {referralOrders} 件。</span>}
             </div>
@@ -875,6 +885,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               </button>
               <div style={{ fontSize: 12, color: C.warmGray }}>
                 {referralCount === null ? "" : referralCount === 0 ? "まだ誰も来ていません。" : `あなたの紹介で ${referralCount} 人が住民になりました。`}
+                {inviteAshiato > 0 && `　あしあと ${inviteAshiato} を受け取りました。`}
               </div>
             </div>
             {inviteToast && (
