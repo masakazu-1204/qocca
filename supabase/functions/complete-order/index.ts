@@ -1,4 +1,10 @@
 // ============================================
+// complete-order v38 (クリエイター紹介, 2026/9/27): King「b でいこう。10回取引まで」
+//   出品者の招待リンク (/welcome/r/<出品者 id 先頭12桁>) から登録した人が、その出品者の作品を買ったら、
+//   手数料の候補に creator_referral (fee_creator_referral・既定 5%) を足す。出品者 1 人につき
+//   creator_referral_max_orders (既定 10) 回まで (fee_tier_used='creator_referral' で完了した注文数で数える)。
+//   「最有利率を採用」の枠組みに候補を 1 つ足すだけで、他の tier・送金本体・防御層は不変。
+// --- 以下 v37 ---
 // complete-order v37 (F1 再送金経路, 2026/6/16): 「固着pending」を再処理可能にする入口緩和
 //   背景: 未連携sellerの注文が completed+transfer_status=pending で固着し、後で連携しても永遠にpending(F2で見える化済・未送金)。
 //   変更3点(送金本体・防御層は1行も触らない・入口の追加許可のみ):
@@ -195,6 +201,7 @@ serve(async (req) => {
     const settings = await getSettings(supabase, [
       "fee_first_transaction", "fee_within_3months", "fee_standard",
       "fee_discount_period_days", "stripe_processing_fee_rate",
+      "fee_creator_referral", "creator_referral_max_orders",   // v38
     ]);
 
     const feeFirst = parseFloat(settings.fee_first_transaction || "0");
@@ -234,6 +241,24 @@ serve(async (req) => {
     if (seller.is_founding_creator && seller.founding_creator_fee_rate != null) {
       const fcRate = Number(seller.founding_creator_fee_rate) / 100; // 3 → 0.03
       candidates.push({ rate: fcRate, tier: "founding_creator_3" });
+    }
+    // v38: クリエイター紹介 — 買い手が「この出品者の招待リンク」から登録していれば、出品者 1 人 10 回まで 5%
+    try {
+      const referralRate = parseFloat(settings.fee_creator_referral || "0.05");
+      const referralMax = parseInt(settings.creator_referral_max_orders || "10");
+      const sellerCode = String(order.seller_id).replace(/-/g, "").slice(0, 12);
+      const { data: buyerSrc } = await supabase
+        .from("registration_sources").select("landing_path").eq("user_id", order.buyer_id).maybeSingle();
+      if (buyerSrc?.landing_path === `/welcome/r/${sellerCode}`) {
+        const { count: referralUsed } = await supabase
+          .from("orders").select("id", { count: "exact", head: true })
+          .eq("seller_id", order.seller_id).eq("fee_tier_used", "creator_referral").eq("status", "completed").neq("id", order.id);
+        if ((referralUsed || 0) < referralMax) {
+          candidates.push({ rate: referralRate, tier: "creator_referral" });
+        }
+      }
+    } catch (referralErr) {
+      console.warn("creator_referral check skipped:", referralErr);   // 判定に失敗しても他の tier で続行
     }
 
     const winning = candidates.reduce((best, c) => (c.rate < best.rate ? c : best), candidates[0]);
