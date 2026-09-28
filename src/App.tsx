@@ -136,6 +136,18 @@ function QoccaAppInner() {
     // UTM GO (2026/7/17): 同じ「初回ログイン」タイミングで流入元を DB に1回だけ記録。
     //   Pixel とは独立に動く (片方が失敗してももう片方に影響しない)。fire-and-forget。
     saveRegistrationSource(uid);
+    // 2026/9/29 King「a」: 登録した人は初回だけマイページへ (プロフィールとうちの子の登録に自然につなぐ)。
+    //   ホーム / ログイン / 招待・広告の着地 (/welcome/*) に居るときだけ。決済戻り・パスワード再設定・
+    //   既に目的のページに居る場合は動かさない。uid 単位で 1 回だけ。
+    try {
+      const firstKey = `qocca_first_mypage_${uid}`;
+      const p = location.pathname;
+      const onLanding = p === "/" || p === "/login" || p.startsWith("/welcome");
+      if (onLanding && !localStorage.getItem(firstKey)) {
+        localStorage.setItem(firstKey, "1");
+        setPage("mypage");
+      }
+    } catch (_) { /* localStorage 不可なら何もしない (ホームのまま) */ }
     const key = `qocca_mp_reg_${uid}`;
     try {
       if (localStorage.getItem(key)) return;
