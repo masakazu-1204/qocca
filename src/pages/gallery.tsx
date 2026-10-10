@@ -13,6 +13,7 @@ import CommentModal from "../components/CommentModal";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 import { FloatingBackButton } from "../components/FloatingBackButton";
 import { LineIcon } from "../components/LineIcon";
+import { grantGalleryPost } from "../hooks/useAshiato";
 import type { CommentTargetType, SetPage } from "../types";
 import type { ChangeEvent } from "react";
 
@@ -30,7 +31,25 @@ type GalleryPost = {
   pet_type?: string | null; pet_name?: string | null;
   likes_count?: number; created_at?: string; is_official?: boolean | null;
   petName?: string; userName?: string; userAvatar?: string | null;
+  theme_id?: string | null;
 };
+
+/** 2026/10/11 今週のお題 (weekly_themes)。JST の月曜始まり。 */
+type WeeklyTheme = { id: string; week_start: string; title: string; body: string };
+
+/** 今週のお題を 1 件取る (week_start <= 今日(JST) の最新)。無ければ null。 */
+export async function fetchCurrentTheme(): Promise<WeeklyTheme | null> {
+  const todayJst = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("weekly_themes")
+    .select("id, week_start, title, body")
+    .eq("is_active", true)
+    .lte("week_start", todayJst)
+    .order("week_start", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as WeeklyTheme | null) ?? null;
+}
 
 export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
   const { user } = useAuth();
@@ -396,6 +415,20 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   const [showHistory, setShowHistory] = useState(false);
   const [petTypeFilter, setPetTypeFilter] = useState<string[]>([]);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+  // 2026/10/11 今週のお題: 上の貼り紙 + 投稿モーダルの「お題に参加する」+ お題だけ見る chip。
+  //   ホーム (/gallery?theme=1) から来たら、お題の投稿だけに絞って開く。
+  const [theme, setTheme] = useState<WeeklyTheme | null>(null);
+  const [joinTheme, setJoinTheme] = useState(true);
+  const [themeOnly, setThemeOnly] = useState<boolean>(() => {
+    try { return new URLSearchParams(window.location.search).get("theme") === "1"; } catch (_) { return false; }
+  });
+  const [ashiatoToast, setAshiatoToast] = useState<number>(0);
+  useEffect(() => { fetchCurrentTheme().then(setTheme); }, []);
+  useEffect(() => {
+    if (!ashiatoToast) return;
+    const t = setTimeout(() => setAshiatoToast(0), 3200);
+    return () => clearTimeout(t);
+  }, [ashiatoToast]);
   // 依頼書 #34 緊急修正: viewportWidth JS 計算を撤去し CSS @media に切替
   // 理由: PWA / CSR 初期 render / iOS Safari standalone 等で window.innerWidth
   //      ベース判定が反映されないケースを完全回避するため、ブラウザネイティブ
@@ -539,11 +572,17 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     if (upErr) { alert("アップロードに失敗しました"); setUploading(false); return; }
     const { data: urlData } = supabase.storage.from("gallery-images").getPublicUrl(path);
 
-    await supabase.from("gallery_posts").insert({
+    const { data: inserted } = await supabase.from("gallery_posts").insert({
       user_id: user.id,
       image_url: urlData.publicUrl,
       caption: caption,
-    });
+      theme_id: theme && joinTheme ? theme.id : null,
+    }).select("id").maybeSingle();
+    // 2026/10/11 投稿に 3 あしあと (1 日 2 回まで・同じ投稿で 2 度は付かない)。付かなかったときは無言。
+    if (inserted?.id) {
+      const n = await grantGalleryPost(inserted.id);
+      if (n > 0) setAshiatoToast(n);
+    }
 
     setShowUpload(false);
     setSelectedFile(null);
@@ -691,6 +730,12 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 <div style={{ fontSize:13, color:C.warmGray }}>タップして写真を選ぶ</div>
               </button>
             )}
+            {theme && (
+              <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12.5, color:C.dark, marginBottom:12, cursor:"pointer" }}>
+                <input type="checkbox" checked={joinTheme} onChange={e=>setJoinTheme(e.target.checked)} style={{ width:16, height:16, accentColor:C.orange }} />
+                今週のお題「{theme.title}」に参加する
+              </label>
+            )}
             <textarea value={caption} onChange={e=>setCaption(e.target.value)} placeholder="うちの子の紹介やエピソードを書いてね" rows={3}
               style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:16 }}/>
             <button disabled={!selectedFile||uploading} onClick={handleUpload} style={{
@@ -703,6 +748,44 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
 
       {/* 依頼書 #11 #2 (5/25): CrowdfundingBanner 再利用 (期限制御内蔵・7/1 自動非表示) */}
       <CrowdfundingBanner />
+
+      {/* 2026/10/11 今週のお題: 一枚の貼り紙。煽らない・数字で競わせない */}
+      {theme && (
+        <div style={{ margin:"14px 16px 0", padding:"16px 18px 14px", background:C.white, border:`1px solid ${C.border}`, borderRadius:14 }}>
+          <div style={{ fontSize:11, letterSpacing:2, color:C.warmGray, fontWeight:500, marginBottom:6 }}>THIS WEEK</div>
+          <div style={{ fontSize:16, fontWeight:500, color:C.dark, lineHeight:1.6 }}>今週のお題「{theme.title}」</div>
+          {theme.body && <div style={{ fontSize:12.5, color:C.warmGray, lineHeight:1.9, marginTop:4 }}>{theme.body}</div>}
+          <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:12, flexWrap:"wrap" }}>
+            {user ? (
+              <button onClick={()=>{ setJoinTheme(true); setShowUpload(true); }} style={{
+                padding:"9px 16px", background:"transparent", border:`1.5px solid ${C.orange}`, borderRadius:20,
+                color:C.orange, fontWeight:700, fontSize:12.5, cursor:"pointer", fontFamily:"inherit", minHeight:40
+              }}><LineIcon name="camera" size={12} /> このお題で一枚</button>
+            ) : (
+              <button onClick={()=>setPage("signup")} style={{
+                padding:"9px 16px", background:"transparent", border:`1.5px solid ${C.orange}`, borderRadius:20,
+                color:C.orange, fontWeight:700, fontSize:12.5, cursor:"pointer", fontFamily:"inherit", minHeight:40
+              }}>住民になって参加する</button>
+            )}
+            <button onClick={()=>setThemeOnly(v=>!v)} style={{
+              padding:"7px 12px", borderRadius:16,
+              background: themeOnly ? C.orange : C.white, color: themeOnly ? "#fff" : C.warmGray,
+              border:`1.5px solid ${themeOnly ? C.orange : C.border}`, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+            }}>お題の写真だけ</button>
+            <span style={{ fontSize:11, color:C.warmGray }}>投稿すると あしあと 3 (1 日 2 回まで)</span>
+          </div>
+        </div>
+      )}
+
+      {/* 2026/10/11 あしあと付与トースト (gallery_post) */}
+      {ashiatoToast > 0 && (
+        <div role="status" onClick={()=>setAshiatoToast(0)} style={{
+          position:"fixed", left:"50%", bottom:"calc(96px + env(safe-area-inset-bottom, 0px))", transform:"translateX(-50%)",
+          zIndex:300, background:"rgba(255, 252, 247, 0.97)", border:`1px solid ${C.border}`, borderRadius:16,
+          padding:"12px 20px", boxShadow:"0 6px 20px rgba(245, 169, 74, 0.18)", fontSize:13, color:C.dark, cursor:"pointer",
+          display:"flex", alignItems:"center", gap:8
+        }}><LineIcon name="paw" size={14} /> あしあと {ashiatoToast} が届きました。</div>
+      )}
 
       {/* 投稿グリッド */}
       <div style={{ padding:"16px" }}>
@@ -748,7 +831,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
               padding: 0,
             }}
           >
-            {posts.map((post) => (
+            {(themeOnly && theme ? posts.filter(p => p.theme_id === theme.id) : posts).map((post) => (
               <div
                 key={post.id}
                 role="button"
@@ -853,6 +936,9 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                     {selectedPost.petName && <div style={{ fontSize:11, color:C.warmGray }}><LineIcon name="paw" size={11} /> {selectedPost.petName}{selectedPost.pet_type ? ` · ${selectedPost.pet_type}` : ""}</div>}
                   </div>
                 </div>
+                {theme && selectedPost.theme_id === theme.id && (
+                  <div style={{ fontSize:11, color:C.warmGray, letterSpacing:0.5, marginBottom:8 }}>今週のお題「{theme.title}」</div>
+                )}
                 {selectedPost.caption && (
                   <div style={{ fontSize:13, color:"#444", lineHeight:1.7, marginBottom:14, whiteSpace:"pre-wrap" }}>
                     {selectedPost.caption}
