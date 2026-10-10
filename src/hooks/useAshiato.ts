@@ -44,6 +44,28 @@ export function useAshiatoBalance(userId: string | undefined) {
  * デイリーログイン付与。成功して新規付与された場合のみ granted 数を返す (それ以外は 0)。
  * 呼び出し側はこの戻り値 > 0 の時だけトーストを出す (重複時・上限時は無言 = 設計書 §3-2)。
  */
+/**
+ * 2026/10/11 今週のお題: 街のアルバムへの投稿に 3 あしあと (earn rule gallery_post・1 日 2 回)。
+ *   ルールは 7 月から DB に居たが呼び出しが無かったので、ここで初めて配線。
+ *   冪等キーは投稿 id 単位 (同じ投稿で 2 度は付かない)。上限到達・失敗は 0 を返して無言。
+ */
+export async function grantGalleryPost(postId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("grant_free_currency", {
+      p_rule_key: "gallery_post",
+      p_idempotency_key: `gallery_post:${postId}`,
+    });
+    if (error) return 0;
+    if (data?.success && !data?.duplicated && (data?.granted ?? 0) > 0) {
+      window.dispatchEvent(new Event("ashiatoChanged"));
+      return data.granted as number;
+    }
+    return 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
 export async function grantDailyLogin(userId: string): Promise<number> {
   const today = jstToday();
   const lsKey = `qocca_ashiato_daily_${userId}`;

@@ -10,6 +10,7 @@ import { C, QC, QC_FONT_JP, QC_FONT_EN, QC_FONT_DISPLAY, QC_KEYFRAMES, QC_HERO_D
 import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from "../constants/data";
 import { PW_AREAS } from "../constants/petwalker";
 import { dailySeededShuffle } from "../utils/dailyShuffle";
+import { fetchCurrentTheme } from "./gallery";
 import type { ReactNode } from "react";
 import type { SetPage } from "../types";
 
@@ -2425,6 +2426,93 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }: {
 //   ログイン済み かつ ペット0件 の住人にだけ、トップ上部で静かに一度だけ声をかける。
 //   ペットのいない作家さんもいるため「あとで」で30日間は出さない。
 // ⚠️ SectionJoinTown (未ログインにだけ出る) と対になる。両方が同時に出ることはない。
+// 2026/10/11 今週のお題 (King「1. 中を動かす」): 住民 129 人のうち週に動くのが 9 人。新規獲得より
+//   「居る人が週 1 回なにかする」仕掛け。毎週月曜に weekly_themes のお題が切り替わり、Threads にも同時に出る。
+//   ここは貼り紙 1 枚: お題・添え書き・今週集まった写真 (最大 4 枚)・一枚置きに行くボタン。煽らない。
+const SectionWeeklyTheme = () => {
+  const navigate = useNavigate();
+  const [theme, setTheme] = useState<{ id: string; title: string; body: string } | null>(null);
+  const [photos, setPhotos] = useState<{ id: string; image_url: string }[]>([]);
+  const [count, setCount] = useState(0);
+  const [isHover, setIsHover] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const t = await fetchCurrentTheme();
+      if (!alive || !t) return;
+      setTheme(t);
+      const { data, count: c } = await supabase
+        .from("gallery_posts")
+        .select("id, image_url", { count: "exact" })
+        .eq("theme_id", t.id)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      if (!alive) return;
+      setPhotos((data ?? []) as { id: string; image_url: string }[]);
+      setCount(c ?? 0);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  if (!theme) return null;
+
+  return (
+    <section style={{ padding: "clamp(72px, 12vw, 120px) 0", background: "transparent", textAlign: "center" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 32px" }}>
+        <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: "italic", color: QC.warmGray, letterSpacing: 1, margin: "0 0 24px 0", opacity: 0.75, fontWeight: 300 }}>
+          This Week
+        </p>
+        <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: "clamp(22px, 3.6vw, 30px)", fontWeight: 700, color: QC.softBrown, letterSpacing: "0.06em", lineHeight: 1.8, margin: "0 0 24px 0" }}>
+          今週のお題
+          <br />
+          「{theme.title}」
+        </h2>
+        {theme.body && (
+          <p style={{ fontFamily: QC_FONT_JP, fontSize: 13, fontWeight: 300, color: QC.warmGray, lineHeight: 2, margin: "0 0 40px 0", letterSpacing: 0.5 }}>
+            {theme.body}
+          </p>
+        )}
+
+        {photos.length > 0 && (
+          <div style={{ display: "flex", gap: 6, justifyContent: "center", margin: "0 0 40px 0" }}>
+            {photos.map((p) => (
+              <div key={p.id} style={{ width: "22%", maxWidth: 120, aspectRatio: "1 / 1", overflow: "hidden", borderRadius: 4, background: QC.cream }}>
+                <img src={p.image_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => navigate("/gallery?theme=1")}
+          onMouseEnter={() => setIsHover(true)}
+          onMouseLeave={() => setIsHover(false)}
+          style={{
+            fontFamily: QC_FONT_JP,
+            background: isHover ? "rgba(201, 123, 95, 0.05)" : "transparent",
+            color: QC.terracotta,
+            border: `1px solid ${QC.terracotta}`,
+            padding: "16px 44px",
+            fontSize: 14,
+            fontWeight: 300,
+            letterSpacing: 1.5,
+            cursor: "pointer",
+            borderRadius: 0,
+            transition: "all 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          一枚、置きに行く
+        </button>
+        <p style={{ fontFamily: QC_FONT_JP, fontSize: 12, fontWeight: 300, color: QC.warmGray, letterSpacing: 0.5, margin: "20px 0 0 0", opacity: 0.8 }}>
+          {count > 0 ? `今週は ${count} 枚が集まっています。` : "最初の一枚を、待っています。"}
+        </p>
+      </div>
+    </section>
+  );
+};
+
 const FIRST_STEP_SNOOZE_KEY = "qocca_first_step_snoozed_until";
 const FIRST_STEP_SNOOZE_DAYS = 30;
 
@@ -3275,6 +3363,8 @@ export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, on
           街の機能はどれも「うちの子」が起点なのに登録を促す場所が無く、76人中7人 (9%) しか
           登録していなかった。SectionJoinTown (未ログイン専用) と対で、同時には出ない。 */}
       <Reveal><SectionFirstStep /></Reveal>
+      {/* 2026/10/11 今週のお題: 週替わりの貼り紙。お題が無い週は出ない */}
+      <Reveal><SectionWeeklyTheme /></Reveal>
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
           2026/6/29 Dday準備: 上の SectionDynamicCTABanner に置き換え済。
           CrowdfundingBanner 関数定義 + import は温存し、{false &&} を外せば即復活可能。 */}
