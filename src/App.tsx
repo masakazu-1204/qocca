@@ -27,6 +27,7 @@ import { PetGalleryPage } from "./pages/pet_gallery";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
+import { UnsubscribePage } from "./pages/unsubscribe";
 import { TokushoPage, PrivacyPage, ContactPage, FoundingCreatorsPage, SponsorsPage, LegalPage, FAQPage } from "./pages/static";
 import { C } from "./constants/theme";
 import { LISTINGS } from "./constants/data";
@@ -264,6 +265,7 @@ function QoccaAppInner() {
           <Routes>
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={true}/>} />
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
@@ -551,6 +553,7 @@ function QoccaAppInner() {
             <Route path="/" element={<HomePage setPage={setPage} listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} homeEvents={homeEvents}/>}/>
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={false}/>} />
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={false}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
