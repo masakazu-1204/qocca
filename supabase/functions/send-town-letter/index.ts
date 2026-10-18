@@ -1,5 +1,7 @@
 // ============================================
-// send-town-letter v2 (2026/10/18): 週 1 回の「街だより」メール
+// send-town-letter v3 (2026/10/18): 週 1 回の「街だより」メール
+//   v3: 「一枚、置きに行く」を /gallery?theme=1&compose=1 に。ログイン済みなら投稿画面がすぐ開き、
+//       未ログインならログイン後にそこへ戻る (src/lib/returnTo.ts)。
 //   v2: King「おすすめの商品やブログも載せてあげたら」→ 「今週のおすすめ」(town_letter_picks で手で選べる・推薦文つき。
 //       選んでない週は作家さん 1 人 1 点で 3 点を週替わり) と「街の読みもの」(直近 2 週間のブログ 2 本) を追加。
 //   v2: King「1 日 100 件までなら、50 通ずつ日を空けて」→ send は 1 回 limit 通まで (既定 50・最大 100)。
@@ -142,7 +144,7 @@ function render(c: Content, name: string, inviteCode: string | null, token: stri
       h("THIS WEEK", `今週のお題「${esc(c.theme.title)}」`) +
       (c.theme.body ? `<p style="margin:0 0 20px;font-size:14px;color:${K.sub};line-height:2;">${esc(c.theme.body)}</p>` : "") +
       `<p style="margin:0 0 22px;font-size:13px;color:${K.sub};line-height:1.9;">上手な写真じゃなくて大丈夫です。その家でしか見られない一枚を。<br>投稿すると あしあと 3 が届きます。</p>` +
-      btn(`${SITE}/gallery?theme=1`, "一枚、置きに行く") +
+      btn(`${SITE}/gallery?theme=1&compose=1`, "一枚、置きに行く") +
       `<p style="margin:16px 0 0;font-size:12px;color:${K.sub};">${c.themePhotos > 0 ? `今週はすでに ${c.themePhotos} 枚が集まっています。` : "最初の一枚を、待っています。"}</p>`,
     );
   }

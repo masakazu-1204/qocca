@@ -395,7 +395,8 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
 };
 
 export const GalleryPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigateG = useNavigate();
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -424,6 +425,22 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   });
   const [ashiatoToast, setAshiatoToast] = useState<number>(0);
   useEffect(() => { fetchCurrentTheme().then(setTheme); }, []);
+  // 2026/10/18 街だよりの「一枚、置きに行く」(/gallery?theme=1&compose=1):
+  //   ログイン済みなら投稿画面をすぐ開く。未ログインならログインへ送り、終わったらここへ戻す (lib/returnTo)。
+  const COMPOSE_PATH = "/gallery?theme=1&compose=1";
+  const loginForCompose = () => navigateG(`/login?returnTo=${encodeURIComponent(COMPOSE_PATH)}`);
+  useEffect(() => {
+    let compose = false;
+    try { compose = new URLSearchParams(window.location.search).get("compose") === "1"; } catch (_) { /* no-op */ }
+    if (!compose || authLoading) return;
+    if (user) {
+      setJoinTheme(true);
+      setShowUpload(true);
+      try { window.history.replaceState(window.history.state, "", "/gallery?theme=1"); } catch (_) { /* no-op */ }
+    } else {
+      navigateG(`/login?returnTo=${encodeURIComponent(COMPOSE_PATH)}`, { replace: true });
+    }
+  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!ashiatoToast) return;
     const t = setTimeout(() => setAshiatoToast(0), 3200);
@@ -762,7 +779,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                 color:C.orange, fontWeight:700, fontSize:12.5, cursor:"pointer", fontFamily:"inherit", minHeight:40
               }}><LineIcon name="camera" size={12} /> このお題で一枚</button>
             ) : (
-              <button onClick={()=>setPage("signup")} style={{
+              <button onClick={loginForCompose} style={{
                 padding:"9px 16px", background:"transparent", border:`1.5px solid ${C.orange}`, borderRadius:20,
                 color:C.orange, fontWeight:700, fontSize:12.5, cursor:"pointer", fontFamily:"inherit", minHeight:40
               }}>住民になって参加する</button>
