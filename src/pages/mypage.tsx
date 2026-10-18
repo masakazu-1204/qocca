@@ -2858,6 +2858,8 @@ const SalesTab = () => {
         await supabase.functions.invoke("send-email", {
           body: {
             type: "delivery_notice",
+            // send-email v43 は宛先と本文を order_id から DB で作り直す (data は表示用の控え)
+            order_id: sale.id,
             user_id: sale.buyer_id,
             data: {
               user_name: sale.buyer?.display_name || "ご購入者",
