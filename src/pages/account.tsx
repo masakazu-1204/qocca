@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { returnToFromSearch, rememberReturnTo, clearReturnTo } from "../lib/returnTo";
 import type { OAuthProvider } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
 import { C, QC_FONT_DISPLAY } from "../constants/theme";
@@ -25,8 +26,14 @@ export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void 
   const [message, setMessage] = useState("");
   const [showReset, setShowReset] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  // 2026/10/18 ログイン後の戻り先: /login?returnTo=/... があればそこへ戻す。
+  //   Google ログイン・メール確認はトップに戻ってくるので、端末にも覚えさせる (App.tsx が拾って案内する)。
+  const navigateTo = useNavigate();
+  const returnTo = returnToFromSearch(typeof window !== "undefined" ? window.location.search : "");
+  useEffect(() => { if (returnTo) rememberReturnTo(returnTo); }, [returnTo]);
 
-  // ログイン済みならマイページへ
+  // ログイン済みなら戻り先へ、無ければマイページへ
+  if (user && returnTo) return <Navigate to={returnTo} replace />;
   if (user) return <MyPage setPage={setPage}/>;
 
   const handleSubmit = async () => {
@@ -61,6 +68,9 @@ export const SignupPage = ({ setPage }: { setPage: (p: string, d?: any) => void 
           } else {
             setError(error.message);
           }
+        } else if (returnTo) {
+          clearReturnTo();
+          navigateTo(returnTo, { replace: true });
         } else {
           setPage("home");
         }

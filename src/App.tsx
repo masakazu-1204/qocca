@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 // Leaflet (L/CSS/markercluster) は施設マップ専用のため pages/facilities.tsx へ移設 (Phase5 ④facilities)
 import AboutPage from "./pages/AboutPage";
 // 依頼書 #108 (2026/6/4): ARK 透明性機能 Phase C - Admin 寄付管理画面
@@ -28,6 +28,7 @@ import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import { UnsubscribePage } from "./pages/unsubscribe";
+import { takeReturnTo } from "./lib/returnTo";
 import { TokushoPage, PrivacyPage, ContactPage, FoundingCreatorsPage, SponsorsPage, LegalPage, FAQPage } from "./pages/static";
 import { C } from "./constants/theme";
 import { LISTINGS } from "./constants/data";
@@ -66,6 +67,7 @@ function QoccaAppInner() {
   const { user, loading } = useAuth();
   const { setPage } = useNav();
   const location = useLocation();
+  const navigateApp = useNavigate();
 
   // 依頼書 #24 v2 Phase 0 (2026/5/27): GA4 pageview tracking (React Router SPA 対応)
   // index.html の gtag('config', 'G-CPYH7DKWFO') が初回 pageview を発火、
@@ -117,6 +119,20 @@ function QoccaAppInner() {
     mpTrackPageView();
   }, [location.pathname, location.search]);
 
+  // 2026/10/18 ログイン後の戻り先: Google ログイン・メール確認はトップ (/) に戻ってくるので、
+  //   ログイン画面で覚えた戻り先 (lib/returnTo・1 時間) があれば、そこへ案内する。下の「初回はマイページへ」より優先。
+  const returnHandledRef = useRef(false);
+  useEffect(() => {
+    if (!user?.id) return;
+    const p = location.pathname;
+    if (p !== "/" && p !== "/login" && !p.startsWith("/welcome")) return;
+    const to = takeReturnTo();
+    if (to && to !== p + location.search) {
+      returnHandledRef.current = true;
+      navigateApp(to, { replace: true });
+    }
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 2026/7/15 CV精度修正: CompleteRegistration を「初回ログイン成功時に1回だけ」へ統一。
   //   旧: account.tsx で "確認メール送信時" に発火 → ①メール未認証もCV計上(過大) ②Google(OAuth)は
   //       リダイレクト離脱でそこを通らず計測漏れ(過少)。
@@ -146,7 +162,7 @@ function QoccaAppInner() {
       const onLanding = p === "/" || p === "/login" || p.startsWith("/welcome");
       if (onLanding && !localStorage.getItem(firstKey)) {
         localStorage.setItem(firstKey, "1");
-        setPage("mypage");
+        if (!returnHandledRef.current) setPage("mypage"); // 戻り先へ案内済みなら、そちらを優先
       }
     } catch (_) { /* localStorage 不可なら何もしない (ホームのまま) */ }
     const key = `qocca_mp_reg_${uid}`;
