@@ -1,5 +1,9 @@
 // ============================================
-// send-town-letter v1 (2026/10/18): 週 1 回の「街だより」メール
+// send-town-letter v2 (2026/10/18): 週 1 回の「街だより」メール
+//   v2: King「おすすめの商品やブログも載せてあげたら」→ 「今週のおすすめ」(town_letter_picks で手で選べる・推薦文つき。
+//       選んでない週は作家さん 1 人 1 点で 3 点を週替わり) と「街の読みもの」(直近 2 週間のブログ 2 本) を追加。
+//   v2: King「1 日 100 件までなら、50 通ずつ日を空けて」→ send は 1 回 limit 通まで (既定 50・最大 100)。
+//       毎朝 cron で呼べば、その週にまだ届いていない人へ順に送る (Resend の 1 日枠を注文・DM 通知のために残す)。
 //   King「2で進めて。街だよりにお題も入れといてあげたら」。
 //   中身: 今週のお題 (目玉) / 先週の街のようす / 今週の商店街から 2 点 / 近くのイベント 3 件 / その人の招待リンク。
 //   末尾に配信停止リンク (https://www.qocca.pet/unsubscribe?t=<token>) と送信者情報 (特定電子メール法)。
@@ -7,7 +11,7 @@
 //   呼び出し (どれも x-town-letter-key ヘッダ必須。合言葉は private.internal_secrets):
 //     {mode:"preview"}            … 送らない。見本の件名・HTML・宛先数を返す (個人情報は入れない)
 //     {mode:"test", to:"a@b.c"}   … 見本を 1 通だけ送る
-//     {mode:"send"}               … 今週ぶんを全員へ。同じ週に 2 度は送らない (town_letter_sends)
+//     {mode:"send", limit?:50}    … 今週まだ届いていない人へ limit 通まで。同じ週に 2 度は送らない (town_letter_sends)
 //   ⚠️ 毎週の自動送信 (cron) は King が初回の文面を確認してから登録する。
 // ============================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -18,6 +22,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 const FROM_EMAIL = "Qocca <noreply@qocca.pet>";
 const SITE = "https://www.qocca.pet";
 const BATCH = 50;
+const DAILY_LIMIT = 50; // 1 回 (= 1 日) に送る上限。残りは翌朝の cron が送る
 
 // 静けさの色 (CLAUDE.md の QC トークン)
 const K = {
@@ -50,7 +55,8 @@ type Content = {
   newResidents: number;
   weekPhotos: { url: string }[];
   weekPhotoCount: number;
-  listings: { id: string; title: string; price: number; image: string | null }[];
+  listings: { id: string; title: string; price: number; image: string | null; seller: string; note: string | null }[];
+  blogs: { id: string; title: string; image: string | null; desc: string }[];
   events: { title: string; date: string; pref: string }[];
 };
 
@@ -62,24 +68,41 @@ async function loadContent(sb: any, week: string): Promise<Content> {
   const { data: th } = await sb.from("weekly_themes").select("id, title, body")
     .eq("is_active", true).lte("week_start", today).order("week_start", { ascending: false }).limit(1).maybeSingle();
 
-  const [themeCnt, residents, photos, listingsRes, eventsRes] = await Promise.all([
+  const [themeCnt, residents, photos, listingsRes, eventsRes, picksRes, blogsRes] = await Promise.all([
     th ? sb.from("gallery_posts").select("id", { count: "exact", head: true }).eq("theme_id", th.id).eq("is_deleted", false)
        : Promise.resolve({ count: 0 }),
     sb.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", weekAgo),
     sb.from("gallery_posts").select("image_url", { count: "exact" })
       .eq("is_deleted", false).eq("is_official", false).gte("created_at", weekAgo)
       .order("created_at", { ascending: false }).limit(3),
-    sb.from("listings").select("id, title, price, image_urls").eq("status", "approved").limit(200),
+    sb.from("listings").select("id, title, price, image_urls, seller_id").eq("status", "approved").limit(300),
     sb.from("events").select("title, event_date, prefecture").eq("status", "approved")
       .gte("event_date", today).lte("event_date", in14).order("event_date", { ascending: true }).limit(3),
+    sb.from("town_letter_picks").select("item_id, note, sort").eq("week_start", week).eq("kind", "listing").order("sort", { ascending: true }),
+    sb.from("blog_posts").select("id, title, cover_image_url, hero_image_url, meta_description")
+      .eq("published", true).eq("is_deleted", false).gte("created_at", new Date(Date.now() - 14 * 86400 * 1000).toISOString())
+      .order("created_at", { ascending: false }).limit(2),
   ]);
 
-  // 商店街は週ごとに 2 点を入れ替える (週の文字列で決まる並び = 同じ週は全員同じ 2 点)
+  // 今週のおすすめ: town_letter_picks に手で選んだものがあればそれ (推薦文つき)。
+  //   無い週は、作家さんが偏らないよう 1 人 1 点ずつ、週の文字列で決まる並びで 3 点 (同じ週は全員同じ)。
   const all = (listingsRes.data ?? []) as any[];
-  const seen = new Set<string>();
-  const unique = all.filter((l) => { const k = String(l.title).trim(); if (seen.has(k)) return false; seen.add(k); return true; });
+  const byId = new Map(all.map((l) => [l.id, l]));
+  const picks = ((picksRes as any).data ?? []) as { item_id: string; note: string | null }[];
   const score = (id: string) => { let h = 0; for (const ch of id + week) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
-  const picked = unique.sort((a, b) => score(a.id) - score(b.id)).slice(0, 2);
+  let picked: { l: any; note: string | null }[] = picks.filter((p) => byId.has(p.item_id)).slice(0, 3)
+    .map((p) => ({ l: byId.get(p.item_id), note: p.note }));
+  if (picked.length === 0) {
+    const sellers = new Set<string>();
+    picked = [...all].sort((a, b) => score(a.id) - score(b.id))
+      .filter((l) => { if (sellers.has(l.seller_id)) return false; sellers.add(l.seller_id); return true; })
+      .slice(0, 3).map((l) => ({ l, note: null }));
+  }
+  const sellerIds = [...new Set(picked.map((p) => p.l.seller_id))];
+  const { data: sellerRows } = sellerIds.length
+    ? await sb.from("profiles").select("id, display_name").in("id", sellerIds)
+    : { data: [] };
+  const sellerName = new Map(((sellerRows ?? []) as any[]).map((r) => [r.id, r.display_name ?? ""]));
 
   return {
     week,
@@ -88,7 +111,14 @@ async function loadContent(sb: any, week: string): Promise<Content> {
     newResidents: (residents as any).count ?? 0,
     weekPhotos: ((photos as any).data ?? []).map((p: any) => ({ url: p.image_url })),
     weekPhotoCount: (photos as any).count ?? 0,
-    listings: picked.map((l) => ({ id: l.id, title: l.title, price: l.price, image: (l.image_urls ?? [])[0] ?? null })),
+    listings: picked.map(({ l, note }) => ({
+      id: l.id, title: l.title, price: l.price, image: (l.image_urls ?? [])[0] ?? null,
+      seller: String(sellerName.get(l.seller_id) ?? ""), note,
+    })),
+    blogs: (((blogsRes as any).data ?? []) as any[]).map((b) => ({
+      id: b.id, title: b.title, image: b.cover_image_url ?? b.hero_image_url ?? null,
+      desc: String(b.meta_description ?? "").slice(0, 80),
+    })),
     events: ((eventsRes as any).data ?? []).map((e: any) => ({ title: e.title, date: e.event_date, pref: e.prefecture ?? "" })),
   };
 }
@@ -129,14 +159,26 @@ function render(c: Content, name: string, inviteCode: string | null, token: stri
     body += section(h("THE TOWN", "先週の街") +
       `<p style="margin:0;font-size:14px;color:${K.text};line-height:2;">${lines.map(esc).join("<br>")}</p>` + imgs);
   }
-  // 今週の商店街から
+  // 今週のおすすめ (商店街から)
   if (c.listings.length > 0) {
-    body += section(h("ATELIER", "今週の商店街から") + c.listings.map((l) =>
+    body += section(h("ATELIER", "今週のおすすめ") + c.listings.map((l) =>
       `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;width:100%;"><tr>` +
       (l.image ? `<td width="88" style="vertical-align:top;"><a href="${SITE}/listing/${l.id}"><img src="${esc(l.image)}" width="80" height="80" alt="" style="display:block;width:80px;height:80px;object-fit:cover;"></a></td>` : "") +
       `<td style="vertical-align:top;"><a href="${SITE}/listing/${l.id}" style="color:${K.text};text-decoration:none;font-size:14px;line-height:1.7;">${esc(l.title)}</a>` +
-      `<p style="margin:4px 0 0;font-size:13px;color:${K.sub};">${Number(l.price).toLocaleString("ja-JP")} 円</p></td></tr></table>`).join("") +
+      `<p style="margin:4px 0 0;font-size:12px;color:${K.sub};">${l.seller ? `${esc(l.seller)} さん　` : ""}${Number(l.price).toLocaleString("ja-JP")} 円</p>` +
+      (l.note ? `<p style="margin:6px 0 0;font-size:13px;color:${K.text};line-height:1.8;">${esc(l.note)}</p>` : "") +
+      `</td></tr></table>`).join("") +
       `<p style="margin:4px 0 0;font-size:13px;"><a href="${SITE}/marketplace" style="color:${K.cta};">商店街を歩く</a></p>`);
+  }
+  // 街の読みもの (ブログ)
+  if (c.blogs.length > 0) {
+    body += section(h("READING", "街の読みもの") + c.blogs.map((b) =>
+      `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 18px;width:100%;"><tr>` +
+      (b.image ? `<td width="128" style="vertical-align:top;"><a href="${SITE}/blog/${b.id}"><img src="${esc(b.image)}" width="120" height="80" alt="" style="display:block;width:120px;height:80px;object-fit:cover;"></a></td>` : "") +
+      `<td style="vertical-align:top;"><a href="${SITE}/blog/${b.id}" style="color:${K.text};text-decoration:none;font-size:14px;line-height:1.7;">${esc(b.title)}</a>` +
+      (b.desc ? `<p style="margin:4px 0 0;font-size:12px;color:${K.sub};line-height:1.8;">${esc(b.desc)}</p>` : "") +
+      `</td></tr></table>`).join("") +
+      `<p style="margin:4px 0 0;font-size:13px;"><a href="${SITE}/blog" style="color:${K.cta};">ほかの読みものを見る</a></p>`);
   }
   // 近くのイベント
   if (c.events.length > 0) {
@@ -218,7 +260,9 @@ Deno.serve(async (req) => {
 
   const { data: rcpt, error: rErr } = await sb.rpc("town_letter_recipients", { p_week: week });
   if (rErr) return json({ error: "recipients_failed", detail: rErr.message }, 500);
-  const list = (rcpt ?? []) as { user_id: string; email: string; display_name: string; token: string }[];
+  const all = (rcpt ?? []) as { user_id: string; email: string; display_name: string; token: string }[];
+  const limit = Math.max(1, Math.min(100, Math.floor(Number(body?.limit ?? DAILY_LIMIT)) || DAILY_LIMIT));
+  const list = all.slice(0, limit);
 
   let sent = 0, failed = 0; const errors: string[] = [];
   for (let i = 0; i < list.length; i += BATCH) {
@@ -239,5 +283,5 @@ Deno.serve(async (req) => {
     if (out.ok) sent += chunk.length; else { failed += chunk.length; errors.push(`${out.status}: ${JSON.stringify(out.data).slice(0, 200)}`); break; }
     await new Promise((r) => setTimeout(r, 700)); // Resend の秒間上限に当たらないように
   }
-  return json({ mode, week, recipients: list.length, sent, failed, errors });
+  return json({ mode, week, waiting: all.length, attempted: list.length, sent, failed, remaining: all.length - sent, errors });
 });
