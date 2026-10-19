@@ -29,6 +29,7 @@ import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import { UnsubscribePage } from "./pages/unsubscribe";
 import { takeReturnTo } from "./lib/returnTo";
+import { applyPendingUpdate } from "./lib/pwaUpdate";
 import { TokushoPage, PrivacyPage, ContactPage, FoundingCreatorsPage, SponsorsPage, LegalPage, FAQPage } from "./pages/static";
 import { C } from "./constants/theme";
 import { LISTINGS } from "./constants/data";
@@ -79,6 +80,9 @@ function QoccaAppInner() {
       });
     }
   }, [location.pathname, location.search]);
+
+  // 2026/10/19 新しい版が届いていたら、画面を移ったタイミングで切り替える (lib/pwaUpdate)
+  useEffect(() => { applyPendingUpdate(); }, [location.pathname]);
 
   // 依頼書 #121 (2026/6/5): Meta Pixel 初期化 (アプリ起動時 1 回のみ、初回 PageView も発火)
   // VITE_META_PIXEL_ID 未設定なら完全 no-op で安全

@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // 2026/10/19: 登録は src/lib/pwaUpdate.ts が自前で行う (新しい版の画面切り替えまで面倒を見るため)。
+      //   以前の差し込み registerSW.js は登録だけで、携帯で古い画面が残り続けていた。
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'icon-180.png', 'logo.png'],
       manifest: {
         name: 'Qocca - ペットオーナー専門マーケットプレイス',
@@ -48,6 +51,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // 2026/10/19: 新しい版を「待機中」で止めずに、届いたらすぐ有効にする。
+        //   これが無いと、サイトのタブ/アプリを全部閉じ切るまで新しい版が使われず、携帯で古い画面が出続けた。
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
