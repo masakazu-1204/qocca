@@ -24,6 +24,18 @@ const REGION = {
   "長崎・ハウステンボス": "in Nagasaki, western Japan, near a calm bay and green islands",
   "堺・りんくう": "in southern Osaka, Japan, near the sea and low green hills",
   "北摂・箕面": "in the hills of northern Osaka, Japan, surrounded by green forest",
+  "富山・雨晴海岸": "in Toyama, Japan, with the snowy Tateyama mountains beyond the bay",
+  "唐津・嬉野": "in Saga, Kyushu, Japan, near the Genkai sea and green hills",
+  "お台場・東京ベイ": "on the Tokyo bay waterfront, Japan, with the city skyline and bridges",
+  "越後湯沢・新潟": "in Niigata, Japan, among mountains and rice fields",
+  "青島・高千穂": "in Miyazaki, southern Kyushu, Japan, with palm trees and the Pacific coast",
+  "奥入瀬・弘前": "in Aomori, northern Japan, with beech forests and apple orchards",
+  "函館・大沼": "in southern Hokkaido, Japan, near lakes and a harbor town",
+  "鹿児島・桜島": "in Kagoshima, Japan, with the Sakurajima volcano across the bay",
+  "奥飛騨温泉郷": "in the Okuhida hot spring villages of Gifu, Japan, beneath the Northern Alps",
+  "淡路島": "on Awaji Island, Japan, with the calm Seto Inland Sea and coastal roads",
+  "小豆島": "on Shodoshima Island, Japan, with olive groves and the Seto Inland Sea",
+  "湯布院": "in Yufuin, Oita, Japan, with Mount Yufu and misty fields",
 };
 // 先に当たったものを採用 (具体的なものから順に)
 const RULES = [
