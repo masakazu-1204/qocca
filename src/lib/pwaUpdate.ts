@@ -30,6 +30,8 @@ export function applyPendingUpdate(): void {
 
 export function startPwaUpdates(): void {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+  // 開発サーバーには sw.js が無い (HTML が返り MIME エラーになる) ので、本番ビルドだけで登録する
+  if (!import.meta.env.PROD) return;
 
   // 初めて入る端末は「前の版」が無いので、切り替えの合図を数えない
   const hadController = !!navigator.serviceWorker.controller;

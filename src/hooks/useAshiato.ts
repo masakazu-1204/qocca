@@ -66,6 +66,27 @@ export async function grantGalleryPost(postId: string): Promise<number> {
   }
 }
 
+/**
+ * 2026/10/21 ペットウォーカーの口コミに 5 あしあと (earn rule petwalker_review・1 日 3 件まで)。
+ *   冪等キーは「人 × 場所」なので、同じ場所の口コミを書き直しても 2 度は付かない。
+ */
+export async function grantPetwalkerReview(userId: string, spotId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("grant_free_currency", {
+      p_rule_key: "petwalker_review",
+      p_idempotency_key: `petwalker_review:${userId}:${spotId}`,
+    });
+    if (error) return 0;
+    if (data?.success && !data?.duplicated && (data?.granted ?? 0) > 0) {
+      window.dispatchEvent(new Event("ashiatoChanged"));
+      return data.granted as number;
+    }
+    return 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
 export async function grantDailyLogin(userId: string): Promise<number> {
   const today = jstToday();
   const lsKey = `qocca_ashiato_daily_${userId}`;
