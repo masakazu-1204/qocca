@@ -457,7 +457,8 @@ X: @DiaryDogs (公式、本名アカウント)
 ├── 04-database-rules.md       (DB操作ルール)
 ├── 05-branding-ux.md          (ブランディング・UX)
 ├── 05-meta-ads-operations.md  (Meta 広告運用)
-└── 06-sns-content-ops.md      (SNS 投稿の制作・自動投稿・在庫)  ← 2026/9/8 追加
+├── 06-sns-content-ops.md      (SNS 投稿の制作・自動投稿・在庫)  ← 2026/9/8 追加
+└── 07-petwalker-expansion.md  (ペットウォーカーのスポット拡充。予約タスクが週2で回す)  ← 2026/10/21 追加
 
 → 必要な作業に応じて、該当スキルを参照する
 → 全部読まなくてOK、関連するスキルだけ
