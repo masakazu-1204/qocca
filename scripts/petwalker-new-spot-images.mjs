@@ -36,6 +36,10 @@ const REGION = {
   "淡路島": "on Awaji Island, Japan, with the calm Seto Inland Sea and coastal roads",
   "小豆島": "on Shodoshima Island, Japan, with olive groves and the Seto Inland Sea",
   "湯布院": "in Yufuin, Oita, Japan, with Mount Yufu and misty fields",
+  "軽井沢": "in Karuizawa, Nagano, Japan, among larch forests and quiet villa lanes",
+  "河口湖": "by Lake Kawaguchi, Yamanashi, Japan, with Mount Fuji in the distance",
+  "神戸": "in Kobe, Japan, between the Rokko mountains and the harbor",
+  "別府": "in Beppu, Oita, Japan, with hot spring steam rising over the town and the bay",
 };
 // 先に当たったものを採用 (具体的なものから順に)
 const RULES = [
@@ -69,15 +73,17 @@ async function gen(prompt) {
   const res = await fetch("https://fal.run/fal-ai/flux-2-pro", {
     method: "POST", headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: `${prompt}, ${COMMON}`, image_size: "landscape_16_9", num_images: 1 }),
+    signal: AbortSignal.timeout(180_000),
   });
   if (!res.ok) throw new Error(`fal ${res.status}: ${(await res.text()).slice(0, 160)}`);
   const url = (await res.json())?.images?.[0]?.url;
   if (!url) throw new Error("no url");
-  return Buffer.from(await (await fetch(url)).arrayBuffer());
+  return Buffer.from(await (await fetch(url, { signal: AbortSignal.timeout(60_000) })).arrayBuffer());
 }
 async function upload(path, buf) {
   const res = await fetch(`${SB_URL}/storage/v1/object/petwalker/${path}`, {
     method: "POST", headers: { Authorization: `Bearer ${SB_KEY}`, apikey: SB_KEY, "Content-Type": "image/webp", "x-upsert": "true" }, body: buf,
+    signal: AbortSignal.timeout(60_000),
   });
   if (!res.ok) throw new Error(`storage ${res.status}: ${(await res.text()).slice(0, 160)}`);
   return `${SB_URL}/storage/v1/object/public/petwalker/${path}`;
