@@ -378,6 +378,16 @@ export function PetWalkerPage({ setPage, isPC, likedSpots, onLikeSpot }: {
                 {s.description}
               </p>
             )}
+            {/* 2026/10/21 口コミが 1 件しか無い問題: 口コミ欄はページの一番下で気づかれにくい。上の方から静かに案内する */}
+            <p style={{ margin: "-20px 0 36px" }}>
+              <a
+                href="#pw-reviews"
+                onClick={(e) => { e.preventDefault(); document.getElementById("pw-reviews")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                style={{ fontSize: 13, color: QC.softBrown, fontWeight: 300, letterSpacing: 0.5, textDecoration: "none", borderBottom: `1px solid ${QC.lightSand}`, paddingBottom: 2 }}
+              >
+                行ったことがあれば、口コミを。
+              </a>
+            </p>
             {/* 地図: Googleマップで開く (証明された方式・座標不要・name+地域で検索) */}
             <div style={{ borderTop: `1px solid ${QC.lightSand}`, paddingTop: 28 }}>
               <p style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage, margin: "0 0 8px" }}>LOCATION</p>

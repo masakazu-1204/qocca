@@ -11,6 +11,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { QC, QC_FONT_JP, QC_FONT_EN, QC_TIMING } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { grantPetwalkerReview } from "../hooks/useAshiato";
 
 const ease = QC_TIMING.hoverEasing;
 
@@ -69,6 +71,7 @@ function Stars({ filled, size = 16 }: { filled: number; size?: number }) {
 
 export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: boolean }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   // 投稿フォーム
@@ -77,6 +80,7 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
   const [visitedWith, setVisitedWith] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [thanks, setThanks] = useState<string | null>(null);
   // 写真: 既存URL (編集時) + 新規ファイル。合計 MAX_PHOTOS 枚まで
   const [keptUrls, setKeptUrls] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
@@ -175,6 +179,12 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
     setSubmitting(false);
     if (error) { setErrMsg("送信できませんでした。時間をおいて、もう一度お試しください。"); return; }
 
+    // 2026/10/21 初めての口コミに あしあと 5 (書き直しでは付かない・1 日 3 件まで)。付かなければ無言。
+    if (!myReview) {
+      const granted = await grantPetwalkerReview(user.id, spotId);
+      if (granted > 0) setThanks(`ありがとうございます。あしあと ${granted} が届きました。`);
+    }
+
     // 3) 編集で外した写真はストレージからも片づける (失敗しても口コミ自体は成立)
     const removed = (myReview?.image_urls || []).filter((u) => !imageUrls.includes(u));
     if (removed.length > 0) {
@@ -204,7 +214,7 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
   };
 
   return (
-    <section style={{ marginTop: 40, paddingTop: 28, borderTop: `1px solid ${QC.lightSand}` }}>
+    <section id="pw-reviews" style={{ marginTop: 40, paddingTop: 28, borderTop: `1px solid ${QC.lightSand}`, scrollMarginTop: 80 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 18 }}>
         <p style={{ fontFamily: QC_FONT_EN, fontSize: 12, letterSpacing: 2, color: QC.sage, margin: 0 }}>REVIEWS</p>
         <h2 style={{ fontFamily: QC_FONT_JP, fontWeight: 500, fontSize: 18, margin: 0, color: QC.charcoal }}>みんなの口コミ</h2>
@@ -222,6 +232,14 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
           {loading
             ? "読み込んでいます。"
             : "この場所のことは、まだ誰も書いていません。あなたが、最初のひとりになれます。"}
+        </p>
+      )}
+      {/* 2026/10/21 口コミのお礼 (あしあと 5) の案内と、書いた直後のお礼 */}
+      {thanks ? (
+        <p role="status" style={{ fontSize: 13, color: QC.charcoal, fontWeight: 300, margin: "-12px 0 24px" }}>{thanks}</p>
+      ) : !myReview && (
+        <p style={{ fontSize: 12, color: QC.warmGray, fontWeight: 300, margin: "-12px 0 24px", letterSpacing: 0.3 }}>
+          行ったことのある場所なら、ひとことでも。書くと、あしあと 5 が届きます。
         </p>
       )}
 
@@ -344,10 +362,20 @@ export function PetWalkerReviews({ spotId, isPC }: { spotId: string; isPC?: bool
           </button>
         </div>
       ) : (
+        // 2026/10/21 以前は文字だけでリンクになっていなかった。ログイン後はこの場所へ戻す (lib/returnTo)
         <p style={{ fontSize: 13.5, color: QC.warmGray, fontWeight: 300, marginBottom: 32 }}>
-          {count === 0
-            ? "ログインすると、この場所の最初のひとりになれます。"
-            : "ログインすると、この場所の口コミを書けます。"}
+          <a
+            href={`/login?returnTo=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/petwalker")}`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
+            }}
+            style={{ color: QC.softBrown, textDecoration: "none", borderBottom: `1px solid ${QC.lightSand}`, paddingBottom: 2 }}
+          >
+            {count === 0
+              ? "ログインすると、この場所の最初のひとりになれます。"
+              : "ログインすると、この場所の口コミを書けます。"}
+          </a>
         </p>
       )}
 
