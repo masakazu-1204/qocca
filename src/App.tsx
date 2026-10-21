@@ -236,7 +236,9 @@ function QoccaAppInner() {
   useEffect(()=>{
     (async()=>{
       // 依頼書 #116 (2026/6/5): HomePage 末尾セクション用 4件取得 (旧 limit:3 から拡張)
-      const { data } = await supabase.from("events").select("*").eq("status","approved").gte("event_date", new Date().toISOString().slice(0,10)).order("event_date",{ascending:true}).limit(4);
+      // 2026/10/22: JST の今日で判定・複数日のイベントは end_date まで出す
+      const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+      const { data } = await supabase.from("events").select("*").eq("status","approved").or(`event_date.gte.${today},end_date.gte.${today}`).order("event_date",{ascending:true}).limit(4);
       setHomeEvents(data || []);
     })();
   }, []);
