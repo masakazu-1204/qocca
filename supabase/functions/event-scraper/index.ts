@@ -1,5 +1,14 @@
 // ============================================
-// event-scraper v7 (2026/8/22)
+// event-scraper v8 (2026/10/22)
+// v8 King「承認が面倒やからそのまま載せてほしい。日にちが過ぎてるやつは消していこう」
+//   - 抽出したイベントは信頼度に関係なく公開する (status='approved' / approval_status='auto_approved')。
+//     信頼度 0.30 未満 (個人主催・会員限定) は今までどおり取り込まない。
+//     実測: 0.30 と判定されたものも DEAR DOG FES・ジャパンわんこフェスタなど実在の公開イベントで、
+//     King が旧画面で全部承認していた。AI の信頼度は「主催者が書いてあるか」でしか付いていない。
+//   - 日付が過ぎたイベントは取り込まない (end_date があれば end_date、なければ start_date と JST の今日で比較)。
+//     終わったイベントは毎日 0:30 に消える (cron events-mark-ended-daily)。消すと重複判定の記録も一緒に消えるため、
+//     ここで弾かないと一覧ページに残っている過去のイベントが毎日入っては消える。
+//   - AI の end_date を events.end_date に保存する (複数日のイベントを初日の翌日に消さないため)。
 // v7 修正: 重複判定に location を含めていたため、会場表記の揺れで同一イベントが
 //   何度も新規登録されていた (実例: 同一イベントが4件)。タイトル+日付で判定する。
 // v6 修正: 「切ってから掃除する」順序が逆で、本文が AI に一度も届いていなかった
@@ -7,10 +16,7 @@
 //     1. 生HTMLを先頭120,000文字で切る  -> 日付 0個   ここで全部落ちていた
 //     2. それをクリーニング->25,000文字 -> 日付 0個   AI には空が届いていた
 //     ★先にクリーニング->100,000文字    -> 日付165個 (掃除後 88,651文字で全部入る)
-//   これが「AI抽出0件」の正体。kuro-shiba.net が同じ症状で無効化された件も、
-//   ソースが悪いのではなくこの順序バグだった可能性が高い。
-//   あわせて max_tokens 3000->8000。3000 では出力側が先に詰まり、
-//   入力を直しても20件程度しか返せなかったため。
+//   あわせて max_tokens 3000->8000。
 // v5: HTML クリーニング関数追加 (script/style/nav/header/footer/comments 除去)
 // v4: フィルタ強化 (依頼書 #48 v2)
 // v3: 原型 (依頼書 #27 v2 Phase 2)
@@ -31,17 +37,26 @@ const corsHeaders = {
 };
 const jsonResponse = (body: any, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const CONFIDENCE_AUTO = 0.70;
-const CONFIDENCE_PENDING = 0.50;
+// v8: これ未満は取り込まない (個人主催・会員限定)。これ以上は全部そのまま公開
+const CONFIDENCE_MIN = 0.30;
+// v8: 期間がこれより長いものは「年間スケジュール」や「一覧記事」を 1 件と読み違えたものなので取り込まない
+//     (2026/10/22 実例: 名古屋市のしつけ方教室 5/23〜翌1/24、CHERIEE の記事タイトル 10/1〜11/30)
+const MAX_SPAN_DAYS = 14;
 const MONTHLY_BUDGET_USD = 13.33;
 
-// v6: 掃除後の本文をどこまで AI に渡すか。掃除で元の1/4程度まで縮むため、
-//     この値でも1回あたり $0.02 前後に収まる (月予算 $13.33)。
-const CLEANED_CHAR_LIMIT = 100000;
+// v8: 掃除後の本文を CHUNK_CHARS ずつに分けて AI に渡す (最大 MAX_CHUNKS 回)。
+//     v7 までは 100,000 文字を 1 回で渡していたため、pets-support.com (イベント日付 165 個) でも
+//     返ってくるのは 13〜30 件だった。分けると 1 回あたりの出力が詰まらず、拾える数が増える。
+//     費用は 1 回 $0.003 前後 × 回数 (月予算 $13.33 で十分足りる)。
+const CHUNK_CHARS = 40000;
+const MAX_CHUNKS = 8;
 // v6: 生HTMLの安全上限 (異常に巨大なページでメモリを食い潰さないための保険)
 const RAW_FETCH_LIMIT = 2000000;
 
 const NG_WORDS = ["バズ", "爆発的", "急成長", "No.1", "最大", "最強", "業界初", "絶対", "100%", "必ず", "お得", "激安", "今だけ"];
+
+const jstToday = (): string => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+const isYmd = (s: unknown): s is string => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -90,22 +105,42 @@ async function fetchHtml(url: string): Promise<{ html: string; status: number } 
     // v6: ここでは切らない。切ると本文が落ちる。掃除は extractEvents 側で行う。
     return { html: html.slice(0, RAW_FETCH_LIMIT), status: res.status };
   } catch (e) {
-    console.error("[event-scraper v6] fetch failed", e);
+    console.error("[event-scraper v8] fetch failed", e);
     return null;
   }
 }
 
+// v8: 掃除してから CHUNK_CHARS ずつに分けて、それぞれ抽出して合わせる。
+//     1 つでも成功すればその分を返す。全部失敗したときだけ null
 async function extractEvents(
   html: string,
   sourceUrl: string,
   sourcePrefecture: string | null,
-): Promise<{ events: any[]; cost_usd: number; cleaned_chars: number } | null> {
+): Promise<{ events: any[]; cost_usd: number; cleaned_chars: number; chunks: number; failed_chunks: number } | null> {
   if (!OPENAI_API_KEY) return null;
-
   // v6: 先に掃除してから切る (v5 は逆で、本文に到達する前に予算を使い切っていた)
   const cleaned = cleanHtml(html);
-  const finalHtml = cleaned.slice(0, CLEANED_CHAR_LIMIT);
+  const chunks: string[] = [];
+  for (let i = 0; i < cleaned.length && chunks.length < MAX_CHUNKS; i += CHUNK_CHARS) chunks.push(cleaned.slice(i, i + CHUNK_CHARS));
+  const results = await Promise.all(chunks.map((c, i) => extractChunk(c, sourceUrl, sourcePrefecture, i + 1, chunks.length)));
+  const ok = results.filter((r): r is { events: any[]; cost_usd: number } => r !== null);
+  if (!ok.length) return null;
+  return {
+    events: ok.flatMap((r) => r.events),
+    cost_usd: ok.reduce((s, r) => s + r.cost_usd, 0),
+    cleaned_chars: Math.min(cleaned.length, CHUNK_CHARS * MAX_CHUNKS),
+    chunks: chunks.length,
+    failed_chunks: chunks.length - ok.length,
+  };
+}
 
+async function extractChunk(
+  finalHtml: string,
+  sourceUrl: string,
+  sourcePrefecture: string | null,
+  part: number,
+  totalParts: number,
+): Promise<{ events: any[]; cost_usd: number } | null> {
   const schemaLine =
     '{"events":[{"title":"イベント名","summary":"100字以内要約","start_date":"YYYY-MM-DD or null",' +
     '"end_date":"YYYY-MM-DD or null","location":"全住所 or null","prefecture":"都道府県名 or null",' +
@@ -127,15 +162,20 @@ async function extractEvents(
     "【除外すべきイベント】",
     "個人主催のオフ会・交流会 / コミュニティ限定 (会員限定・招待制)",
     "SNS グループ限定 / 小規模交流 (10人未満) / 詳細未公表・連絡先不明",
+    "★一覧記事そのものの見出し (例: 「2026年9月のイベント情報」など、個別のイベントでないもの)",
+    "★今日 (" + jstToday() + ") より前に終わっているイベント",
     "",
     "【ルール】",
     "1. HTML からペット関連イベントのみ抽出",
-    "2. 説明文の丸コピー禁止。100字以内で要約",
+    "2. 説明文の丸コピ禁止。100字以内で要約",
     "3. NG ワード除外: " + NG_WORDS.join(", "),
     "4. イベントが見つからない/条件不適合なら events:[] (幻覚禁止)",
     "5. official_url はソースページ or イベント詳細 URL",
     "6. 見つかったイベントは省略せず、可能な限りすべて出力する",
-    "7. ai_confidence: 0.85-1.0=公式団体・公共施設・大規模商業施設 / 0.50-0.85=NPO・有名店主催 / 0.30-0.50=主催者不明確 / 0.0-0.30=個人・会員限定",
+    "7. 会場名が分かる場合は location に施設名を入れる (郵便番号だけの住所より施設名を優先)",
+    "8. 複数日にわたるイベントは start_date に初日、end_date に最終日を入れる。1日だけなら end_date は null。" +
+      "定期開催 (毎月・毎週・年間スケジュール) は、開催日ごとに別々のイベントとして出力する (期間でまとめない)",
+    "9. ai_confidence: 0.85-1.0=公式団体・公共施設・大規模商業施設 / 0.50-0.85=NPO・有名店主催 / 0.30-0.50=主催者不明確 / 0.0-0.30=個人・会員限定",
     "",
     "出力は JSON のみ、schema:",
     schemaLine,
@@ -144,6 +184,7 @@ async function extractEvents(
   const userPrompt =
     "ソースURL: " + sourceUrl +
     "\nソース都道府県ヒント: " + (sourcePrefecture || "不明") +
+    (totalParts > 1 ? "\n(長いページを分けて渡しています: " + part + "/" + totalParts + "。途中で切れているイベントは、日付と名前が読み取れるものだけ出力)" : "") +
     "\n\n本文 (クリーニング済):\n" + finalHtml;
 
   try {
@@ -160,7 +201,7 @@ async function extractEvents(
     });
     if (!res.ok) {
       const errText = await res.text();
-      console.error("[event-scraper v6] OpenAI failed", res.status, errText.slice(0, 300));
+      console.error("[event-scraper v8] OpenAI failed", res.status, errText.slice(0, 300));
       return null;
     }
     const data = await res.json();
@@ -171,9 +212,9 @@ async function extractEvents(
     const inputTokens = data?.usage?.prompt_tokens || 0;
     const outputTokens = data?.usage?.completion_tokens || 0;
     const cost_usd = (inputTokens * 0.15 + outputTokens * 0.60) / 1000000;
-    return { events, cost_usd, cleaned_chars: finalHtml.length };
+    return { events, cost_usd };
   } catch (e) {
-    console.error("[event-scraper v6] parse error", e);
+    console.error("[event-scraper v8] parse error", e);
     return null;
   }
 }
@@ -205,13 +246,19 @@ async function runScrape(sourceId: string): Promise<any> {
     return { success: false, error: "openai_failed" };
   }
 
-  let newCount = 0, dupCount = 0, rejectedCount = 0;
+  const today = jstToday();
+  let newCount = 0, dupCount = 0, rejectedCount = 0, pastCount = 0;
   const inserted: any[] = [];
 
   for (const e of extracted.events) {
-    if (!e.title || !e.start_date) { dupCount++; continue; }
+    if (!e.title || !isYmd(e.start_date)) { dupCount++; continue; }
     const conf = Number(e.ai_confidence || 0);
-    if (conf < 0.30) { rejectedCount++; continue; }
+    if (conf < CONFIDENCE_MIN) { rejectedCount++; continue; }
+
+    // v8: 終わりの日 (なければ開始日) が今日より前なら取り込まない
+    const endDate = isYmd(e.end_date) && e.end_date > e.start_date ? e.end_date : null;
+    if ((endDate || e.start_date) < today) { pastCount++; continue; }
+    if (endDate && (Date.parse(endDate) - Date.parse(e.start_date)) / 86400000 > MAX_SPAN_DAYS) { rejectedCount++; continue; }
 
     // v7 (2026/8/22) 重複判定から location を外す。
     //   ソースによって会場の書き方が揺れるため、同じイベントが何度も新規登録されていた。
@@ -225,14 +272,11 @@ async function runScrape(sourceId: string): Promise<any> {
     const { data: existing } = await supabase.from("event_dedup_hashes").select("id").eq("content_hash", hash).maybeSingle();
     if (existing) { dupCount++; continue; }
 
-    let approval = "pending";
-    if (conf >= CONFIDENCE_AUTO) approval = "auto_approved";
-    else if (conf < CONFIDENCE_PENDING) approval = "rejected";
-
     const { data: ev, error: insErr } = await supabase.from("events").insert({
       title: e.title.slice(0, 200),
       description: (e.summary || "").slice(0, 200),
       event_date: e.start_date,
+      end_date: endDate,
       place: e.location || "",
       prefecture: e.prefecture || source.prefecture || "未指定",
       city: e.city || null,
@@ -241,16 +285,16 @@ async function runScrape(sourceId: string): Promise<any> {
       source_url: source.url,
       source_type: "ai_scraped",
       ai_confidence: conf,
-      approval_status: approval,
+      approval_status: "auto_approved",
       scraped_at: new Date().toISOString(),
-      status: approval === "auto_approved" ? "approved" : "pending",
+      status: "approved",
       image_url: "",
     }).select().single();
 
-    if (insErr) { console.error("[event-scraper v6] insert error", insErr); continue; }
+    if (insErr) { console.error("[event-scraper v8] insert error", insErr); continue; }
     await supabase.from("event_dedup_hashes").insert({ event_id: ev.id, content_hash: hash });
     newCount++;
-    inserted.push({ id: ev.id, title: ev.title, approval, conf, organizer_type: e.organizer_type });
+    inserted.push({ id: ev.id, title: ev.title, conf, organizer_type: e.organizer_type });
   }
 
   await supabase.from("event_sources").update({
@@ -258,20 +302,25 @@ async function runScrape(sourceId: string): Promise<any> {
     events_collected: (source.events_collected || 0) + newCount,
   }).eq("id", sourceId);
 
+  const notes = [
+    rejectedCount > 0 ? "rejected_low_confidence: " + rejectedCount : "",
+    pastCount > 0 ? "skipped_past: " + pastCount : "",
+    extracted.failed_chunks > 0 ? "failed_chunks: " + extracted.failed_chunks + "/" + extracted.chunks : "",
+  ].filter(Boolean).join(" / ");
   await supabase.from("event_scrape_logs").insert({
     source_id: sourceId,
     events_found: extracted.events.length,
     events_new: newCount,
-    events_duplicate: dupCount + rejectedCount,
-    errors: rejectedCount > 0 ? "rejected_low_confidence: " + rejectedCount : null,
+    events_duplicate: dupCount + rejectedCount + pastCount,
+    errors: notes || null,
     ai_cost_usd: extracted.cost_usd,
   });
 
   return {
     success: true, source_id: sourceId, source_name: source.name,
     events_found: extracted.events.length, events_new: newCount, events_duplicate: dupCount,
-    events_rejected_low_conf: rejectedCount,
-    cleaned_chars: extracted.cleaned_chars,
+    events_rejected_low_conf: rejectedCount, events_skipped_past: pastCount,
+    cleaned_chars: extracted.cleaned_chars, chunks: extracted.chunks, failed_chunks: extracted.failed_chunks,
     ai_cost_usd: extracted.cost_usd, budget_spent_usd: budget.spent + extracted.cost_usd,
     inserted,
   };
@@ -293,6 +342,6 @@ serve(async (req) => {
     const result = await runScrape(sourceId);
     return jsonResponse(result, result.success ? 200 : 500);
   }
-  EdgeRuntime.waitUntil(runScrape(sourceId).catch((err) => console.error("[event-scraper v6] background error", err)));
+  EdgeRuntime.waitUntil(runScrape(sourceId).catch((err) => console.error("[event-scraper v8] background error", err)));
   return jsonResponse({ success: true, step: "accepted", source_id: sourceId, async: true });
 });

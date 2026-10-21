@@ -75,14 +75,14 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
   const fetchEvents = async () => {
     setLoading(true);
     // 2026/6/28: 日付フィルタ追加 — 開催日が過ぎたイベントを自動で非表示に
-    //   (再発防止: 今後も event_date < today は自動的に /events 一覧から消える)
-    //   ⚠️ 履歴は events テーブルに残る (status='approved' のまま) → 後方互換・統計用
-    const today = new Date().toISOString().slice(0, 10);
+    // 2026/10/22: 日付は JST で判定 (UTC だと朝 9 時まで前日扱いだった)。複数日のイベントは end_date まで出す。
+    //   終わったイベントは毎日 0:30 に cron (events-mark-ended-daily) が消す (住民の投稿は ended で残る)
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from("events")
       .select("*")
       .in("status", ["approved", "sold_out"])
-      .gte("event_date", today)
+      .or(`event_date.gte.${today},end_date.gte.${today}`)
       .order("event_date", { ascending: true });
     if (!error && data) {
       // モックデータの形式に合わせて変換
@@ -129,13 +129,15 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
       fee: form.fee,
       category: form.category,
       image_url: form.image_url || "",
-      status: "pending",
+      // 2026/10/22 King「承認が面倒やからそのまま載せてほしい」: 審査なしで公開。困った投稿は管理画面から消す
+      status: "approved",
     });
     setSubmitting(false);
     if (!error) {
       setShowPost(false);
       setForm({ title:"", event_date:"", event_time:"", place:"", prefecture:"東京都", pet_type:"both", fee:"", category:"フェスタ", description:"", image_url:"" });
-      alert("投稿ありがとうございます！審査後に公開されます");
+      alert("投稿しました。イベント一覧に公開されています。");
+      fetchEvents();
     } else {
       alert("投稿に失敗しました: " + error.message);
     }
@@ -332,7 +334,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
     <img src={form.image_url} style={{ width:"100%", height:120, objectFit:"cover", borderRadius:10, marginTop:8 }}/>
   )}
 </div>
-            <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}><LineIcon name="paw" size={12} /> 投稿後、管理者が審査(最大24時間)してから公開されます。</div>
+            <div style={{ background:C.orangePale, borderRadius:12, padding:"12px", fontSize:12, color:C.orange, marginBottom:16 }}><LineIcon name="paw" size={12} /> 投稿すると、すぐにイベント一覧に公開されます。開催日が過ぎると一覧から消えます。</div>
             <button disabled={submitting||!form.title||!form.event_date} onClick={handleSubmitEvent} style={{ width:"100%", padding:"14px", background:(submitting||!form.title||!form.event_date)?C.warmGray:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(submitting||!form.title||!form.event_date)?"not-allowed":"pointer", fontFamily:"inherit" }}>
               {submitting ? "送信中..." : <><LineIcon name="paw" size={15} /> 投稿する</>}
             </button>

@@ -402,7 +402,7 @@ export default function AdminEventSources() {
         <div style={{ background: C.white, borderRadius: 12, padding: 14, border: `1px solid ${C.border}`, marginTop: 16, fontSize: 11, color: C.warmGray, lineHeight: 1.8 }}>
           <strong style={{ color: C.dark }}>📅 自動実行スケジュール</strong>: pg_cron <code>event-scrape-weekly</code> が active=true で稼働中。
           <br />
-          毎週土曜 UTC 18:00 (= 日曜 JST 3:00) に <code>event-scrape-orchestrator</code> が呼ばれます。
+          毎日 UTC 18:00 (= JST 3:00) に <code>event-scrape-orchestrator</code> が呼ばれます (1 回で最大 40 ソース)。
           <br />
           <br />
           <strong style={{ color: C.dark }}>💰 想定コスト</strong>: gpt-4o-mini 採用で 1 source 1回 ≈ $0.001 / 月予算 ¥500-800。
@@ -416,7 +416,7 @@ export default function AdminEventSources() {
           - <code>event-deduplicator</code> (重複排除)
           <br />
           <br />
-          <strong style={{ color: C.dark }}>🚨 注意</strong>: 全 INSERT は <code>approval_status='pending'</code>。承認は Admin の「イベント管理」タブから実施。
+          <strong style={{ color: C.dark }}>注意</strong>: 2026/10/22 から、抽出したイベントは承認なしでそのまま公開 (信頼度 0.30 未満と、日付が過ぎたものは取り込まない)。収集は毎日 3:00 (JST)、終わったイベントは翌日 0:30 に削除。困ったものは「イベント管理」タブで却下・削除する。
         </div>
       </div>
     </div>
