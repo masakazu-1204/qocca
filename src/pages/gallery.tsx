@@ -32,6 +32,7 @@ type GalleryPost = {
   likes_count?: number; created_at?: string; is_official?: boolean | null;
   petName?: string; userName?: string; userAvatar?: string | null;
   theme_id?: string | null;
+  share_ok?: boolean | null;
 };
 
 /** 2026/10/11 今週のお題 (weekly_themes)。JST の月曜始まり。 */
@@ -420,6 +421,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
   //   ホーム (/gallery?theme=1) から来たら、お題の投稿だけに絞って開く。
   const [theme, setTheme] = useState<WeeklyTheme | null>(null);
   const [joinTheme, setJoinTheme] = useState(true);
+  // 2026/10/28 「Qocca の SNS で紹介してもいい」(gallery_posts.share_ok)。金曜の「街のお知らせ」で今週の一枚に選べるのはこれだけ
+  const [shareOk, setShareOk] = useState(false);
+  // 2026/10/28 /gallery/<投稿id> で開いたら、その写真を開く (いいね・コメントのお知らせメールからの入口)
+  const { itemId } = useParams();
+  const openedItem = useRef<string | null>(null);
   const [themeOnly, setThemeOnly] = useState<boolean>(() => {
     try { return new URLSearchParams(window.location.search).get("theme") === "1"; } catch (_) { return false; }
   });
@@ -572,6 +578,20 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     setLoading(false);
   };
 
+  useEffect(() => {
+    if (!itemId || loading || openedItem.current === itemId) return;
+    openedItem.current = itemId;
+    const hit = posts.find((p) => p.id === itemId);
+    if (hit) { setSelectedPost(hit); return; }
+    // 一覧 (新しい 200 件) に無い古い写真は 1 件だけ取りに行く
+    (async () => {
+      const { data: p } = await supabase.from("gallery_posts").select("*").eq("id", itemId).maybeSingle();
+      if (!p) return;
+      const { data: prof } = await supabase.from("profiles").select("display_name, avatar_url").eq("id", p.user_id).maybeSingle();
+      setSelectedPost({ ...p, userName: prof?.display_name || "ユーザー", userAvatar: prof?.avatar_url || "", petName: "" });
+    })();
+  }, [itemId, loading, posts]);
+
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -594,6 +614,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
       image_url: urlData.publicUrl,
       caption: caption,
       theme_id: theme && joinTheme ? theme.id : null,
+      share_ok: shareOk,
     }).select("id").maybeSingle();
     // 2026/10/11 投稿に 3 あしあと (1 日 2 回まで・同じ投稿で 2 度は付かない)。付かなかったときは無言。
     if (inserted?.id) {
@@ -605,6 +626,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
     setSelectedFile(null);
     setPreview("");
     setCaption("");
+    setShareOk(false);
     setUploading(false);
     fetchPosts();
   };
@@ -730,7 +752,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
           <div style={{ background:C.white, borderRadius:20, padding:24, maxWidth:400, width:"100%", maxHeight:"88vh", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <h2 style={{ fontSize:18, fontWeight:900, color:C.dark }}><LineIcon name="camera" size={18} /> 写真を投稿</h2>
-              <button onClick={()=>{setShowUpload(false);setSelectedFile(null);setPreview("");setCaption("");}} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
+              <button onClick={()=>{setShowUpload(false);setSelectedFile(null);setPreview("");setCaption("");setShareOk(false);}} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.warmGray }}>✕</button>
             </div>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display:"none" }}/>
             {preview ? (
@@ -754,7 +776,11 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
               </label>
             )}
             <textarea value={caption} onChange={e=>setCaption(e.target.value)} placeholder="うちの子の紹介やエピソードを書いてね" rows={3}
-              style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:16 }}/>
+              style={{ width:"100%", padding:"11px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", marginBottom:12 }}/>
+            <label style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:12, color:C.warmGray, lineHeight:1.7, marginBottom:16, cursor:"pointer" }}>
+              <input type="checkbox" checked={shareOk} onChange={e=>setShareOk(e.target.checked)} style={{ width:16, height:16, marginTop:2, accentColor:C.orange, flexShrink:0 }} />
+              <span>Qocca の SNS (Threads・X) で、この写真を紹介してもいい</span>
+            </label>
             <button disabled={!selectedFile||uploading} onClick={handleUpload} style={{
               width:"100%", padding:"14px", background:(!selectedFile||uploading)?C.warmGray:C.orange,
               border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(!selectedFile||uploading)?"not-allowed":"pointer"

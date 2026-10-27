@@ -6,6 +6,7 @@
 //
 // - 数字はすべて DB から数える (書き換えない)。期間は「今日を含まない直近 7 日」(JST)
 // - 増えたものが何も無い週は投稿しない
+// - 住民の写真は、本人が「SNS で紹介してもいい」を選んだもの (gallery_posts.share_ok) だけを「今週の一枚」に載せる (Threads のみ)
 // - 同じ週に二度投稿しない: 直近 6 日の x_posts / threads_posts に「街のお知らせ」があれば止める
 // - Threads は post-to-threads-adhoc (500 字以内・30 秒待つ)。失敗しても盲目リトライしない (二重投稿になる)
 // - X は x_posts に scheduled で入れてから post-to-x (template_id は NULL。日常の自動投稿の冪等ガードに触らない)
@@ -64,7 +65,17 @@ const blogs = await rest(`blog_posts?select=title&published=eq.true&created_at=g
 // --- 今週のお題 ---
 const theme = (await rest(`weekly_themes?select=title,week_start&is_active=eq.true&week_start=lte.${today}&order=week_start.desc&limit=1`))[0];
 
-if (!newSpots.length && !eventNew && !blogs.length) {
+// --- 今週の一枚 (2026/10/28) ---
+// 住民の写真のうち、投稿した人が「Qocca の SNS で紹介してもいい」(share_ok) を選んだものだけ。いいねの多い順 → 新しい順で 1 枚
+const pickRows = await rest(`gallery_posts?select=id,user_id,caption,likes_count&share_ok=eq.true&is_official=eq.false&is_deleted=eq.false&created_at=gte.${fromUtc}&created_at=lt.${toUtc}&order=likes_count.desc,created_at.desc&limit=1`);
+let pick = null;
+if (pickRows[0]) {
+  const who = (await rest(`profiles?select=display_name&id=eq.${pickRows[0].user_id}`))[0];
+  const cap = String(pickRows[0].caption ?? "").replace(/\s+/g, " ").trim();
+  pick = { id: pickRows[0].id, name: who?.display_name || "住民", caption: cap.length > 40 ? cap.slice(0, 40) + "…" : cap };
+}
+
+if (!newSpots.length && !eventNew && !blogs.length && !pick) {
   console.log(`${md(from)}〜${md(yesterday)}: 増えたものが無いので投稿しない`);
   process.exit(0);
 }
@@ -73,6 +84,9 @@ if (!newSpots.length && !eventNew && !blogs.length) {
 const fmt = (n) => n.toLocaleString("ja-JP");
 const areaLine = byArea.slice(0, 5).map(([a, n]) => `${a} ${n}`).join(" / ") + (byArea.length > 5 ? ` ほか` : "");
 const th = [`${HEAD} (${md(from)}〜${md(yesterday)})`, ""];
+if (pick) {
+  th.push(`今週の一枚は、${pick.name} さんの写真です。` + (pick.caption ? `「${pick.caption}」` : ""), `https://www.qocca.pet/gallery/${pick.id}`, "");
+}
 if (newSpots.length) {
   th.push(`ペットウォーカーに、犬と行ける場所が${fmt(newSpots.length)}か所増えました。`, areaLine,
     "どこも、犬と入れることを施設や観光協会の案内で確かめています。", `全国で${fmt(spotTotal)}か所になりました。`, "");
@@ -85,6 +99,10 @@ if (eventTotal) {
 if (blogs.length) th.push(`読みもの: ${blogs.slice(0, 2).map((b) => `「${b.title}」`).join("")}${blogs.length > 2 ? ` ほか${blogs.length - 2}本` : ""}`, "");
 if (theme) th.push(`今週のお題は「${theme.title}」です。`, "");
 th.push("ペットウォーカー https://www.qocca.pet/petwalker", "イベント https://www.qocca.pet/events", "#Qocca");
+// 500 字を超えたら、読みもの → 今週の一枚 の順に外す (投稿そのものが止まらないように)
+const dropLine = (pred) => { const i = th.findIndex(pred); if (i >= 0) th.splice(i, th[i + 1] === "" ? 2 : 1); };
+if (th.join("\n").length > 500) dropLine((l) => l.startsWith("読みもの: "));
+if (th.join("\n").length > 500 && pick) { dropLine((l) => l.startsWith("https://www.qocca.pet/gallery/")); dropLine((l) => l.startsWith("今週の一枚は")); }
 const threadsText = th.join("\n");
 
 const xParts = [`${HEAD}。`];
