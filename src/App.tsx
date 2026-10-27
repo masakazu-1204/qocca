@@ -28,6 +28,7 @@ import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
 import AddToHomeScreenBanner from "./components/AddToHomeScreenBanner";
 import { UnsubscribePage } from "./pages/unsubscribe";
+import { PetNewRedirect } from "./pages/pet_new";
 import { takeReturnTo } from "./lib/returnTo";
 import { applyPendingUpdate } from "./lib/pwaUpdate";
 import { TokushoPage, PrivacyPage, ContactPage, FoundingCreatorsPage, SponsorsPage, LegalPage, FAQPage } from "./pages/static";
@@ -288,6 +289,7 @@ function QoccaAppInner() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={true}/>} />
             <Route path="/unsubscribe" element={<UnsubscribePage />} />
+            <Route path="/pet/new" element={<PetNewRedirect />} />
             <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={true}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}
@@ -576,6 +578,7 @@ function QoccaAppInner() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/tokusho" element={<TokushoPage setPage={setPage} isPC={false}/>} />
             <Route path="/unsubscribe" element={<UnsubscribePage />} />
+            <Route path="/pet/new" element={<PetNewRedirect />} />
             <Route path="/terms" element={<LegalPage type="terms" setPage={setPage}/>} />
             <Route path="/privacy" element={<PrivacyPage setPage={setPage} isPC={false}/>} />
             {/* 依頼書 #35 v2 (5/31): 法人スポンサー一覧 */}

@@ -1,5 +1,7 @@
 // ============================================
-// send-town-letter v3 (2026/10/18): 週 1 回の「街だより」メール
+// send-town-letter v4 (2026/10/28): 週 1 回の「街だより」メール
+//   v4: うちの子をまだ登録していない人にだけ「うちの子を、街に紹介してください」を 1 段入れる (/pet/new へ)。
+//       住民 147 人のうち登録は 17 人 (2026/10/28)。投稿・口コミの入口が「うちの子」なので、まずここから。
 //   v3: 「一枚、置きに行く」を /gallery?theme=1&compose=1 に。ログイン済みなら投稿画面がすぐ開き、
 //       未ログインならログイン後にそこへ戻る (src/lib/returnTo.ts)。
 //   v2: King「おすすめの商品やブログも載せてあげたら」→ 「今週のおすすめ」(town_letter_picks で手で選べる・推薦文つき。
@@ -125,7 +127,7 @@ async function loadContent(sb: any, week: string): Promise<Content> {
   };
 }
 
-function render(c: Content, name: string, inviteCode: string | null, token: string | null) {
+function render(c: Content, name: string, inviteCode: string | null, token: string | null, hasPet = true) {
   const subject = c.theme ? `街だより｜今週のお題「${c.theme.title}」` : "街だより｜今週の Qocca";
   const unsub = token ? `${SITE}/unsubscribe?t=${token}` : `${SITE}/unsubscribe`;
   const font = `'Zen Kaku Gothic New','Hiragino Sans','Noto Sans JP',sans-serif`;
@@ -146,6 +148,14 @@ function render(c: Content, name: string, inviteCode: string | null, token: stri
       `<p style="margin:0 0 22px;font-size:13px;color:${K.sub};line-height:1.9;">上手な写真じゃなくて大丈夫です。その家でしか見られない一枚を。<br>投稿すると あしあと 3 が届きます。</p>` +
       btn(`${SITE}/gallery?theme=1&compose=1`, "一枚、置きに行く") +
       `<p style="margin:16px 0 0;font-size:12px;color:${K.sub};">${c.themePhotos > 0 ? `今週はすでに ${c.themePhotos} 枚が集まっています。` : "最初の一枚を、待っています。"}</p>`,
+    );
+  }
+  // うちの子がまだ街にいない人へ (v4)
+  if (!hasPet) {
+    body += section(
+      h("YOUR PET", "うちの子を、街に紹介してください。") +
+      `<p style="margin:0 0 22px;font-size:14px;color:${K.sub};line-height:2;">名前と写真が一枚あれば、それで十分です。<br>この街は、住民のうちの子が少しずつ灯していく場所です。</p>` +
+      btn(`${SITE}/pet/new`, "うちの子を紹介する"),
     );
   }
   // 先週の街のようす
@@ -245,14 +255,14 @@ Deno.serve(async (req) => {
 
   if (mode === "preview") {
     const { data: rcpt } = await sb.rpc("town_letter_recipients", { p_week: week });
-    const r = render(content, "〇〇", "xxxxxxxxxxxx", null);
+    const r = render(content, "〇〇", "xxxxxxxxxxxx", null, false);
     return json({ mode, week, subject: r.subject, recipients: (rcpt ?? []).length, content, html: r.html });
   }
 
   if (mode === "test") {
     const to = String(body?.to ?? "");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return json({ error: "to_invalid" }, 400);
-    const r = render(content, "〇〇", "xxxxxxxxxxxx", null);
+    const r = render(content, "〇〇", "xxxxxxxxxxxx", null, false);
     const out = await sendBatch([{ to, subject: `【見本】${r.subject}`, html: r.html, unsub: r.unsub }]);
     return json({ mode, week, ok: out.ok, status: out.status, resend: out.data });
   }
@@ -265,12 +275,17 @@ Deno.serve(async (req) => {
   const all = (rcpt ?? []) as { user_id: string; email: string; display_name: string; token: string }[];
   const limit = Math.max(1, Math.min(100, Math.floor(Number(body?.limit ?? DAILY_LIMIT)) || DAILY_LIMIT));
   const list = all.slice(0, limit);
+  // うちの子を登録している人 (v4)。登録の有無で 1 段だけ変える
+  const { data: petRows } = list.length
+    ? await sb.from("pets").select("owner_id").in("owner_id", list.map((u) => u.user_id))
+    : { data: [] };
+  const petOwners = new Set(((petRows ?? []) as { owner_id: string }[]).map((r) => r.owner_id));
 
   let sent = 0, failed = 0; const errors: string[] = [];
   for (let i = 0; i < list.length; i += BATCH) {
     const chunk = list.slice(i, i + BATCH);
     const items = chunk.map((u) => {
-      const r = render(content, u.display_name, u.user_id.replace(/-/g, "").slice(0, 12), u.token);
+      const r = render(content, u.display_name, u.user_id.replace(/-/g, "").slice(0, 12), u.token, petOwners.has(u.user_id));
       return { to: u.email, subject: r.subject, html: r.html, unsub: r.unsub };
     });
     const out = await sendBatch(items);
