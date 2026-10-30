@@ -11,6 +11,7 @@ import { resolveFontFamily } from "../constants/fonts";
 // 2026/7/15 CV精度修正: CompleteRegistration の発火は App.tsx (初回ログイン検知) へ移設したため import 不要に。
 import { Logo } from "../components/ui";
 import { LineIcon } from "../components/LineIcon";
+import { PetGreetings } from "../components/PetGreetings";
 import { MyPage } from "./mypage";
 
 // Phase8 8b: account 系7ページを App.tsx から byte同一 line-slice 移動 (元 App.tsx 141-1514)
@@ -542,6 +543,9 @@ export const PetDetailPage = ({ setPage: _setPage }: { setPage: (p: string) => v
           {pet.bio}
         </div>
       )}
+
+      {/* 2026/10/31 うちの子への「ひとこと」: 街の人が声をかけ、飼い主さんが返事をする */}
+      <PetGreetings petId={pet.id} ownerId={pet.owner_id} petName={pet.name} isMemorial={isMemorial} currentUserId={currentUserId} />
 
       {/* 軌跡セクション (Phase D Phase 2 後半で taken_at タイムライン詳細実装) */}
       <div style={{

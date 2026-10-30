@@ -1,6 +1,7 @@
 // うちの子ギャラリー: 全ユーザーの公開うちの子を集約表示
 // ⚠️ 公開データ(pets RLS select=true)のみ読む。決済/SNS/施設マップ/認証/Pet Walker 非接触。
-// カードUIはマイページのうちの子セクション(L1017〜)と同等の作法。各カード→飼い主の公開プロフィール(/user/:owner_id)へ遷移。
+// カードUIはマイページのうちの子セクション(L1017〜)と同等の作法。各カード→その子のページ(/pet/:id)へ遷移
+// (2026/10/31: ひとことを残せるのがその子のページなので。飼い主さんのプロフィールへはその子のページから行ける)。
 // 取得は pets(active) を新着順 PAGE_SIZE 件・スクロール時「もっと見る」で +PAGE_SIZE。profiles は別取得→JS側JOIN(pets→auth.usersのFKしか無いため)。
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -109,13 +110,13 @@ export function PetGalleryPage({ isPC }: { setPage?: (p: string) => void; isPC?:
           return (
             <div
               key={p.id}
-              onClick={() => p.owner_id && navigate(`/user/${p.owner_id}`)}
+              onClick={() => navigate(`/pet/${p.id}`)}
               style={{
                 background: C.white,
                 borderRadius: 12,
                 border: `1px solid ${C.border}`,
                 overflow: "hidden",
-                cursor: p.owner_id ? "pointer" : "default",
+                cursor: "pointer",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
               }}
               onMouseEnter={(e) => {

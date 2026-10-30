@@ -2852,9 +2852,10 @@ const ArkPartnershipSection = () => {
 // SectionQuietlyLoved (L1668) の横スク作法を踏襲: Mobile=flex+scroll-snap 65vw / PC=3列 grid
 // 縦長から横スクへ刷新+ /petgallery 導線「すべてのうちの子を見る」線リンク追加。
 // 公開データ(pets RLS select=true)のみ・status='active'・新規GRANT/RLS変更 0。
+const isNewArrival = (createdAt: string) => Date.now() - new Date(createdAt).getTime() < 14 * 86400e3;
 const HomePetGallerySection = () => {
   const navigate = useNavigate();
-  type Pet = { id: string; owner_id: string | null; name: string; species: string; breed: string | null; gender: string | null; bio: string | null; avatar_url: string | null };
+  type Pet = { id: string; owner_id: string | null; name: string; species: string; breed: string | null; gender: string | null; bio: string | null; avatar_url: string | null; created_at: string };
   type Owner = { id: string; display_name: string | null; avatar_url: string | null };
   type Card = Pet & { owner: Owner | null };
   const [cards, setCards] = useState<Card[]>([]);
@@ -2874,12 +2875,15 @@ const HomePetGallerySection = () => {
       // limit(8)→limit(100) は「母集団拡大」目的 (status='active' フィルタは現状維持)。
       const { data: pets } = await supabase
         .from("pets")
-        .select("id, owner_id, name, species, breed, gender, bio, avatar_url")
+        .select("id, owner_id, name, species, breed, gender, bio, avatar_url, created_at")
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(100);
       const allActive = (pets || []) as Pet[];
-      const list = dailySeededShuffle(allActive).slice(0, 8);
+      // 2026/10/31: 来て 14 日以内の子 (最大 3 匹) を先頭に。「この街に来たばかり」と添えて、ようこその声をかけてもらう
+      const fresh = allActive.filter(p => isNewArrival(p.created_at)).slice(0, 3);
+      const rest = allActive.filter(p => !fresh.includes(p));
+      const list = [...fresh, ...dailySeededShuffle(rest)].slice(0, 8);
       const ownerIds = Array.from(new Set(list.map(p => p.owner_id).filter((v): v is string => !!v)));
       let ownerMap: Record<string, Owner> = {};
       if (ownerIds.length) {
@@ -2929,14 +2933,14 @@ const HomePetGallerySection = () => {
             return (
               <div
                 key={p.id}
-                onClick={() => p.owner_id && navigate(`/user/${p.owner_id}`)}
+                onClick={() => navigate(`/pet/${p.id}`)}
                 onMouseEnter={() => setHoverIndex(i)}
                 onMouseLeave={() => setHoverIndex(null)}
                 style={{
                   flexShrink: isMobile ? 0 : undefined,
                   width: isMobile ? '65vw' : undefined,
                   scrollSnapAlign: isMobile ? 'start' : undefined,
-                  cursor: p.owner_id ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   transition: 'transform 1.0s cubic-bezier(0.22, 1, 0.36, 1)',
                   transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
                 }}
@@ -2953,6 +2957,11 @@ const HomePetGallerySection = () => {
                     />
                   ) : speciesEmoji}
                 </div>
+                {isNewArrival(p.created_at) && (
+                  <p style={{ fontFamily: QC_FONT_JP, fontSize: isMobile ? 10 : 11, fontWeight: 400, color: QC.mutedGreen, letterSpacing: 0.5, margin: '0 0 4px 0' }}>
+                    この街に来たばかり
+                  </p>
+                )}
                 {/* 名前 */}
                 <h3 style={{
                   fontFamily: QC_FONT_JP,

@@ -14,6 +14,12 @@
 //     {}               … 送る
 //     {dry_run: true}  … 送らずに、送る予定の件数だけ返す
 //   Resend の 1 日 100 通は 街だより・注文・DM 通知と共有。1 回の呼び出しで住民あては 20 通まで。
+//
+// v2 (2026/10/31): うちの子への「ひとこと」(pet_greetings) を足した。
+//   greeting       … 自分の子にひとことが届いた → 飼い主さんへ
+//   greeting_reply … 飼い主さんが返事をした → 30 日以内にその子へ声をかけた人へ
+//   admin_greeting … 住民のひとことを運営あての新着に載せる
+//   ひとことの時、post_id / post_image / post_caption には うちの子の id / 写真 / 名前 が入っている。
 // ============================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -36,11 +42,11 @@ const esc = (s: unknown) => String(s ?? "")
 const cut = (s: unknown, n: number) => { const t = String(s ?? "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n) + "…" : t; };
 
 type OwnerItem = {
-  kind: "like" | "comment" | "reply"; ref_id: string; recipient: string; email: string; display_name: string; token: string;
+  kind: "like" | "comment" | "reply" | "greeting" | "greeting_reply"; ref_id: string; recipient: string; email: string; display_name: string; token: string;
   actor_name: string; post_id: string; post_image: string | null; post_caption: string | null; content: string | null; created_at: string;
 };
 type AdminItem = {
-  kind: "admin_post" | "admin_review" | "admin_listing" | "admin_pet"; ref_id: string; actor_name: string;
+  kind: "admin_post" | "admin_review" | "admin_listing" | "admin_pet" | "admin_greeting"; ref_id: string; actor_name: string;
   title: string | null; detail: string | null; image: string | null; link: string | null; first_time: boolean; created_at: string;
 };
 
@@ -55,21 +61,54 @@ ${inner}
 </table></td></tr></table></body></html>`;
 }
 
-// 住民あて: 1 人ぶんの いいね / コメント / 返信 をまとめた 1 通
+const isPet = (i: OwnerItem) => i.kind === "greeting" || i.kind === "greeting_reply";
+
+// 住民あて: 1 人ぶんの いいね / コメント / 返信 / うちの子へのひとこと をまとめた 1 通
 function renderOwner(items: OwnerItem[]) {
   const u = items[0];
-  const likes = items.filter((i) => i.kind === "like");
-  const words = items.filter((i) => i.kind !== "like");
+  const pets = items.filter(isPet);
+  const gallery = items.filter((i) => !isPet(i));
+  const likes = gallery.filter((i) => i.kind === "like");
+  const words = gallery.filter((i) => i.kind !== "like");
   const names = (xs: OwnerItem[]) => {
     const n = [...new Set(xs.map((x) => x.actor_name))];
     return n.length <= 2 ? n.map((x) => `${x} さん`).join("と") : `${n.slice(0, 2).map((x) => `${x} さん`).join("、")}ほか ${n.length - 2} 人`;
   };
-  const subject = words.length > 0
+  const replies = pets.filter((i) => i.kind === "greeting_reply");
+  const greets = pets.filter((i) => i.kind === "greeting");
+  const subject = replies.length > 0
+    ? `${replies[0].post_caption} の飼い主さんから、返事が届いています`
+    : greets.length > 0
+    ? `${greets[0].actor_name} さんが、${greets[0].post_caption} にひとこと残してくれました`
+    : words.length > 0
     ? `${words[0].actor_name} さんから、ひとこと届いています`
     : `${names(likes)}が、あなたの写真に いいね しました`;
 
-  const posts = [...new Map(items.map((i) => [i.post_id, i])).values()];
-  let inner = `<tr><td style="padding:0 28px 28px;font-size:14px;line-height:2;color:${K.text};">${esc(u.display_name)} さん<br>街のアルバムに置いた写真に、反応が届いています。</td></tr>`;
+  const lead = greets.length > 0 && gallery.length === 0 && replies.length === 0
+    ? "あなたの子に、街の人がひとこと残してくれました。"
+    : replies.length > 0 && greets.length === 0 && gallery.length === 0
+    ? "あなたが声をかけた子の飼い主さんから、返事が届いています。"
+    : gallery.length > 0 && pets.length === 0
+    ? "街のアルバムに置いた写真に、反応が届いています。"
+    : "街に置いたものに、反応が届いています。";
+  let inner = `<tr><td style="padding:0 28px 28px;font-size:14px;line-height:2;color:${K.text};">${esc(u.display_name)} さん<br>${lead}</td></tr>`;
+
+  // うちの子ごと
+  for (const p of [...new Map(pets.map((i) => [i.post_id, i])).values()]) {
+    const ws = pets.filter((i) => i.post_id === p.post_id);
+    const link = `${SITE}/pet/${p.post_id}`;
+    inner += `<tr><td style="padding:24px 28px;border-top:1px solid ${K.line};">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;"><tr>
+${p.post_image ? `<td width="104" style="vertical-align:top;"><a href="${link}"><img src="${esc(p.post_image)}" width="96" height="96" alt="" style="display:block;width:96px;height:96px;object-fit:cover;"></a></td>` : ""}
+<td style="vertical-align:top;">
+<p style="margin:0 0 10px;font-size:12px;color:${K.sub};line-height:1.8;">${esc(cut(p.post_caption, 30))}</p>
+${ws.map((w) => `<p style="margin:0 0 8px;font-size:14px;line-height:1.8;">${esc(w.actor_name)} さん${w.kind === "greeting_reply" ? "（飼い主さん）" : ""}<br><span style="color:${K.sub};">「${esc(cut(w.content, 80))}」</span></p>`).join("")}
+<p style="margin:12px 0 0;font-size:13px;"><a href="${link}" style="color:${K.cta};">${p.kind === "greeting" ? "返事を書きに行く" : "会いに行く"}</a></p>
+</td></tr></table></td></tr>`;
+  }
+
+  // 写真ごと
+  const posts = [...new Map(gallery.map((i) => [i.post_id, i])).values()];
   for (const p of posts) {
     const pl = likes.filter((i) => i.post_id === p.post_id);
     const pw = words.filter((i) => i.post_id === p.post_id);
@@ -84,9 +123,9 @@ ${pw.map((w) => `<p style="margin:0 0 8px;font-size:14px;line-height:1.8;">${esc
 <p style="margin:12px 0 0;font-size:13px;"><a href="${link}" style="color:${K.cta};">写真を見に行く</a></p>
 </td></tr></table></td></tr>`;
   }
-  inner += `<tr><td style="padding:24px 28px 8px;font-size:13px;line-height:2;color:${K.sub};">また一枚、置きに来てください。<br><a href="${SITE}/gallery?theme=1&compose=1" style="color:${K.cta};">今週のお題で一枚</a></td></tr>`;
+  if (gallery.length > 0) inner += `<tr><td style="padding:24px 28px 8px;font-size:13px;line-height:2;color:${K.sub};">また一枚、置きに来てください。<br><a href="${SITE}/gallery?theme=1&compose=1" style="color:${K.cta};">今週のお題で一枚</a></td></tr>`;
   const unsub = `${SITE}/unsubscribe?t=${u.token}`;
-  const footer = `このメールは、あなたの写真に反応があったときにお送りしています (6 時間に 1 通まで)。<br>
+  const footer = `このメールは、あなたの写真やうちの子に反応があったときにお送りしています (6 時間に 1 通まで)。<br>
 止める場合は <a href="${unsub}" style="color:${K.sub};">配信停止</a> から。街だよりと一緒に止まります。<br><br>
 発行: Qocca（クオッカ）　<a href="${SITE}/tokusho" style="color:${K.sub};">特定商取引法に基づく表記</a>　お問い合わせ: <a href="mailto:support@qocca.pet" style="color:${K.sub};">support@qocca.pet</a>`;
   return { subject, html: frame(subject, inner, footer), unsub };
@@ -94,13 +133,17 @@ ${pw.map((w) => `<p style="margin:0 0 8px;font-size:14px;line-height:1.8;">${esc
 
 const ADMIN_LABEL: Record<AdminItem["kind"], string> = {
   admin_post: "写真", admin_review: "口コミ (ペットウォーカー)", admin_listing: "出品", admin_pet: "うちの子の登録",
+  admin_greeting: "うちの子へのひとこと",
+};
+const ADMIN_LINK: Partial<Record<AdminItem["kind"], string>> = {
+  admin_post: "開いて返事をする", admin_pet: "開いて、ようこそを伝える", admin_greeting: "開く (困った書き込みはここから消せます)",
 };
 
 // 運営あて: 住民が置いたもの一覧。返事の仕方も添える
 function renderAdmin(items: AdminItem[]) {
   const posts = items.filter((i) => i.kind === "admin_post").length;
   const subject = `街に ${items.length} 件、住民が置いていきました${posts ? `（写真 ${posts}）` : ""}`;
-  let inner = `<tr><td style="padding:0 28px 20px;font-size:14px;line-height:2;">King へ。<br>写真には いいね と一言を、24 時間以内に返してあげてください。返事が届くと、2 枚目が置かれやすくなります。</td></tr>`;
+  let inner = `<tr><td style="padding:0 28px 20px;font-size:14px;line-height:2;">King へ。<br>写真には いいね と一言を、新しく来た子には「ようこそ」を、24 時間以内に返してあげてください。返事が届くと、また来てくれやすくなります。</td></tr>`;
   for (const i of items) {
     inner += `<tr><td style="padding:20px 28px;border-top:1px solid ${K.line};">
 <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;"><tr>
@@ -109,7 +152,7 @@ ${i.image ? `<td width="88" style="vertical-align:top;"><img src="${esc(i.image)
 <p style="margin:0;font-size:11px;letter-spacing:1px;color:${K.sub};">${esc(ADMIN_LABEL[i.kind])}${i.first_time ? "　はじめて" : ""}</p>
 <p style="margin:2px 0 0;">${esc(i.actor_name)} さん${i.title ? `　${esc(cut(i.title, 50))}` : ""}</p>
 ${i.detail ? `<p style="margin:2px 0 0;font-size:12px;color:${K.sub};">${esc(cut(i.detail, 140))}</p>` : ""}
-${i.link ? `<p style="margin:8px 0 0;font-size:13px;"><a href="${esc(i.link)}" style="color:${K.cta};">${i.kind === "admin_post" ? "開いて返事をする" : "開く"}</a></p>` : ""}
+${i.link ? `<p style="margin:8px 0 0;font-size:13px;"><a href="${esc(i.link)}" style="color:${K.cta};">${ADMIN_LINK[i.kind] ?? "開く"}</a></p>` : ""}
 </td></tr></table></td></tr>`;
   }
   const footer = `notify-town-activity (10 分ごと・運営あては 30 分に 1 通まで) からの自動のお知らせです。`;
