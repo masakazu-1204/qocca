@@ -47,6 +47,7 @@ type ListingItem = {
 };
 type LikedMap = Record<string, boolean>;
 import { ListingEditModal } from "../components/ListingEditModal";
+import { ListingImportBox } from "../components/ListingImportBox";
 import { FloatingBackButton } from "../components/FloatingBackButton";
 // 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (公開プロフィール・equipped=trueはRLSで他人も閲覧可)
 import { DecoratedAvatar } from "../components/DecoratedAvatar";
@@ -1910,10 +1911,11 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
           textAlign:"left", lineHeight:1.7,
         }}>
           <div style={{ fontSize:13, fontWeight:800, color:"#D84315", marginBottom:4 }}>
-            <LineIcon name="star" size={13} /> 今だけ：テスマケ期間中は出品手数料 0%
+            {/* 2026/10/29 7/31 で終わったテスマケの文言が残っていた。いまの手数料 (CLAUDE.md の最終確定版) に */}
+            <LineIcon name="star" size={13} /> はじめての取引は、出品手数料 0%
           </div>
           <div style={{ fontSize:11, color:"#BF360C" }}>
-            2026/7/31 までに出品 → 通常 10% の手数料が無料に
+            登録から 90 日以内は 5%、そのあとは 10% です
           </div>
         </div>
         <button onClick={()=>setPage("signup")} style={{ width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer", marginBottom:8 }}>ログイン / 新規登録して出品する</button>
@@ -1952,8 +1954,8 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
         {!isDraftDone && (
           <>
             <div style={{ background:"#FFF8E1", border:`1px solid #FFC107`, borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:11, color:"#7B5E00", lineHeight:1.7 }}>
-              <LineIcon name="clock" size={11} /> テスマケ期間中は <strong>通常数時間以内</strong> に公開されます<br />
-              <span style={{ opacity:0.7 }}>(最大24時間以内。審査基準: ① ペットの安全 ② 著作権 ③ 価格妥当性)</span>
+              <LineIcon name="clock" size={11} /> 投稿後、<strong>最大24時間以内</strong> に運営事務局が確認して公開します<br />
+              <span style={{ opacity:0.7 }}>(審査基準: ① ペットの安全 ② 著作権 ③ 価格妥当性)</span>
             </div>
             <p style={{ color:C.warmGray, fontSize:12, lineHeight:1.8, marginBottom:20 }}>
               <LineIcon name="sparkle" size={12} /> 街であなたの想いが届きますように
@@ -2074,6 +2076,11 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
         {error && <div style={{ background:C.redPale, color:C.red, padding:"10px 14px", borderRadius:10, fontSize:13, marginBottom:16, fontWeight:700 }}>{error}</div>}
         <div style={{ background:C.white, borderRadius:20, padding:"24px 16px", border:`1px solid ${C.border}` }}>
           {step===1&&<>
+            {/* 2026/10/29 よそ (minne / Creema / BASE) の自分の作品ページから下書きを作る。入れるのは題名・説明・価格・写真だけ */}
+            <ListingImportBox onImported={(x)=>{
+              setForm((p: any)=>({ ...p, title: x.title || p.title, desc: x.description || p.desc, price: x.price != null ? String(x.price) : p.price }));
+              if (x.files.length) setImages(prev => [...x.files, ...prev].slice(0, 5));
+            }}/>
             <h2 style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:20 }}>カテゴリを選ぶ</h2>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
               {CATS.filter(c=>c.id!=="all").map(c=>(
