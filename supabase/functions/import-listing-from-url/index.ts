@@ -14,6 +14,15 @@
 //   - 写真は listing-images の <user.id>/import/ に置き、その URL を返す (画面側で File にして、いつもの出品と同じ流れで送る)。
 //
 //   POST { url } → { title, description, price, images: [url], source }
+//
+// v2 (2026/11/2): King「メルカリとかも対応しといて」→ フリマ 3 つを足した (どれも robots.txt で作品ページは許されている)
+//       メルカリ      https://jp.mercari.com/item/m<数字>   (古い https://www.mercari.com/jp/items/m<数字>/ も読み替える)
+//       ラクマ        https://item.fril.jp/<英数字 32 桁>
+//       Yahoo!フリマ  https://paypayfleamarket.yahoo.co.jp/item/<英字1+数字>
+//   - ページに schema.org の Product (JSON-LD) があれば、それを先に使う (ラクマ・Yahoo!フリマ。題名・説明・価格・その作品の写真)。
+//   - メルカリは説明文がページに入っていない (後から別の API で読む作り。その API は robots.txt で止められている)。
+//     og:description はメルカリの決まり文句なので捨てる。題名・価格・写真 1 枚だけ。説明は手で書いてもらう (画面でそう伝える)。
+//   - ラクマの写真は og:image と同じ作品番号の大きい写真 (img.fril.jp/img/<番号>/l/) を最大 5 枚。
 // ============================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -35,13 +44,39 @@ const json = (b: unknown, s = 200) =>
 const BASE_DOMAINS = ["base.shop", "thebase.in", "base.ec", "official.ec", "theshop.jp", "shopselect.net", "buyshop.jp",
   "fashionstore.jp", "handcrafted.jp", "kawaiishop.jp", "supersale.jp", "storeshop.jp", "base.place", "thebase.com"];
 
-type Source = "minne" | "creema" | "base";
+type Source = "minne" | "creema" | "base" | "mercari" | "rakuma" | "yahoo";
 function classify(u: URL): Source | null {
   if (u.protocol !== "https:") return null;
   const h = u.hostname.toLowerCase();
   if (h === "minne.com" && /^\/items\/\d+\/?$/.test(u.pathname)) return "minne";
   if ((h === "www.creema.jp" || h === "creema.jp") && /^\/item\/\d+\/detail\/?$/.test(u.pathname)) return "creema";
   if (BASE_DOMAINS.some((d) => h.endsWith("." + d)) && /^\/items\/\d+\/?$/.test(u.pathname)) return "base";
+  if (h === "jp.mercari.com" && /^\/item\/m\d+\/?$/.test(u.pathname)) return "mercari";
+  if (h === "item.fril.jp" && /^\/[0-9a-f]{32}\/?$/.test(u.pathname)) return "rakuma";
+  if (h === "paypayfleamarket.yahoo.co.jp" && /^\/item\/[a-z]\d+\/?$/.test(u.pathname)) return "yahoo";
+  return null;
+}
+// 古い形の URL を今の形に読み替える (メルカリ: www.mercari.com/jp/items/m123/ → jp.mercari.com/item/m123)
+function normalize(u: URL): URL {
+  const h = u.hostname.toLowerCase();
+  const m = u.pathname.match(/^\/jp\/items\/(m\d+)\/?$/);
+  if ((h === "www.mercari.com" || h === "mercari.com") && m) return new URL(`https://jp.mercari.com/item/${m[1]}`);
+  return u;
+}
+
+// schema.org の Product (JSON-LD)。無ければ null
+function ldProduct(html: string): { name?: string; description?: string; price?: number; images: string[] } | null {
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    let j: any; try { j = JSON.parse(m[1]); } catch (_) { continue; }
+    for (const o of (Array.isArray(j) ? j : j?.["@graph"] ?? [j])) {
+      if (o?.["@type"] !== "Product") continue;
+      const offer = Array.isArray(o.offers) ? o.offers[0] : o.offers;
+      const price = Number(offer?.price);
+      const imgs = (Array.isArray(o.image) ? o.image : [o.image]).map((x: any) => typeof x === "string" ? x : x?.url).filter((x: any) => typeof x === "string" && /^https:\/\//.test(x));
+      return { name: typeof o.name === "string" ? o.name : undefined, description: typeof o.description === "string" ? o.description : undefined,
+               price: Number.isFinite(price) && price > 0 ? Math.round(price) : undefined, images: imgs };
+    }
+  }
   return null;
 }
 
@@ -58,14 +93,23 @@ function meta(html: string, prop: string): string | null {
 }
 
 function extract(html: string, src: Source, u: URL) {
-  let title = meta(html, "og:title") ?? (html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "");
-  title = decode(title).replace(/\s*[|｜]\s*[^|｜]*powered by BASE\s*$/i, "").replace(/\s*[|｜]\s*(minne|Creema)[^|｜]*$/i, "").trim();
-  let description = meta(html, "og:description") ?? meta(html, "description") ?? "";
+  const ld = src === "rakuma" || src === "yahoo" ? ldProduct(html) : null;
+  let title = ld?.name ?? meta(html, "og:title") ?? (html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "");
+  title = decode(title).replace(/\s*[|｜]\s*[^|｜]*powered by BASE\s*$/i, "").replace(/\s*[|｜]\s*(minne|Creema)[^|｜]*$/i, "")
+    .replace(/\s+by メルカリ\s*$/, "").replace(/\s*[|｜]\s*フリマアプリ ラクマ\s*$/, "").replace(/\s*[|｜]\s*Yahoo!フリマ[^|｜]*$/, "").trim();
+  let description = ld?.description ?? meta(html, "og:description") ?? meta(html, "description") ?? "";
   if (src === "minne") description = description.replace(/^[\d,]+円\s*[|｜]\s*/, "");
+  if (src === "mercari") description = ""; // メルカリの og:description は決まり文句 (作品の説明ではない)
+  description = description.replace(/\r\n?/g, "\n");
   const priceRaw = meta(html, "product:price:amount") ?? html.match(/"price"\s*:\s*"?(\d+)/)?.[1] ?? "";
-  const price = /^\d+$/.test(priceRaw) ? Number(priceRaw) : null;
+  const price = ld?.price ?? (/^\d+$/.test(priceRaw) ? Number(priceRaw) : null);
 
   let images: string[] = [];
+  if (src === "yahoo" && ld) images = ld.images;
+  if (src === "rakuma") {
+    const id = (meta(html, "og:image") ?? "").match(/^https:\/\/img\.fril\.jp\/img\/(\d+)\//)?.[1];
+    if (id) images = [...new Set(html.match(new RegExp(`https://img\\.fril\\.jp/img/${id}/l/\\d+\\.(?:jpe?g|png|webp)`, "gi")) ?? [])];
+  }
   if (src === "creema") {
     const id = u.pathname.match(/\/item\/(\d+)\//)?.[1];
     if (id) {
@@ -74,7 +118,7 @@ function extract(html: string, src: Source, u: URL) {
     }
   }
   const og = meta(html, "og:image");
-  if (og && /^https:\/\//.test(og) && !images.includes(og)) images.unshift(og);
+  if (og && /^https:\/\//.test(og) && !images.some((i) => i.split("?")[0] === og.split("?")[0])) images.unshift(og);
   return { title: title.slice(0, 100), description: description.slice(0, 3000), price, images: images.slice(0, 5) };
 }
 
@@ -98,6 +142,7 @@ Deno.serve(async (req) => {
   let body: any = {}; try { body = await req.json(); } catch (_) { /* 空 */ }
   let u: URL; try { u = new URL(String(body?.url ?? "").trim()); } catch (_) { return json({ error: "url_invalid" }, 400); }
   u.hash = ""; u.search = "";
+  u = normalize(u);
   const src = classify(u);
   if (!src) return json({ error: "unsupported_url" }, 400);
 
