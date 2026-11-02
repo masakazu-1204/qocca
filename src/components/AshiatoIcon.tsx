@@ -1,5 +1,5 @@
 // 「あしあと」🐾 ブランドアイコン (Phase C-1 UI第1弾)
-// King検収済み i1_ashiato_b.svg (ashiato-assets バケット・オレンジ#F5A94A単色) を表示。
+// King検収済み i1_ashiato_b.svg (ashiato-assets バケット・オレンジ#C97B5F単色) を表示。
 // 残高カード・価格表示・トーストで size を変えて使い回す。
 
 const ICON_URL =

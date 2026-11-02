@@ -47,7 +47,7 @@ const MarketIcon = ({ name, size = 20, color = ACCENT }: { name: string; size?: 
   </svg>
 );
 
-const BRAND = "#F5A94A";
+const BRAND = "#C97B5F";
 const BRAND_DEEP = "#B27820";
 const CREAM = "#FFF9F0";
 const CREAM_DARK = "#FFF2DF";

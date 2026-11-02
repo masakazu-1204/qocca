@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Heart, PawPrint } from "lucide-react";
 
-const BRAND = "#F5A94A";
+const BRAND = "#C97B5F";
 const BRAND_DEEP = "#B27820";
 const CREAM = "#FFF9F0";
 const TEXT_DARK = "#2C2C2A";

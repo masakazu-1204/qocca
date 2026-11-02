@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { PawPrint, ShieldCheck, Tag } from "lucide-react";
 
-const BRAND = "#F5A94A";
+const BRAND = "#C97B5F";
 const CREAM = "#FFF9F0";
 const CREAM_DARK = "#FFF2DF";
 const TEXT_DARK = "#2C2C2A";

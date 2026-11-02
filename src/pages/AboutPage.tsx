@@ -18,7 +18,7 @@ import {
 // 依頼書 #108 (2026/6/4): ARK 透明性機能 (累計送金額表示)
 import ArkDonationStats from "../components/ArkDonationStats";
 
-const BRAND = "#F5A94A";
+const BRAND = "#C97B5F";
 const BRAND_DEEP = "#B27820";
 const CREAM = "#FFF9F0";
 const CREAM_DARK = "#FFF2DF";

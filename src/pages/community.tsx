@@ -103,7 +103,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
         joins: 0,
         comments: 0,
         category: e.category || "フェスタ",
-        bg: e.pet_type === "dog" ? "#FFF3E0" : e.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9",
+        bg: e.pet_type === "dog" ? "#F6ECE6" : e.pet_type === "cat" ? "#F3E5F5" : "#E8F5E9",
         organizer_id: e.organizer_id,
       }));
       setEvents(converted);
@@ -253,7 +253,7 @@ export const EventsPage = ({ isPC, setPage }: { isPC?: boolean; setPage: SetPage
               ))}
               <div style={{ margin:"14px 0", fontSize:14, color:"#555", lineHeight:1.8 }}>{selected.desc}</div>
               {selected.url && (
-  <a href={selected.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:12, padding:"10px 16px", background:"#F5A94A", borderRadius:10, color:"#fff", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none" }}><LineIcon name="link" size={13} /> 公式サイトで詳細を見る</a>
+  <a href={selected.url} target="_blank" rel="noopener noreferrer" style={{ display:"block", marginTop:12, padding:"10px 16px", background:"#C97B5F", borderRadius:10, color:"#fff", fontWeight:700, fontSize:13, textAlign:"center", textDecoration:"none" }}><LineIcon name="link" size={13} /> 公式サイトで詳細を見る</a>
 )}
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={()=>setEvLiked(p=>({...p,[selected.id]:!p[selected.id]}))} style={{ flex:1, padding:"12px", border:`1.5px solid ${evLiked[selected.id]?C.orange:C.border}`, borderRadius:12, background:evLiked[selected.id]?C.orangePale:C.white, color:evLiked[selected.id]?C.orange:C.warmGray, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}><LineIcon name="heart" size={14} filled={!!evLiked[selected.id]} /> {selected.likes+(evLiked[selected.id]?1:0)}</button>

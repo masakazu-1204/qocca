@@ -316,7 +316,7 @@ export const QoccaTownGuide = ({ setPage }: { setPage: SetPage }) => {
               background:C.white, borderRadius:16, padding:"24px 18px", border:`1px solid ${C.border}`,
               cursor:"pointer", transition:"transform 0.15s, box-shadow 0.15s",
               boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
-            }} onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 8px 20px rgba(245,169,74,0.15)"; }} onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,0.04)"; }}>
+            }} onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 8px 20px rgba(201,123,95,0.15)"; }} onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,0.04)"; }}>
               <div style={{ fontSize:42, marginBottom:10, lineHeight:1 }}>{f.emoji}</div>
               <div style={{ fontSize:10, color:C.orange, fontWeight:800, letterSpacing:1, marginBottom:6 }}>{f.icon} {f.label.toUpperCase()}</div>
               <div style={{ fontSize:14, fontWeight:900, color:C.dark, marginBottom:8, lineHeight:1.4 }}>{f.title}</div>
@@ -370,7 +370,7 @@ export const FirstStepGuide = ({ setPage }: { setPage: SetPage }) => {
                 background:`linear-gradient(135deg, ${C.orange} 0%, ${C.orangeLight} 100%)`,
                 display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:18, fontWeight:900, color:"#fff", flexShrink:0,
-                boxShadow:"0 4px 10px rgba(245,169,74,0.3)"
+                boxShadow:"0 4px 10px rgba(201,123,95,0.3)"
               }}>{s.num}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
@@ -476,7 +476,7 @@ export const FoundingCreatorsPage = ({ setPage: _setPage }: { setPage: (p: strin
                           <span style={{ background: "#F3E5F5", color: "#AB47BC", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>⭐ 創業クリエイター</span>
                         )}
                         {!c.is_founding_creator && c.is_initial_member && (
-                          <span style={{ background: "#FFF3E0", color: "#A07640", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>🌱 初期メンバー</span>
+                          <span style={{ background: "#F6ECE6", color: "#A07640", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>🌱 初期メンバー</span>
                         )}
                       </div>
                       <div style={{ fontSize: 12, color: C.warmGray, marginBottom: intro ? 6 : 0 }}>
@@ -737,7 +737,7 @@ export const FAQPage = ({ setPage, isPC }: { setPage: (p: string) => void; isPC?
           {faqs.map((f, i) => (
             <details key={i} open={i < 3} style={{ borderBottom: i < faqs.length-1 ? "1px solid #F1EFE8" : "none", padding:"12px 0" }}>
               <summary style={{ cursor:"pointer", fontSize:14, fontWeight:800, color:"#2C2C2A", listStyle:"none", display:"flex", alignItems:"flex-start", gap:8 }}>
-                <span style={{ color:"#F5A94A", flexShrink:0 }}>Q.</span>
+                <span style={{ color:"#C97B5F", flexShrink:0 }}>Q.</span>
                 <span>{f.q}</span>
               </summary>
               <div style={{ marginTop:8, paddingLeft:24, color:"#555", lineHeight:1.85 }}>
@@ -746,7 +746,7 @@ export const FAQPage = ({ setPage, isPC }: { setPage: (p: string) => void; isPC?
             </details>
           ))}
           <div style={{ marginTop:24, padding:"14px 16px", background:"#FFF9F0", borderRadius:10, fontSize:12, color:"#888780", lineHeight:1.7 }}>
-            🐾 ここに無いご質問は <span onClick={()=>setPage("contact")} style={{ color:"#F5A94A", fontWeight:700, cursor:"pointer" }}>お問い合わせ</span> または <span onClick={()=>setPage("help")} style={{ color:"#F5A94A", fontWeight:700, cursor:"pointer" }}>ヘルプ</span> をご確認ください。
+            🐾 ここに無いご質問は <span onClick={()=>setPage("contact")} style={{ color:"#C97B5F", fontWeight:700, cursor:"pointer" }}>お問い合わせ</span> または <span onClick={()=>setPage("help")} style={{ color:"#C97B5F", fontWeight:700, cursor:"pointer" }}>ヘルプ</span> をご確認ください。
           </div>
         </div>
       </div>

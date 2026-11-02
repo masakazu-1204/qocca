@@ -87,7 +87,7 @@ export const Card = ({ item, onClick, liked, onLike }: {
     cursor:"pointer", border:`1px solid ${C.border}`,
     boxShadow:"0 2px 8px rgba(0,0,0,0.05)", width:"100%"
   }}>
-    <div style={{ height:140, background:item.bg || "#FFF3E0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:60, position:"relative", overflow:"hidden" }}>
+    <div style={{ height:140, background:item.bg || "#F6ECE6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:60, position:"relative", overflow:"hidden" }}>
       {item.imageUrl
         ? <img src={item.imageUrl} alt={item.title} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
         : item.emoji
@@ -520,7 +520,7 @@ export const Navbar = ({ setPage, liked: _liked, search, setSearch }: any) => {
 export const OrderStatusBar = ({ status }: { status: string }) => {
   const idx = stepIndex(status);
   if (idx < 0) return (
-    <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:status==="refunded"?"#FFEBEE":"#FFF3E0", borderRadius:12 }}>
+    <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:status==="refunded"?"#FFEBEE":"#F6ECE6", borderRadius:12 }}>
       <span style={{ fontSize:18, color:status==="refunded"?C.red:C.orange, display:"inline-flex" }}><LineIcon name={status==="refunded"?"coin":"closeCircle"} size={18} /></span>
       <span style={{ fontSize:13, fontWeight:700, color:status==="refunded"?C.red:C.orange }}>{status==="refunded"?"返金済み":"キャンセル"}</span>
     </div>

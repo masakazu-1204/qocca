@@ -157,7 +157,7 @@ export const XConnectionPage = ({ setPage: _setPage }: { setPage: (p: string) =>
       )}
 
       {isExpired && (
-        <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+        <div style={{ background: "#F6ECE6", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
           ⚠️ X のトークンが期限切れです。再連携してください。
           <button onClick={startOAuth} disabled={initLoading} style={{ marginTop: 12, padding: "12px 20px", background: "#000", color: "#fff", border: "none", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: initLoading ? "wait" : "pointer", fontFamily: "inherit", display: "block", width: "100%", minHeight: 40 }}>
             {initLoading ? "..." : "🐦 再連携する"}
@@ -435,7 +435,7 @@ export const ThreadsConnectionPage = ({ setPage: _setPage }: { setPage: (p: stri
       )}
 
       {isExpired && (
-        <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+        <div style={{ background: "#F6ECE6", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
           ⚠️ Threads のトークンが期限切れです。再連携してください。
           <button onClick={startOAuth} style={{ marginTop: 12, padding: "12px 20px", background: "#000", color: "#fff", border: "none", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "block", width: "100%", minHeight: 40 }}>
             🧵 再連携する
@@ -697,7 +697,7 @@ export const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: st
       </p>
 
       {/* Business Account 必須注意 */}
-      <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: C.dark, lineHeight: 1.7 }}>
+      <div style={{ background: "#F6ECE6", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: C.dark, lineHeight: 1.7 }}>
         ⚠️ <b>Instagram Business Account 必須</b><br/>
         Personal アカウントでは Graph API 経由の投稿ができません。<br/>
         Instagram アプリの「プロフェッショナルアカウントに切り替える」から Business 化してから連携してください。
@@ -736,7 +736,7 @@ export const InstagramConnectionPage = ({ setPage: _setPage }: { setPage: (p: st
       )}
 
       {isExpired && (
-        <div style={{ background: "#FFF3E0", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
+        <div style={{ background: "#F6ECE6", border: `1px solid ${C.orange}`, borderRadius: 12, padding: "16px 18px", fontSize: 13, color: C.dark, lineHeight: 1.7 }}>
           ⚠️ Instagram のトークンが期限切れです。再連携してください。
           <button onClick={startOAuth} style={{ marginTop: 12, padding: "12px 20px", background: IG_GRADIENT, color: "#fff", border: "none", borderRadius: 18, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "block", width: "100%", minHeight: 40 }}>
             📷 再連携する

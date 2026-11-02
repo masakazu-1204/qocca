@@ -23,7 +23,7 @@ import { Link } from "react-router-dom";
 import { supabase as sb } from "../supabaseClient";
 
 const C = {
-  brand: "#F5A94A",
+  brand: "#C97B5F",
   brandDeep: "#B27820",
   cream: "#FFF9F0",
   dark: "#2C2C2A",
@@ -260,7 +260,7 @@ export default function AdminEventSources() {
         </div>
 
         {triggerResult && (
-          <div style={{ background: triggerResult.startsWith("✅") ? "#E8F5E9" : triggerResult.startsWith("⚠️") ? "#FFF3E0" : "#FFEBEE", padding: "10px 14px", borderRadius: 10, fontSize: 11, marginBottom: 14, fontFamily: "ui-monospace, monospace" }}>
+          <div style={{ background: triggerResult.startsWith("✅") ? "#E8F5E9" : triggerResult.startsWith("⚠️") ? "#F6ECE6" : "#FFEBEE", padding: "10px 14px", borderRadius: 10, fontSize: 11, marginBottom: 14, fontFamily: "ui-monospace, monospace" }}>
             {triggerResult}
           </div>
         )}

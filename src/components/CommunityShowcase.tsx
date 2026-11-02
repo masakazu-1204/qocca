@@ -7,7 +7,7 @@ const SUPABASE_URL = "https://qufrqkuipzuqeqkvuhkx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_TWEGFx7kfggQffOSzs31Jg_J3yYZqou";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const BRAND = "#F5A94A";
+const BRAND = "#C97B5F";
 const BRAND_DEEP = "#B27820";
 const TEXT_DARK = "#2C2C2A";
 const TEXT_MUTED = "#888780";
@@ -147,7 +147,7 @@ export default function CommunityShowcase() {
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.transform = "translateX(4px)";
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(245,169,74,0.15)";
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(201,123,95,0.15)";
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.transform = "translateX(0)";
@@ -215,7 +215,7 @@ export default function CommunityShowcase() {
               fontWeight: 800,
               cursor: "pointer",
               fontFamily: "inherit",
-              boxShadow: "0 4px 12px rgba(245,169,74,0.3)",
+              boxShadow: "0 4px 12px rgba(201,123,95,0.3)",
             }}
           >
             すべてのコミュニティを見る →

@@ -146,7 +146,7 @@ export default function HomeNewsSection() {
 
   const seeAllLink: React.CSSProperties = {
     fontSize: '13px',
-    color: '#F5A94A',
+    color: '#C97B5F',
     textDecoration: 'none',
     fontWeight: 600,
     cursor: 'pointer',
@@ -185,7 +185,7 @@ export default function HomeNewsSection() {
     width: '100%',
     height: '110px',
     objectFit: 'cover',
-    backgroundColor: '#F5A94A20',
+    backgroundColor: '#C97B5F20',
   };
 
   const blogImagePlaceholder: React.CSSProperties = {
@@ -229,7 +229,7 @@ export default function HomeNewsSection() {
     overflow: 'hidden',
     cursor: 'pointer',
     position: 'relative',
-    backgroundColor: '#F5A94A20',
+    backgroundColor: '#C97B5F20',
     margin: 0,
     padding: 0,
     display: 'block',
@@ -271,7 +271,7 @@ export default function HomeNewsSection() {
     width: '48px',
     height: '48px',
     borderRadius: '50%',
-    backgroundColor: '#F5A94A20',
+    backgroundColor: '#C97B5F20',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

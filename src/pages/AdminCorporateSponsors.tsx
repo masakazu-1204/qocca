@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 import { supabase as sb } from "../supabaseClient";
 
 const C = {
-  brand: "#F5A94A",
+  brand: "#C97B5F",
   brandDeep: "#B27820",
   cream: "#FFF9F0",
   dark: "#2C2C2A",
@@ -240,7 +240,7 @@ export default function AdminCorporateSponsors() {
             <div style={{ fontSize: 11, color: C.warmGray, marginBottom: 14 }}>backer_id: {editing.backer_id} / user_id: {editing.user_id || "(未紐付け)"}</div>
 
             {!editing.user_id && (
-              <div style={{ background: "#FFF3E0", color: C.brandDeep, padding: "10px 12px", borderRadius: 8, fontSize: 12, marginBottom: 14 }}>
+              <div style={{ background: "#F6ECE6", color: C.brandDeep, padding: "10px 12px", borderRadius: 8, fontSize: 12, marginBottom: 14 }}>
                 ⚠️ user_id 未紐付けのため profiles 更新はスキップされます。public_display / notes のみ反映されます。
               </div>
             )}

@@ -6,7 +6,7 @@ Qocca(クオッカ)は、ペットオーナーとクリエイターをつなぐ�
 - 公式サイト: https://www.qocca.pet
 - グランドオープン: 2026年7月1日
 - 拠点: 日本
-- カラー: warm orange #F5A94A
+- カラー: テラコッタ #C97B5F (静かな、温かい色)
 
 ## 主要 URL
 - トップ: https://www.qocca.pet/

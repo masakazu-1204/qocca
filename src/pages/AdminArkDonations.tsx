@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 import { supabase as sb } from "../supabaseClient";
 
 const C = {
-  brand: "#F5A94A",
+  brand: "#C97B5F",
   brandDeep: "#B27820",
   cream: "#FFF9F0",
   dark: "#2C2C2A",
