@@ -978,7 +978,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
           上下バッサリ切れていた (色鉛筆アートの犬の頭が切れる等)。
           作品は「そのままの形」で見せるのが本来。cover → contain にし、
           背景をぼかした同じ画像で埋めて余白の間延びを防ぐ。 */}
-      <div style={{ background:item.bg || "#FFF3E0", position:"relative", overflow:"hidden" }}>
+      <div style={{ background:item.bg || "#F6ECE6", position:"relative", overflow:"hidden" }}>
         {shownPhoto ? (
           <>
             {/* 背景: 同じ画像を拡大+ぼかし。レターボックスの帯が寂しくならない */}
@@ -1035,7 +1035,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
         {/* 依頼書 #113 緊急 (2026/6/4): 自分の出品なら編集 banner を表示 (クリエイター動線改善) */}
         {user?.id && item.seller_id === user.id && (
           <div onClick={() => setShowMyEditModal(true)} style={{
-            background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+            background:"linear-gradient(135deg, #F6ECE6 0%, #EFDCD2 100%)",
             border:`1.5px solid ${C.orange}`, borderRadius:12, padding:"12px 16px",
             marginBottom:14, cursor:"pointer", display:"flex", alignItems:"center", gap:12,
           }}>
@@ -1905,7 +1905,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
           「想いごと」街に置く場所です
         </p>
         <div style={{
-          background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+          background:"linear-gradient(135deg, #F6ECE6 0%, #EFDCD2 100%)",
           border:`2px solid ${C.orange}`,
           borderRadius:14, padding:"14px 16px", marginBottom:20,
           textAlign:"left", lineHeight:1.7,
@@ -2017,7 +2017,7 @@ export const SellPage = ({ setPage }: { setPage: SetPage }) => {
           <>
             {testmakeActive && !isFoundingCreator && (
               <div style={{
-                background:"linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)",
+                background:"linear-gradient(135deg, #F6ECE6 0%, #EFDCD2 100%)",
                 border:`2px solid ${C.orange}`, borderRadius:14,
                 padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12,
               }}>
@@ -2641,7 +2641,7 @@ export const DetailPageWrapper = ({ listings, liked, onLike }: {
               delivery: data.delivery_days || "要相談",
               delivery_type: data.delivery_type || "data_only",
               emoji: "🐾",
-              bg: "#FFF3E0",
+              bg: "#F6ECE6",
             });
           }
         })();
