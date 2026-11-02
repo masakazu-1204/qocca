@@ -116,15 +116,27 @@ export const NG_WORDS = [
 ];
 
 // ── ブログカテゴリ ────────────────────────────────────────────────────
+// 2026/11/3: 絵文字アイコンを外し、自動ブログのカテゴリ (petcare など) にも日本語の名前を付けた。
+// 一覧の絞り込みには、記事が 1 本以上あるカテゴリだけを出す (gallery.tsx)。
 export const BLOG_CATS = [
-  { id:"all", icon:"📝", label:"すべて" },
-  { id:"tips", icon:"💡", label:"豆知識" },
-  { id:"health", icon:"🏥", label:"健康" },
-  { id:"food", icon:"🍖", label:"ごはん" },
-  { id:"training", icon:"🎓", label:"しつけ" },
-  { id:"goods", icon:"🛍", label:"グッズ" },
-  { id:"story", icon:"📖", label:"うちの子物語" },
-  { id:"creator", icon:"🎨", label:"クリエイター" },
+  { id:"all", label:"すべて" },
+  { id:"petcare", label:"暮らしのケア" },
+  { id:"medical", label:"からだと病院" },
+  { id:"anniversary", label:"記念日" },
+  { id:"creator", label:"クリエイター" },
+  { id:"philosophy", label:"街のこと" },
+  { id:"ark", label:"保護と譲渡" },
+  { id:"rainbow", label:"虹の橋" },
+  { id:"global", label:"世界のペット" },
+  { id:"industry", label:"ペットの業界" },
+  { id:"tech", label:"テクノロジー" },
+  { id:"general", label:"おしらせ" },
+  { id:"tips", label:"豆知識" },
+  { id:"health", label:"健康" },
+  { id:"food", label:"ごはん" },
+  { id:"training", label:"しつけ" },
+  { id:"goods", label:"グッズ" },
+  { id:"story", label:"うちの子物語" },
 ];
 
 // ── 施設カテゴリ ──────────────────────────────────────────────────────

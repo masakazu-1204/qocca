@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import { C, QC_FONT_DISPLAY } from "../constants/theme";
+import { C, QC, QC_FONT_DISPLAY } from "../constants/theme";
 import { ORDER_STEPS } from "../constants/data";
 import { resolveFontFamily } from "../constants/fonts";
 import { stepIndex } from "../utils/format";
@@ -338,8 +338,8 @@ export const PCNavbar = ({ setPage, search, setSearch }: {
           }}>{label}</button>
         ))}
         <button onClick={()=>setPage("sell")} style={{
-          padding:"9px clamp(12px, 1.6vw, 20px)", background:C.orange, border:"none", borderRadius:10,
-          color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit",
+          padding:"9px clamp(12px, 1.6vw, 20px)", background:QC.terracotta, border:"none", borderRadius:10,
+          color:QC.warmWhite, fontWeight:500, fontSize:14, cursor:"pointer", fontFamily:"inherit",
           whiteSpace:"nowrap", flexShrink:0
         }}>出品する</button>
         {user ? (
@@ -589,14 +589,14 @@ export const TabBar = ({ page, setPage }: { page: string; setPage: SetPage }) =>
           {t.id==="sell" ? (
             <div aria-label="出品する" style={{
               width:44, height:44, borderRadius:"50%", background:C.white,
-              border:`1.5px solid ${C.orange}`, color:C.orange,
+              border:`1.5px solid ${QC.terracotta}`, color:QC.terracotta,
               display:"flex", alignItems:"center", justifyContent:"center",
-              marginTop:-18, boxShadow:"0 4px 14px rgba(245,169,74,0.22)"
+              marginTop:-18, boxShadow:"0 4px 14px rgba(201,123,95,0.22)"
             }}><TabIcon name="plus" size={20} /></div>
           ) : (
             <>
-              <span style={{ color: page===t.id ? C.orange : C.warmGray, transition:"color 0.6s ease" }}><TabIcon name={t.icon} /></span>
-              <span style={{ fontSize:9, fontWeight:500, letterSpacing:"0.04em", color: page===t.id ? C.orange : C.warmGray, whiteSpace:"nowrap" }}>{t.label}</span>
+              <span style={{ color: page===t.id ? QC.terracotta : C.warmGray, transition:"color 0.6s ease" }}><TabIcon name={t.icon} /></span>
+              <span style={{ fontSize:9, fontWeight:500, letterSpacing:"0.04em", color: page===t.id ? QC.terracotta : C.warmGray, whiteSpace:"nowrap" }}>{t.label}</span>
             </>
           )}
         </button>

@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { C } from "../constants/theme";
+import { C, QC } from "../constants/theme";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { BLOG_CATS } from "../constants/data";
@@ -65,7 +65,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id: string; ownerId: string } | null>(null);
-  const [form, setForm] = useState({ title:"", content:"", category:"general", tags:"" });
+  const [form, setForm] = useState({ title:"", content:"", category:"story", tags:"" });
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -171,7 +171,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
       published: true,
     });
     setShowWrite(false);
-    setForm({ title:"", content:"", category:"general", tags:"" });
+    setForm({ title:"", content:"", category:"story", tags:"" });
     setCoverFile(null);
     setCoverPreview("");
     setSubmitting(false);
@@ -194,14 +194,15 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
   const openPost = openViewPost;
 
   const filtered = posts.filter(p => cat === "all" || p.category === cat);
-  const blogCatLabel = (c?: string | null) => BLOG_CATS.find(bc => bc.id === c)?.label || c || "";
-  const blogCatIcon = (c?: string | null) => BLOG_CATS.find(bc => bc.id === c)?.icon || "📝";
+  // 記事が 1 本以上あるカテゴリだけを絞り込みに出す (空の札を押して何も出ない、を無くす)
+  const filterCats = BLOG_CATS.filter(c => c.id === "all" || posts.some(p => p.category === c.id));
+  const blogCatLabel = (c?: string | null) => BLOG_CATS.find(bc => bc.id === c)?.label || "";
 
   // 記事詳細ビュー
   if (viewPost) return (
     <div style={{ paddingTop: isPC ? 0 : 60, minHeight:"100vh", background:C.cream }}>
       <div style={{ padding:"12px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={closeViewPost} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange, fontWeight:700 }}>←</button>
+        <button onClick={closeViewPost} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:QC.terracotta, fontWeight:700 }}>←</button>
         <span style={{ fontSize:14, fontWeight:700, color:C.dark }}>ブログ</span>
       </div>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"24px 16px 80px" }}>
@@ -211,11 +212,11 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
           </div>
         )}
         <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-          <span style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:C.orangePale, color:C.orange, fontWeight:700 }}>{blogCatIcon(viewPost.category)} {blogCatLabel(viewPost.category)}</span>
+          <span style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:QC.cream, color:QC.terracotta, fontWeight:700 }}>{blogCatLabel(viewPost.category)}</span>
         </div>
         <h1 style={{ fontSize:24, fontWeight:900, color:C.dark, lineHeight:1.4, marginBottom:12 }}>{viewPost.title}</h1>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20 }}>
-          <div style={{ width:32, height:32, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:14 }}>
+          <div style={{ width:32, height:32, borderRadius:"50%", background:QC.cream, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:14 }}>
             {viewPost.authorAvatar ? <img src={viewPost.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <LineIcon name="paw" size={14} />}
           </div>
           <div>
@@ -230,7 +231,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
           </div>
         )}
         <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, paddingTop:16, borderTop:`1px solid ${C.border}` }}>
-          <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:C.orange }}><LineIcon name="heart" size={20} filled={!!likedPosts[viewPost.id]} /></button>
+          <button onClick={()=>toggleLike(viewPost.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:QC.terracotta }}><LineIcon name="heart" size={20} filled={!!likedPosts[viewPost.id]} /></button>
           <span style={{ fontSize:13, color:C.warmGray }}>{viewPost.likes_count||0} いいね</span>
           <button onClick={()=>{ setCommentTarget({ type:"blog", id: viewPost.id, ownerId: viewPost.author_id ?? "" }); setCommentOpen(true); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:C.warmGray, marginLeft:8, fontFamily:"inherit" }}><LineIcon name="bubble" size={13} /> コメント</button>
         </div>
@@ -263,8 +264,8 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
           </div>
           {user && (
             <button onClick={()=>setShowWrite(true)} style={{
-              padding:"10px 14px", background:C.orange, border:"none", borderRadius:12,
-              color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer"
+              padding:"10px 14px", background:QC.terracotta, border:"none", borderRadius:12,
+              color:QC.warmWhite, fontWeight:800, fontSize:12, cursor:"pointer"
             }}><LineIcon name="pencil" size={12} /> 書く</button>
           )}
         </div>
@@ -272,13 +273,13 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
 
       {/* カテゴリフィルター */}
       <div style={{ padding:"10px 16px", background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", gap:8, overflowX:"auto" }}>
-        {BLOG_CATS.map(c => (
+        {filterCats.map(c => (
           <button key={c.id} onClick={()=>setCat(c.id)} style={{
             flexShrink:0, padding:"6px 12px", display:"flex", alignItems:"center", gap:4,
-            background:cat===c.id?C.orange:C.white, color:cat===c.id?"#fff":C.warmGray,
-            border:`1.5px solid ${cat===c.id?C.orange:C.border}`, borderRadius:20,
+            background:cat===c.id?QC.terracotta:C.white, color:cat===c.id?"#fff":C.warmGray,
+            border:`1.5px solid ${cat===c.id?QC.terracotta:C.border}`, borderRadius:20,
             fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit"
-          }}><span>{c.icon}</span><span style={{ whiteSpace:"nowrap" }}>{c.label}</span></button>
+          }}><span style={{ whiteSpace:"nowrap" }}>{c.label}</span></button>
         ))}
       </div>
 
@@ -312,7 +313,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
               <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}
                 style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", background:C.white }}>
-                {BLOG_CATS.filter(c=>c.id!=="all").map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                {BLOG_CATS.filter(c=>c.id!=="all" && c.id!=="general").map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
               <input value={form.tags} onChange={e=>setForm(p=>({...p,tags:e.target.value}))} placeholder="タグ（カンマ区切り）"
                 style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
@@ -322,8 +323,8 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
                 style={{ width:"100%", padding:"12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", boxSizing:"border-box", lineHeight:1.8 }}/>
             </div>
             <button disabled={!form.title||!form.content||submitting} onClick={handlePublish} style={{
-              width:"100%", padding:"14px", background:(!form.title||!form.content||submitting)?C.warmGray:C.orange,
-              border:"none", borderRadius:12, color:"#fff", fontWeight:800, fontSize:15, cursor:(!form.title||!form.content||submitting)?"not-allowed":"pointer"
+              width:"100%", padding:"14px", background:(!form.title||!form.content||submitting)?C.warmGray:QC.terracotta,
+              border:"none", borderRadius:12, color:QC.warmWhite, fontWeight:800, fontSize:15, cursor:(!form.title||!form.content||submitting)?"not-allowed":"pointer"
             }}>{submitting ? "投稿中..." : <><LineIcon name="note" size={15} /> 公開する</>}</button>
           </div>
         </div>
@@ -338,7 +339,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
             <div style={{ fontSize:64, marginBottom:12, color:C.warmGray }}><LineIcon name="note" size={64} strokeWidth={1} /></div>
             <div style={{ fontSize:18, fontWeight:900, color:C.dark, marginBottom:8 }}>まだ記事がありません</div>
             <p style={{ fontSize:13, color:C.warmGray, marginBottom:20 }}>最初のブロガーになりませんか？</p>
-            {user && <button onClick={()=>setShowWrite(true)} style={{ padding:"12px 24px", background:C.orange, border:"none", borderRadius:12, color:"#fff", fontWeight:800, cursor:"pointer" }}><LineIcon name="pencil" size={14} /> 記事を書く</button>}
+            {user && <button onClick={()=>setShowWrite(true)} style={{ padding:"12px 24px", background:QC.terracotta, border:"none", borderRadius:12, color:QC.warmWhite, fontWeight:800, cursor:"pointer" }}><LineIcon name="pencil" size={14} /> 記事を書く</button>}
           </div>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns: isPC ? "repeat(2, 1fr)" : "1fr", gap:16 }}>
@@ -354,13 +355,13 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
                 )}
                 <div style={{ padding:"14px 16px" }}>
                   <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-                    <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{blogCatIcon(post.category)} {blogCatLabel(post.category)}</span>
+                    <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:QC.cream, color:QC.terracotta, fontWeight:700 }}>{blogCatLabel(post.category)}</span>
                   </div>
                   <h3 style={{ fontSize:16, fontWeight:800, color:C.dark, lineHeight:1.4, marginBottom:8, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.title}</h3>
                   <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginBottom:10, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{blogPlainText(post.content)}</div>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <div style={{ width:22, height:22, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:10 }}>
+                      <div style={{ width:22, height:22, borderRadius:"50%", background:QC.cream, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:10 }}>
                         {post.authorAvatar ? <img src={post.authorAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <LineIcon name="paw" size={10} />}
                       </div>
                       <span style={{ fontSize:11, fontWeight:600, color:C.dark }}>{post.authorName}</span>
