@@ -13,6 +13,7 @@ import CommentModal from "../components/CommentModal";
 import { CrowdfundingBanner } from "../components/CrowdfundingBanner";
 import { FloatingBackButton } from "../components/FloatingBackButton";
 import { LineIcon } from "../components/LineIcon";
+import { BlogBody, blogPlainText } from "../components/BlogBody";
 import { grantGalleryPost } from "../hooks/useAshiato";
 import type { CommentTargetType, SetPage } from "../types";
 import type { ChangeEvent } from "react";
@@ -222,7 +223,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
             <div style={{ fontSize:11, color:C.warmGray }}>{viewPost.created_at ? new Date(viewPost.created_at).toLocaleDateString("ja-JP") : ""} · <LineIcon name="eye" size={11} /> {viewPost.views_count||0}</div>
           </div>
         </div>
-        <div style={{ fontSize:15, color:"#333", lineHeight:2, whiteSpace:"pre-wrap" }}>{viewPost.content}</div>
+        <BlogBody content={viewPost.content} />
         {(viewPost.tags?.length ?? 0) > 0 && (
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:20 }}>
             {(viewPost.tags ?? []).map(t => <span key={t} style={{ fontSize:11, padding:"3px 10px", borderRadius:8, background:C.lightGray, color:C.warmGray }}>#{t}</span>)}
@@ -356,7 +357,7 @@ export const BlogPage = ({ setPage, isPC }: { setPage: SetPage; isPC?: boolean }
                     <span style={{ fontSize:10, padding:"2px 8px", borderRadius:6, background:C.orangePale, color:C.orange, fontWeight:700 }}>{blogCatIcon(post.category)} {blogCatLabel(post.category)}</span>
                   </div>
                   <h3 style={{ fontSize:16, fontWeight:800, color:C.dark, lineHeight:1.4, marginBottom:8, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.title}</h3>
-                  <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginBottom:10, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{post.content}</div>
+                  <div style={{ fontSize:12, color:"#666", lineHeight:1.6, marginBottom:10, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{blogPlainText(post.content)}</div>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <div style={{ width:22, height:22, borderRadius:"50%", background:C.orangePale, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:10 }}>
