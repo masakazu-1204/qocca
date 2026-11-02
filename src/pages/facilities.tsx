@@ -92,7 +92,7 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }: {
       const closed = !!f.is_closed;
       const icon = L.divIcon({
         className: "",
-        html: `<div style="width:34px;height:34px;border-radius:50% 50% 50% 4px;background:${closed ? "#9E9E9E" : "#F5A94A"};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;opacity:${closed ? "0.85" : "1"}">${closed ? "🚧" : catIcon(f.category)}</div>`,
+        html: `<div style="width:34px;height:34px;border-radius:50% 50% 50% 4px;background:${closed ? "#9E9E9E" : "#C97B5F"};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;opacity:${closed ? "0.85" : "1"}">${closed ? "🚧" : catIcon(f.category)}</div>`,
         iconSize: [34, 34], iconAnchor: [17, 32], popupAnchor: [0, -30],
       });
       const m = L.marker([lat, lng], { icon });
@@ -107,7 +107,7 @@ const FacilityMapView = ({ facilities, isPC, onSelect, catIcon }: {
       addr.textContent = `${f.address || f.prefecture || ""}`;
       const btn = document.createElement("button");
       btn.textContent = "詳細を見る →";
-      btn.style.cssText = "padding:6px 14px;background:#F5A94A;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit";
+      btn.style.cssText = "padding:6px 14px;background:#C97B5F;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit";
       btn.onclick = () => onSelect(f);
       pop.appendChild(title); pop.appendChild(addr); pop.appendChild(btn);
       m.bindPopup(pop);
@@ -688,7 +688,7 @@ const FacilityDetailView = ({ facility, onBack, isPC, setPage, catIcon, catLabel
           <button onClick={()=>setShowVisitForm(true)} style={{
             width:"100%", padding:"14px", background:C.orange, border:"none", borderRadius:12,
             color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit",
-            boxShadow:"0 4px 12px rgba(245, 169, 74, 0.3)"
+            boxShadow:"0 4px 12px rgba(201,123,95, 0.3)"
           }}><LineIcon name="note" size={14} /> {visits.length === 0 ? "この場所の、最初の記録を残す" : "訪問レポートを投稿する"}</button>
         ) : (
           <button onClick={()=>setPage("login")} style={{

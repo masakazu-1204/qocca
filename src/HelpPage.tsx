@@ -9,7 +9,7 @@ import { LineIcon } from "./components/LineIcon";
 
 // ── ブランドカラー ─────────────────────────────────────────────
 const C = {
-  orange: "#F5A94A",
+  orange: "#C97B5F",
   orangePale: "#FFF4E6",
   orangeDeep: "#E89432",
   dark: "#3E2723",
@@ -386,7 +386,7 @@ const StripeConnectGuide: React.FC = () => (
     <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22 }}>
       <li><LineIcon name="calendar" size={14} /> <strong>月末自動振込</strong>(月1回・自動)
         <ul style={{ marginTop: 4 }}>
-          <li>月の売上 <strong>¥30,000以上</strong> → 振込手数料 <strong style={{ color: "#F5A94A" }}>無料!</strong></li>
+          <li>月の売上 <strong>¥30,000以上</strong> → 振込手数料 <strong style={{ color: "#C97B5F" }}>無料!</strong></li>
           <li>月の売上 <strong>¥30,000未満</strong> → 振込手数料 <strong>¥275(税込)</strong></li>
         </ul>
       </li>
@@ -402,7 +402,7 @@ const StripeConnectGuide: React.FC = () => (
     <ul style={{ fontSize: 13, lineHeight: 1.9, color: "#555", paddingLeft: 22 }}>
       <li>Qocca 販売手数料:
         <ul style={{ marginTop: 4 }}>
-          <li>初回取引: <strong style={{ color: "#F5A94A" }}>0%</strong>(完全無料スタート!)</li>
+          <li>初回取引: <strong style={{ color: "#C97B5F" }}>0%</strong>(完全無料スタート!)</li>
           <li>登録から 3ヶ月以内: <strong>5%</strong></li>
           <li>3ヶ月以降: <strong>10%</strong></li>
         </ul>

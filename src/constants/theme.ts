@@ -2,9 +2,11 @@
 // 色・フォント・キーフレーム・ヒーロー表示時間。ロジック無改変で App.tsx から移動。
 
 // ── 旧ブランドカラー (賑やか系 UI で使用) ──────────────────────────────
+// 2026/11/3: 旧オレンジ (#F5A94A 系) を引退。名前は orange のまま、値を QC.terracotta 系に替えた
+// (C.orange を使う数百か所を一度に静けさの色へ寄せるため。新しく書く所は QC を使う)
 export const C = {
-  orange: "#F5A94A", orangeLight: "#FAC97A", orangePale: "#FFF3E0",
-  orangeDeep: "#E8903A", cream: "#FAFAF7", dark: "#1A1208",
+  orange: "#C97B5F", orangeLight: "#DDA58F", orangePale: "#F6ECE6",
+  orangeDeep: "#B0654A", cream: "#FAFAF7", dark: "#1A1208",
   darkBrown: "#2D1F0A", warmGray: "#9E9B95", lightGray: "#F5F3F0",
   border: "#EDE9E3", white: "#FFFFFF", green: "#4CAF50",
   greenPale: "#E8F5E9", blue: "#2196F3", bluePale: "#E3F2FD",

@@ -46,7 +46,7 @@ export const CrowdfundingBanner = () => {
         maxWidth: 560,
         width: "100%",
         textAlign: "center",
-        boxShadow: "0 2px 12px rgba(245,169,74,0.06)",
+        boxShadow: "0 2px 12px rgba(201,123,95,0.06)",
       }}>
         <div style={{ fontSize: 24, marginBottom: 8 }}>🌅</div>
         {/* 依頼書 #134 Phase 2 案A改 (2026/6/6): 見出し Shippori Mincho 700 で「号」品位 */}
@@ -66,7 +66,7 @@ export const CrowdfundingBanner = () => {
             </>
           )}
         </div>
-        <div style={{ display: "inline-block", padding: "5px 14px", background: "rgba(245,169,74,0.10)", color: "#A07640", fontSize: 11, fontWeight: 700, borderRadius: 14, marginBottom: 14, letterSpacing: 0.3 }}>
+        <div style={{ display: "inline-block", padding: "5px 14px", background: "rgba(201,123,95,0.10)", color: "#A07640", fontSize: 11, fontWeight: 700, borderRadius: 14, marginBottom: 14, letterSpacing: 0.3 }}>
           {isOpen ? `残り ${daysUntilClose} 日` : `あと ${daysUntilOpen} 日`}
         </div>
         <div>
@@ -84,7 +84,7 @@ export const CrowdfundingBanner = () => {
               fontFamily: "inherit",
               transition: "all 0.2s ease",
             }}
-            onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = "rgba(245,169,74,0.12)"; }}
+            onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = "rgba(201,123,95,0.12)"; }}
             onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = "transparent"; }}
           >
             📖 {ctaLabel} →

@@ -50,7 +50,7 @@ export const useListings = () => {
           desc: l.description,
           delivery: l.delivery_days || "要相談",
           delivery_type: l.delivery_type || "data_only",
-          bg: CAT_COLORS[l.category as keyof typeof CAT_COLORS] || "#FFF3E0",
+          bg: CAT_COLORS[l.category as keyof typeof CAT_COLORS] || "#F6ECE6",
           imageUrl: l.image_urls?.[0] || "",
           imageUrls: l.image_urls || [],
           seller_id: l.seller_id,

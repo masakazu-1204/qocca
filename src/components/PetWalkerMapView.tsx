@@ -1,7 +1,7 @@
 // ペットウォーカー 近隣マップ (GPS Phase3・docs/petwalker-gps-design.md §3)
 // ⚠️ facilities.tsx の FacilityMapView から「初期化パターンのみ」流用 (import はしない・非接触)。
 //   流用: L.map/OSMタイル+出典表記/markercluster(chunkedLoading)/DOM直組みポップアップ(XSS安全)/cleanup。
-//   再設計: 静けさ世界観 — 絵文字ピン禁止・#F5A94A禁止・font-weight<=500。丸ドットピン(QC.softBrown)。
+//   再設計: 静けさ世界観 — 絵文字ピン禁止・#C97B5F禁止・font-weight<=500。丸ドットピン(QC.softBrown)。
 // ⚠️ このファイルは petwalker.tsx から React.lazy で読む (Leaflet を地図表示時のみロード)。
 import { useEffect, useRef } from "react";
 import L from "leaflet";

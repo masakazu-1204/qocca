@@ -223,7 +223,7 @@ export const REDEEM_TIER_THEME: Record<string, { color: string; bg: string; icon
   supporter_1000:   { color: "#42A5F5", bg: "#E3F2FD", icon: "people",   label: "応援サポーター" },
   resident_3000:    { color: "#66BB6A", bg: "#E8F5E9", icon: "house",    label: "創業メンバー｜街の住民" },
   creator_8000:     { color: "#AB47BC", bg: "#F3E5F5", icon: "palette",  label: "創業クリエイター" },
-  family_15000:     { color: "#F5A94A", bg: "#FFF3E0", icon: "paw",      label: "創業ファミリー" },
+  family_15000:     { color: "#C97B5F", bg: "#F6ECE6", icon: "paw",      label: "創業ファミリー" },
   mayor_30000:      { color: "#FFA000", bg: "#FFF8E1", icon: "crown",    label: "街の首長" },
   ark_patron_50000: { color: "#26A69A", bg: "#E0F2F1", icon: "hospital", label: "動物福祉パトロン" },
   corporate_300000: { color: "#5C6BC0", bg: "#E8EAF6", icon: "building", label: "法人スポンサー" },

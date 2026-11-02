@@ -52,7 +52,7 @@ export const AshiatoDailyGrant = () => {
         border: `1px solid ${C.border}`,
         borderRadius: 16,
         padding: "12px 20px",
-        boxShadow: "0 6px 20px rgba(245, 169, 74, 0.18)",
+        boxShadow: "0 6px 20px rgba(201,123,95, 0.18)",
         display: "flex",
         alignItems: "center",
         gap: 10,

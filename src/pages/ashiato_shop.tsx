@@ -4,7 +4,7 @@
 // - 購入 = spend_currency RPC。idempotency_key は `shop:{userId}:{itemId}` の安定キー
 //   → 連打・リロード・別タブからの二重購入を構造的に防止 (RPC側 UNIQUE が最終防壁)
 // - 装備 (equip) は第3弾 (equip_decoration RPC migration 後)。本画面は「交換」まで。
-// - トーン: 機能画面 = Cトークン系 (#F5A94A基調・設計書§0)。文言は煽らない (「交換する」)。
+// - トーン: 機能画面 = Cトークン系 (#C97B5F基調・設計書§0)。文言は煽らない (「交換する」)。
 // ⚠️ バックエンド (テーブル/RPC) 変更なし・決済/AuthContext 非接触。
 
 import { useState, useEffect, useCallback } from "react";
@@ -220,7 +220,7 @@ export const AshiatoShopPage = ({ setPage, isPC }: { setPage: (page: string) => 
                       opacity: owned ? 0.85 : affordable ? 1 : 0.55,
                       transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                     }}
-                    onMouseEnter={(e) => { if (tappable) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(245,169,74,0.14)"; } }}
+                    onMouseEnter={(e) => { if (tappable) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(201,123,95,0.14)"; } }}
                     onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
                   >
                     <div style={{

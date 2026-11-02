@@ -341,13 +341,13 @@ const SectionHero = ({ setPage }: { setPage: (page: string) => void }) => {
         opacity: 0,
         animation: "qocca-fadeInSlow 2.4s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards",
       }}>
-        {/* 英字キッカー: 新ロゴ (#F5A94A) と同色で1行だけ — オレンジはここと右上ロゴのみ */}
+        {/* 英字キッカー: 新ロゴ (#C97B5F) と同色で1行だけ — オレンジはここと右上ロゴのみ */}
         <p style={{
           fontFamily: QC_FONT_EN,
           fontStyle: "italic",
           fontSize: isPC ? "clamp(12px, 1.2vw, 15px)" : 10.5,
           fontWeight: 300,
-          color: "#F5A94A",
+          color: "#C97B5F",
           letterSpacing: "0.14em",
           margin: isPC ? "0 0 18px 0" : "0 0 12px 0",
           textShadow: "0 1px 8px rgba(44, 41, 38, 0.45)",
@@ -430,7 +430,7 @@ const SectionHero = ({ setPage }: { setPage: (page: string) => void }) => {
                 background: "transparent",
                 border: "none",
                 borderBottom: walkHover
-                  ? "1px solid rgba(245, 169, 74, 0.8)"
+                  ? "1px solid rgba(201,123,95, 0.8)"
                   : "1px solid rgba(250, 247, 242, 0.35)",
                 padding: "0 0 3px 0",
                 cursor: "pointer",
@@ -542,7 +542,7 @@ const SectionHero = ({ setPage }: { setPage: (page: string) => void }) => {
           動物を飼ったら、<br/>当たり前に入れる街。
         </div>
       </div>
-      {/* 2026/7/5 P1 ③: 新ロゴマーク (/qocca_logo.png 犬猫+Q・透過・#F5A94A)
+      {/* 2026/7/5 P1 ③: 新ロゴマーク (/qocca_logo.png 犬猫+Q・透過・#C97B5F)
           画像は 585px キャンバス中央にマークが約27%幅で置かれているため、
           固定ボックス+中央寄せの拡大表示で余白を視覚的にトリム (画像加工はしない) */}
       <div style={{
@@ -802,18 +802,18 @@ const SectionAnnouncement = () => {
                   display: 'inline-block',
                   marginTop: 28,
                   padding: '13px 28px',
-                  background: '#F5A94A',
+                  background: '#C97B5F',
                   color: '#fff',
                   textDecoration: 'none',
                   borderRadius: 999,
                   fontSize: isMobile ? 13 : 14,
                   fontWeight: 700,
                   letterSpacing: '0.06em',
-                  boxShadow: '0 2px 10px rgba(245,169,74,0.25)',
+                  boxShadow: '0 2px 10px rgba(201,123,95,0.25)',
                   transition: 'transform 0.2s, box-shadow 0.2s',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 14px rgba(245,169,74,0.35)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(245,169,74,0.25)'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 14px rgba(201,123,95,0.35)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px rgba(201,123,95,0.25)'; }}
               >
                 CAMPFIRE で支援する →
               </a>
@@ -833,7 +833,7 @@ const SectionAnnouncement = () => {
 // クラファン締切 2026-07-26 23:59 JST(CAMPFIRE実データ)を境界に:
 //   - 〜2026-07-26: A クラファン告知 (カウントダウンなし・CAMPFIRE誘導)
 //   - 2026-07-27〜: B 住人募集 (新規会員登録 = /login へ)
-// CrowdfundingBanner のカード作法を踏襲(静けさ + オレンジ#F5A94A)。
+// CrowdfundingBanner のカード作法を踏襲(静けさ + オレンジ#C97B5F)。
 // 関数定義は単独で温存(切替は本関数内のみ・他から独立)。
 // 文言は King が後で簡単に微調整できるよう、定数化して上に分離。
 // ============================================================================
@@ -889,7 +889,7 @@ const SectionDynamicCTABanner = ({ setPage }: { setPage: (page: string) => void 
         maxWidth: 560,
         width: "100%",
         textAlign: "center",
-        boxShadow: "0 2px 12px rgba(245,169,74,0.06)",
+        boxShadow: "0 2px 12px rgba(201,123,95,0.06)",
         transition: "box-shadow 0.6s ease",
       }}>
         {/* Badge (Crowdfunding / Become a Resident) */}
@@ -938,7 +938,7 @@ const SectionDynamicCTABanner = ({ setPage }: { setPage: (page: string) => void 
           style={{
             display: 'inline-block',
             padding: '13px 28px',
-            background: '#F5A94A',
+            background: '#C97B5F',
             color: '#fff',
             textDecoration: 'none',
             border: 'none',
@@ -948,7 +948,7 @@ const SectionDynamicCTABanner = ({ setPage }: { setPage: (page: string) => void 
             letterSpacing: '0.06em',
             fontFamily: QC_FONT_JP,
             cursor: 'pointer',
-            boxShadow: hovered ? '0 4px 14px rgba(245,169,74,0.35)' : '0 2px 10px rgba(245,169,74,0.25)',
+            boxShadow: hovered ? '0 4px 14px rgba(201,123,95,0.35)' : '0 2px 10px rgba(201,123,95,0.25)',
             transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
             transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           }}

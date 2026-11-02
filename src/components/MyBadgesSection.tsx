@@ -7,8 +7,8 @@ const supabase = createClient(
 );
 
 const C = {
-  orange: "#F5A94A", orangeLight: "#FAC97A", orangePale: "#FFF3E0",
-  orangeDeep: "#E8903A", cream: "#FAFAF7", dark: "#1A1208",
+  orange: "#C97B5F", orangeLight: "#DDA58F", orangePale: "#F6ECE6",
+  orangeDeep: "#B0654A", cream: "#FAFAF7", dark: "#1A1208",
   darkBrown: "#2D1F0A", warmGray: "#9E9B95", lightGray: "#F5F3F0",
   border: "#EDE9E3", white: "#FFFFFF",
 };

@@ -827,7 +827,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
         <div role="status" onClick={()=>setAshiatoToast(0)} style={{
           position:"fixed", left:"50%", bottom:"calc(96px + env(safe-area-inset-bottom, 0px))", transform:"translateX(-50%)",
           zIndex:300, background:"rgba(255, 252, 247, 0.97)", border:`1px solid ${C.border}`, borderRadius:16,
-          padding:"12px 20px", boxShadow:"0 6px 20px rgba(245, 169, 74, 0.18)", fontSize:13, color:C.dark, cursor:"pointer",
+          padding:"12px 20px", boxShadow:"0 6px 20px rgba(201,123,95, 0.18)", fontSize:13, color:C.dark, cursor:"pointer",
           display:"flex", alignItems:"center", gap:8
         }}><LineIcon name="paw" size={14} /> あしあと {ashiatoToast} が届きました。</div>
       )}
@@ -921,7 +921,7 @@ const [commentTarget, setCommentTarget] = useState<{ type: CommentTargetType; id
                   data-overlay
                   style={{
                     position: "absolute", inset: 0,
-                    background: "linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(245,169,74,0.7) 100%)",
+                    background: "linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(201,123,95,0.7) 100%)",
                     opacity: 0, transition: "opacity 0.2s",
                     display: "flex", flexDirection: "column", justifyContent: "flex-end",
                     padding: "6px 8px", color: "#fff",

@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 const C = {
-  orange: "#F5A94A", orangeLight: "#FAC97A", orangePale: "#FFF3E0",
+  orange: "#C97B5F", orangeLight: "#DDA58F", orangePale: "#F6ECE6",
   dark: "#1A1208", darkBrown: "#2D1F0A", warmGray: "#9E9B95",
   border: "#EDE9E3", white: "#FFFFFF", cream: "#FAFAF7",
   green: "#4CAF50", greenPale: "#E8F5E9",
@@ -3245,7 +3245,7 @@ export default function AdminDashboard() {
             return (
               <button key={m.id} onClick={() => isExternal ? (window.location.href = m.href!) : setPage(m.id)} style={{
                 width: "100%", padding: "12px 20px", border: "none", cursor: "pointer",
-                background: isActive ? "rgba(245,169,74,0.15)" : "transparent",
+                background: isActive ? "rgba(201,123,95,0.15)" : "transparent",
                 borderLeft: isActive ? `3px solid ${C.orange}` : "3px solid transparent",
                 display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit"
               }}>

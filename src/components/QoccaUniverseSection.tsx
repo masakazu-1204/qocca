@@ -1,7 +1,7 @@
 // src/components/QoccaUniverseSection.tsx
 import { useNavigate } from "react-router-dom";
 
-const BRAND = "#F5A94A";
+const BRAND = "#C97B5F";
 const CREAM = "#FFF9F0";
 const TEXT_DARK = "#2C2C2A";
 const TEXT_MUTED = "#888780";
@@ -16,7 +16,7 @@ type FeatureItem = {
 };
 
 const FEATURES: FeatureItem[] = [
-  { icon: "🛍️", title: "マーケット", desc: "世界にひとつの作品", path: "/search", color: "#FFF3E0" },
+  { icon: "🛍️", title: "マーケット", desc: "世界にひとつの作品", path: "/search", color: "#F6ECE6" },
   { icon: "💬", title: "コミュニティ", desc: "ペット好きとつながる", path: "/communities", color: "#F3E5F5" },
   { icon: "📷", title: "ギャラリー", desc: "自慢の写真を共有", path: "/gallery", color: "#E3F2FD" },
   { icon: "🗺️", title: "施設マップ", desc: "お出かけスポット", path: "/facilities", color: "#E8F5E9" },
@@ -107,7 +107,7 @@ export default function QoccaUniverseSection() {
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 16px rgba(245,169,74,0.15)";
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 16px rgba(201,123,95,0.15)";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";

@@ -6,7 +6,7 @@
 
 // id (英) / label (日) / icon (emoji) / color (主色) / bg (背景色)
 export const PET_CATEGORIES: Array<{ id: string; label: string; icon: string; color: string; bg: string }> = [
-  { id: "dog",         label: "犬",         icon: "🐕", color: "#F5A94A", bg: "#FFF3E0" }, // orange
+  { id: "dog",         label: "犬",         icon: "🐕", color: "#C97B5F", bg: "#F6ECE6" }, // orange
   { id: "cat",         label: "猫",         icon: "🐈", color: "#9C27B0", bg: "#F3E5F5" }, // purple
   { id: "rabbit",      label: "うさぎ",     icon: "🐰", color: "#EC407A", bg: "#FCE4EC" }, // pink
   { id: "hamster",     label: "ハムスター", icon: "🐹", color: "#FFA726", bg: "#FFF8E1" }, // amber
@@ -49,5 +49,5 @@ export const petBg = (id: string): string => {
 };
 // 既存 API 後方互換 (event 系)
 export const evPetLabel = (p: string) => p === "dog" ? "🐕 犬" : p === "cat" ? "🐈 猫" : p === "both" ? "🐾 両方" : petLabel(p);
-export const evPetColor = (p: string) => p === "dog" ? "#F5A94A" : p === "cat" ? "#9C27B0" : p === "both" ? "#4CAF50" : petColor(p);
-export const evPetBg = (p: string) => p === "dog" ? "#FFF3E0" : p === "cat" ? "#F3E5F5" : p === "both" ? "#E8F5E9" : petBg(p);
+export const evPetColor = (p: string) => p === "dog" ? "#C97B5F" : p === "cat" ? "#9C27B0" : p === "both" ? "#4CAF50" : petColor(p);
+export const evPetBg = (p: string) => p === "dog" ? "#F6ECE6" : p === "cat" ? "#F3E5F5" : p === "both" ? "#E8F5E9" : petBg(p);

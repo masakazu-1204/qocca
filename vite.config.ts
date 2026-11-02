@@ -16,7 +16,7 @@ export default defineConfig({
         name: 'Qocca - ペットオーナー専門マーケットプレイス',
         short_name: 'Qocca',
         description: 'うちの子のための特別なものを。似顔絵・ハンドメイド服・フォト撮影・グッズ制作。ペット専門クリエイターが作る、世界にひとつだけの作品。',
-        theme_color: '#F5A94A',
+        theme_color: '#C97B5F',
         background_color: '#FFFFFF',
         // 2026/6/29 案③ B案実装: 'standalone' → 'minimal-ui' に緩和
         //   - 'standalone' (旧): ホーム画面追加組で iOS 端スワイプ・ブラウザ戻るボタンが無効化

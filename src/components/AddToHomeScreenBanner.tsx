@@ -131,7 +131,7 @@ export default function AddToHomeScreenBanner() {
                 flexShrink: 0,
               }}
             >
-              <Smartphone size={24} color="#F5A94A" />
+              <Smartphone size={24} color="#C97B5F" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -169,7 +169,7 @@ export default function AddToHomeScreenBanner() {
               onClick={handleInstall}
               style={{
                 flex: 1,
-                backgroundColor: '#F5A94A',
+                backgroundColor: '#C97B5F',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
@@ -269,7 +269,7 @@ export default function AddToHomeScreenBanner() {
               >
                 <div
                   style={{
-                    backgroundColor: '#F5A94A',
+                    backgroundColor: '#C97B5F',
                     color: 'white',
                     width: '28px',
                     height: '28px',
@@ -302,7 +302,7 @@ export default function AddToHomeScreenBanner() {
               >
                 <div
                   style={{
-                    backgroundColor: '#F5A94A',
+                    backgroundColor: '#C97B5F',
                     color: 'white',
                     width: '28px',
                     height: '28px',
@@ -334,7 +334,7 @@ export default function AddToHomeScreenBanner() {
               >
                 <div
                   style={{
-                    backgroundColor: '#F5A94A',
+                    backgroundColor: '#C97B5F',
                     color: 'white',
                     width: '28px',
                     height: '28px',
@@ -370,7 +370,7 @@ export default function AddToHomeScreenBanner() {
               onClick={closeIOSGuide}
               style={{
                 width: '100%',
-                backgroundColor: '#F5A94A',
+                backgroundColor: '#C97B5F',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
