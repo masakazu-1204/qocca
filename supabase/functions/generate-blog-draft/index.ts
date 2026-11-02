@@ -1,9 +1,12 @@
 // ============================================
+// generate-blog-draft v12 (2026/11/3)
+//   - gpt-image-1 提供終了 (10/25 から表紙なし) → IMAGE_MODELS を順に試す
+//   - 文体ルールを静けさに合わせる (絵文字・ガチで・神対応をやめる)。X 告知の 📰 も外す
 // generate-blog-draft v11 (依頼書 #37 Phase 1, 2026/5/31)
 // v11 追加機能:
 //   - blog 公開成功時 (!testMode && published=true) に
 //     X 告知 tweet を自動連携投稿 (シナリオ C / Premium 不要)
-//   - tweet text: 「📰 新しい記事公開 「{title}」 {meta_desc} → qocca.pet/blog/{id}」
+//   - tweet text: 「新しい記事を公開しました。「{title}」 {meta_desc} → qocca.pet/blog/{id}」
 //   - cover_image_url も X media upload (5/30 達成の media.write scope 利用)
 //   - x_posts テーブルに INSERT → post-to-x v7 を invoke → tweet_id 取得
 //   - blog_posts UPDATE x_tweet_id + x_posted_at
@@ -23,7 +26,8 @@ const BLOG_AUTO_KILL_SWITCH = Deno.env.get("BLOG_AUTO_KILL_SWITCH") ?? "false";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-const IMAGE_MODEL = "gpt-image-1";
+// 上から順に試す。提供終了 (model_not_found / does not exist) なら次の候補へ
+const IMAGE_MODELS = ["gpt-image-2", "gpt-image-1.5", "gpt-image-1-mini", "gpt-image-1"];
 const IMAGE_QUALITY = "medium";
 const IMAGE_SIZE = "1024x1024";
 
@@ -53,12 +57,11 @@ const SYSTEM_PROMPT = `あなたは日本のペットマーケットプレイス
 - 「気配の数」
 - 「創作者と暮らす街」
 
-【文体ルール】
-- フレンドリー + ですます調
-- 少しだけ関西弁 (「や」「で」等) を 1-2 回だけ混ぜる
-- 強調語「ガチで」も 1 回だけ使う
-- 体言止め多用 (「即修正」「神対応」)
-- 絵文字は 1500字あたり 4-6 個ぐらい
+【文体ルール】(静けさ最優先)
+- やわらかい ですます調・標準語
+- 絵文字は使わない
+- 「！」より「。」。煽る言葉 (今すぐ・急いで・限定・ガチで・神対応 など) は使わない
+- 詩集のように、静かで控えめに。言い切りすぎない
 
 【ペット業界の繊細さ】
 - 「飼う」より「一緒に暮らす」「お迎えする」
@@ -173,7 +176,7 @@ async function postBlogAnnouncementTweet(
     const descSafe = descRaw.length > 100 ? descRaw.slice(0, 100) : descRaw;
     const blogUrl = `https://qocca.pet/blog/${postId}`;
     const lines = [
-      "📰 新しい記事を公開しました",
+      "新しい記事を公開しました。",
       "",
       `「${titleSafe}」`,
     ];
@@ -259,7 +262,7 @@ serve(async (req) => {
   let themeTopic: string | null = null;
   let postId: string | null = null;
   const imageTrace: any = {
-    image_model: IMAGE_MODEL,
+    image_model: null,
     image_prompt_from_ai: null,
     image_prompt_used: null,
     image_prompt_source: null,
@@ -358,27 +361,41 @@ ${recentTitles ? `\n【重複させないため、近期同テーマ記事のタ
     let coverImageUrl: string | null = null;
     let imageGenerated = false;
     try {
-      const imgRes = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: IMAGE_MODEL,
-          prompt: `${imagePromptToUse} Style: warm, soft pastel, Japanese illustration, no text.`,
-          size: IMAGE_SIZE,
-          quality: IMAGE_QUALITY,
-          n: 1,
-        }),
-      });
-      const imgData = await imgRes.json();
+      let imgData: any = null;
+      const tried: string[] = [];
+      for (const m of IMAGE_MODELS) {
+        const imgRes = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: m,
+            prompt: `${imagePromptToUse} Style: warm, soft pastel, Japanese illustration, no text.`,
+            size: IMAGE_SIZE,
+            quality: IMAGE_QUALITY,
+            n: 1,
+          }),
+        });
+        const data = await imgRes.json().catch(() => ({}));
+        if (imgRes.ok && (data?.data?.[0]?.b64_json || data?.data?.[0]?.url)) {
+          imgData = data;
+          imageTrace.image_model = m;
+          break;
+        }
+        tried.push(`${m}: ${JSON.stringify(data).slice(0, 160)}`);
+        const code = String(data?.error?.code ?? "");
+        const msg = String(data?.error?.message ?? "").toLowerCase();
+        const modelGone = imgRes.status === 404 || code === "model_not_found" || msg.includes("does not exist");
+        if (!modelGone) break; // モデル以外の失敗は次に回さない
+      }
       const b64 = imgData?.data?.[0]?.b64_json;
       const dalleUrl = imgData?.data?.[0]?.url;
 
-      if (!imgRes.ok || (!b64 && !dalleUrl)) {
+      if (!imgData) {
         imageTrace.dalle_status = "api_error";
-        imageTrace.dalle_error = JSON.stringify(imgData).slice(0, 500);
+        imageTrace.dalle_error = tried.join(" | ").slice(0, 500);
       } else {
         let imgBlob: Blob;
         if (b64) {
@@ -479,7 +496,7 @@ ${recentTitles ? `\n【重複させないため、近期同テーマ記事のタ
         title: article.title,
         test_mode: testMode,
         override_category: overrideCategory,
-        version: "v11",
+        version: "v12",
         image_trace: imageTrace,
         x_connect_trace: xConnectTrace,
       },
@@ -487,7 +504,7 @@ ${recentTitles ? `\n【重複させないため、近期同テーマ記事のタ
 
     return jsonResponse({
       success: true,
-      version: "v11",
+      version: "v12",
       test_mode: testMode,
       post_id: postId,
       title: testMode ? `[TEST] ${article.title}` : article.title,
