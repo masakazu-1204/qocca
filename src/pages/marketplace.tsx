@@ -9,6 +9,7 @@ import { C } from "../constants/theme";
 import { CATS, REVIEWS } from "../constants/data";
 import { sortByPopularity } from "../utils/format";
 import { Card, Tag, Stars } from "../components/ui";
+import { TitleChips } from "../components/TitleChips";
 import { resolveFontFamily } from "../constants/fonts";
 import { petIcon, petLabelShort, PET_CATEGORIES } from "../constants/pets";
 import { supabase } from "../supabaseClient";
@@ -324,6 +325,7 @@ const handleFollow = async () => {
         {/* 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (装飾なしなら既存と同一表示) */}
         <DecoratedAvatar userId={userId} avatarUrl={profile.avatar_url} initial={initial} margin="0 auto 16px" fontWeight={800} />
         <div style={{ fontSize:20, fontWeight:900, color:C.dark, marginBottom:4, fontFamily: resolveFontFamily(profile.font_display_name) }}>{displayName}</div>
+        <TitleChips userId={userId} />
         {profile.bio && (
           <div style={{ background:C.orangePale, borderRadius:12, padding:"12px 16px", marginTop:16, marginBottom:4, textAlign:"left", fontSize:14, color:C.dark, lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word", fontFamily: resolveFontFamily(profile.font_bio) }}>{profile.bio}</div>
         )}

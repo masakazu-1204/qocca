@@ -406,6 +406,9 @@ const CreateCommunityModal = ({ onClose, onCreated }: { onClose: () => void; onC
         <div style={{ fontSize:12, color:C.warmGray, marginBottom:6 }}>説明（任意）</div>
         <textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={200} placeholder="どんなコミュニティか紹介してください" style={{ width:"100%", minHeight:80, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"inherit", boxSizing:"border-box", marginBottom:6, outline:"none", resize:"vertical" }}/>
         <div style={{ fontSize:11, color:C.warmGray, textAlign:"right", marginBottom:16 }}>{description.length}/200</div>
+        <div style={{ fontSize:12, color:C.warmGray, lineHeight:1.8, marginBottom:12 }}>
+          コミュニティをひらくと、プロフィールに「広場をひらいた人」の称号が残ります。
+        </div>
         <div style={{ background:C.orangePale, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:11, color:C.dark, lineHeight:1.5 }}>
           <LineIcon name="pin" size={11} /> ルール: Qocca内の商品紹介はOK。外部サイト誘導や個人連絡先交換は禁止です。
         </div>
@@ -543,6 +546,7 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
   const [community, setCommunity] = useState<any>(null);
   const [isMember, setIsMember] = useState(false);
   const [myBadges, setMyBadges] = useState<Set<string>>(new Set());
+  const [founderName, setFounderName] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -558,6 +562,12 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
     setLoading(true);
     const { data: comm } = await supabase.from("communities").select("*").eq("id", communityId).single();
     setCommunity(comm);
+    // 2026/11/4: 住民がひらいた掲示板には、ひらいた人の名前を出す (運営の掲示板には出さない)
+    setFounderName(null);
+    if (comm?.creator_id) {
+      const { data: founder } = await supabase.from("profiles").select("display_name, role").eq("id", comm.creator_id).maybeSingle();
+      if (founder?.display_name && founder.role !== "admin") setFounderName(founder.display_name);
+    }
     if (user) {
       const { data: mem } = await supabase.from("community_members").select("id").eq("community_id", communityId).eq("user_id", user.id).maybeSingle();
       setIsMember(!!mem);
@@ -685,6 +695,15 @@ export const CommunityDetailPage = ({ isPC, setPage }: { isPC?: boolean; setPage
         )}
       </div>
 
+      {founderName && (
+        <div style={{ background:C.white, padding:"10px 16px", borderBottom:`1px solid ${C.border}`, fontSize:12, color:C.warmGray, lineHeight:1.6 }}>
+          {community.creator_id === user?.id ? "あなたがひらいた広場です。" : (
+            <>
+              <span onClick={()=>navigate(`/user/${community.creator_id}`)} style={{ color:C.dark, cursor:"pointer", textDecoration:"underline" }}>{founderName}</span> さんがひらいた広場です。
+            </>
+          )}
+        </div>
+      )}
       {community.description && (
         <div style={{ background:C.white, padding:"12px 16px", borderBottom:`1px solid ${C.border}`, fontSize:12, color:"#555", lineHeight:1.6 }}>{community.description}</div>
       )}
