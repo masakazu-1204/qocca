@@ -53,7 +53,7 @@ type AtmospherePreset = {
 
 const ATMOSPHERE_PRESETS: AtmospherePreset[] = [
   { id: "asa",      icon: "sun", label: "朝",        bg: "#FAFAF7", accent: "#FFB47A", cardBorder: "#E8C99A" },
-  { id: "yuugata",  icon: "sunrise", label: "夕方",      bg: "#FCF5ED", accent: "#F5A94A", cardBorder: "#D87B5A" },
+  { id: "yuugata",  icon: "sunrise", label: "夕方",      bg: "#FCF5ED", accent: "#C97B5F", cardBorder: "#D87B5A" },
   { id: "yoru",     icon: "moon", label: "夜",        bg: "#ECEFF2", accent: "#4A6FA5", cardBorder: "#8DAEC9" },
   { id: "kokage",   icon: "leaf", label: "木陰",      bg: "#F2F5EC", accent: "#7A9968", cardBorder: "#A8C09A" },
   { id: "atatakai", icon: "candle", label: "あたたかい", bg: "#FAF3E8", accent: "#C9925E", cardBorder: "#E0B788" },
@@ -1036,7 +1036,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
                 <div style={{
                   marginTop: 16,
                   padding: "12px 16px",
-                  background: "linear-gradient(135deg, #FFF3E0 0%, #FFE8D6 100%)",
+                  background: "linear-gradient(135deg, #F6ECE6 0%, #EFDCD2 100%)",
                   borderRadius: 12,
                   border: `1px solid ${C.orange}`,
                   fontSize: 13,
@@ -2018,7 +2018,7 @@ const handleOpenDashboard = async () => {
                 </div>
                 <span style={{ 
                   fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:8,
-                  background: p.status === "paid" ? "#E8F5E9" : p.status === "in_transit" ? "#FFF3E0" : p.status === "failed" ? "#FFEBEE" : "#F5F5F5",
+                  background: p.status === "paid" ? "#E8F5E9" : p.status === "in_transit" ? "#F6ECE6" : p.status === "failed" ? "#FFEBEE" : "#F5F5F5",
                   color: p.status === "paid" ? "#2E7D32" : p.status === "in_transit" ? "#EF6C00" : p.status === "failed" ? "#C62828" : "#666"
                 }}>
                   {p.status === "paid" ? <><LineIcon name="checkCircle" size={12} /> 完了</> : p.status === "in_transit" ? <><LineIcon name="rocket" size={12} /> 振込中</> : p.status === "failed" ? <><LineIcon name="closeCircle" size={12} /> 失敗</> : "保留中"}
@@ -2324,7 +2324,7 @@ const OrdersTab = () => {
   const filtered = orders.filter(o => filter==="all" || orderStatusKey(o)===filter);
 
   const statusLabel = (s: string) => {
-    const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
+    const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#F6ECE6",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
     return map[s as keyof typeof map] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
@@ -2834,7 +2834,7 @@ const SalesTab = () => {
   });
 
   const statusLabel = (s: string) => {
-    const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#FFF3E0",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
+    const map = { pending:{text:"決済待ち",bg:C.lightGray,color:C.warmGray}, working:{text:"作業中",bg:"#E3F2FD",color:C.blue}, delivered:{text:"納品済み",bg:"#F6ECE6",color:C.orange}, completed:{text:"取引完了",bg:C.greenPale,color:C.green}, disputed:{text:"異議中",bg:"#FFEBEE",color:C.red}, refunded:{text:"返金済み",bg:"#FFEBEE",color:C.red}, cancelled:{text:"キャンセル",bg:C.lightGray,color:C.warmGray} };
     return map[s as keyof typeof map] || {text:s,bg:C.lightGray,color:C.warmGray};
   };
 
@@ -2974,7 +2974,7 @@ const SalesTab = () => {
                         }}><LineIcon name="box" size={14} /> 納品完了として通知</button>
                       )}
                       {orderStatusKey(sale)==="delivered" && (
-                        <div style={{ flex:1, padding:"11px", background:"#FFF3E0", borderRadius:10, color:C.orange, fontWeight:700, fontSize:12, textAlign:"center" }}>
+                        <div style={{ flex:1, padding:"11px", background:"#F6ECE6", borderRadius:10, color:C.orange, fontWeight:700, fontSize:12, textAlign:"center" }}>
                           購入者の受取確認待ち（72時間後に自動完了）
                         </div>
                       )}
