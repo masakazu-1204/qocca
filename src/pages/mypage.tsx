@@ -17,6 +17,7 @@ import { resolveFontFamily } from "../constants/fonts";
 import { AshiatoBalanceCard } from "../components/AshiatoBalanceCard";
 // 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター
 import { DecoratedAvatar } from "../components/DecoratedAvatar";
+import { TitleChips } from "../components/TitleChips";
 import { petLabelShort, petIcon } from "../constants/pets";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../supabaseClient";
@@ -965,6 +966,7 @@ export const MyPage = ({ setPage }: { setPage: SetPage }) => {
               {/* 2026/7/6 あしあとUI第3弾: 装着装飾つきアバター (装飾なしなら既存と同一表示) */}
               <DecoratedAvatar userId={user?.id} avatarUrl={profile?.avatar_url} initial={initial} margin="0 auto 12px" fontWeight={900} />
               <div style={{ fontSize:18, fontWeight:700, color:C.dark, marginBottom:4, fontFamily: resolveFontFamily(profile?.font_display_name) }}>{displayName}</div>
+              <TitleChips userId={user?.id} />
               <div style={{ fontSize:13, color:C.warmGray, marginBottom:8 }}>{user?.email}</div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:C.orangePale, borderRadius:20, fontSize:11, fontWeight:700, color:C.orange }}>{providerLabel}でログイン中</div>
               {/* Phase D Phase 2: プロフィール情報セクション「編集」+「公開で見る」 */}
