@@ -14,6 +14,7 @@ import { petIcon, petLabelShort, PET_CATEGORIES } from "../constants/pets";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { trackEvent as mpTrackEvent } from "../lib/metaPixel";
+import { trackListingEvent } from "../lib/listingEvents";
 import { useNav } from "../hooks";
 import type { ChangeEvent } from "react";
 import type { SetPage } from "../types";
@@ -703,6 +704,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
   // 依頼書 #121 (2026/6/5): Meta Pixel ViewContent (個人情報なし: listing_id + 価格 + 通貨のみ)
   useEffect(() => {
     if (!item?.id) return;
+    trackListingEvent(item.id, "view");
     mpTrackEvent("ViewContent", {
       content_ids: [item.id],
       content_type: "product",
@@ -791,6 +793,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
   };
 
   const handleOrder = async () => {
+    trackListingEvent(item?.id, "buy_click");
     if (!user) { setPage("signup"); return; }
     // Phase B: variant 必須チェック (種類のある商品で未選択時はブロック)
     if (hasVariants && !selectedVariant) {
@@ -893,6 +896,7 @@ const DetailPage = ({ item, onBack, liked, onLike, setPage }: {
       }
       // included / consultation は shipping_fee=0
 
+      trackListingEvent(item?.id, "checkout_start");
       // 依頼書 #121 (2026/6/5): Meta Pixel InitiateCheckout (Edge Function 呼出直前 / 個人情報なし)
       // クライアント値は参考 (サーバー側で再計算するが、Pixel 計測は購入意図検出が目的)
       try {
