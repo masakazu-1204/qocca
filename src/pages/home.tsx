@@ -11,6 +11,7 @@ import { QC_REACTIONS, CROWDFUNDING_ACTIVE, CAMPFIRE_PROJECT_URL_WITH_UTM } from
 import { PW_AREAS } from "../constants/petwalker";
 import { dailySeededShuffle } from "../utils/dailyShuffle";
 import { fetchCurrentTheme } from "./gallery";
+import { currentHomeFeature } from "../constants/features";
 import type { ReactNode } from "react";
 import type { SetPage } from "../types";
 
@@ -2429,6 +2430,68 @@ const SectionQuietlyLoved = ({ listings, onDetail, setPage }: {
 // 2026/10/11 今週のお題 (King「1. 中を動かす」): 住民 129 人のうち週に動くのが 9 人。新規獲得より
 //   「居る人が週 1 回なにかする」仕掛け。毎週月曜に weekly_themes のお題が切り替わり、Threads にも同時に出る。
 //   ここは貼り紙 1 枚: お題・添え書き・今週集まった写真 (最大 4 枚)・一枚置きに行くボタン。煽らない。
+// 2026/11/10 商店街の特集への案内 (King「冬の贈りもの特集で進めて」)。
+//   特集ページ /feature/<slug> への入口を 1 枚だけ。作品の写真を 4 枚まで添える。
+//   期間 (constants/features.ts の showOnHomeUntil) を過ぎるか、並べる作品が一覧に 1 つも無ければ出ない。
+const SectionFeatureInvite = ({ listings }: { listings: any[] }) => {
+  const navigate = useNavigate();
+  const [isHover, setIsHover] = useState(false);
+  const feature = currentHomeFeature();
+  if (!feature) return null;
+
+  const byId = new Map(listings.map((l) => [l.id, l]));
+  const photos = feature.sections
+    .map((s) => s.listingIds.map((id) => byId.get(id)).find((l) => l?.imageUrl))
+    .filter(Boolean)
+    .slice(0, 4) as { id: string; imageUrl: string; title?: string }[];
+  if (photos.length === 0) return null;
+
+  return (
+    <section style={{ padding: "clamp(72px, 12vw, 120px) 0", background: "transparent", textAlign: "center" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 32px" }}>
+        <p style={{ fontFamily: QC_FONT_EN, fontSize: 13, fontStyle: "italic", color: QC.warmGray, letterSpacing: 1, margin: "0 0 24px 0", opacity: 0.75, fontWeight: 300 }}>
+          {feature.label}
+        </p>
+        <h2 style={{ fontFamily: QC_FONT_DISPLAY, fontSize: "clamp(22px, 3.6vw, 30px)", fontWeight: 500, color: QC.softBrown, letterSpacing: "0.06em", lineHeight: 1.8, margin: "0 0 24px 0" }}>
+          商店街の特集
+          <br />
+          「{feature.title}」
+        </h2>
+        <p style={{ fontFamily: QC_FONT_JP, fontSize: 13, fontWeight: 300, color: QC.warmGray, lineHeight: 2, margin: "0 0 40px 0", letterSpacing: 0.5 }}>
+          {feature.lead}
+        </p>
+        <div style={{ display: "flex", gap: 6, justifyContent: "center", margin: "0 0 40px 0" }}>
+          {photos.map((p) => (
+            <div key={p.id} style={{ width: "22%", maxWidth: 120, aspectRatio: "1 / 1", overflow: "hidden", borderRadius: 4, background: QC.cream }}>
+              <img src={p.imageUrl} alt={p.title || ""} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => navigate(`/feature/${feature.slug}`)}
+          onMouseEnter={() => setIsHover(true)}
+          onMouseLeave={() => setIsHover(false)}
+          style={{
+            fontFamily: QC_FONT_JP,
+            background: isHover ? "rgba(201, 123, 95, 0.05)" : "transparent",
+            color: QC.terracotta,
+            border: `1px solid ${QC.terracotta}`,
+            padding: "16px 44px",
+            fontSize: 14,
+            fontWeight: 300,
+            letterSpacing: 1.5,
+            cursor: "pointer",
+            borderRadius: 0,
+            transition: "all 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          贈りものを見に行く
+        </button>
+      </div>
+    </section>
+  );
+};
+
 const SectionWeeklyTheme = () => {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<{ id: string; title: string; body: string } | null>(null);
@@ -3374,6 +3437,8 @@ export const HomePage = ({ setPage, listings, liked: _liked, onLike: _onLike, on
       <Reveal><SectionFirstStep /></Reveal>
       {/* 2026/10/11 今週のお題: 週替わりの貼り紙。お題が無い週は出ない */}
       <Reveal><SectionWeeklyTheme /></Reveal>
+      {/* 2026/11/10 商店街の特集 (冬の贈りもの)。期間を過ぎると出ない */}
+      <Reveal><SectionFeatureInvite listings={listings} /></Reveal>
       {/* 依頼書 #10 (5/25): クラファン誘導バナー (期限制御内蔵)
           2026/6/29 Dday準備: 上の SectionDynamicCTABanner に置き換え済。
           CrowdfundingBanner 関数定義 + import は温存し、{false &&} を外せば即復活可能。 */}
