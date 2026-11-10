@@ -21,6 +21,7 @@ const xml = (body) =>
 const STATIC_PAGES = [
   ["/", "daily", "1.0"],
   ["/marketplace", "daily", "0.9"],
+  ["/feature/winter-2026", "weekly", "0.7"],
   ["/facilities", "weekly", "0.9"],
   ["/petwalker", "weekly", "0.9"],
   ["/events", "daily", "0.8"],
