@@ -23,6 +23,8 @@ import { FacilityDetailPage, FacilityHubPage } from "./pages/facilitySeo";
 // 2026/7/31 広告計測: 専用着地ページ (landing_path が経路の証拠になる)
 import { WelcomePage } from "./pages/welcome";
 import { PetWalkerPage } from "./pages/petwalker";
+// 2026/11/10 商店街の特集 (冬の贈りもの)。並べる作品は constants/features.ts
+import { FeaturePage } from "./pages/feature";
 import { PetGalleryPage } from "./pages/pet_gallery";
 import AdminDashboard from "./Admin";
 import HelpPage from "./HelpPage";
@@ -327,6 +329,14 @@ function QoccaAppInner() {
                 </div>
               </div>
             }/>
+            <Route path="/feature/:slug" element={
+              <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
+                <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
+                <div style={{ flex:1, minWidth:0, paddingLeft:32, paddingTop:24, paddingBottom:40 }}>
+                  <FeaturePage listings={listings} isPC={true}/>
+                </div>
+              </div>
+            }/>
             <Route path="/events" element={
               <div style={{ display:"flex", maxWidth:1280, margin:"0 auto", padding:"0 32px" }}>
                 <Sidebar setPage={setPage} activeCat={activeCat} setActiveCat={setActiveCat}/>
@@ -600,6 +610,7 @@ function QoccaAppInner() {
             <Route path="/faq" element={<FAQPage setPage={setPage} isPC={false}/>} />
             <Route path="/search" element={<SearchPage listings={listings} liked={liked} onLike={onLike} onDetail={onDetail} search={search} setSearch={setSearch} isPC={false}/>}/>
             <Route path="/listing/:id" element={<DetailPageWrapper listings={listings} liked={liked} onLike={onLike}/>}/>
+            <Route path="/feature/:slug" element={<FeaturePage listings={listings} isPC={false}/>}/>
             <Route path="/events" element={<EventsPage isPC={false} setPage={setPage}/>}/>
             <Route path="/gallery" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
             <Route path="/gallery/:itemId" element={<GalleryPage setPage={setPage} isPC={false}/>}/>
