@@ -38,6 +38,8 @@ const DEST_ROUTE: Record<string, string> = {
   blog: "/blog",
   events: "/events",
   home: "/",
+  // 2026/11/10 冬の贈りもの特集の告知用 (/welcome/threads/winter・/welcome/x/winter)
+  winter: "/feature/winter-2026",
 };
 
 const LINKS: { to: string; label: string; note: string }[] = [
