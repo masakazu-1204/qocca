@@ -16,7 +16,7 @@ import type { ReactNode } from "react";
 import type { SetPage } from "../types";
 
 /** 今日のモーメント (gallery_posts の表示に使う列のみ) */
-type Moment = { id: string; image_url?: string; caption?: string; pet_name?: string };
+type Moment = { id: string; image_url?: string; caption?: string; pet_name?: string; theme_title?: string };
 /** リアクション種別キー → 件数 */
 type ReactionCounts = Record<string, number>;
 import { petIcon, petLabelShort } from "../constants/pets";
@@ -1483,10 +1483,29 @@ const SectionTodaysMoments = ({ setPage }: { setPage: SetPage }) => {
           .lt("display_priority", 200)
           .order("display_priority", { ascending: true });
 
+        // 2026/11/12 King「トップのアルバムのところにお題に載せてくれた写真出していこう」:
+        //   住民が今週のお題に置いてくれた写真を、新しい順に先頭へ (最大 8 枚)。残りを運営の写真で埋めて 12 枚。
+        //   ⚠️ 消された投稿 (is_deleted) は出さない。お題名は weekly_themes から引いて「お題「…」」と添える。
+        const { data: themePosts } = await supabase
+          .from("gallery_posts")
+          .select("id, image_url, caption, pet_name, pet_type, time_of_day, created_at, display_priority, user_id, theme_id")
+          .not("theme_id", "is", null)
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        const themeIds = [...new Set((themePosts ?? []).map((p) => p.theme_id).filter(Boolean))];
+        const { data: themeRows } = themeIds.length > 0
+          ? await supabase.from("weekly_themes").select("id, title").in("id", themeIds)
+          : { data: [] as { id: string; title: string }[] };
+        const themeTitle = new Map((themeRows ?? []).map((t) => [t.id, t.title]));
+        const fromResidents = (themePosts ?? [])
+          .filter((p) => p.image_url)
+          .map((p) => ({ ...p, theme_title: themeTitle.get(p.theme_id) || undefined }));
+
         if (!mounted) return;
 
         const shuffled = [...(posts ?? [])].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, 12);
+        const selected = [...fromResidents, ...shuffled].slice(0, 12);
         setMoments(selected);
 
         const postIds = selected.map(p => p.id);
@@ -1829,7 +1848,7 @@ const MomentCard = ({ moment, isHover, counts, mySet, animatingKey, isMobile, in
             margin: "0 0 14px 0",
             letterSpacing: 0.5,
           }}>
-            {moment.pet_name}
+            {moment.theme_title ? `お題「${moment.theme_title}」` : moment.pet_name}
           </p>
 
           <div style={{
@@ -1959,7 +1978,7 @@ const MomentModal = ({ moment, counts = {}, mySet = new Set<string>(), onReact, 
         margin: "0 0 40px 0",
         letterSpacing: 0.5,
       }}>
-        {moment.pet_name}
+        {moment.theme_title ? `お題「${moment.theme_title}」` : moment.pet_name}
       </p>
 
       <div style={{
