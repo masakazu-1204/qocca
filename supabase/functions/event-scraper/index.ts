@@ -1,5 +1,8 @@
 // ============================================
-// event-scraper v8 (2026/10/22)
+// event-scraper v9 (2026/11/13)
+// v9 AI の出力が max_tokens で途中切れした塊を捨てずに、半分に分けて取り直す
+//   (それでも切れたら、切れる手前までの完全なイベントだけ拾う)。詳しくは extractChunk の中。
+// v8 (2026/10/22)
 // v8 King「承認が面倒やからそのまま載せてほしい。日にちが過ぎてるやつは消していこう」
 //   - 抽出したイベントは信頼度に関係なく公開する (status='approved' / approval_status='auto_approved')。
 //     信頼度 0.30 未満 (個人主催・会員限定) は今までどおり取り込まない。
@@ -140,6 +143,7 @@ async function extractChunk(
   sourcePrefecture: string | null,
   part: number,
   totalParts: number,
+  depth = 0,
 ): Promise<{ events: any[]; cost_usd: number } | null> {
   const schemaLine =
     '{"events":[{"title":"イベント名","summary":"100字以内要約","start_date":"YYYY-MM-DD or null",' +
@@ -207,16 +211,55 @@ async function extractChunk(
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content;
     if (!content) return null;
-    const parsed = JSON.parse(content);
-    const events: any[] = parsed?.events || [];
     const inputTokens = data?.usage?.prompt_tokens || 0;
     const outputTokens = data?.usage?.completion_tokens || 0;
     const cost_usd = (inputTokens * 0.15 + outputTokens * 0.60) / 1000000;
-    return { events, cost_usd };
+    const truncated = data?.choices?.[0]?.finish_reason === "length";
+    let events: any[] | null = null;
+    if (!truncated) {
+      try { events = JSON.parse(content)?.events || []; } catch (_) { events = null; }
+    }
+    if (events) return { events, cost_usd };
+
+    // v9 (2026/11/13): 出力が max_tokens で切れると JSON が途中で終わり、その塊のイベントが全部落ちていた
+    //   (11/13 実例: 2 つの塊が "Unterminated string in JSON at position 21xxx")。
+    //   1) 塊が大きいうちは半分に分けて取り直す (1 回あたりの出力が減って切れなくなる)
+    //   2) それでも切れる・小さい塊なら、切れる手前までの完全なイベントだけ拾う
+    if (depth < 2 && finalHtml.length > 10000) {
+      const mid = Math.floor(finalHtml.length / 2);
+      const halves = await Promise.all([
+        extractChunk(finalHtml.slice(0, mid), sourceUrl, sourcePrefecture, part, totalParts, depth + 1),
+        extractChunk(finalHtml.slice(mid), sourceUrl, sourcePrefecture, part, totalParts, depth + 1),
+      ]);
+      const okHalves = halves.filter((h): h is { events: any[]; cost_usd: number } => h !== null);
+      if (okHalves.length) {
+        console.warn("[event-scraper v9] truncated output, re-split part " + part + " (depth " + depth + ")");
+        return {
+          events: okHalves.flatMap((h) => h.events),
+          cost_usd: cost_usd + okHalves.reduce((s, h) => s + h.cost_usd, 0),
+        };
+      }
+    }
+    const salvaged = salvageEvents(content);
+    console.warn("[event-scraper v9] truncated output, salvaged " + salvaged.length + " events from part " + part);
+    return salvaged.length ? { events: salvaged, cost_usd } : null;
   } catch (e) {
-    console.error("[event-scraper v8] parse error", e);
+    console.error("[event-scraper v9] extract error", e);
     return null;
   }
+}
+
+// v9: 途中で切れた {"events":[{...},{...},{... を、最後の完全な要素までで閉じて読む
+function salvageEvents(content: string): any[] {
+  let end = content.lastIndexOf("}");
+  for (let tries = 0; end > 0 && tries < 300; tries++) {
+    try {
+      const parsed = JSON.parse(content.slice(0, end + 1) + "]}");
+      if (Array.isArray(parsed?.events)) return parsed.events;
+    } catch (_) { /* もう 1 つ手前の } で試す */ }
+    end = content.lastIndexOf("}", end - 1);
+  }
+  return [];
 }
 
 async function runScrape(sourceId: string): Promise<any> {
