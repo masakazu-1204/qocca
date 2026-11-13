@@ -8,6 +8,7 @@
 
 import { useEffect } from "react";
 import { SITE_URL } from "../constants/site";
+import { DEFAULT_TITLE, SEO_OWNER_ATTR } from "../lib/routeTitle";
 
 type SEO = {
   title: string;
@@ -95,10 +96,20 @@ export function useSEO({ title, description, path, image, jsonLd, noindex }: SEO
       document.head.appendChild(s);
     });
 
+    // 2026/11/13: このページがタブ名を受け持っている目印 (App 側の routeTitle が上書きしないように)
+    document.documentElement.setAttribute(SEO_OWNER_ATTR, "1");
+
     return () => {
       document.head
         .querySelectorAll(`script[type="application/ld+json"][${MANAGED}]`)
         .forEach((n) => n.remove());
+      // 2026/11/13: 離れたら元に戻す。戻さないと、次のページでもタブ名・canonical・noindex が
+      //   前のページのまま残っていた (例: 特集のあとの商店街が「冬の贈りもの | Qocca」)。
+      //   次のページが useSEO を使っていれば、その effect がすぐ上書きする。
+      document.documentElement.removeAttribute(SEO_OWNER_ATTR);
+      document.title = DEFAULT_TITLE;
+      document.head.querySelector(`link[rel="canonical"][${MANAGED}]`)?.remove();
+      document.head.querySelector(`meta[name="robots"][${MANAGED}]`)?.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, description, path, image, noindex, jsonKey]);
