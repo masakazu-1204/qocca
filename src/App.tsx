@@ -43,6 +43,7 @@ import { supabase } from "./supabaseClient";
 // ID 未設定で完全 no-op、localhost で発火しない fail-safe 設計
 import { initMetaPixel, trackPageView as mpTrackPageView, trackPurchaseOnce as mpTrackPurchase, trackEvent as mpTrackEvent } from "./lib/metaPixel";
 import { captureAttribution, saveRegistrationSource } from "./lib/attribution";
+import { isSeoOwned, titleForPath } from "./lib/routeTitle";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useListings, useFavorites, useIsPC, useNav } from "./hooks";
 import { Logo, Sidebar, PCNavbar, Navbar, SharedFooter, TabBar } from "./components/ui";
@@ -86,6 +87,12 @@ function QoccaAppInner() {
 
   // 2026/10/19 新しい版が届いていたら、画面を移ったタイミングで切り替える (lib/pwaUpdate)
   useEffect(() => { applyPendingUpdate(); }, [location.pathname]);
+
+  // 2026/11/13 ページごとのタブ名 (lib/routeTitle)。useSEO を使うページ (施設・特集など) は
+  //   そちらが受け持つので触らない。子の effect が先に走るため、目印を見てから決める。
+  useEffect(() => {
+    if (!isSeoOwned()) document.title = titleForPath(location.pathname);
+  }, [location.pathname]);
 
   // 依頼書 #121 (2026/6/5): Meta Pixel 初期化 (アプリ起動時 1 回のみ、初回 PageView も発火)
   // VITE_META_PIXEL_ID 未設定なら完全 no-op で安全
